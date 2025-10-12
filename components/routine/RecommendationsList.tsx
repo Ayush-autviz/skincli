@@ -342,9 +342,9 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
       <View key={`${concernKey}-ingredient-${itemIndex}`} style={{ marginBottom: 12 }}>
         <ListItem
           title={ingredient}
-          icon="pill"
+          icon="bottle-tonic-outline"
           iconColor={colors.primary}
-          iconLibrary="Lucide"
+          iconLibrary="MaterialCommunityIcons"
           showChevron={false}
           onPress={() => {}}
         />

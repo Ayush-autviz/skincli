@@ -508,31 +508,24 @@ const SnapshotScreen = (): React.JSX.Element => {
           let maskResults = null;
           let maskImages = null;
           try {
-            console.log('🔵 Fetching mask images after analysis completion for imageId:', imgId);
-            console.log('🔵 About to call getHautMaskImages...');
-            maskImages = await getHautMaskImages(imgId);
-            console.log('🔵 maskImages result:', maskImages);
-            console.log('🔵 maskImages type:', typeof maskImages);
-            console.log('🔵 maskImages is array:', Array.isArray(maskImages));
-            if (maskImages) {
-              console.log('🔵 maskImages length:', maskImages.length);
-            }
-            console.log('✅ Mask images retrieved successfully');
+            console.log('🔵 Fetching mask results after analysis completion');
+            console.log('🔵 About to call getHautMaskResults...');
+            maskResults = await getHautMaskResults(imgId);
+            console.log('🔵 maskResults:', maskResults);
+            console.log('✅ Mask results retrieved successfully');
+            
             // Get mask images with S3 URLs for each skin condition
-            // try {
-            //   console.log('🔵 Fetching mask images with S3 URLs');
-            //   maskImages = await getHautMaskImages(imgId);
-            //   console.log('✅ Mask images retrieved successfully');
-            // } catch (maskImageError) {
-            //   console.log('⚠️ Mask images not ready yet or error occurred:', maskImageError.message);
-            //   // Continue without mask images - they're not critical for the main flow
-            // }
+            try {
+              console.log('🔵 Fetching mask images with S3 URLs');
+              maskImages = await getHautMaskImages(imgId);
+              console.log('✅ Mask images retrieved successfully');
+            } catch (maskImageError) {
+              console.log('⚠️ Mask images not ready yet or error occurred:', maskImageError.message);
+              // Continue without mask images - they're not critical for the main flow
+            }
           } catch (error: any) {
-            console.error('🔴 Mask images fetch error:', error);
-            console.error('🔴 Error message:', error.message);
-            console.error('🔴 Error stack:', error.stack);
-            console.log('⚠️ Mask images not ready yet or error occurred:', error.message);
-            // Continue without mask images - they're not critical for the main flow
+            console.log('⚠️ Mask results not ready yet or error occurred:', error.message);
+            // Continue without mask results - they're not critical for the main flow
           }
           
           // Create photo data structure

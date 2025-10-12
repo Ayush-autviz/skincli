@@ -867,7 +867,7 @@ export const getHautMaskResults = async (imageId) => {
     const formData = new URLSearchParams();
     formData.append("image_id", imageId);
 
-    const response = await apiClient.post("/haut_mask/", formData, {
+    const response = await apiClient.post("/haut_mask/", formData.toString(), {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },

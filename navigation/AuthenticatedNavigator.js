@@ -19,13 +19,14 @@ import CameraScreen from '../screens/camera';
 import MaskViewerScreen from '../screens/maskViewer';
 import ProfileScreen from '../screens/profile';
 import SnapshotScreen from '../screens/snapshot';
+import NameScreen from '../screens/name';
 
 // Import auth store
 
 const Stack = createNativeStackNavigator();
 
 function AuthenticatedNavigator() {
-  const { isAuthenticated, user } = useAuthStore();
+  const { isAuthenticated, user, profileStatus } = useAuthStore();
   const navigation = useNavigation();
 
   useEffect(() => {
@@ -36,7 +37,10 @@ function AuthenticatedNavigator() {
         routes: [{ name: 'Auth' }],
       });
     }
-  }, [isAuthenticated, user, navigation]);
+  }, [isAuthenticated, user, navigation, profileStatus]);
+
+  // Check if profile is incomplete (profile_status is false)
+  const isProfileIncomplete = profileStatus === false;
 
   return (
     <PhotoProvider>
@@ -47,98 +51,111 @@ function AuthenticatedNavigator() {
           gestureEnabled: true,
         }}
       >
-        {/* Tab Navigation - Main navigation with bottom tabs */}
-        <Stack.Screen 
-          name="Tabs"
-          component={TabNavigator}
-          options={{
-            animation: 'fade',
-            headerShown: false,
-          }}
-        />
+        {isProfileIncomplete ? (
+          /* Profile Setup Flow - for users with incomplete profiles */
+          <Stack.Screen
+            name="Name"
+            component={NameScreen}
+            options={{
+              animation: 'fade',
+              headerShown: false,
+            }}
+          />
+        ) : (
+          /* Main App Flow - for users with complete profiles */
+          <>
+            {/* Tab Navigation - Main navigation with bottom tabs */}
+            <Stack.Screen
+              name="Tabs"
+              component={TabNavigator}
+              options={{
+                animation: 'fade',
+                headerShown: false,
+              }}
+            />
         
-        {/* New screens */}
-        <Stack.Screen 
-          name="ArchivedRoutines"
-          component={ArchivedRoutines}
-          options={{
-            animation: 'slide_from_right',
-            headerShown: false,
-          }}
-        />
+            {/* New screens - only available for users with complete profiles */}
+            <Stack.Screen
+              name="ArchivedRoutines"
+              component={ArchivedRoutines}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
 
-        <Stack.Screen 
-          name="MetricDetail"
-          component={MetricDetailScreen}
-          options={{
-            animation: 'slide_from_right',
-            headerShown: false,
-          }}
-        />
-        
+            <Stack.Screen
+              name="MetricDetail"
+              component={MetricDetailScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
 
-        
-        <Stack.Screen 
-          name="ThreadChat"
-          component={ThreadChatScreen}
-          options={{
-            animation: 'slide_from_right',
-            headerShown: false,
-          }}
-        />
-        
-        <Stack.Screen 
-          name="UpdateRoutine"
-          component={UpdateRoutineScreen}
-          options={{
-            animation: 'slide_from_right',
-            headerShown: false,
-          }}
-        />
-        
-        <Stack.Screen 
-          name="CreateRoutine"
-          component={CreateRoutineScreen}
-          options={{
-            animation: 'slide_from_right',
-            headerShown: false,
-          }}
-        />
-        
-        <Stack.Screen 
-          name="Camera"
-          component={CameraScreen}
-          options={{
-            animation: 'slide_from_right',
-            headerShown: false,
-          }}
-        />
-        
-        <Stack.Screen 
-          name="MaskViewer"
-          component={MaskViewerScreen}
-          options={{
-            animation: 'slide_from_right',
-            headerShown: false,
-          }}
-        />
-        
-        <Stack.Screen 
-          name="profile"
-          component={ProfileScreen}
-          options={{
-            headerShown: false
-          }}
-        />
-        
-        <Stack.Screen 
-          name="Snapshot"
-          component={SnapshotScreen}
-          options={{
-            animation: 'slide_from_right',
-            headerShown: false,
-          }}
-        />
+            <Stack.Screen
+              name="ThreadChat"
+              component={ThreadChatScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="UpdateRoutine"
+              component={UpdateRoutineScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="CreateRoutine"
+              component={CreateRoutineScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="Camera"
+              component={CameraScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="MaskViewer"
+              component={MaskViewerScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="profile"
+              component={ProfileScreen}
+              options={{
+                headerShown: false
+              }}
+            />
+
+            <Stack.Screen
+              name="Snapshot"
+              component={SnapshotScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+          </>
+        )}
       </Stack.Navigator>
     </PhotoProvider>
   );

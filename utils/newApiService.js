@@ -1910,7 +1910,7 @@ export const deleteRoutineItem = async (itemId) => {
 export const getImageChatSummary = async (image_id) => {
   try {
     console.log('🔵 Fetching image chat summary:', { image_id });
-    
+
     const response = await apiClient.get(`/thread/get-image-chat-summary?image_id=${image_id}`);
 
     console.log('🔵 Response of getImageChatSummary:', response);
@@ -1928,6 +1928,40 @@ export const getImageChatSummary = async (image_id) => {
   } catch (error) {
     console.error('🔴 Error fetching image chat summary:', error);
     throw error;
+  }
+};
+
+// -----------------------------------------------------------------------------
+// FCM NOTIFICATION API FUNCTIONS
+// -----------------------------------------------------------------------------
+
+/**
+ * Register FCM token with the server
+ * @param {string} fcmToken - FCM token to register
+ * @returns {Promise<Object>} Registration response
+ */
+export const registerFCMToken = async (fcmToken) => {
+  try {
+    console.log('🔵 Registering FCM token:', fcmToken.substring(0, 20) + '...');
+
+    const response = await apiClient.post(`/notifications/register-token?fcm_token=${encodeURIComponent(fcmToken)}`);
+
+    if (response.data.status === 200) {
+      console.log('✅ FCM token registered successfully');
+      return {
+        success: true,
+        message: response.data.message || 'FCM token registered successfully',
+      };
+    } else {
+      throw new Error(response.data.message || 'Failed to register FCM token');
+    }
+  } catch (error) {
+    console.error('🔴 FCM token registration error:', error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        'Failed to register FCM token'
+    );
   }
 };
 

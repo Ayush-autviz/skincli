@@ -311,7 +311,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 30,
     // paddingTop: 2,
-    paddingBottom: 50,
+    //paddingBottom: 50,
   },
   formHeader: {
     marginBottom: 20,

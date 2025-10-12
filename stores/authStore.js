@@ -16,7 +16,11 @@ const useAuthStore = create(
       // Tokens
       accessToken: null,
       refreshToken: null,
-      
+
+      // FCM Token
+      fcmToken: null,
+      fcmTokenRegistered: false,
+
       // Profile data and status
       profile: null,
       profileStatus: null, // true = complete, false = incomplete
@@ -24,13 +28,22 @@ const useAuthStore = create(
       // Actions
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       
-      setTokens: (accessToken, refreshToken) => set({ 
-        accessToken, 
-        refreshToken 
+      setTokens: (accessToken, refreshToken) => set({
+        accessToken,
+        refreshToken
       }),
-      
+
+      setFCMToken: (fcmToken) => set({
+        fcmToken,
+        fcmTokenRegistered: false // Reset registration status when token changes
+      }),
+
+      setFCMTokenRegistered: (registered) => set({
+        fcmTokenRegistered: registered
+      }),
+
       setProfile: (profile) => set({ profile }),
-      
+
       setProfileStatus: (profileStatus) => set({ profileStatus }),
       
       setLoading: (loading) => set({ loading }),
@@ -40,14 +53,16 @@ const useAuthStore = create(
       })),
       
       // Clear all auth data on logout
-      logout: () => set({ 
+      logout: () => set({
         user: null,
         isAuthenticated: false,
         accessToken: null,
         refreshToken: null,
+        fcmToken: null,
+        fcmTokenRegistered: false,
         profile: null,
         profileStatus: null,
-        loading: false 
+        loading: false
       }),
       
       // Get current state
@@ -61,6 +76,8 @@ const useAuthStore = create(
         isAuthenticated: state.isAuthenticated,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
+        fcmToken: state.fcmToken,
+        fcmTokenRegistered: state.fcmTokenRegistered,
         profile: state.profile,
         profileStatus: state.profileStatus,
       }),

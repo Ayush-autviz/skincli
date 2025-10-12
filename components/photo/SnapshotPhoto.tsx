@@ -508,6 +508,7 @@ const SnapshotPhoto = forwardRef<SnapshotPhotoRef, SnapshotPhotoProps>(({
 
                   {/* Analyze with images button - positioned relative to image */}
 
+ {isLoaded && viewState === 'default' && photoData && photoData.maskImages && photoData.maskImages.length > 0 && (
                     <View style={styles.analyzeButtonContainer}>
                       <TouchableOpacity
                         style={styles.analyzeButton}
@@ -524,7 +525,7 @@ const SnapshotPhoto = forwardRef<SnapshotPhotoRef, SnapshotPhotoProps>(({
                         </View>
                       </TouchableOpacity>
                     </View>
-              
+                  )}
                 </Animated.View>
               </TapGestureHandler>
             </TapGestureHandler>

@@ -13,12 +13,13 @@ import {
   Image, 
   Dimensions 
 } from 'react-native';
-import { Camera, useCameraDevices, CameraPermissionStatus } from 'react-native-vision-camera';
+import { Camera, useCameraDevices, useCameraPermission } from 'react-native-vision-camera';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'react-native-image-picker';
 import useAuthStore from '../stores/authStore';
 import Svg, { Path, Defs, Mask, Rect } from 'react-native-svg';
-import { colors, spacing, typography } from '../styles';
+import { colors, spacing, typography, borderRadius, shadows } from '../styles';
+import { Camera as CameraIcon, Settings, ArrowLeft, AlertCircle } from 'lucide-react-native';
 
 /* ------------------------------------------------------
 WHAT IT DOES
@@ -158,20 +159,19 @@ const CameraScreen = (): React.JSX.Element => {
   // Only the hooks we actually use
   const { user } = useAuthStore();
   const navigation = useNavigation();
-  const [hasPermission, setHasPermission] = useState<boolean | null>(null);
   const [camera, setCamera] = useState<Camera | null>(null);
   const [isCameraActive, setIsCameraActive] = useState<boolean>(true);
   const [facing, setFacing] = useState<'front' | 'back'>('front');
   const devices = useCameraDevices();
-  const device = devices[facing];
+  const device = facing === 'front' ? devices.find(d => d.position === 'front') : devices.find(d => d.position === 'back');
+  const { hasPermission, requestPermission } = useCameraPermission();
 
   useEffect(() => {
     console.log('📸 Camera screen loaded');
-    (async () => {
-      const permission = await Camera.requestCameraPermission();
-      setHasPermission(permission === 'authorized');
-    })();
-  }, []);
+    if (hasPermission === null) {
+      requestPermission();
+    }
+  }, [hasPermission, requestPermission]);
 
   // Monitor authentication state
   useEffect(() => {
@@ -224,75 +224,125 @@ const CameraScreen = (): React.JSX.Element => {
 
   // Wait for permission check
   if (hasPermission === null) {
-    return null;
-  }
-
-  // Handle denied permission
-  if (hasPermission === false) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.message}>No access to camera</Text>
-        <Text style={styles.debugText}>
-          Permission state: {JSON.stringify({hasPermission, isCameraActive}, null, 2)}
-        </Text>
-        <View style={styles.permissionButtonContainer}>
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => {
-              Linking.openSettings();
-            }}
-          >
-            <Text style={styles.buttonText}>Grant Access</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => (navigation as any).goBack()}
-          >
-            <Text style={styles.buttonText}>Go Back</Text>
-          </TouchableOpacity>
+      <View style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Requesting camera permission...</Text>
         </View>
       </View>
     );
   }
+
+  // Handle denied permission
+  // if (hasPermission === false) {
+  //   return (
+  //     <View style={styles.container}>
+  //       <View style={styles.errorContainer}>
+  //         <View style={styles.errorContent}>
+  //           <View style={styles.errorIconContainer}>
+  //             <CameraIcon size={48} color={colors.error} />
+  //           </View>
+  //           <Text style={styles.errorText}>Camera Access Required</Text>
+  //           <Text style={styles.errorSubtext}>
+  //             To take photos and analyze your skin, please grant camera permission in your device settings.
+  //           </Text>
+  //           <View style={styles.errorButtonContainer}>
+  //             <TouchableOpacity 
+  //               style={styles.primaryButton}
+  //               onPress={() => {
+  //                 Linking.openSettings();
+  //               }}
+  //             >
+  //               <Settings size={20} color={colors.textOnPrimary} />
+  //               <Text style={styles.primaryButtonText}>Open Settings</Text>
+  //             </TouchableOpacity>
+              
+  //             <TouchableOpacity 
+  //               style={styles.secondaryButton}
+  //               onPress={() => (navigation as any).goBack()}
+  //             >
+  //               <ArrowLeft size={20} color={colors.textPrimary} />
+  //               <Text style={styles.secondaryButtonText}>Go Back</Text>
+  //             </TouchableOpacity>
+  //           </View>
+  //         </View>
+  //       </View>
+  //     </View>
+  //   );
+  // }
 
   // Check if user is authenticated
   if (!user?.user_id) {
     return (
-      <View style={[styles.container, styles.centered]}>
-        <Text style={styles.message}>Authentication Required</Text>
-        <Text style={styles.debugText}>
-          Please sign in to use the camera
-        </Text>
-        <View style={styles.permissionButtonContainer}>
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => (navigation as any).reset({
-              index: 0,
-              routes: [{ name: 'Auth' }],
-            })}
-          >
-            <Text style={styles.buttonText}>Sign In</Text>
-          </TouchableOpacity>
-          
-          <TouchableOpacity 
-            style={styles.button}
-            onPress={() => (navigation as any).goBack()}
-          >
-            <Text style={styles.buttonText}>Go Back</Text>
-          </TouchableOpacity>
+      <View style={styles.container}>
+        <View style={styles.errorContainer}>
+          <View style={styles.errorContent}>
+            <View style={styles.errorIconContainer}>
+              <AlertCircle size={48} color={colors.error} />
+            </View>
+            <Text style={styles.errorText}>Authentication Required</Text>
+            <Text style={styles.errorSubtext}>
+              Please sign in to use the camera and analyze your skin photos.
+            </Text>
+            <View style={styles.errorButtonContainer}>
+              <TouchableOpacity 
+                style={styles.primaryButton}
+                onPress={() => (navigation as any).navigate('SignIn')}
+              >
+                <Text style={styles.primaryButtonText}>Sign In</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={styles.secondaryButton}
+                onPress={() => (navigation as any).goBack()}
+              >
+                <ArrowLeft size={20} color={colors.textPrimary} />
+                <Text style={styles.secondaryButtonText}>Go Back</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </View>
     );
   }
+
+  // Check if camera device is available
+  // if (!device) {
+  //   return (
+  //     <View style={styles.container}>
+  //       <View style={styles.errorContainer}>
+  //         <View style={styles.errorContent}>
+  //           <View style={styles.errorIconContainer}>
+  //             <CameraIcon size={48} color={colors.error} />
+  //           </View>
+  //           <Text style={styles.errorText}>No Camera Available</Text>
+  //           <Text style={styles.errorSubtext}>
+  //             No camera device was found on this device. Please check your device settings or try again later.
+  //           </Text>
+  //           <View style={styles.errorButtonContainer}>
+  //             <TouchableOpacity 
+  //               style={styles.secondaryButton}
+  //               onPress={() => (navigation as any).goBack()}
+  //             >
+  //               <ArrowLeft size={20} color={colors.textPrimary} />
+  //               <Text style={styles.secondaryButtonText}>Go Back</Text>
+  //             </TouchableOpacity>
+  //           </View>
+  //         </View>
+  //       </View>
+  //     </View>
+  //   );
+  // }
 
   const shutdownCamera = async (): Promise<void> => {
     setIsCameraActive(false);
     if (camera) {
       try {
-        await camera.pausePreview();
+        // Vision Camera doesn't have pausePreview method
+        // Just set camera to null
       } catch (e) {
-        console.error('🔴 CAMERA: Error during pausePreview():', e);
+        console.error('🔴 CAMERA: Error during camera shutdown:', e);
       }
       setCamera(null);
     }
@@ -341,12 +391,7 @@ const CameraScreen = (): React.JSX.Element => {
     }
 
     try {
-      const photo = await camera.takePhoto({
-        qualityPrioritization: 'speed',
-        flash: 'off',
-        enableAutoRedEye: true,
-        enableAutoStabilization: true,
-      });
+      const photo = await camera.takePhoto({});
 
       // Use the shared processing function
       await processPhoto({
@@ -368,44 +413,23 @@ const CameraScreen = (): React.JSX.Element => {
   const handleUpload = async (): Promise<void> => {
     try {
       console.log('🔵 UPLOAD: Starting upload flow');
-      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      console.log('🔵 UPLOAD: Permission status:', status);
       
-      if (status !== 'granted') {
-        console.log('🔴 UPLOAD: Permission denied');
-        Alert.alert(
-          'Permission needed',
-          'Library access is required to upload photos',
-          [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Open Settings', onPress: () => Linking.openSettings() }
-          ]
-        );
-        return;
-      }
-
       // Using settings directly from the React Native Image Picker documentation
-      const result = await ImagePicker.launchImageLibraryAsync({
-        mediaTypes: ['images'], // Use array form as per docs
-        allowsEditing: true,
-        aspect: [3, 4],
+      const result = await ImagePicker.launchImageLibrary({
+        mediaType: 'photo',
+        includeBase64: true,
+        maxHeight: 2000,
+        maxWidth: 2000,
         quality: 0.7,
-        exif: false,
-        
-        // iOS specific options that might help
-        presentationStyle: 'formSheet', // iOS - use a specific presentation style
-        
-        // Disable width/height settings as they might conflict with aspect ratio
-        // Let the system handle the resizing based on aspect ratio
       });
 
       console.log('🔵 UPLOAD: Image picker result:', {
-        cancelled: result.canceled,
-        hasAssets: result.assets?.length > 0,
+        cancelled: result.didCancel,
+        hasAssets: result.assets && result.assets.length > 0,
         dimensions: result.assets?.[0] ? `${result.assets[0].width}x${result.assets[0].height}` : 'none'
       });
 
-      if (!result.canceled && result.assets?.[0]) {
+      if (!result.didCancel && result.assets?.[0]) {
         // Use the shared processing function
         await processPhoto(result.assets[0]);
       } else {
@@ -422,6 +446,7 @@ const CameraScreen = (): React.JSX.Element => {
     <View style={styles.container}>
       {isCameraActive ? (
         <>
+        {device && (
           <Camera 
             ref={ref => setCamera(ref)}
             style={styles.camera}
@@ -429,6 +454,7 @@ const CameraScreen = (): React.JSX.Element => {
             isActive={isCameraActive}
             photo={true}
           />
+          )}
           <FaceOverlay />
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
@@ -466,10 +492,13 @@ const CameraScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.background,
   },
   camera: {
     flex: 1,
   },
+  
+  // Camera Controls
   buttonContainer: {
     flex: 0,
     backgroundColor: 'rgba(0, 0, 0, 0.8)',
@@ -507,11 +536,110 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     backgroundColor: 'white',
   },
+  
+  // Loading State
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  loadingText: {
+    ...typography.body,
+    color: colors.textSecondary,
+    marginTop: spacing.md,
+    textAlign: 'center',
+  },
+  
+  // Error States - Matching app design
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.xl,
+  },
+  errorContent: {
+    alignItems: 'center',
+    maxWidth: 320,
+  },
+  errorIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: colors.error + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  errorText: {
+    ...typography.h2,
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  errorSubtext: {
+    ...typography.body,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 22,
+    marginBottom: spacing.xl,
+  },
+  
+  // Error State Button Container
+  errorButtonContainer: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  
+  // Button Styles - Matching app design
+  primaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.primary,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.md,
+    minWidth: 200,
+    ...shadows.sm,
+  },
+  primaryButtonText: {
+    ...typography.button,
+    color: colors.textOnPrimary,
+    marginLeft: spacing.sm,
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'transparent',
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.md,
+    minWidth: 200,
+  },
+  secondaryButtonText: {
+    ...typography.button,
+    color: colors.textPrimary,
+    marginLeft: spacing.sm,
+    fontWeight: '500',
+  },
+  
+  // Legacy styles (keeping for compatibility)
   message: {
     fontSize: 16,
-    color: 'black',
+    color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: 20,
+  },
+  centered: {
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   liqaContainer: {
     position: 'absolute',
@@ -526,26 +654,6 @@ const styles = StyleSheet.create({
   liqaText: {
     color: 'white',
     fontSize: 14,
-  },
-  centered: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  permissionButtonContainer: {
-    gap: 10,
-  },
-  button: {
-    backgroundColor: '#007AFF',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  debugText: {
-    fontSize: 12,
-    color: '#666',
-    textAlign: 'center',
-    marginBottom: 20,
-    fontFamily: 'monospace',
   },
 });
 

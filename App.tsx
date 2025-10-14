@@ -52,6 +52,7 @@ function App() {
       unsubscribeTokenRefresh();
     };
   }, []);
+  //registerFCMToken("d3WE4ql-g0s1gjpzbkN1A5:APA91bE5BBmKcKIaY9xTw3IIGzITk-gahrUdnEyaLutAXvY0FVvdNpIvB3q0DV5uSeGJOpzmIUubvUY-1KKr-yYRLhQFgAHXEDkR_t7rYVq7uPD4uuup480")
 
   // Effect to handle FCM token registration when user logs in or token refreshes
   useEffect(() => {

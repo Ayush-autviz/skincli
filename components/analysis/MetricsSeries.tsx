@@ -1026,7 +1026,7 @@ const SkinTypeTrendChart = ({
   );
 };
 
-const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScrollSyncRef, photos, profile, navigateToSnapshot }) => {
+const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScrollSyncRef, photos, profile, navigateToSnapshot, navigateToMetricDetail }) => {
   if (!metric?.scores?.length) return null;
 
   const scrollViewRef = useRef(null);
@@ -1050,12 +1050,7 @@ const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScr
                   photoId: selectedPhoto.id
                 });
                 
-                navigateToSnapshot({
-                  photoId: selectedPhoto.id,
-                  imageId: selectedPhoto.hautUploadData?.imageId || selectedPhoto.id,
-                  storageUrl: selectedPhoto.storageUrl,
-                  timestamp: selectedPhoto.timestamp,
-                  fromPhotoGrid: 'true',
+                navigateToMetricDetail({
                   maskResults: selectedPhoto?.maskResults,
                   maskImages: selectedPhoto?.maskImages,
                   metricKey: metric.metricName,
@@ -1072,12 +1067,7 @@ const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScr
                     photoId: firstPhoto.id
                   });
                   
-                  navigateToSnapshot({
-                    photoId: firstPhoto.id,
-                    imageId: firstPhoto.hautUploadData?.imageId || firstPhoto.id,
-                    storageUrl: firstPhoto.storageUrl,
-                    timestamp: firstPhoto.timestamp,
-                    fromPhotoGrid: 'true',
+                  navigateToMetricDetail({
                     maskResults: firstPhoto?.maskResults,
                     maskImages: firstPhoto?.maskImages,
                     metricKey: metric.metricName,
@@ -1195,12 +1185,7 @@ const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScr
       photoId: selectedPhoto.id
     });
     
-    navigateToSnapshot({
-      photoId: selectedPhoto.id,
-      imageId: selectedPhoto.hautUploadData?.imageId || selectedPhoto.id,
-      storageUrl: selectedPhoto.storageUrl,
-      timestamp: selectedPhoto.timestamp,
-      fromPhotoGrid: 'true',
+    navigateToMetricDetail({
       maskResults: selectedPhoto?.maskResults,
       maskImages: selectedPhoto?.maskImages,
       metricKey: metric.metricName,
@@ -1217,12 +1202,7 @@ const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScr
         photoId: firstPhoto.id
       });
       
-      navigateToSnapshot({
-        photoId: firstPhoto.id,
-        imageId: firstPhoto.hautUploadData?.imageId || firstPhoto.id,
-        storageUrl: firstPhoto.storageUrl,
-        timestamp: firstPhoto.timestamp,
-        fromPhotoGrid: 'true',
+      navigateToMetricDetail({
         maskResults: firstPhoto?.maskResults,
         maskImages: firstPhoto?.maskImages,
         metricKey: metric.metricName,
@@ -1386,6 +1366,11 @@ const MetricsSeries = ({ photos }) => {
   const navigateToSnapshot = (params: any) => {
     navigation.navigate('Snapshot', params);
   };
+
+  // Helper function to handle metric detail navigation
+  const navigateToMetricDetail = (params: any) => {
+    navigation.navigate('MetricDetail', params);
+  };
   const { metrics, timestamps } = processPhotoMetrics(photos);
   const timeSelectorRef = useRef(null);
   const initialSelectionDoneRef = useRef(false);
@@ -1496,12 +1481,12 @@ const MetricsSeries = ({ photos }) => {
     console.log('🔵 photoId from MetricsSeries:', photo);
 
     // Navigate to snapshot screen
-    navigateToSnapshot({ 
-      photoId: photo.hautUploadData?.imageId, 
-      imageId: photo.hautUploadData?.imageId, // Use photo.id directly - this should be the image_id from API
-      thumbnailUrl: photo.storageUrl, 
-      localUri: photo.storageUrl, 
-      fromPhotoGrid: 'true', 
+    navigateToSnapshot({
+      photoId: photo.id, // Use photo.id as the unique identifier (matches PhotoGrid pattern)
+      imageId: photo.hautUploadData?.imageId || photo.id, // Use Haut.ai imageId if available, fallback to photo.id
+      thumbnailUrl: photo.storageUrl,
+      localUri: photo.storageUrl,
+      fromPhotoGrid: 'true',
       timestamp: timestampParam // Use the properly formatted ISO string
     });
   };
@@ -1612,7 +1597,6 @@ const MetricsSeries = ({ photos }) => {
         onSelectDate={handleDotPress}
         photos={photos}
         ref={timeSelectorRef}
-        noteText={noteText} // Pass the summary/note text down
         onMaximize={handleMaximize}
         summaryLoading={summaryLoading}
         routineFlagLoading={routineFlagLoading}
@@ -1629,6 +1613,7 @@ const MetricsSeries = ({ photos }) => {
             photos={photos}
             profile={profile}
             navigateToSnapshot={navigateToSnapshot}
+            navigateToMetricDetail={navigateToMetricDetail}
           />
         ))}
       </ScrollView>

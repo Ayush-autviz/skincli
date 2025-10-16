@@ -469,14 +469,17 @@ const SkinTypeTrendChart = ({ photos }) => {
     'Dry': 4            // top
   };
 
-  // Prepare data for chart
-  const realData = processedData.map(item => {
+  // Reverse the data so latest point is at the very last position
+  const reversedProcessedData = [...processedData].reverse();
+
+  // Prepare data for chart (using reversed data)
+  const realData = reversedProcessedData.map(item => {
     if (!item.skinType || item.skinType === 'Unknown') return 2;
     return skinTypeMap[item.skinType] || 2;
   });
-  
+
   const chartData = {
-    labels: processedData.map((_, index) => `${index + 1}`),
+    labels: reversedProcessedData.map((_, index) => `${index + 1}`),
     datasets: [
       {
         // 👀 Real user data

@@ -1725,6 +1725,7 @@ export const getRoutineItems = async (retryCount = 0) => {
  * @param {string} itemData.type - Item type (product, activity, nutrition)
  * @param {string} [itemData.usage] - Usage time (am, pm, both) - optional for treatment types
  * @param {string} [itemData.frequency] - Frequency (daily, weekly, as_needed) - optional for treatment types
+ * @param {string} [itemData.upc] - UPC code for scanned products
  * @param {Object} [itemData.extra] - Additional data (optional)
  * @returns {Promise<Object>} Created item response
  */
@@ -1743,6 +1744,11 @@ export const createRoutineItem = async (itemData) => {
     }
     if (itemData.frequency) {
       formData.append("frequency", itemData.frequency.toLowerCase().replace(" ", "_"));
+    }
+    
+    // Add UPC code if provided (for scanned products)
+    if (itemData.upc) {
+      formData.append("upc", itemData.upc);
     }
     
     // Add new fields for updated API
@@ -1772,7 +1778,7 @@ export const createRoutineItem = async (itemData) => {
     
     formData.append("extra", JSON.stringify(itemData.extra || {}));
 
-    const response = await apiClient.post("/routine/", formData, {
+    const response = await apiClient.post("/routine/", formData.toString(), {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
@@ -1964,6 +1970,44 @@ export const registerFCMToken = async (fcmToken) => {
     );
   }
 };
+
+// -----------------------------------------------------------------------------
+// PRODUCT SEARCH API FUNCTIONS
+// -----------------------------------------------------------------------------
+
+/**
+ * Search for product details by UPC code
+ * @param {string} upc - UPC code to search for
+ * @returns {Promise<Object>} Product details including ingredients and good_for
+ */
+export const searchProductByUPC = async (upc) => {
+  try {
+    console.log("🔵 Searching product by UPC:", upc);
+
+    const response = await apiClient.get(`/product_search/ingredients?upc=${upc}`);
+
+    if (response.data.status === 200) {
+      console.log("✅ Product found successfully");
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    } else {
+      throw new Error(response.data.message || "Product not found");
+    }
+  } catch (error) {
+    console.error("🔴 searchProductByUPC error:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to search product"
+    );
+  }
+};
+
+// -----------------------------------------------------------------------------
+// END PRODUCT SEARCH API FUNCTIONS
+// -----------------------------------------------------------------------------
 
 // -----------------------------------------------------------------------------
 // END ROUTINE API FUNCTIONS

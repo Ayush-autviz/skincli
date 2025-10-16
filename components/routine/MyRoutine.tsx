@@ -95,12 +95,18 @@ interface RoutineItem {
   treatmentDate: Date | null;
   stopReason: string;
   dateCreated: Date;
+  upc?: string; // UPC code for scanned products
   extra: any;
 }
 
 interface RoutineSection {
   title: string;
   data: RoutineItem[];
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: any[];
 }
 
 interface MyRoutineProps {}
@@ -231,6 +237,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       treatmentDate: apiItem.extra?.treatmentDate ? new Date(apiItem.extra.treatmentDate) : null,
       stopReason: apiItem.extra?.stopReason || '',
       dateCreated: apiItem.extra?.dateCreated ? new Date(apiItem.extra.dateCreated) : new Date(),
+      upc: apiItem.upc || undefined, // Include UPC code if present
       extra: apiItem.extra || {}
     };
   };
@@ -256,7 +263,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         setLoading(true);
         setError(null);
         
-        const response = await getRoutineItems();
+        const response = await getRoutineItems() as ApiResponse;
         
         if (response.success && response.data) {
           const transformedItems = response.data.map(transformApiItem);
@@ -633,7 +640,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     try {
       if (editingItem) {
         // Update existing item
-        const response = await updateRoutineItem(editingItem.id, apiItemData);
+        const response = await updateRoutineItem(editingItem.id, apiItemData) as ApiResponse;
         console.log('🟡 MyRoutine: Update response:', response);
         
         if (response.success) {
@@ -643,7 +650,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         }
       } else {
         // Create new item
-        const response = await createRoutineItem(apiItemData);
+        const response = await createRoutineItem(apiItemData) as ApiResponse;
         console.log('🟡 MyRoutine: Create response:', response);
         
         if (response.success) {
@@ -812,7 +819,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           onPress: async () => {
             setIsDeleting(true);
             try {
-              const response = await deleteRoutineItem(itemToDelete.id);
+              const response = await deleteRoutineItem(itemToDelete.id) as ApiResponse;
               
               if (response.success) {
                 // Refetch all routine items to ensure consistency
@@ -904,26 +911,54 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   }, [routineItems]);
 
-  // Function to navigate to update screen
+  // Function to navigate to update screen or product detail
   const openEditModal = (item: RoutineItem): void => {
-    // Prepare item data for navigation
-    const itemData = {
-      name: item.name || '',
-      type: item.type || 'Product',
-      usage: item.usage || 'AM',
-      frequency: item.frequency || 'Daily',
-      concerns: item.concerns || [],
-      dateStarted: item.dateStarted || null,
-      dateStopped: item.dateStopped || null,
-      stopReason: item.stopReason || '',
-      dateCreated: item.dateCreated || new Date().toISOString()
-    };
+    console.log('🟡 openEditModal - item:', item);
+    // Check if this is a scanned product (has UPC code)
+    if (item.upc) {
+      // For scanned products, navigate to product detail screen
+      // We need to fetch the product data first
+      (navigation as any).navigate('ProductDetail', {
+        itemId: item.id,
+        upc: item.upc, // Pass UPC code for fetching fresh product data
+        productData: {
+          product_name: item.name,
+          brand: item.extra?.brand || 'Unknown',
+          upc: item.upc,
+          ingredients: item.extra?.ingredients || [],
+          good_for: item.extra?.good_for || []
+        },
+        routineData: {
+          name: item.name || '',
+          type: item.type || 'Product',
+          usage: item.usage || 'AM',
+          frequency: item.frequency || 'Daily',
+          concerns: item.concerns || [],
+          dateStarted: item.dateStarted || null,
+          dateStopped: item.dateStopped || null,
+          stopReason: item.stopReason || '',
+          dateCreated: item.dateCreated || new Date().toISOString()
+        }
+      });
+    } else {
+      // For manually added products or treatments, navigate to update routine screen
+      const itemData = {
+        name: item.name || '',
+        type: item.type || 'Product',
+        usage: item.usage || 'AM',
+        frequency: item.frequency || 'Daily',
+        concerns: item.concerns || [],
+        dateStarted: item.dateStarted || null,
+        dateStopped: item.dateStopped || null,
+        stopReason: item.stopReason || '',
+        dateCreated: item.dateCreated || new Date().toISOString()
+      };
 
-    // Navigate to update routine screen
-    (navigation as any).navigate('UpdateRoutine', {
-      itemId: item.id,
-      itemData: JSON.stringify(itemData)
-    });
+      (navigation as any).navigate('UpdateRoutine', {
+        itemId: item.id,
+        itemData: JSON.stringify(itemData)
+      });
+    }
   };
 
   // Function to close modal and reset state

@@ -20,6 +20,8 @@ import MaskViewerScreen from '../screens/maskViewer';
 import ProfileScreen from '../screens/profile';
 import SnapshotScreen from '../screens/snapshot';
 import NameScreen from '../screens/name';
+import BarcodeScannerScreen from '../screens/barcode-scanner';
+import ProductDetailScreen from '../screens/product-detail';
 
 // Import auth store
 
@@ -149,6 +151,24 @@ function AuthenticatedNavigator() {
             <Stack.Screen
               name="Snapshot"
               component={SnapshotScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="BarcodeScanner"
+              component={BarcodeScannerScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="ProductDetail"
+              component={ProductDetailScreen}
               options={{
                 animation: 'slide_from_right',
                 headerShown: false,

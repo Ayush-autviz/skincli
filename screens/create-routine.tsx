@@ -27,7 +27,8 @@ import {
   CalendarDays,
   HelpCircle,
   ArrowLeft,
-  Save
+  Save,
+  Camera
 } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
@@ -78,6 +79,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
   const [stopReason, setStopReason] = useState<string>('');
   const [isSaving, setIsSaving] = useState<boolean>(false);
   
+  // Barcode scanning state
+  const [upcCode, setUpcCode] = useState<string>('');
+  const [scannedProductData, setScannedProductData] = useState<any>(null);
+  
   // Date picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState<boolean>(false);
@@ -96,6 +101,40 @@ const CreateRoutineScreen = (): React.JSX.Element => {
       setEndDate(new Date());
     }
   }, [isStopped]);
+
+  // Handle barcode scanning
+  const handleBarcodeScan = () => {
+    (navigation as any).navigate('BarcodeScanner', {
+      onProductScanned: (productData: any) => {
+        console.log('🔍 Product scanned:', productData);
+        setScannedProductData(productData);
+        setItemName(productData.product_name || '');
+        setUpcCode(productData.upc || '');
+        
+        // Auto-populate concerns based on good_for data
+        if (productData.good_for && Array.isArray(productData.good_for)) {
+          const mappedConcerns = productData.good_for.map((concern: string) => {
+            // Map API concerns to our concerns options
+            const concernMapping: { [key: string]: string } = {
+              'dry_skin': 'Dry Skin',
+              'oily_skin': 'Oily Skin',
+              'combination_skin': 'Combination Skin',
+              'normal_skin': 'Normal Skin',
+              'sensitive_skin': 'Sensitive Skin',
+              'acne_prone': 'Acne Prone',
+              'aging': 'Anti-Aging (Face)',
+              'hydration': 'Hydration',
+              'brightening': 'Brightening',
+              'pore_minimizing': 'Visible Pores'
+            };
+            return concernMapping[concern] || concern;
+          }).filter(Boolean);
+          
+          setItemConcerns(mappedConcerns);
+        }
+      }
+    });
+  };
 
   // Toggle logic for AM/PM usage - only allow one selection
   const handleUsageToggle = (tappedUsage: string): void => {
@@ -266,6 +305,19 @@ const CreateRoutineScreen = (): React.JSX.Element => {
       }
     };
 
+    // Add UPC code and product data if product was scanned
+    if (upcCode && scannedProductData) {
+      apiItemData.upc = upcCode;
+      apiItemData.extra = {
+        ...apiItemData.extra,
+        brand: scannedProductData.brand,
+        ingredients: scannedProductData.ingredients || [],
+        good_for: scannedProductData.good_for || [],
+        product_id: scannedProductData.product_id,
+        total_ingredients: scannedProductData.total_ingredients
+      };
+    }
+
     // Add usage and frequency only for non-treatment types
     if (!isTreatmentType()) {
       let finalUsage = 'AM';
@@ -405,7 +457,20 @@ const CreateRoutineScreen = (): React.JSX.Element => {
               placeholderTextColor="#9CA3AF"
               returnKeyType="next"
             />
+            {/* Camera icon for barcode scanning - only show for Product type */}
+            {!isTreatmentType() && (
+              <TouchableOpacity 
+                onPress={handleBarcodeScan}
+                style={styles.cameraButton}
+              >
+                <Camera size={20} color="#6B7280" />
+              </TouchableOpacity>
+            )}
           </View>
+          {/* Scan instruction text */}
+          {!isTreatmentType() && (
+            <Text style={styles.scanInstructionText}>or scan barcode</Text>
+          )}
         </View>
 
         {/* Concerns Selection */}
@@ -937,6 +1002,17 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: '600',
     fontFamily: 'Inter',
+  },
+  cameraButton: {
+    padding: spacing.sm,
+    marginLeft: spacing.sm,
+  },
+  scanInstructionText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
   },
 });
 

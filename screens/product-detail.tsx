@@ -231,89 +231,91 @@ const ProductDetailScreen = (): React.JSX.Element => {
         <View style={styles.shadowContainer} />
       </View>
 
-      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Loading indicator */}
-        {isFetchingProduct && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color="#000000" />
+      {isFetchingProduct ? (
+        <View style={styles.loadingContainer}>
+          <View style={styles.loadingContent}>
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>Loading product details...</Text>
-          </View>
-        )}
-
-        {/* Product Title and Brand */}
-        <View style={styles.productTitleContainer}>
-          <Text style={styles.productName}>
-            {productData.product_name || 'Unknown Product'}
-          </Text>
-          <Text style={styles.brandName}>
-            {productData.brand?.toUpperCase() || 'UNKNOWN BRAND'}
-          </Text>
-        </View>
-
-        {/* Usage Card */}
-        <View style={styles.usageCard}>
-          <Text style={styles.usageText}>
-            Using for <Text style={styles.usageBold}>{calculateUsageDuration()}</Text> in {getUsageTimeDescription()}
-          </Text>
-          <View style={styles.actionRow}>
-            <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
-              <Edit size={16} color="#666666" />
-              <Text style={styles.actionText}>Edit</Text>
-            </TouchableOpacity>
-            <TouchableOpacity 
-              onPress={handleRemove} 
-              style={styles.actionButton}
-              disabled={isDeleting}
-            >
-              {isDeleting ? (
-                <ActivityIndicator size="small" color="#666666" />
-              ) : (
-                <>
-                  <X size={16} color="#666666" />
-                  <Text style={styles.actionText}>Remove from routine</Text>
-                </>
-              )}
-            </TouchableOpacity>
+            <Text style={styles.loadingSubtext}>This may take a moment</Text>
           </View>
         </View>
+      ) : (
+        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Product Title and Brand */}
+          <View style={styles.productTitleContainer}>
+            <Text style={styles.productName}>
+              {productData.product_name || 'Unknown Product'}
+            </Text>
+            <Text style={styles.brandName}>
+              {productData.brand?.toUpperCase() || 'UNKNOWN BRAND'}
+            </Text>
+          </View>
 
-        {/* Product Description */}
-
-
-        {/* Good For Section */}
-        {productData.good_for && productData.good_for.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Good For</Text>
-            <View style={styles.pillContainer}>
-              {productData.good_for.map((item: string, index: number) => (
-                <View key={index} style={styles.pill}>
-                  <Text style={styles.pillText}>{formatGoodForItem(item)}</Text>
-                </View>
-              ))}
+          {/* Usage Card */}
+          <View style={styles.usageCard}>
+            <Text style={styles.usageText}>
+              Using for <Text style={styles.usageBold}>{calculateUsageDuration()}</Text> in {getUsageTimeDescription()}
+            </Text>
+            <View style={styles.actionRow}>
+              <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
+                <Edit size={16} color="#666666" />
+                <Text style={styles.actionText}>Edit</Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                onPress={handleRemove} 
+                style={styles.actionButton}
+                disabled={isDeleting}
+              >
+                {isDeleting ? (
+                  <ActivityIndicator size="small" color="#666666" />
+                ) : (
+                  <>
+                    <X size={16} color="#666666" />
+                    <Text style={styles.actionText}>Remove from routine</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           </View>
-        )}
 
-        {/* Key Ingredients Section */}
-        {productData.ingredients && productData.ingredients.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Key Ingredients</Text>
-            <View style={styles.pillContainer}>
-              {productData.ingredients.map((ingredient: any, index: number) => (
-                <View key={index} style={styles.pill}>
-                  <Text style={styles.pillText}>
-                    {formatIngredientName(ingredient.ingredient_name)}
-                  </Text>
-                </View>
-              ))}
+          {/* Product Description */}
 
+
+          {/* Good For Section */}
+          {productData.good_for && productData.good_for.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Good For</Text>
+              <View style={styles.pillContainer}>
+                {productData.good_for.map((item: string, index: number) => (
+                  <View key={index} style={styles.pill}>
+                    <Text style={styles.pillText}>{formatGoodForItem(item)}</Text>
+                  </View>
+                ))}
+              </View>
             </View>
-          </View>
-        )}
+          )}
 
-        {/* Bottom spacing */}
-        <View style={styles.bottomSpacing} />
-      </ScrollView>
+          {/* Key Ingredients Section */}
+          {productData.ingredients && productData.ingredients.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Key Ingredients</Text>
+              <View style={styles.pillContainer}>
+                {productData.ingredients.map((ingredient: any, index: number) => (
+                  <View key={index} style={styles.pill}>
+                    <Text style={styles.pillText}>
+                      {formatIngredientName(ingredient.ingredient_name)}
+                    </Text>
+                  </View>
+                ))}
+
+              </View>
+            </View>
+          )}
+
+          {/* Bottom spacing */}
+          <View style={styles.bottomSpacing} />
+        </ScrollView>
+      )}
     </View>
   );
 };
@@ -411,16 +413,33 @@ const styles = StyleSheet.create({
     marginTop: 120,
   },
   loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 1,
     justifyContent: 'center',
-    paddingVertical: 16,
-    marginBottom: 8,
+    alignItems: 'center',
+    padding: spacing.xl,
+    marginTop: 120, // Account for header height
+  },
+  loadingContent: {
+    alignItems: 'center',
+    maxWidth: 320,
+    paddingHorizontal: spacing.md,
   },
   loadingText: {
+    fontSize: 18,
+    color: colors.textPrimary,
+    marginTop: spacing.lg,
+    textAlign: 'center',
+    fontWeight: '600',
+    flexWrap: 'wrap',
+    maxWidth: '100%',
+  },
+  loadingSubtext: {
     fontSize: 14,
-    color: '#666666',
-    marginLeft: 8,
+    color: colors.textSecondary,
+    marginTop: spacing.sm,
+    textAlign: 'center',
+    flexWrap: 'wrap',
+    maxWidth: '100%',
   },
   productTitleContainer: {
     marginTop: 20,

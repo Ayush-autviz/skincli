@@ -1,5 +1,5 @@
 // product-detail.tsx
-// Product detail screen for scanned products
+// Product detail screen for scanned products - Redesigned to match mockup
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -13,13 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import {
-  ArrowLeft,
-  Edit,
-  X,
-  FlaskConical,
-  CheckCircle,
-} from 'lucide-react-native';
+import { ArrowLeft, Edit, Trash2, X } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import { searchProductByUPC, deleteRoutineItem } from '../utils/newApiService';
 
@@ -27,7 +21,7 @@ interface ProductDetailParams {
   itemId: string;
   productData: any;
   routineData: any;
-  upc?: string; // UPC code for fetching fresh product data
+  upc?: string;
 }
 
 interface ApiResponse {
@@ -42,14 +36,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
   
   const [productData, setProductData] = useState<any>(params.productData || {});
   const [routineData, setRoutineData] = useState<any>(params.routineData || {});
-  const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
 
   // Fetch fresh product data from API using UPC code
   useEffect(() => {
     const fetchProductData = async () => {
-      // If we have a UPC code, fetch fresh product data
       if (params.upc) {
         try {
           setIsFetchingProduct(true);
@@ -65,7 +57,6 @@ const ProductDetailScreen = (): React.JSX.Element => {
           }
         } catch (error) {
           console.error('🔴 Error fetching fresh product data:', error);
-          // Continue with stored product data if API call fails
         } finally {
           setIsFetchingProduct(false);
         }
@@ -104,9 +95,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
     if (!routineData.usage) return 'Unknown time';
     
     const usage = routineData.usage.toLowerCase();
-    if (usage === 'am') return 'in the mornings';
-    if (usage === 'pm') return 'in the evenings';
-    if (usage === 'both' || usage === 'am + pm') return 'in the mornings and evenings';
+    if (usage === 'am') return 'the mornings';
+    if (usage === 'pm') return 'the evenings';
+    if (usage === 'both' || usage === 'am + pm') return 'the mornings and evenings';
     if (usage === 'as_needed') return 'as needed';
     
     return usage;
@@ -114,7 +105,6 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle edit button press
   const handleEdit = () => {
-    // Navigate to update routine screen
     (navigation as any).navigate('UpdateRoutine', {
       itemId: params.itemId,
       itemData: JSON.stringify(routineData)
@@ -171,6 +161,22 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Format ingredient name for display
   const formatIngredientName = (ingredient: string) => {
+    const specialCases: { [key: string]: string } = {
+      'aqua/water': 'Water (Aqua)',
+      'glycerin': 'Glycerin',
+      'coco-caprylate/caprate': 'Caprylic/Capric Triglyceride',
+      'dimethicone': 'Dimethicone',
+      'ceramide np': 'Ceramide NP',
+      'ceramide ap': 'Ceramide AP',
+      'sodium hyaluronate': 'Sodium Hyaluronate',
+      'petrolatum': 'Petrolatum',
+    };
+    
+    const lowerIngredient = ingredient.toLowerCase();
+    if (specialCases[lowerIngredient]) {
+      return specialCases[lowerIngredient];
+    }
+    
     return ingredient
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -179,6 +185,22 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Format good_for items for display
   const formatGoodForItem = (item: string) => {
+    const specialCases: { [key: string]: string } = {
+      'dry_skin': 'Dry Skin',
+      'oily_skin': 'Oily Skin',
+      'combination_skin': 'Combination Skin',
+      'normal_skin': 'Normal Skin',
+      'sensitive_skin': 'Sensitive Skin',
+      'hydration': 'Hydration',
+      'fine_lines': 'Fine Lines',
+      'anti_aging': 'Anti-Aging',
+    };
+    
+    const lowerItem = item.toLowerCase();
+    if (specialCases[lowerItem]) {
+      return specialCases[lowerItem];
+    }
+    
     return item
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -187,45 +209,53 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Header */}
+      {/* Header with back button only */}
       <View style={styles.header}>
         <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <ArrowLeft size={24} color={colors.textPrimary} />
+          <ArrowLeft size={24} color="#000000" strokeWidth={2} />
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Loading indicator for product data */}
+      <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Loading indicator */}
         {isFetchingProduct && (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="small" color={colors.primary} />
+            <ActivityIndicator size="small" color="#000000" />
             <Text style={styles.loadingText}>Loading product details...</Text>
           </View>
         )}
 
-        {/* Product Title */}
-        <View style={styles.titleSection}>
-          <Text style={styles.productTitle}>{productData.product_name || 'Unknown Product'}</Text>
-          <Text style={styles.brandName}>{productData.brand?.toUpperCase() || 'UNKNOWN BRAND'}</Text>
+        {/* Product Title and Brand */}
+        <View style={styles.titleContainer}>
+          <Text style={styles.productName}>
+            {productData.product_name || 'Unknown Product'}
+          </Text>
+          <Text style={styles.brandName}>
+            {productData.brand?.toUpperCase() || 'UNKNOWN BRAND'}
+          </Text>
         </View>
 
-        {/* Usage Information */}
-        <View style={styles.usageSection}>
+        {/* Usage Card */}
+        <View style={styles.usageCard}>
           <Text style={styles.usageText}>
-            Using for <Text style={styles.usageDuration}>{calculateUsageDuration()}</Text> {getUsageTimeDescription()}
+            Using for <Text style={styles.usageBold}>{calculateUsageDuration()}</Text> in {getUsageTimeDescription()}
           </Text>
-          <View style={styles.actionButtons}>
-            <TouchableOpacity onPress={handleEdit} style={styles.editButton}>
-              <Edit size={16} color={colors.textPrimary} />
-              <Text style={styles.editButtonText}>Edit</Text>
+          <View style={styles.actionRow}>
+            <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
+              <Edit size={16} color="#666666" />
+              <Text style={styles.actionText}>Edit</Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleRemove} style={styles.removeButton} disabled={isDeleting}>
+            <TouchableOpacity 
+              onPress={handleRemove} 
+              style={styles.actionButton}
+              disabled={isDeleting}
+            >
               {isDeleting ? (
-                <ActivityIndicator size="small" color={colors.textPrimary} />
+                <ActivityIndicator size="small" color="#666666" />
               ) : (
                 <>
-                  <X size={16} color={colors.textPrimary} />
-                  <Text style={styles.removeButtonText}>Remove from routine</Text>
+                  <X size={16} color="#666666" />
+                  <Text style={styles.actionText}>Remove from routine</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -233,21 +263,16 @@ const ProductDetailScreen = (): React.JSX.Element => {
         </View>
 
         {/* Product Description */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Description</Text>
-          <Text style={styles.descriptionText}>
-            A rich, non-greasy, fast-absorbing moisturizer with three essential ceramides and hyaluronic acid to help restore the protective skin barrier and provide 24-hour hydration.
-          </Text>
-        </View>
+
 
         {/* Good For Section */}
         {productData.good_for && productData.good_for.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Good For</Text>
-            <View style={styles.tagsContainer}>
+            <View style={styles.pillContainer}>
               {productData.good_for.map((item: string, index: number) => (
-                <View key={index} style={styles.tag}>
-                  <Text style={styles.tagText}>{formatGoodForItem(item)}</Text>
+                <View key={index} style={styles.pill}>
+                  <Text style={styles.pillText}>{formatGoodForItem(item)}</Text>
                 </View>
               ))}
             </View>
@@ -258,27 +283,21 @@ const ProductDetailScreen = (): React.JSX.Element => {
         {productData.ingredients && productData.ingredients.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Key Ingredients</Text>
-            <View style={styles.tagsContainer}>
-              {productData.ingredients.slice(0, 8).map((ingredient: any, index: number) => (
-                <View key={index} style={styles.tag}>
-                  <Text style={styles.tagText}>
+            <View style={styles.pillContainer}>
+              {productData.ingredients.map((ingredient: any, index: number) => (
+                <View key={index} style={styles.pill}>
+                  <Text style={styles.pillText}>
                     {formatIngredientName(ingredient.ingredient_name)}
                   </Text>
                 </View>
               ))}
-              {productData.ingredients.length > 8 && (
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>
-                    +{productData.ingredients.length - 8} more
-                  </Text>
-                </View>
-              )}
+
             </View>
           </View>
         )}
 
-        {/* Bottom padding */}
-        <View style={styles.bottomPadding} />
+        {/* Bottom spacing */}
+        <View style={styles.bottomSpacing} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -287,121 +306,125 @@ const ProductDetailScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FFFFFF',
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.background,
-    ...shadows.sm,
+    paddingHorizontal: 16,
+    paddingTop: 8,
+    paddingBottom: 16,
+    backgroundColor: '#FFFFFF',
   },
   backButton: {
-    padding: spacing.sm,
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
   },
-  content: {
+  scrollContent: {
     flex: 1,
-    paddingHorizontal: spacing.lg,
-  },
-  titleSection: {
-    marginBottom: spacing.lg,
-  },
-  productTitle: {
-    fontSize: typography.h2.fontSize,
-    lineHeight: typography.h2.lineHeight,
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  brandName: {
-    fontSize: fontSize.sm,
-    lineHeight: typography.body.lineHeight,
-    color: colors.textSecondary,
-  },
-  usageSection: {
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.md,
-    padding: spacing.lg,
-    marginBottom: spacing.lg,
-  },
-  usageText: {
-    fontSize: typography.body.fontSize,
-    lineHeight: typography.body.lineHeight,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-  },
-  usageDuration: {
-    fontWeight: '600',
-  },
-  actionButtons: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  editButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  editButtonText: {
-    fontSize: fontSize.sm,
-    lineHeight: typography.body.lineHeight,
-    color: colors.textPrimary,
-  },
-  removeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  removeButtonText: {
-    fontSize: fontSize.sm,
-    lineHeight: typography.body.lineHeight,
-    color: colors.textPrimary,
-  },
-  section: {
-    marginBottom: spacing.lg,
-  },
-  sectionTitle: {
-    fontSize: fontSize.lg,
-    lineHeight: typography.h2.lineHeight,
-    color: colors.textPrimary,
-    marginBottom: spacing.md,
-  },
-  descriptionText: {
-    fontSize: typography.body.fontSize,
-    lineHeight: 22,
-    color: colors.textSecondary,
-  },
-  tagsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  tag: {
-    backgroundColor: colors.surface,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.pill,
-  },
-  tagText: {
-    fontSize: fontSize.sm,
-    lineHeight: typography.body.lineHeight,
-    color: colors.textSecondary,
-  },
-  bottomPadding: {
-    height: spacing.xl,
+    paddingHorizontal: 20,
   },
   loadingContainer: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
-    marginBottom: spacing.md,
+    paddingVertical: 16,
+    marginBottom: 8,
   },
   loadingText: {
-    fontSize: fontSize.sm,
-    lineHeight: typography.body.lineHeight,
-    color: colors.textSecondary,
-    marginLeft: spacing.sm,
+    fontSize: 14,
+    color: '#666666',
+    marginLeft: 8,
+  },
+  titleContainer: {
+    marginBottom: 20,
+    alignItems: 'center',
+  },
+  productName: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+    textAlign: 'center',
+    //lineHeight: 36,
+    marginBottom: 8,
+  },
+  brandName: {
+    fontSize: 13,
+    fontWeight: '400',
+    color: '#999999',
+    letterSpacing: 1.5,
+    textAlign: 'center',
+  },
+  usageCard: {
+    backgroundColor: '#F8F7FB',
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 20,
+  },
+  usageText: {
+    fontSize: 15,
+    color: '#000000',
+    lineHeight: 22,
+    marginBottom: 16,
+    textAlign: 'center',
+  },
+  usageBold: {
+    fontWeight: '700',
+  },
+  actionRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 20,
+  },
+  actionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  actionIcon: {
+    fontSize: 14,
+    color: '#666666',
+  },
+  actionText: {
+    fontSize: 14,
+    color: '#666666',
+  //  textDecorationLine: 'underline',
+  },
+  descriptionContainer: {
+    marginBottom: 28,
+  },
+  descriptionText: {
+    fontSize: 15,
+    lineHeight: 23,
+    color: '#333333',
+  },
+  section: {
+    marginBottom: 28,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: 16,
+  },
+  pillContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  pill: {
+    backgroundColor: '#F5F5F5',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+  },
+  pillText: {
+    fontSize: 14,
+    color: '#333333',
+    fontWeight: '400',
+  },
+  bottomSpacing: {
+    height: 40,
   },
 });
 

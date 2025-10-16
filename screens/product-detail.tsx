@@ -208,12 +208,27 @@ const ProductDetailScreen = (): React.JSX.Element => {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      {/* Header with back button only */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBack} style={styles.backButton}>
-          <ArrowLeft size={24} color="#000000" strokeWidth={2} />
-        </TouchableOpacity>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={handleBack}
+          >
+            <View style={styles.iconContainer}>
+              <ArrowLeft size={22} color={colors.primary} />
+            </View>
+          </TouchableOpacity>
+          
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>Product Detail</Text>
+            <View style={styles.titleUnderline} />
+          </View>
+          
+          <View style={styles.rightContainer} />
+        </View>
+        <View style={styles.shadowContainer} />
       </View>
 
       <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -226,7 +241,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
         )}
 
         {/* Product Title and Brand */}
-        <View style={styles.titleContainer}>
+        <View style={styles.productTitleContainer}>
           <Text style={styles.productName}>
             {productData.product_name || 'Unknown Product'}
           </Text>
@@ -299,29 +314,101 @@ const ProductDetailScreen = (): React.JSX.Element => {
         {/* Bottom spacing */}
         <View style={styles.bottomSpacing} />
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
+  },
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    height: 120,
+    backgroundColor: colors.white,
   },
   header: {
-    paddingHorizontal: 16,
-    paddingTop: 8,
-    paddingBottom: 16,
-    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 15,
+    paddingHorizontal: spacing.lg,
   },
   backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: {
     width: 40,
     height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(139, 115, 85, 0.1)',
     justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: colors.primary,
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  titleUnderline: {
+    width: 40,
+    height: 3,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
+    opacity: 0.8,
+  },
+  rightContainer: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shadowContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.primary,
+    opacity: 0.1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   scrollContent: {
     flex: 1,
     paddingHorizontal: 20,
+    marginTop: 120,
   },
   loadingContainer: {
     flexDirection: 'row',
@@ -335,7 +422,8 @@ const styles = StyleSheet.create({
     color: '#666666',
     marginLeft: 8,
   },
-  titleContainer: {
+  productTitleContainer: {
+    marginTop: 20,
     marginBottom: 20,
     alignItems: 'center',
   },

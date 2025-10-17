@@ -556,9 +556,16 @@ const MetricsSheet = forwardRef<MetricsSheetRef, MetricsSheetProps>(({
                               }}
                               activeOpacity={viewState === 'metrics' ? 0.7 : 1}
                             >
-                              <Text style={styles.metricLabel}>
-                                {formattedKey.toUpperCase()}
-                              </Text>
+                              <View style={styles.metricLabelContainer}>
+                                <Text style={styles.metricLabel}>
+                                  {formattedKey.toUpperCase()}
+                                </Text>
+                                {key === 'poresScore' && (
+                                  <Text style={styles.disclaimerText}>
+                                    Work in Progress, still unreliable
+                                  </Text>
+                                )}
+                              </View>
                               <View style={styles.metricValueContainer}>
                                 <View style={[styles.scoreContainer, { backgroundColor: bg }]}>
                                   <Text style={styles.metricValue}>{value}</Text>
@@ -808,9 +815,18 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#eee',
   },
+  metricLabelContainer: {
+    flex: 1,
+  },
   metricLabel: {
     fontWeight: '600',
     color: '#555'
+  },
+  disclaimerText: {
+    fontSize: 10,
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   metricValueContainer: {
     flexDirection: 'row',

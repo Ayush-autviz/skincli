@@ -12,8 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { Camera, useCameraDevices, useCodeScanner } from 'react-native-vision-camera';
-import { ArrowLeft } from 'lucide-react-native';
+import { Camera, useCameraDevices, useCodeScanner, useCameraPermission } from 'react-native-vision-camera';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import { searchProductByUPC } from '../utils/newApiService';
 
@@ -28,10 +27,11 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
   
   const [isScanning, setIsScanning] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [hasPermission, setHasPermission] = useState<boolean>(false);
   
   const devices = useCameraDevices();
-  const device = devices.back;
+  console.log('🔍 Devices:', devices);
+  const device = devices.find(d => d.position === 'back');
+  const { hasPermission, requestPermission } = useCameraPermission();
 
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13', 'ean-8', 'code-128', 'code-39', 'upc-a', 'upc-e'],
@@ -47,11 +47,11 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
           console.log('🔍 Scanned UPC:', code.value);
           const result = await searchProductByUPC(code.value);
           
-          if (result.success && result.data) {
+          if ((result as any).success && (result as any).data) {
             // Navigate back with product data
             navigation.goBack();
             if (params.onProductScanned) {
-              params.onProductScanned(result.data);
+              params.onProductScanned((result as any).data);
             }
           } else {
             Alert.alert(
@@ -97,47 +97,34 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
   });
 
   useEffect(() => {
-    checkCameraPermission();
-  }, []);
-
-  const checkCameraPermission = async () => {
-    try {
-      const permission = await Camera.requestCameraPermission();
-      setHasPermission(permission === 'authorized');
-    } catch (error) {
-      console.error('🔴 Camera permission error:', error);
-      Alert.alert(
-        'Camera Permission Required',
-        'Please allow camera access to scan barcodes.',
-        [
-          {
-            text: 'OK',
-            onPress: () => navigation.goBack()
-          }
-        ]
-      );
+    if (hasPermission === null) {
+      requestPermission();
     }
-  };
+  }, [hasPermission, requestPermission]);
 
-  const handleBackPress = () => {
-    navigation.goBack();
-  };
 
-  if (!hasPermission) {
+  // Wait for permission check
+  if (hasPermission === null) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-            <ArrowLeft size={24} color={colors.text.primary} />
-          </TouchableOpacity>
+        <View style={styles.permissionContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.permissionText}>
+            Requesting camera permission...
+          </Text>
         </View>
+      </SafeAreaView>
+    );
+  }
+
+  // Handle denied permission
+  if (hasPermission === false) {
+    return (
+      <SafeAreaView style={styles.container}>
         <View style={styles.permissionContainer}>
           <Text style={styles.permissionText}>
             Camera permission is required to scan barcodes.
           </Text>
-          <TouchableOpacity onPress={checkCameraPermission} style={styles.permissionButton}>
-            <Text style={styles.permissionButtonText}>Grant Permission</Text>
-          </TouchableOpacity>
         </View>
       </SafeAreaView>
     );
@@ -146,11 +133,6 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
   if (!device) {
     return (
       <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-            <ArrowLeft size={24} color={colors.text.primary} />
-          </TouchableOpacity>
-        </View>
         <View style={styles.permissionContainer}>
           <Text style={styles.permissionText}>
             Camera not available on this device.
@@ -161,13 +143,7 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={handleBackPress} style={styles.backButton}>
-          <ArrowLeft size={24} color={colors.text.primary} />
-        </TouchableOpacity>
-      </View>
-      
+    <View style={styles.container}>
       <View style={styles.cameraContainer}>
         <Camera
           style={styles.camera}
@@ -185,6 +161,9 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
             <View style={[styles.corner, styles.bottomRight]} />
           </View>
           
+          <Text style={styles.scanPlaceholderText}>
+            Scan Placeholder
+          </Text>
           <Text style={styles.instructionText}>
             Position barcode within frame
           </Text>
@@ -199,37 +178,23 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
         )}
       </View>
       
-      <View style={styles.footer}>
+      {/* Cancel Button */}
+      <View style={styles.buttonContainer}>
         <TouchableOpacity 
-          style={styles.scanButton}
-          onPress={() => {
-            setIsScanning(true);
-            setIsProcessing(false);
-          }}
-          disabled={isProcessing}
+          style={styles.cancelButton}
+          onPress={() => navigation.goBack()}
         >
-          <Text style={styles.scanButtonText}>Scan</Text>
+          <Text style={styles.cancelButtonText}>Cancel</Text>
         </TouchableOpacity>
       </View>
-    </SafeAreaView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background.primary,
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.background.primary,
-    ...shadows.sm,
-  },
-  backButton: {
-    padding: spacing.sm,
+    backgroundColor: colors.background,
   },
   cameraContainer: {
     flex: 1,
@@ -248,15 +213,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   scanFrame: {
-    width: 250,
-    height: 150,
+    width: 280,
+    height: 180,
     position: 'relative',
   },
   corner: {
     position: 'absolute',
     width: 30,
     height: 30,
-    borderColor: colors.text.primary,
+    borderColor: "#fff",
     borderWidth: 3,
   },
   topLeft: {
@@ -283,15 +248,20 @@ const styles = StyleSheet.create({
     borderLeftWidth: 0,
     borderTopWidth: 0,
   },
-  instructionText: {
-    ...typography.body,
-    color: colors.text.primary,
+  scanPlaceholderText: {
+    ...typography.h2,
+    color: "#fff",
     textAlign: 'center',
     marginTop: spacing.lg,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.md,
+    fontWeight: 'bold',
+    fontSize: 18,
+  },
+  instructionText: {
+    ...typography.body,
+    color: "#fff",
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    fontSize: 14,
   },
   processingOverlay: {
     position: 'absolute',
@@ -305,24 +275,8 @@ const styles = StyleSheet.create({
   },
   processingText: {
     ...typography.body,
-    color: colors.text.primary,
+    color: colors.textPrimary,
     marginTop: spacing.md,
-  },
-  footer: {
-    padding: spacing.lg,
-    alignItems: 'center',
-  },
-  scanButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.lg,
-    minWidth: 120,
-  },
-  scanButtonText: {
-    ...typography.button,
-    color: colors.text.onPrimary,
-    textAlign: 'center',
   },
   permissionContainer: {
     flex: 1,
@@ -332,19 +286,48 @@ const styles = StyleSheet.create({
   },
   permissionText: {
     ...typography.body,
-    color: colors.text.secondary,
+    color: colors.textSecondary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginTop: spacing.md,
   },
-  permissionButton: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: spacing.lg,
+  
+  // Button Container
+  buttonContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    padding: spacing.lg,
+    paddingBottom: spacing.xl + 20, // Extra padding for safe area
+    alignItems: 'center',
+  },
+  
+  // Cancel Button - Matching auth screen secondary button style
+  cancelButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#8B7355',
+    borderWidth: 1,
+    borderColor: colors.border,
+    paddingHorizontal: spacing.xl,
     paddingVertical: spacing.md,
-    borderRadius: borderRadius.md,
+    borderRadius: 25, // Same as auth screens
+    minWidth: 200,
+    minHeight: 56, // Same as auth screens
+    elevation: 2, // Android shadow
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 3.84,
   },
-  permissionButtonText: {
-    ...typography.button,
-    color: colors.text.onPrimary,
+  cancelButtonText: {
+    color: "#fff",
+    fontSize: 18,
+    fontWeight: '600',
   },
 });
 

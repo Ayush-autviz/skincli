@@ -444,7 +444,7 @@ const styles = StyleSheet.create({
   },
   productTitleContainer: {
     marginTop: spacing.lg,
-    marginBottom: 20,
+    marginBottom: 0,
     alignItems: 'center',
   },
   productName: {

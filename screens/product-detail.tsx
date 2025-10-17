@@ -68,6 +68,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Calculate usage duration
   const calculateUsageDuration = () => {
+    console.log('🔍 Routine data:', routineData);
     if (!routineData.dateStarted) return 'Unknown duration';
     
     const startDate = new Date(routineData.dateStarted);
@@ -252,13 +253,14 @@ const ProductDetailScreen = (): React.JSX.Element => {
           </View>
 
           {/* Usage Card */}
-          <View style={styles.usageCard}>
+          <View style={styles.section}>
+            {/* <Text style={styles.sectionTitle}>Usage Information</Text> */}
             <Text style={styles.usageText}>
               Using for <Text style={styles.usageBold}>{calculateUsageDuration()}</Text> in {getUsageTimeDescription()}
             </Text>
             <View style={styles.actionRow}>
               <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
-                <Edit size={16} color="#666666" />
+                <Edit size={16} color={colors.textSecondary} />
                 <Text style={styles.actionText}>Edit</Text>
               </TouchableOpacity>
               <TouchableOpacity 
@@ -267,10 +269,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 disabled={isDeleting}
               >
                 {isDeleting ? (
-                  <ActivityIndicator size="small" color="#666666" />
+                  <ActivityIndicator size="small" color={colors.textSecondary} />
                 ) : (
                   <>
-                    <X size={16} color="#666666" />
+                    <X size={16} color={colors.textSecondary} />
                     <Text style={styles.actionText}>Remove from routine</Text>
                   </>
                 )}
@@ -285,10 +287,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
           {productData.good_for && productData.good_for.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Good For</Text>
-              <View style={styles.pillContainer}>
+              <View style={styles.chipSelectorContainer}>
                 {productData.good_for.map((item: string, index: number) => (
-                  <View key={index} style={styles.pill}>
-                    <Text style={styles.pillText}>{formatGoodForItem(item)}</Text>
+                  <View key={index} style={styles.chipButton}>
+                    <Text style={styles.chipButtonText}>{formatGoodForItem(item)}</Text>
                   </View>
                 ))}
               </View>
@@ -299,15 +301,14 @@ const ProductDetailScreen = (): React.JSX.Element => {
           {productData.ingredients && productData.ingredients.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Key Ingredients</Text>
-              <View style={styles.pillContainer}>
+              <View style={styles.chipSelectorContainer}>
                 {productData.ingredients.map((ingredient: any, index: number) => (
-                  <View key={index} style={styles.pill}>
-                    <Text style={styles.pillText}>
+                  <View key={index} style={styles.chipButton}>
+                    <Text style={styles.chipButtonText}>
                       {formatIngredientName(ingredient.ingredient_name)}
                     </Text>
                   </View>
                 ))}
-
               </View>
             </View>
           )}
@@ -409,7 +410,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
-    paddingHorizontal: 20,
+   // paddingHorizontal: spacing.lg,
     marginTop: 120,
   },
   loadingContainer: {
@@ -442,36 +443,37 @@ const styles = StyleSheet.create({
     maxWidth: '100%',
   },
   productTitleContainer: {
-    marginTop: 20,
+    marginTop: spacing.lg,
     marginBottom: 20,
     alignItems: 'center',
   },
   productName: {
-    fontSize: 18,
+    fontSize: fontSize.lg,
     fontWeight: '700',
-    color: '#000000',
+    color: colors.textPrimary,
     textAlign: 'center',
-    //lineHeight: 36,
-    marginBottom: 8,
+    marginBottom: spacing.sm,
   },
   brandName: {
-    fontSize: 13,
+    fontSize: fontSize.sm,
     fontWeight: '400',
-    color: '#999999',
+    color: colors.textSecondary,
     letterSpacing: 1.5,
     textAlign: 'center',
   },
-  usageCard: {
-    backgroundColor: '#F8F7FB',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
+  section: {
+    marginHorizontal: spacing.lg,
+    marginVertical: spacing.md,
+    padding: spacing.lg,
+    backgroundColor: colors.surface,
+    borderRadius: borderRadius.lg,
+    ...shadows.sm,
   },
   usageText: {
-    fontSize: 15,
-    color: '#000000',
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
     lineHeight: 22,
-    marginBottom: 16,
+    marginBottom: spacing.md,
     textAlign: 'center',
   },
   usageBold: {
@@ -493,42 +495,36 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   actionText: {
-    fontSize: 14,
-    color: '#666666',
-  //  textDecorationLine: 'underline',
-  },
-  descriptionContainer: {
-    marginBottom: 28,
-  },
-  descriptionText: {
-    fontSize: 15,
-    lineHeight: 23,
-    color: '#333333',
-  },
-  section: {
-    marginBottom: 28,
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#000000',
-    marginBottom: 16,
+    fontSize: fontSize.lg,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
   },
-  pillContainer: {
+  chipSelectorContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 10,
+    gap: spacing.sm,
   },
-  pill: {
-    backgroundColor: '#F5F5F5',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
+  chipButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    gap: spacing.xs,
+    minHeight: 40,
   },
-  pillText: {
-    fontSize: 14,
-    color: '#333333',
-    fontWeight: '400',
+  chipButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   bottomSpacing: {
     height: 40,

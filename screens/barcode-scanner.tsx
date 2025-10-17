@@ -44,8 +44,9 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
         setIsProcessing(true);
         
         try {
-          console.log('🔍 Scanned UPC:', code.value);
-          const result = await searchProductByUPC(code.value);
+          const upcCode = '00' + code.value;
+          console.log('🔍 Scanned UPC:', upcCode);
+          const result = await searchProductByUPC(upcCode);
           
           if ((result as any).success && (result as any).data) {
             // Navigate back with product data

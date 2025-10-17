@@ -139,6 +139,26 @@ const CreateRoutineScreen = (): React.JSX.Element => {
     }
   };
 
+  // Handle error from barcode modal
+  const handleBarcodeError = (message: string) => {
+    Alert.alert(
+      'Product Not Found',
+      message,
+      [
+        {
+          text: 'Try Again',
+          onPress: () => {
+            setShowBarcodeModal(true);
+          }
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
   // Toggle logic for AM/PM usage - only allow one selection
   const handleUsageToggle = (tappedUsage: string): void => {
     setItemUsage(currentUsage => {
@@ -764,6 +784,7 @@ const CreateRoutineScreen = (): React.JSX.Element => {
         visible={showBarcodeModal}
         onClose={() => setShowBarcodeModal(false)}
         onProductScanned={handleProductScanned}
+        onError={handleBarcodeError}
       />
     </View>
   );

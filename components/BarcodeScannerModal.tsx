@@ -11,6 +11,7 @@ import {
   StatusBar,
   ActivityIndicator,
   Text,
+  Alert,
 } from 'react-native';
 import { Camera, useCameraDevices, useCodeScanner, useCameraPermission } from 'react-native-vision-camera';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
@@ -20,6 +21,7 @@ interface BarcodeScannerModalProps {
   visible: boolean;
   onClose: () => void;
   onProductScanned?: (productData: any) => void;
+  onError?: (message: string) => void;
 }
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
@@ -28,9 +30,12 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   visible,
   onClose,
   onProductScanned,
+  onError,
 }) => {
   const [isScanning, setIsScanning] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
+  const [hasScanned, setHasScanned] = useState<boolean>(false);
+  const [lastScanTime, setLastScanTime] = useState<number>(0);
   
   const devices = useCameraDevices();
   const device = devices.find(d => d.position === 'back');
@@ -45,10 +50,18 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13', 'ean-8', 'code-128', 'code-39', 'upc-a', 'upc-e'],
     onCodeScanned: async (codes) => {
-      if (isProcessing || !isScanning) return;
+      if (isProcessing || !isScanning || hasScanned) return;
       
       const code = codes[0];
       if (code?.value) {
+        const currentTime = Date.now();
+        // Debounce: only allow scans every 2 seconds
+        if (currentTime - lastScanTime < 2000) {
+          return;
+        }
+        
+        setLastScanTime(currentTime);
+        setHasScanned(true);
         setIsScanning(false);
         setIsProcessing(true);
         
@@ -60,20 +73,36 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           console.log('🔍 Result:', result);
           
           if ((result as any).success && (result as any).data) {
-            // Call the callback first to pass product data with UPC code
-            if (onProductScanned) {
-              const productDataWithUPC = {
-                ...(result as any).data,
-                upc: upcCode
-              };
-              onProductScanned(productDataWithUPC);
+            // Check if data is empty or just an empty object
+            const productData = (result as any).data;
+            const isEmptyData = !productData || 
+              (typeof productData === 'object' && Object.keys(productData).length === 0) ||
+              !productData.product_name;
+            
+            if (isEmptyData) {
+              // Close modal and show error in parent screen
+              onClose();
+              if (onError) {
+                onError('Product not found. Please try scanning again or add the product manually.');
+              }
+            } else {
+              // Call the callback first to pass product data with UPC code
+              if (onProductScanned) {
+                const productDataWithUPC = {
+                  ...productData,
+                  upc: upcCode
+                };
+                onProductScanned(productDataWithUPC);
+              }
+              // Close modal after successful scan
+              onClose();
             }
-            // Close modal after successful scan
-            onClose();
           } else {
-            // Show error and reset scanning
-            setIsScanning(true);
-            setIsProcessing(false);
+            // Close modal and show error in parent screen
+            onClose();
+            if (onError) {
+              onError('Product not found. Please try scanning again or add the product manually.');
+            }
           }
         } catch (error) {
           console.error('🔴 Error processing scanned product:', error);
@@ -89,6 +118,8 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     if (visible) {
       setIsScanning(true);
       setIsProcessing(false);
+      setHasScanned(false);
+      setLastScanTime(0);
     }
   }, [visible]);
 
@@ -260,7 +291,7 @@ const styles = StyleSheet.create({
     color: "#fff",
     textAlign: 'center',
     marginTop: spacing.lg,
-    fontWeight: 'bold',
+    fontWeight: '700' as const,
     fontSize: 18,
   },
   instructionText: {
@@ -305,7 +336,8 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
   },
   closeButtonText: {
-    ...typography.button,
+    fontSize: 16,
+    fontWeight: '600' as const,
     color: colors.textOnPrimary,
   },
   buttonContainer: {
@@ -341,7 +373,7 @@ const styles = StyleSheet.create({
   cancelButtonText: {
     color: "#fff",
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: '600' as const,
   },
 });
 

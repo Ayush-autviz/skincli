@@ -32,6 +32,7 @@ import {
 } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
+import BarcodeScannerModal from '../components/BarcodeScannerModal';
 import { createRoutineItem } from '../utils/newApiService';
 
 interface CreateRoutineParams {
@@ -82,6 +83,7 @@ const CreateRoutineScreen = (): React.JSX.Element => {
   // Barcode scanning state
   const [upcCode, setUpcCode] = useState<string>('');
   const [scannedProductData, setScannedProductData] = useState<any>(null);
+  const [showBarcodeModal, setShowBarcodeModal] = useState<boolean>(false);
   
   // Date picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
@@ -104,36 +106,37 @@ const CreateRoutineScreen = (): React.JSX.Element => {
 
   // Handle barcode scanning
   const handleBarcodeScan = () => {
-    (navigation as any).navigate('BarcodeScanner', {
-      onProductScanned: (productData: any) => {
-        console.log('🔍 Product scanned:', productData);
-        setScannedProductData(productData);
-        setItemName(productData.product_name || '');
-        setUpcCode(productData.upc || '');
-        
-        // Auto-populate concerns based on good_for data
-        if (productData.good_for && Array.isArray(productData.good_for)) {
-          const mappedConcerns = productData.good_for.map((concern: string) => {
-            // Map API concerns to our concerns options
-            const concernMapping: { [key: string]: string } = {
-              'dry_skin': 'Dry Skin',
-              'oily_skin': 'Oily Skin',
-              'combination_skin': 'Combination Skin',
-              'normal_skin': 'Normal Skin',
-              'sensitive_skin': 'Sensitive Skin',
-              'acne_prone': 'Acne Prone',
-              'aging': 'Anti-Aging (Face)',
-              'hydration': 'Hydration',
-              'brightening': 'Brightening',
-              'pore_minimizing': 'Visible Pores'
-            };
-            return concernMapping[concern] || concern;
-          }).filter(Boolean);
-          
-          setItemConcerns(mappedConcerns);
-        }
-      }
-    });
+    setShowBarcodeModal(true);
+  };
+
+  // Handle product scanned from modal
+  const handleProductScanned = (productData: any) => {
+    console.log('🔍 Product scanned:', productData);
+    setScannedProductData(productData);
+    setItemName(productData.product_name || '');
+    setUpcCode(productData.upc || '');
+    
+    // Auto-populate concerns based on good_for data
+    if (productData.good_for && Array.isArray(productData.good_for)) {
+      const mappedConcerns = productData.good_for.map((concern: string) => {
+        // Map API concerns to our concerns options
+        const concernMapping: { [key: string]: string } = {
+          'dry_skin': 'Dry Skin',
+          'oily_skin': 'Oily Skin',
+          'combination_skin': 'Combination Skin',
+          'normal_skin': 'Normal Skin',
+          'sensitive_skin': 'Sensitive Skin',
+          'acne_prone': 'Acne Prone',
+          'aging': 'Anti-Aging (Face)',
+          'hydration': 'Hydration',
+          'brightening': 'Brightening',
+          'pore_minimizing': 'Visible Pores'
+        };
+        return concernMapping[concern] || concern;
+      }).filter(Boolean);
+      
+      setItemConcerns(mappedConcerns);
+    }
   };
 
   // Toggle logic for AM/PM usage - only allow one selection
@@ -755,6 +758,13 @@ const CreateRoutineScreen = (): React.JSX.Element => {
         <View style={styles.bottomPadding} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        visible={showBarcodeModal}
+        onClose={() => setShowBarcodeModal(false)}
+        onProductScanned={handleProductScanned}
+      />
     </View>
   );
 };

@@ -1553,6 +1553,19 @@ export default function MetricDetailScreen(): React.JSX.Element {
                     {metricValue}
                   </Text>
                 </View>
+                {/* Disclaimer for Visible Pores */}
+                {metricKey === 'poresScore' && (
+                  <Text style={{
+                    fontSize: 10,
+                    color: '#999',
+                    fontStyle: 'italic',
+                    textAlign: 'center',
+                    marginTop: 4,
+                    marginBottom: 8,
+                  }}>
+                    Work in Progress, still unreliable
+                  </Text>
+                )}
                 {/* Context Text - below the box */}
                 {/* <Text style={{ fontSize: 14, lineHeight: 20, color: '#555' }}>
                   {(() => {
@@ -1712,6 +1725,18 @@ export default function MetricDetailScreen(): React.JSX.Element {
                         </Text>
                       </View>
                     </View>
+                    {metricKey === 'poresScore' && (
+                  <Text style={{
+                    fontSize: 10,
+                    color: '#999',
+                    fontStyle: 'italic',
+                    textAlign: 'center',
+                    marginTop: 4,
+                    marginBottom: 8,
+                  }}>
+                    Work in Progress, still unreliable
+                  </Text>
+                )}
                   </>
                 )}
 

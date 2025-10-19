@@ -911,54 +911,35 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   }, [routineItems]);
 
-  // Function to navigate to update screen or product detail
+  // Function to navigate to update screen - always go to edit routine screen
   const openEditModal = (item: RoutineItem): void => {
     console.log('🟡 openEditModal - item:', item);
-    // Check if this is a scanned product (has UPC code)
-    if (item.upc) {
-      // For scanned products, navigate to product detail screen
-      // We need to fetch the product data first
-      (navigation as any).navigate('ProductDetail', {
-        itemId: item.id,
-        upc: item.upc, // Pass UPC code for fetching fresh product data
-        productData: {
-          product_name: item.name,
-          brand: item.extra?.brand || 'Unknown',
-          upc: item.upc,
-          ingredients: item.extra?.ingredients || [],
-          good_for: item.extra?.good_for || []
-        },
-        routineData: {
-          name: item.name || '',
-          type: item.type || 'Product',
-          usage: item.usage || 'AM',
-          frequency: item.frequency || 'Daily',
-          concerns: item.concerns || [],
-          dateStarted: item.dateStarted || null,
-          dateStopped: item.dateStopped || null,
-          stopReason: item.stopReason || '',
-          dateCreated: item.dateCreated || new Date().toISOString()
-        }
-      });
-    } else {
-      // For manually added products or treatments, navigate to update routine screen
-      const itemData = {
-        name: item.name || '',
-        type: item.type || 'Product',
-        usage: item.usage || 'AM',
-        frequency: item.frequency || 'Daily',
-        concerns: item.concerns || [],
-        dateStarted: item.dateStarted || null,
-        dateStopped: item.dateStopped || null,
-        stopReason: item.stopReason || '',
-        dateCreated: item.dateCreated || new Date().toISOString()
-      };
+    
+    // Always navigate to update routine screen, but pass UPC data if available
+    const itemData = {
+      name: item.name || '',
+      type: item.type || 'Product',
+      usage: item.usage || 'AM',
+      frequency: item.frequency || 'Daily',
+      concerns: item.concerns || [],
+      dateStarted: item.dateStarted || null,
+      dateStopped: item.dateStopped || null,
+      stopReason: item.stopReason || '',
+      dateCreated: item.dateCreated || new Date().toISOString(),
+      upc: item.upc || null, // Include UPC if available
+      productData: item.upc ? {
+        product_name: item.name,
+        brand: item.extra?.brand || 'Unknown',
+        upc: item.upc,
+        ingredients: item.extra?.ingredients || [],
+        good_for: item.extra?.good_for || []
+      } : null
+    };
 
-      (navigation as any).navigate('UpdateRoutine', {
-        itemId: item.id,
-        itemData: JSON.stringify(itemData)
-      });
-    }
+    (navigation as any).navigate('UpdateRoutine', {
+      itemId: item.id,
+      itemData: JSON.stringify(itemData)
+    });
   };
 
   // Function to close modal and reset state

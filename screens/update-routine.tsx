@@ -28,11 +28,14 @@ import {
   HelpCircle,
   ArrowLeft,
   Save,
-  Trash2
+  Trash2,
+  X,
+  Camera
 } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
-import { updateRoutineItem, deleteRoutineItem } from '../utils/newApiService';
+import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import { updateRoutineItem, deleteRoutineItem, searchProductByUPC } from '../utils/newApiService';
 
 interface UpdateRoutineParams {
   itemData?: string;
@@ -96,6 +99,16 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [itemId, setItemId] = useState<string>('');
   
+  // UPC and product data states
+  const [upcCode, setUpcCode] = useState<string>('');
+  const [productData, setProductData] = useState<any>(null);
+  const [isProductCrossed, setIsProductCrossed] = useState<boolean>(false);
+  const [showBarcodeModal, setShowBarcodeModal] = useState<boolean>(false);
+  const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
+  const [showAllGoodFor, setShowAllGoodFor] = useState<boolean>(false);
+  const [showAllIngredients, setShowAllIngredients] = useState<boolean>(false);
+  const [showAllFreeOf, setShowAllFreeOf] = useState<boolean>(false);
+  
   // Date picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState<boolean>(false);
@@ -105,10 +118,16 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   useEffect(() => {
     if (params.itemData) {
       try {
-        const itemData: RoutineItem = JSON.parse(params.itemData);
+        const itemData: any = JSON.parse(params.itemData);
         setItemId(itemData.id || '');
         setItemName(itemData.name || '');
         setItemType(itemData.type || 'Product');
+        
+        // Handle UPC and product data
+        if (itemData.upc) {
+          setUpcCode(itemData.upc);
+          setProductData(itemData.productData || null);
+        }
         
         // Handle usage conversion
         if (itemData.usage === 'both' || itemData.usage === 'AM + PM' || itemData.usage === 'Both') {
@@ -166,6 +185,147 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
       setEndDate(new Date());
     }
   }, [isStopped]);
+
+  // Handle barcode scanning
+  const handleBarcodeScan = () => {
+    setShowBarcodeModal(true);
+  };
+
+  // Handle product scanned from modal
+  const handleProductScanned = (scannedProductData: any) => {
+    console.log('🔍 Product scanned:', scannedProductData);
+    setProductData(scannedProductData);
+    setItemName(scannedProductData.product_name || '');
+    setUpcCode(scannedProductData.upc || '');
+    setIsProductCrossed(false); // Reset crossed state when new product is scanned
+    setShowAllGoodFor(false); // Reset show all states
+    setShowAllIngredients(false);
+    setShowAllFreeOf(false);
+    
+    // Auto-populate concerns based on good_for data
+    if (scannedProductData.good_for && Array.isArray(scannedProductData.good_for)) {
+      const mappedConcerns = scannedProductData.good_for.map((concern: string) => {
+        // Map API concerns to our concerns options
+        const concernMapping: { [key: string]: string } = {
+          'dry_skin': 'Dry Skin',
+          'oily_skin': 'Oily Skin',
+          'combination_skin': 'Combination Skin',
+          'normal_skin': 'Normal Skin',
+          'sensitive_skin': 'Sensitive Skin',
+          'acne_prone': 'Acne Prone',
+          'aging': 'Anti-Aging (Face)',
+          'hydration': 'Hydration',
+          'brightening': 'Brightening',
+          'pore_minimizing': 'Visible Pores'
+        };
+        return concernMapping[concern] || concern;
+      }).filter(Boolean);
+      
+      setItemConcerns(mappedConcerns);
+    }
+  };
+
+  // Handle error from barcode modal
+  const handleBarcodeError = (message: string) => {
+    Alert.alert(
+      'Product Not Found',
+      message,
+      [
+        {
+          text: 'Try Again',
+          onPress: () => {
+            setShowBarcodeModal(true);
+          }
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel'
+        }
+      ]
+    );
+  };
+
+  // Handle crossing out the product
+  const handleCrossProduct = () => {
+    setIsProductCrossed(true);
+    setItemName('');
+    setUpcCode('');
+    setProductData(null);
+    setShowAllGoodFor(false); // Reset show all states
+    setShowAllIngredients(false);
+    setShowAllFreeOf(false);
+  };
+
+  // Format ingredient name for display
+  const formatIngredientName = (ingredient: string) => {
+    const specialCases: { [key: string]: string } = {
+      'aqua/water': 'Water (Aqua)',
+      'glycerin': 'Glycerin',
+      'coco-caprylate/caprate': 'Caprylic/Capric Triglyceride',
+      'dimethicone': 'Dimethicone',
+      'ceramide np': 'Ceramide NP',
+      'ceramide ap': 'Ceramide AP',
+      'sodium hyaluronate': 'Sodium Hyaluronate',
+      'petrolatum': 'Petrolatum',
+    };
+    
+    const lowerIngredient = ingredient.toLowerCase();
+    if (specialCases[lowerIngredient]) {
+      return specialCases[lowerIngredient];
+    }
+    
+    return ingredient
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Format good_for items for display
+  const formatGoodForItem = (item: string) => {
+    const specialCases: { [key: string]: string } = {
+      'dry_skin': 'Dry Skin',
+      'oily_skin': 'Oily Skin',
+      'combination_skin': 'Combination Skin',
+      'normal_skin': 'Normal Skin',
+      'sensitive_skin': 'Sensitive Skin',
+      'hydration': 'Hydration',
+      'fine_lines': 'Fine Lines',
+      'anti_aging': 'Anti-Aging',
+    };
+    
+    const lowerItem = item.toLowerCase();
+    if (specialCases[lowerItem]) {
+      return specialCases[lowerItem];
+    }
+    
+    return item
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Format free_of items for display
+  const formatFreeOfItem = (item: string) => {
+    const specialCases: { [key: string]: string } = {
+      'maybe vegan': 'Maybe Vegan',
+      'silicone free': 'Silicone Free',
+      'oil free': 'Oil Free',
+      'non comedogenic': 'Non-Comedogenic',
+      'fragrance free': 'Fragrance Free',
+      'paraben free': 'Paraben Free',
+      'sulfate free': 'Sulfate Free',
+    };
+    
+    const lowerItem = item.toLowerCase();
+    if (specialCases[lowerItem]) {
+      return specialCases[lowerItem];
+    }
+    
+    return item
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
 
   // Toggle logic for AM/PM usage - only allow one selection
   const handleUsageToggle = (tappedUsage: string): void => {
@@ -300,6 +460,22 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
       }
     };
 
+    // Add UPC code and product data if product was scanned
+    if (upcCode && productData && !isProductCrossed) {
+      apiItemData.upc = upcCode;
+      apiItemData.extra = {
+        ...apiItemData.extra,
+        brand: productData.brand,
+        ingredients: productData.ingredients || [],
+        good_for: productData.good_for || [],
+        product_id: productData.product_id,
+        total_ingredients: productData.total_ingredients
+      };
+    } else {
+      // Explicitly set empty UPC for manually entered products
+      apiItemData.upc = '';
+    }
+
     // Add usage and frequency only for non-treatment types
     if (!isTreatmentType()) {
       let finalUsage = 'AM';
@@ -328,6 +504,8 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
       apiItemData.extra.dateStopped = endDate?.toISOString();
       apiItemData.extra.stopReason = stopReason;
     }
+
+    console.log('🔍 API Item Data:', apiItemData);
 
     setIsSaving(true);
     try {
@@ -469,22 +647,157 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
 
         {/* Name Input */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle2}>Name</Text>
-          <View style={styles.inputWrapper}>
-            <FlaskConical 
-              size={20} 
-              color="#6B7280" 
-              style={styles.inputIcon} 
-            />
-            <TextInput
-              style={styles.textInput}
-              placeholder={isTreatmentType() ? "Enter treatment name" : `Enter ${itemType?.toLowerCase() || 'item'} name`}
-              value={itemName}
-              onChangeText={setItemName}
-              placeholderTextColor="#9CA3AF"
-              returnKeyType="next"
-            />
-          </View>
+          {/* Only show title when not displaying product details */}
+          {!(upcCode && productData && !isProductCrossed) && (
+            <Text style={styles.sectionTitle2}>Name</Text>
+          )}
+          
+          {/* Show product details if UPC exists and product is not crossed */}
+          {upcCode && productData && !isProductCrossed ? (
+            <View style={styles.productDetailsContent}>
+              {/* Product Title and Brand */}
+              <View style={styles.productTitleContainer}>
+                <Text style={styles.productName}>
+                  {productData.product_name || 'Unknown Product'}
+                </Text>
+                <Text style={styles.brandName}>
+                  {productData.brand?.toUpperCase() || 'UNKNOWN BRAND'}
+                </Text>
+              </View>
+
+              {/* Good For Section */}
+              {productData.good_for && productData.good_for.length > 0 && (
+                <View style={styles.productSection}>
+                  <Text style={styles.productSectionTitle}>Good For</Text>
+                  <View style={styles.chipSelectorContainer}>
+                    {(showAllGoodFor ? productData.good_for : productData.good_for.slice(0, 5)).map((item: string, index: number) => (
+                      <View key={index} style={styles.chipButton}>
+                        <Text style={styles.chipButtonText}>{formatGoodForItem(item)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  {productData.good_for.length > 5 && (
+                    <TouchableOpacity 
+                      style={styles.showAllButton}
+                      onPress={() => setShowAllGoodFor(!showAllGoodFor)}
+                    >
+                      <Text style={styles.showAllButtonText}>
+                        {showAllGoodFor ? 'Show Less' : `Show All (${productData.good_for.length})`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {/* Key Ingredients Section */}
+              {productData.ingredients && productData.ingredients.length > 0 && (
+                <View style={styles.productSection}>
+                  <Text style={styles.productSectionTitle}>Key Ingredients</Text>
+                  <View style={styles.chipSelectorContainer}>
+                    {(showAllIngredients ? productData.ingredients : productData.ingredients.slice(0, 5)).map((ingredient: any, index: number) => (
+                      <View key={index} style={styles.chipButton}>
+                        <Text style={styles.chipButtonText}>
+                          {formatIngredientName(ingredient.ingredient_name)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                  {productData.ingredients.length > 5 && (
+                    <TouchableOpacity 
+                      style={styles.showAllButton}
+                      onPress={() => setShowAllIngredients(!showAllIngredients)}
+                    >
+                      <Text style={styles.showAllButtonText}>
+                        {showAllIngredients ? 'Show Less' : `Show All (${productData.ingredients.length})`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {/* Free Of Section */}
+              {productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
+                <View style={styles.productSection}>
+                  <Text style={styles.productSectionTitle}>Free Of</Text>
+                  <View style={styles.chipSelectorContainer}>
+                    {(() => {
+                      const freeOfItems = Array.from(new Set(
+                        productData.ingredients
+                          .flatMap((ingredient: any) => ingredient.free_of || [])
+                          .filter(Boolean)
+                      ));
+                      const displayItems = showAllFreeOf ? freeOfItems : freeOfItems.slice(0, 5);
+                      
+                      return displayItems.map((freeOfItem: any, index: number) => (
+                        <View key={index} style={styles.chipButton}>
+                          <Text style={styles.chipButtonText}>
+                            {formatFreeOfItem(freeOfItem)}
+                          </Text>
+                        </View>
+                      ));
+                    })()}
+                  </View>
+                  {(() => {
+                    const freeOfItems = Array.from(new Set(
+                      productData.ingredients
+                        .flatMap((ingredient: any) => ingredient.free_of || [])
+                        .filter(Boolean)
+                    ));
+                    return freeOfItems.length > 5 && (
+                      <TouchableOpacity 
+                        style={styles.showAllButton}
+                        onPress={() => setShowAllFreeOf(!showAllFreeOf)}
+                      >
+                        <Text style={styles.showAllButtonText}>
+                          {showAllFreeOf ? 'Show Less' : `Show All (${freeOfItems.length})`}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })()}
+                </View>
+              )}
+
+              {/* Cross button */}
+              <TouchableOpacity 
+                style={styles.crossButton}
+                onPress={handleCrossProduct}
+              >
+                <X size={20} color={colors.error} />
+                <Text style={styles.crossButtonText}>Not this product</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            /* Regular input when no UPC or product is crossed */
+            <View style={styles.inputWrapper}>
+              <FlaskConical 
+                size={20} 
+                color="#6B7280" 
+                style={styles.inputIcon} 
+              />
+              <TextInput
+                style={styles.textInput}
+                placeholder={isTreatmentType() ? "Enter treatment name" : `Enter ${itemType?.toLowerCase() || 'item'} name`}
+                value={itemName}
+                onChangeText={setItemName}
+                placeholderTextColor="#9CA3AF"
+                returnKeyType="next"
+              />
+              {/* Camera icon for barcode scanning - only show for Product type and when not treatment */}
+              {!isTreatmentType() && (
+                <TouchableOpacity 
+                  onPress={handleBarcodeScan}
+                  style={styles.cameraButton}
+                >
+                  <Camera size={20} color="#6B7280" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          
+          {/* Scan instruction text - only show for Product type and when not treatment and not showing product details */}
+          {!isTreatmentType() && !(upcCode && productData && !isProductCrossed) && (
+            <Text style={styles.scanInstructionText}>or scan barcode</Text>
+          )}
         </View>
 
         {/* Concerns Selection */}
@@ -769,6 +1082,14 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         <View style={styles.bottomPadding} />
         </ScrollView>
       </KeyboardAvoidingView>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        visible={showBarcodeModal}
+        onClose={() => setShowBarcodeModal(false)}
+        onProductScanned={handleProductScanned}
+        onError={handleBarcodeError}
+      />
     </View>
   );
 };
@@ -1016,6 +1337,77 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: '600',
     fontFamily: 'Inter',
+  },
+  productDetailsContent: {
+    marginTop: spacing.sm,
+  },
+  productTitleContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  productName: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  brandName: {
+    fontSize: fontSize.sm,
+    fontWeight: '400',
+    color: colors.textSecondary,
+    letterSpacing: 1.5,
+    textAlign: 'center',
+  },
+  productSection: {
+    marginBottom: spacing.md,
+  },
+  productSectionTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  crossButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.error + '10',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.error + '30',
+    marginTop: spacing.md,
+  },
+  crossButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.error,
+    fontWeight: '600',
+    marginLeft: spacing.sm,
+  },
+  cameraButton: {
+    padding: spacing.sm,
+    marginLeft: spacing.sm,
+  },
+  scanInstructionText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    marginTop: spacing.sm,
+    fontStyle: 'italic',
+  },
+  showAllButton: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+  },
+  showAllButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
 

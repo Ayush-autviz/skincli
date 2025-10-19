@@ -35,7 +35,7 @@ import {
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
 import BarcodeScannerModal from '../components/BarcodeScannerModal';
-import { updateRoutineItem, deleteRoutineItem, searchProductByUPC } from '../utils/newApiService';
+import { updateRoutineItem, deleteRoutineItem, searchProductByUPC, searchProducts } from '../utils/newApiService';
 
 interface UpdateRoutineParams {
   itemData?: string;
@@ -108,6 +108,12 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const [showAllGoodFor, setShowAllGoodFor] = useState<boolean>(false);
   const [showAllIngredients, setShowAllIngredients] = useState<boolean>(false);
   const [showAllFreeOf, setShowAllFreeOf] = useState<boolean>(false);
+  
+  // Autocomplete states
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showSearchResults, setShowSearchResults] = useState<boolean>(false);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   
   // Date picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
@@ -254,6 +260,96 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     setShowAllGoodFor(false); // Reset show all states
     setShowAllIngredients(false);
     setShowAllFreeOf(false);
+    setSearchResults([]);
+    setShowSearchResults(false);
+    setSearchQuery('');
+  };
+
+  // Handle search for products
+  const handleSearchProducts = async (query: string) => {
+    if (query.length < 2) {
+      setSearchResults([]);
+      setShowSearchResults(false);
+      return;
+    }
+
+    try {
+      setIsSearching(true);
+      const response = await searchProducts(query, 5);
+      
+      if ((response as any).success && (response as any).data.products) {
+        setSearchResults((response as any).data.products);
+        setShowSearchResults(true);
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
+    } catch (error) {
+      console.error('🔴 Error searching products:', error);
+      setSearchResults([]);
+      setShowSearchResults(false);
+    } finally {
+      setIsSearching(false);
+    }
+  };
+
+  // Handle product selection from search results
+  const handleProductSelect = async (product: any) => {
+    try {
+      setIsFetchingProduct(true);
+      setShowSearchResults(false);
+      setSearchQuery('');
+      
+      // Fetch full product details using UPC
+      const response = await searchProductByUPC(product.upc);
+      
+      if ((response as any).success && (response as any).data) {
+        setProductData((response as any).data);
+        setItemName((response as any).data.product_name || '');
+        setUpcCode((response as any).data.upc || '');
+        setIsProductCrossed(false);
+        setShowAllGoodFor(false);
+        setShowAllIngredients(false);
+        setShowAllFreeOf(false);
+        
+        // Auto-populate concerns based on good_for data
+        if ((response as any).data.good_for && Array.isArray((response as any).data.good_for)) {
+          const mappedConcerns = (response as any).data.good_for.map((concern: string) => {
+            const concernMapping: { [key: string]: string } = {
+              'dry_skin': 'Dry Skin',
+              'oily_skin': 'Oily Skin',
+              'combination_skin': 'Combination Skin',
+              'normal_skin': 'Normal Skin',
+              'sensitive_skin': 'Sensitive Skin',
+              'acne_prone': 'Acne Prone',
+              'aging': 'Anti-Aging (Face)',
+              'hydration': 'Hydration',
+              'brightening': 'Brightening',
+              'pore_minimizing': 'Visible Pores'
+            };
+            return concernMapping[concern] || concern;
+          }).filter(Boolean);
+          
+          setItemConcerns(mappedConcerns);
+        }
+      }
+    } catch (error) {
+      console.error('🔴 Error fetching product details:', error);
+      Alert.alert('Error', 'Failed to load product details. Please try again.');
+    } finally {
+      setIsFetchingProduct(false);
+    }
+  };
+
+  // Handle text input change for search
+  const handleNameChange = (text: string) => {
+    setItemName(text);
+    setSearchQuery(text);
+    
+    // Only search if we're not showing product details (i.e., manual input mode)
+    if (!(upcCode && productData && !isProductCrossed)) {
+      handleSearchProducts(text);
+    }
   };
 
   // Format ingredient name for display
@@ -646,7 +742,7 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         </View>
 
         {/* Name Input */}
-        <View style={styles.section}>
+        <View style={[styles.section, { zIndex: 10000 }]}>
           {/* Only show title when not displaying product details */}
           {!(upcCode && productData && !isProductCrossed) && (
             <Text style={styles.sectionTitle2}>Name</Text>
@@ -774,14 +870,14 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
                 color="#6B7280" 
                 style={styles.inputIcon} 
               />
-              <TextInput
-                style={styles.textInput}
-                placeholder={isTreatmentType() ? "Enter treatment name" : `Enter ${itemType?.toLowerCase() || 'item'} name`}
-                value={itemName}
-                onChangeText={setItemName}
-                placeholderTextColor="#9CA3AF"
-                returnKeyType="next"
-              />
+            <TextInput
+              style={styles.textInput}
+              placeholder={isTreatmentType() ? "Enter treatment name" : `Enter ${itemType?.toLowerCase() || 'item'} name`}
+              value={itemName}
+              onChangeText={handleNameChange}
+              placeholderTextColor="#9CA3AF"
+              returnKeyType="next"
+            />
               {/* Camera icon for barcode scanning - only show for Product type and when not treatment */}
               {!isTreatmentType() && (
                 <TouchableOpacity 
@@ -797,6 +893,33 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
           {/* Scan instruction text - only show for Product type and when not treatment and not showing product details */}
           {!isTreatmentType() && !(upcCode && productData && !isProductCrossed) && (
             <Text style={styles.scanInstructionText}>or scan barcode</Text>
+          )}
+          
+          {/* Search Results Dropdown */}
+          {showSearchResults && searchResults.length > 0 && !isTreatmentType() && (
+            <View style={styles.searchResultsContainer}>
+              <ScrollView 
+                style={styles.searchResultsScrollView}
+                showsVerticalScrollIndicator={true}
+                nestedScrollEnabled={true}
+              >
+                {searchResults.map((product, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={styles.searchResultItem}
+                    onPress={() => handleProductSelect(product)}
+                  >
+                    <View style={styles.searchResultContent}>
+                      <Text style={styles.searchResultName}>{product.product_name}</Text>
+                      <Text style={styles.searchResultBrand}>{product.brand?.toUpperCase()}</Text>
+                    </View>
+                    {isSearching && (
+                      <ActivityIndicator size="small" color={colors.primary} />
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
           )}
         </View>
 
@@ -1408,6 +1531,47 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  searchResultsContainer: {
+    position: 'absolute',
+    top: '100%',
+    left: 0,
+    right: 0,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginTop: spacing.xs,
+    maxHeight: 200,
+    zIndex: 999,
+    marginHorizontal: spacing.lg,
+   ...shadows.md,
+  },
+  searchResultsScrollView: {
+    maxHeight: 200,
+  },
+  searchResultItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  searchResultContent: {
+    flex: 1,
+  },
+  searchResultName: {
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+    fontWeight: '500',
+    marginBottom: 2,
+  },
+  searchResultBrand: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: '400',
   },
 });
 

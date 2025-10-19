@@ -1976,6 +1976,37 @@ export const registerFCMToken = async (fcmToken) => {
 // -----------------------------------------------------------------------------
 
 /**
+ * Search products by name/query for autocomplete functionality
+ * @param {string} query - Search query (product name)
+ * @param {number} limit - Maximum number of results (default: 5)
+ * @returns {Promise<Object>} List of matching products with UPC and basic info
+ */
+export const searchProducts = async (query, limit = 5) => {
+  try {
+    console.log("🔵 Searching products by query:", query);
+
+    const response = await apiClient.get(`/product_search/search-products?query=${encodeURIComponent(query)}&limit=${limit}`);
+
+    if (response.data.status === 200) {
+      console.log("✅ Products found successfully");
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    } else {
+      throw new Error(response.data.message || "No products found");
+    }
+  } catch (error) {
+    console.error("🔴 searchProducts error:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to search products"
+    );
+  }
+};
+
+/**
  * Search for product details by UPC code
  * @param {string} upc - UPC code to search for
  * @returns {Promise<Object>} Product details including ingredients and good_for

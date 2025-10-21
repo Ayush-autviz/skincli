@@ -66,7 +66,7 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         setIsProcessing(true);
         
         try {
-          const upcCode = '0' + code.value;
+          const upcCode = code.value;
           console.log('🔍 Scanned UPC:', upcCode);
           const result = await searchProductByUPC(upcCode);
 

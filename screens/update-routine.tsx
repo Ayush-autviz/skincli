@@ -14,6 +14,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   ActivityIndicator,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -293,6 +294,11 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     }
   };
 
+  // Handle closing search results when tapping outside
+  const handleCloseSearchResults = () => {
+    setShowSearchResults(false);
+  };
+
   // Handle product selection from search results
   const handleProductSelect = async (product: any) => {
     try {
@@ -348,7 +354,12 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     
     // Only search if we're not showing product details (i.e., manual input mode)
     if (!(upcCode && productData && !isProductCrossed)) {
-      handleSearchProducts(text);
+      if (text.trim().length > 0) {
+        handleSearchProducts(text);
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
     }
   };
 
@@ -699,11 +710,14 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView 
-          style={styles.scrollView} 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.scrollContainer}>
+          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
+            <View style={styles.touchableArea}>
+              <ScrollView 
+                style={styles.scrollView} 
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
         {/* Category Selection */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle2}>Type</Text>
@@ -897,29 +911,31 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
           
           {/* Search Results Dropdown */}
           {showSearchResults && searchResults.length > 0 && !isTreatmentType() && (
-            <View style={styles.searchResultsContainer}>
-              <ScrollView 
-                style={styles.searchResultsScrollView}
-                showsVerticalScrollIndicator={true}
-                nestedScrollEnabled={true}
-              >
-                {searchResults.map((product, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.searchResultItem}
-                    onPress={() => handleProductSelect(product)}
-                  >
-                    <View style={styles.searchResultContent}>
-                      <Text style={styles.searchResultName}>{product.product_name}</Text>
-                      <Text style={styles.searchResultBrand}>{product.brand?.toUpperCase()}</Text>
-                    </View>
-                    {isSearching && (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.searchResultsContainer}>
+                <ScrollView 
+                  style={styles.searchResultsScrollView}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                >
+                  {searchResults.map((product, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.searchResultItem}
+                      onPress={() => handleProductSelect(product)}
+                    >
+                      <View style={styles.searchResultContent}>
+                        <Text style={styles.searchResultName}>{product.product_name}</Text>
+                        <Text style={styles.searchResultBrand}>{product.brand?.toUpperCase()}</Text>
+                      </View>
+                      {isSearching && (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
           )}
         </View>
 
@@ -1203,7 +1219,10 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
 
         {/* Bottom padding for scroll */}
         <View style={styles.bottomPadding} />
-        </ScrollView>
+              </ScrollView>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
       </KeyboardAvoidingView>
 
       {/* Barcode Scanner Modal */}
@@ -1307,6 +1326,12 @@ const styles = StyleSheet.create({
   keyboardContainer: {
     flex: 1,
     marginTop: 120,
+  },
+  scrollContainer: {
+    flex: 1,
+  },
+  touchableArea: {
+    flex: 1,
   },
   scrollView: {
     flex: 1,

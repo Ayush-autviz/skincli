@@ -14,6 +14,7 @@ import {
   SafeAreaView,
   KeyboardAvoidingView,
   ActivityIndicator,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -28,7 +29,8 @@ import {
   HelpCircle,
   ArrowLeft,
   Save,
-  Camera
+  Camera,
+  X
 } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
@@ -84,6 +86,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
   const [upcCode, setUpcCode] = useState<string>('');
   const [scannedProductData, setScannedProductData] = useState<any>(null);
   const [showBarcodeModal, setShowBarcodeModal] = useState<boolean>(false);
+  const [isProductCrossed, setIsProductCrossed] = useState<boolean>(false);
+  const [showAllGoodFor, setShowAllGoodFor] = useState<boolean>(false);
+  const [showAllIngredients, setShowAllIngredients] = useState<boolean>(false);
+  const [showAllFreeOf, setShowAllFreeOf] = useState<boolean>(false);
   
   // Autocomplete states
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -122,6 +128,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
     setScannedProductData(productData);
     setItemName(productData.product_name || '');
     setUpcCode(productData.upc || '');
+    setIsProductCrossed(false); // Reset crossed state when new product is scanned
+    setShowAllGoodFor(false); // Reset show all states
+    setShowAllIngredients(false);
+    setShowAllFreeOf(false);
     
     // Auto-populate concerns based on good_for data
     if (productData.good_for && Array.isArray(productData.good_for)) {
@@ -194,6 +204,96 @@ const CreateRoutineScreen = (): React.JSX.Element => {
     }
   };
 
+  // Handle closing search results when tapping outside
+  const handleCloseSearchResults = () => {
+    setShowSearchResults(false);
+  };
+
+  // Handle crossing out the product
+  const handleCrossProduct = () => {
+    setIsProductCrossed(true);
+    setItemName('');
+    setUpcCode('');
+    setScannedProductData(null);
+    setShowAllGoodFor(false); // Reset show all states
+    setShowAllIngredients(false);
+    setShowAllFreeOf(false);
+    setSearchResults([]);
+    setShowSearchResults(false);
+    setSearchQuery('');
+  };
+
+  // Format ingredient name for display
+  const formatIngredientName = (ingredient: string) => {
+    const specialCases: { [key: string]: string } = {
+      'aqua/water': 'Water (Aqua)',
+      'glycerin': 'Glycerin',
+      'coco-caprylate/caprate': 'Caprylic/Capric Triglyceride',
+      'dimethicone': 'Dimethicone',
+      'ceramide np': 'Ceramide NP',
+      'ceramide ap': 'Ceramide AP',
+      'sodium hyaluronate': 'Sodium Hyaluronate',
+      'petrolatum': 'Petrolatum',
+    };
+    
+    const lowerIngredient = ingredient.toLowerCase();
+    if (specialCases[lowerIngredient]) {
+      return specialCases[lowerIngredient];
+    }
+    
+    return ingredient
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Format good_for items for display
+  const formatGoodForItem = (item: string) => {
+    const specialCases: { [key: string]: string } = {
+      'dry_skin': 'Dry Skin',
+      'oily_skin': 'Oily Skin',
+      'combination_skin': 'Combination Skin',
+      'normal_skin': 'Normal Skin',
+      'sensitive_skin': 'Sensitive Skin',
+      'hydration': 'Hydration',
+      'fine_lines': 'Fine Lines',
+      'anti_aging': 'Anti-Aging',
+    };
+    
+    const lowerItem = item.toLowerCase();
+    if (specialCases[lowerItem]) {
+      return specialCases[lowerItem];
+    }
+    
+    return item
+      .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Format free_of items for display
+  const formatFreeOfItem = (item: string) => {
+    const specialCases: { [key: string]: string } = {
+      'maybe vegan': 'Maybe Vegan',
+      'silicone free': 'Silicone Free',
+      'oil free': 'Oil Free',
+      'non comedogenic': 'Non-Comedogenic',
+      'fragrance free': 'Fragrance Free',
+      'paraben free': 'Paraben Free',
+      'sulfate free': 'Sulfate Free',
+    };
+    
+    const lowerItem = item.toLowerCase();
+    if (specialCases[lowerItem]) {
+      return specialCases[lowerItem];
+    }
+    
+    return item
+      .split(' ')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
   // Handle product selection from search results
   const handleProductSelect = async (product: any) => {
     try {
@@ -208,6 +308,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
         setScannedProductData((response as any).data);
         setItemName((response as any).data.product_name || '');
         setUpcCode((response as any).data.upc || '');
+        setIsProductCrossed(false); // Reset crossed state when new product is selected
+        setShowAllGoodFor(false); // Reset show all states
+        setShowAllIngredients(false);
+        setShowAllFreeOf(false);
         
         // Auto-populate concerns based on good_for data
         if ((response as any).data.good_for && Array.isArray((response as any).data.good_for)) {
@@ -244,8 +348,13 @@ const CreateRoutineScreen = (): React.JSX.Element => {
     setSearchQuery(text);
     
     // Only search if we're not showing product details (i.e., manual input mode)
-    if (!(upcCode && scannedProductData)) {
-      handleSearchProducts(text);
+    if (!(upcCode && scannedProductData && !isProductCrossed)) {
+      if (text.trim().length > 0) {
+        handleSearchProducts(text);
+      } else {
+        setSearchResults([]);
+        setShowSearchResults(false);
+      }
     }
   };
 
@@ -511,11 +620,14 @@ const CreateRoutineScreen = (): React.JSX.Element => {
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <ScrollView 
-          style={styles.scrollView} 
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
+        <View style={styles.scrollContainer}>
+          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
+            <View style={styles.touchableArea}>
+              <ScrollView 
+                style={styles.scrollView} 
+                contentContainerStyle={styles.scrollContent}
+                showsVerticalScrollIndicator={false}
+              >
         {/* Category Selection */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle2}>Indicate if Product</Text>
@@ -554,62 +666,186 @@ const CreateRoutineScreen = (): React.JSX.Element => {
         </View>
 
         {/* Name Input */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle2}>Name</Text>
-          <View style={styles.inputWrapper}>
-            <FlaskConical 
-              size={20} 
-              color="#6B7280" 
-              style={styles.inputIcon} 
-            />
-            <TextInput
-              style={styles.textInput}
-              placeholder={isTreatmentType() ? "Enter treatment name" : `Enter ${itemType?.toLowerCase() || 'item'} name`}
-              value={itemName}
-              onChangeText={handleNameChange}
-              placeholderTextColor="#9CA3AF"
-              returnKeyType="next"
-            />
-            {/* Camera icon for barcode scanning - only show for Product type */}
-            {!isTreatmentType() && (
+        <View style={[styles.section, { zIndex: 10000 }]}>
+          {/* Only show title when not displaying product details */}
+          {!(upcCode && scannedProductData && !isProductCrossed) && (
+            <Text style={styles.sectionTitle2}>Name</Text>
+          )}
+          
+          {/* Show product details if UPC exists and product is not crossed */}
+          {upcCode && scannedProductData && !isProductCrossed ? (
+            <View style={styles.productDetailsContent}>
+              {/* Product Title and Brand */}
+              <View style={styles.productTitleContainer}>
+                <Text style={styles.productName}>
+                  {scannedProductData.product_name || 'Unknown Product'}
+                </Text>
+                <Text style={styles.brandName}>
+                  {scannedProductData.brand?.toUpperCase() || 'UNKNOWN BRAND'}
+                </Text>
+              </View>
+
+              {/* Good For Section */}
+              {scannedProductData.good_for && scannedProductData.good_for.length > 0 && (
+                <View style={styles.productSection}>
+                  <Text style={styles.productSectionTitle}>Good For</Text>
+                  <View style={styles.chipSelectorContainer}>
+                    {(showAllGoodFor ? scannedProductData.good_for : scannedProductData.good_for.slice(0, 5)).map((item: string, index: number) => (
+                      <View key={index} style={styles.chipButton}>
+                        <Text style={styles.chipButtonText}>{formatGoodForItem(item)}</Text>
+                      </View>
+                    ))}
+                  </View>
+                  {scannedProductData.good_for.length > 5 && (
+                    <TouchableOpacity 
+                      style={styles.showAllButton}
+                      onPress={() => setShowAllGoodFor(!showAllGoodFor)}
+                    >
+                      <Text style={styles.showAllButtonText}>
+                        {showAllGoodFor ? 'Show Less' : `Show All (${scannedProductData.good_for.length})`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {/* Key Ingredients Section */}
+              {scannedProductData.ingredients && scannedProductData.ingredients.length > 0 && (
+                <View style={styles.productSection}>
+                  <Text style={styles.productSectionTitle}>Key Ingredients</Text>
+                  <View style={styles.chipSelectorContainer}>
+                    {(showAllIngredients ? scannedProductData.ingredients : scannedProductData.ingredients.slice(0, 5)).map((ingredient: any, index: number) => (
+                      <View key={index} style={styles.chipButton}>
+                        <Text style={styles.chipButtonText}>
+                          {formatIngredientName(ingredient.ingredient_name)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                  {scannedProductData.ingredients.length > 5 && (
+                    <TouchableOpacity 
+                      style={styles.showAllButton}
+                      onPress={() => setShowAllIngredients(!showAllIngredients)}
+                    >
+                      <Text style={styles.showAllButtonText}>
+                        {showAllIngredients ? 'Show Less' : `Show All (${scannedProductData.ingredients.length})`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {/* Free Of Section */}
+              {scannedProductData.ingredients && scannedProductData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
+                <View style={styles.productSection}>
+                  <Text style={styles.productSectionTitle}>Free Of</Text>
+                  <View style={styles.chipSelectorContainer}>
+                    {(() => {
+                      const freeOfItems = Array.from(new Set(
+                        scannedProductData.ingredients
+                          .flatMap((ingredient: any) => ingredient.free_of || [])
+                          .filter(Boolean)
+                      ));
+                      const displayItems = showAllFreeOf ? freeOfItems : freeOfItems.slice(0, 5);
+                      
+                      return displayItems.map((freeOfItem: any, index: number) => (
+                        <View key={index} style={styles.chipButton}>
+                          <Text style={styles.chipButtonText}>
+                            {formatFreeOfItem(freeOfItem)}
+                          </Text>
+                        </View>
+                      ));
+                    })()}
+                  </View>
+                  {(() => {
+                    const freeOfItems = Array.from(new Set(
+                      scannedProductData.ingredients
+                        .flatMap((ingredient: any) => ingredient.free_of || [])
+                        .filter(Boolean)
+                    ));
+                    return freeOfItems.length > 5 && (
+                      <TouchableOpacity 
+                        style={styles.showAllButton}
+                        onPress={() => setShowAllFreeOf(!showAllFreeOf)}
+                      >
+                        <Text style={styles.showAllButtonText}>
+                          {showAllFreeOf ? 'Show Less' : `Show All (${freeOfItems.length})`}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })()}
+                </View>
+              )}
+
+              {/* Cross button */}
               <TouchableOpacity 
-                onPress={handleBarcodeScan}
-                style={styles.cameraButton}
+                style={styles.crossButton}
+                onPress={handleCrossProduct}
               >
-                <Camera size={20} color="#6B7280" />
+                <X size={20} color={colors.error} />
+                <Text style={styles.crossButtonText}>Not this product</Text>
               </TouchableOpacity>
-            )}
-          </View>
-          {/* Scan instruction text */}
-          {!isTreatmentType() && (
+            </View>
+          ) : (
+            /* Regular input when no UPC or product is crossed */
+            <View style={styles.inputWrapper}>
+              <FlaskConical 
+                size={20} 
+                color="#6B7280" 
+                style={styles.inputIcon} 
+              />
+              <TextInput
+                style={styles.textInput}
+                placeholder={isTreatmentType() ? "Enter treatment name" : `Enter ${itemType?.toLowerCase() || 'item'} name`}
+                value={itemName}
+                onChangeText={handleNameChange}
+                placeholderTextColor="#9CA3AF"
+                returnKeyType="next"
+              />
+              {/* Camera icon for barcode scanning - only show for Product type and when not treatment */}
+              {!isTreatmentType() && (
+                <TouchableOpacity 
+                  onPress={handleBarcodeScan}
+                  style={styles.cameraButton}
+                >
+                  <Camera size={20} color="#6B7280" />
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
+          
+          {/* Scan instruction text - only show for Product type and when not treatment and not showing product details */}
+          {!isTreatmentType() && !(upcCode && scannedProductData && !isProductCrossed) && (
             <Text style={styles.scanInstructionText}>or scan barcode</Text>
           )}
           
           {/* Search Results Dropdown */}
           {showSearchResults && searchResults.length > 0 && !isTreatmentType() && (
-            <View style={styles.searchResultsContainer}>
-              <ScrollView 
-                style={styles.searchResultsScrollView}
-                showsVerticalScrollIndicator={true}
-                nestedScrollEnabled={true}
-              >
-                {searchResults.map((product, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.searchResultItem}
-                    onPress={() => handleProductSelect(product)}
-                  >
-                    <View style={styles.searchResultContent}>
-                      <Text style={styles.searchResultName}>{product.product_name}</Text>
-                      <Text style={styles.searchResultBrand}>{product.brand?.toUpperCase()}</Text>
-                    </View>
-                    {isSearching && (
-                      <ActivityIndicator size="small" color={colors.primary} />
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
+            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
+              <View style={styles.searchResultsContainer}>
+                <ScrollView 
+                  style={styles.searchResultsScrollView}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                >
+                  {searchResults.map((product, index) => (
+                    <TouchableOpacity
+                      key={index}
+                      style={styles.searchResultItem}
+                      onPress={() => handleProductSelect(product)}
+                    >
+                      <View style={styles.searchResultContent}>
+                        <Text style={styles.searchResultName}>{product.product_name}</Text>
+                        <Text style={styles.searchResultBrand}>{product.brand?.toUpperCase()}</Text>
+                      </View>
+                      {isSearching && (
+                        <ActivityIndicator size="small" color={colors.primary} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </TouchableWithoutFeedback>
           )}
         </View>
 
@@ -893,7 +1129,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
 
         {/* Bottom padding for scroll */}
         <View style={styles.bottomPadding} />
-        </ScrollView>
+              </ScrollView>
+            </View>
+          </TouchableWithoutFeedback>
+        </View>
       </KeyboardAvoidingView>
 
       {/* Barcode Scanner Modal */}
@@ -998,6 +1237,12 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: 120,
   },
+  scrollContainer: {
+    flex: 1,
+  },
+  touchableArea: {
+    flex: 1,
+  },
   scrollView: {
     flex: 1,
   },
@@ -1068,6 +1313,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: borderRadius.md,
     backgroundColor: colors.background,
+
     paddingHorizontal: spacing.md,
     minHeight: 50,
   },
@@ -1174,6 +1420,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.xs,
     maxHeight: 200,
     zIndex: 1000,
+    marginHorizontal: spacing.lg,
     ...shadows.md,
   },
   searchResultsScrollView: {
@@ -1201,6 +1448,66 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     fontWeight: '400',
+  },
+  productDetailsContent: {
+    marginTop: spacing.sm,
+  },
+  productTitleContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
+  productName: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+  },
+  brandName: {
+    fontSize: fontSize.sm,
+    fontWeight: '400',
+    color: colors.textSecondary,
+    letterSpacing: 1.5,
+    textAlign: 'center',
+  },
+  productSection: {
+    marginBottom: spacing.md,
+  },
+  productSectionTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  crossButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: colors.error + '10',
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: colors.error + '30',
+    marginTop: spacing.md,
+  },
+  crossButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.error,
+    fontWeight: '600',
+    marginLeft: spacing.sm,
+  },
+  showAllButton: {
+    marginTop: spacing.sm,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    alignItems: 'center',
+  },
+  showAllButtonText: {
+    fontSize: fontSize.sm,
+    color: colors.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });
 

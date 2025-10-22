@@ -1,7 +1,7 @@
 // update-routine.tsx
 // Single scrollable screen for updating routine items
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -115,6 +115,8 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const [showSearchResults, setShowSearchResults] = useState<boolean>(false);
   const [isSearching, setIsSearching] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const searchResultsRef = useRef<View>(null);
+  const [searchResultsBox, setSearchResultsBox] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
   
   // Date picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
@@ -265,6 +267,19 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     setShowSearchResults(false);
     setSearchQuery('');
   };
+
+  // Measure dropdown area when visible for precise outside-tap detection
+  useEffect(() => {
+    if (showSearchResults) {
+      requestAnimationFrame(() => {
+        searchResultsRef.current?.measureInWindow((x, y, width, height) => {
+          setSearchResultsBox({ x, y, width, height });
+        });
+      });
+    } else {
+      setSearchResultsBox(null);
+    }
+  }, [showSearchResults]);
 
   // Handle search for products
   const handleSearchProducts = async (query: string) => {
@@ -710,13 +725,20 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-        <View style={styles.scrollContainer}>
-          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
-            <View style={styles.touchableArea}>
               <ScrollView 
                 style={styles.scrollView} 
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
+                onStartShouldSetResponderCapture={(e) => {
+                  if (!showSearchResults || !searchResultsBox) return false;
+                  const { pageX, pageY } = (e.nativeEvent as any);
+                  const { x, y, width, height } = searchResultsBox;
+                  const inside = pageX >= x && pageX <= x + width && pageY >= y && pageY <= y + height;
+                  if (!inside) {
+                    setShowSearchResults(false);
+                  }
+                  return false;
+                }}
               >
         {/* Category Selection */}
         <View style={styles.section}>
@@ -911,8 +933,7 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
           
           {/* Search Results Dropdown */}
           {showSearchResults && searchResults.length > 0 && !isTreatmentType() && (
-            <TouchableWithoutFeedback onPress={(e) => e.stopPropagation()}>
-              <View style={styles.searchResultsContainer}>
+              <View ref={searchResultsRef} style={styles.searchResultsContainer}>
                 <ScrollView 
                   style={styles.searchResultsScrollView}
                   showsVerticalScrollIndicator={true}
@@ -935,7 +956,6 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
                   ))}
                 </ScrollView>
               </View>
-            </TouchableWithoutFeedback>
           )}
         </View>
 
@@ -1220,10 +1240,25 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         {/* Bottom padding for scroll */}
         <View style={styles.bottomPadding} />
               </ScrollView>
-            </View>
-          </TouchableWithoutFeedback>
-        </View>
       </KeyboardAvoidingView>
+
+      {/* Outside-tap overlay around search results (excludes dropdown rect) */}
+      {showSearchResults && searchResultsBox && (
+        <>
+          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
+            <View style={[styles.searchOverlayBlock, { top: 0, left: 0, right: 0, height: searchResultsBox.y }]} />
+          </TouchableWithoutFeedback>
+          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
+            <View style={[styles.searchOverlayBlock, { top: searchResultsBox.y, left: 0, width: searchResultsBox.x, height: searchResultsBox.height }]} />
+          </TouchableWithoutFeedback>
+          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
+            <View style={[styles.searchOverlayBlock, { top: searchResultsBox.y, left: searchResultsBox.x + searchResultsBox.width, right: 0, height: searchResultsBox.height }]} />
+          </TouchableWithoutFeedback>
+          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
+            <View style={[styles.searchOverlayBlock, { top: searchResultsBox.y + searchResultsBox.height, left: 0, right: 0, bottom: 0 }]} />
+          </TouchableWithoutFeedback>
+        </>
+      )}
 
       {/* Barcode Scanner Modal */}
       <BarcodeScannerModal
@@ -1574,6 +1609,11 @@ const styles = StyleSheet.create({
   },
   searchResultsScrollView: {
     maxHeight: 200,
+  },
+  searchOverlayBlock: {
+    position: 'absolute',
+    backgroundColor: 'transparent',
+    zIndex: 998,
   },
   searchResultItem: {
     flexDirection: 'row',

@@ -73,8 +73,8 @@ const CreateRoutineScreen = (): React.JSX.Element => {
   // Form state
   const [itemName, setItemName] = useState<string>('');
   const [itemType, setItemType] = useState<string>('Product');
-  const [itemUsage, setItemUsage] = useState<string[]>(['AM']);
-  const [itemFrequency, setItemFrequency] = useState<string>('Daily');
+  const [itemUsage, setItemUsage] = useState<string[]>(['']);
+  const [itemFrequency, setItemFrequency] = useState<string>('');
   const [itemConcerns, setItemConcerns] = useState<string[]>([]);
   const [startDate, setStartDate] = useState<Date>(new Date()); // Default to today's date
   const [endDate, setEndDate] = useState<Date | null>(null);

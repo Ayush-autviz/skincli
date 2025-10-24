@@ -514,6 +514,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.lg,
     marginBottom: 0,
     alignItems: 'center',
+    marginHorizontal: spacing.lg,
   },
   productName: {
     fontSize: fontSize.lg,

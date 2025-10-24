@@ -31,7 +31,8 @@ import {
   Save,
   Trash2,
   X,
-  Camera
+  Camera,
+  ChevronRight
 } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
@@ -728,16 +729,6 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
                 style={styles.scrollView} 
                 contentContainerStyle={styles.scrollContent}
                 showsVerticalScrollIndicator={false}
-                onStartShouldSetResponderCapture={(e) => {
-                  if (!showSearchResults || !searchResultsBox) return false;
-                  const { pageX, pageY } = (e.nativeEvent as any);
-                  const { x, y, width, height } = searchResultsBox;
-                  const inside = pageX >= x && pageX <= x + width && pageY >= y && pageY <= y + height;
-                  if (!inside) {
-                    setShowSearchResults(false);
-                  }
-                  return false;
-                }}
               >
         {/* Category Selection */}
         <View style={styles.section}>
@@ -930,31 +921,30 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
             <Text style={styles.scanInstructionText}>or scan barcode</Text>
           )}
           
-          {/* Search Results Dropdown */}
+          {/* Search Suggestions Inside Card */}
           {showSearchResults && searchResults.length > 0 && !isTreatmentType() && (
-              <View ref={searchResultsRef} style={styles.searchResultsContainer}>
-                <ScrollView 
-                  style={styles.searchResultsScrollView}
-                  showsVerticalScrollIndicator={true}
-                  nestedScrollEnabled={true}
+            <View style={styles.searchSuggestionsContainer}>
+              <Text style={styles.searchSuggestionsTitle}>Suggestions</Text>
+              {searchResults.map((product, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.searchSuggestionItem}
+                  onPress={() => handleProductSelect(product)}
                 >
-                  {searchResults.map((product, index) => (
-                    <TouchableOpacity
-                      key={index}
-                      style={styles.searchResultItem}
-                      onPress={() => handleProductSelect(product)}
-                    >
-                      <View style={styles.searchResultContent}>
-                        <Text style={styles.searchResultName}>{product.product_name}</Text>
-                        <Text style={styles.searchResultBrand}>{product.brand?.toUpperCase()}</Text>
-                      </View>
-                      {isSearching && (
-                        <ActivityIndicator size="small" color={colors.primary} />
-                      )}
-                    </TouchableOpacity>
-                  ))}
-                </ScrollView>
-              </View>
+                  <View style={styles.searchSuggestionContent}>
+                    <Text style={styles.searchSuggestionName}>{product.product_name}</Text>
+                    <Text style={styles.searchSuggestionBrand}>{product.brand?.toUpperCase()}</Text>
+                  </View>
+                  <ChevronRight size={16} color={colors.textSecondary} />
+                </TouchableOpacity>
+              ))}
+              {isSearching && (
+                <View style={styles.searchLoadingContainer}>
+                  <ActivityIndicator size="small" color={colors.primary} />
+                  <Text style={styles.searchLoadingText}>Searching...</Text>
+                </View>
+              )}
+            </View>
           )}
         </View>
 
@@ -1241,23 +1231,6 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
               </ScrollView>
       </KeyboardAvoidingView>
 
-      {/* Outside-tap overlay around search results (excludes dropdown rect) */}
-      {showSearchResults && searchResultsBox && (
-        <>
-          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
-            <View style={[styles.searchOverlayBlock, { top: 0, left: 0, right: 0, height: searchResultsBox.y }]} />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
-            <View style={[styles.searchOverlayBlock, { top: searchResultsBox.y, left: 0, width: searchResultsBox.x, height: searchResultsBox.height }]} />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
-            <View style={[styles.searchOverlayBlock, { top: searchResultsBox.y, left: searchResultsBox.x + searchResultsBox.width, right: 0, height: searchResultsBox.height }]} />
-          </TouchableWithoutFeedback>
-          <TouchableWithoutFeedback onPress={handleCloseSearchResults}>
-            <View style={[styles.searchOverlayBlock, { top: searchResultsBox.y + searchResultsBox.height, left: 0, right: 0, bottom: 0 }]} />
-          </TouchableWithoutFeedback>
-        </>
-      )}
 
       {/* Barcode Scanner Modal */}
       <BarcodeScannerModal
@@ -1591,51 +1564,59 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     textDecorationLine: 'underline',
   },
-  searchResultsContainer: {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    backgroundColor: colors.white,
+  searchSuggestionsContainer: {
+    marginTop: spacing.md,
+    backgroundColor: colors.background,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    marginTop: spacing.xs,
-    maxHeight: 200,
-    zIndex: 999,
-    marginHorizontal: spacing.lg,
-   ...shadows.md,
+    padding: spacing.sm,
+    ...shadows.sm,
   },
-  searchResultsScrollView: {
-    maxHeight: 200,
+  searchSuggestionsTitle: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
+    paddingHorizontal: spacing.xs,
   },
-  searchOverlayBlock: {
-    position: 'absolute',
-    backgroundColor: 'transparent',
-    zIndex: 998,
-  },
-  searchResultItem: {
+  searchSuggestionItem: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: spacing.md,
+    borderRadius: borderRadius.sm,
+    backgroundColor: colors.white,
+    marginBottom: spacing.xs,
+    borderWidth: 1,
+    borderColor: 'transparent',
+    ...shadows.sm,
   },
-  searchResultContent: {
+  searchSuggestionContent: {
     flex: 1,
   },
-  searchResultName: {
+  searchSuggestionName: {
     fontSize: fontSize.md,
     color: colors.textPrimary,
     fontWeight: '500',
     marginBottom: 2,
   },
-  searchResultBrand: {
+  searchSuggestionBrand: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     fontWeight: '400',
+  },
+  searchLoadingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+  },
+  searchLoadingText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginLeft: spacing.sm,
   },
 });
 

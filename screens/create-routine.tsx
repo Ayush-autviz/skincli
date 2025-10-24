@@ -162,17 +162,14 @@ const CreateRoutineScreen = (): React.JSX.Element => {
   const handleBarcodeError = (message: string) => {
     Alert.alert(
       'Product Not Found',
-      message,
+      'This product is not in our database. Please add it manually in the text box and our research team will work on this.',
       [
         {
-          text: 'Try Again',
+          text: 'OK',
           onPress: () => {
-            setShowBarcodeModal(true);
+            // Navigate back to previous screen
+            (navigation as any).goBack();
           }
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel'
         }
       ]
     );

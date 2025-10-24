@@ -1822,6 +1822,7 @@ export const updateRoutineItem = async (itemId, itemData) => {
     const formData = new URLSearchParams();
     formData.append("name", itemData.name);
     formData.append("type", itemData.type?.toLowerCase() || '');
+    formData.append("upc", itemData.upc);
 
     // Only add usage and frequency if they exist (for non-treatment types)
     if (itemData.usage) {

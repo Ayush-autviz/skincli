@@ -796,8 +796,14 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           iconLibrary={getItemIconLibrary()}
           chips={chips as any}
           showChevron={false}
-          onPress={() => handleEditItem(item)}
+          onPress={() => handleNavigateToProductDetail(item)}
           dateInfo={dateInfo as any}
+          rightElement={item.upc ? (
+            <ChevronRight 
+              size={20} 
+              color={colors.textSecondary}
+            />
+          ) : undefined}
         />
     );
   };
@@ -910,6 +916,36 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     return sections;
 
   }, [routineItems]);
+
+  // Function to navigate to product detail screen
+  const handleNavigateToProductDetail = (item: RoutineItem): void => {
+    if (!item.upc) {
+      // If no UPC, just edit the item normally
+      handleEditItem(item);
+      return;
+    }
+
+    // Navigate to product detail screen with UPC data
+    (navigation as any).navigate('ProductDetail', {
+      itemId: item.id,
+      productData: {
+        product_name: item.name,
+        brand: item.extra?.brand || 'Unknown',
+        upc: item.upc,
+        ingredients: item.extra?.ingredients || [],
+        good_for: item.extra?.good_for || []
+      },
+      routineData: {
+        name: item.name,
+        usage: item.usage,
+        frequency: item.frequency,
+        dateStarted: item.dateStarted,
+        dateStopped: item.dateStopped,
+        stopReason: item.stopReason
+      },
+      upc: item.upc
+    });
+  };
 
   // Function to navigate to update screen - always go to edit routine screen
   const openEditModal = (item: RoutineItem): void => {

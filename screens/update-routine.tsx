@@ -84,6 +84,8 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as UpdateRoutineParams || {};
+
+  console.log('🔍 UpdateRoutine: Initial params:', params);
   
   // Form state
   const [itemName, setItemName] = useState<string>('');
@@ -238,17 +240,14 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const handleBarcodeError = (message: string) => {
     Alert.alert(
       'Product Not Found',
-      message,
+      'This product is not in our database. Please add it manually in the text box and our research team will work on this.',
       [
         {
-          text: 'Try Again',
+          text: 'OK',
           onPress: () => {
-            setShowBarcodeModal(true);
+            // Navigate back to previous screen
+            (navigation as any).goBack();
           }
-        },
-        {
-          text: 'Cancel',
-          style: 'cancel'
         }
       ]
     );
@@ -258,7 +257,7 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const handleCrossProduct = () => {
     setIsProductCrossed(true);
     setItemName('');
-    setUpcCode('');
+    setUpcCode(null as any);
     setProductData(null);
     setShowAllGoodFor(false); // Reset show all states
     setShowAllIngredients(false);
@@ -595,7 +594,7 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
       };
     } else {
       // Explicitly set empty UPC for manually entered products
-      apiItemData.upc = '';
+      apiItemData.upc = null as any;
     }
 
     // Add usage and frequency only for non-treatment types

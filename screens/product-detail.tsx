@@ -106,9 +106,30 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle edit button press
   const handleEdit = () => {
+    // Prepare the item data with the current product data
+    const itemData = {
+      name: productData.product_name || routineData.name || '',
+      type: 'Product',
+      usage: routineData.usage || 'AM',
+      frequency: routineData.frequency || 'Daily',
+      concerns: [], // Will be populated from product data
+      dateStarted: routineData.dateStarted || null,
+      dateStopped: routineData.dateStopped || null,
+      stopReason: routineData.stopReason || '',
+      dateCreated: new Date().toISOString(),
+      upc: params.upc || null,
+      productData: {
+        product_name: productData.product_name,
+        brand: productData.brand,
+        upc: params.upc,
+        ingredients: productData.ingredients || [],
+        good_for: productData.good_for || []
+      }
+    };
+
     (navigation as any).navigate('UpdateRoutine', {
       itemId: params.itemId,
-      itemData: JSON.stringify(routineData)
+      itemData: JSON.stringify(itemData)
     });
   };
 
@@ -204,6 +225,29 @@ const ProductDetailScreen = (): React.JSX.Element => {
     
     return item
       .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Format free_of items for display
+  const formatFreeOfItem = (item: string) => {
+    const specialCases: { [key: string]: string } = {
+      'maybe vegan': 'Maybe Vegan',
+      'silicone free': 'Silicone Free',
+      'oil free': 'Oil Free',
+      'non comedogenic': 'Non-Comedogenic',
+      'fragrance free': 'Fragrance Free',
+      'paraben free': 'Paraben Free',
+      'sulfate free': 'Sulfate Free',
+    };
+    
+    const lowerItem = item.toLowerCase();
+    if (specialCases[lowerItem]) {
+      return specialCases[lowerItem];
+    }
+    
+    return item
+      .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   };
@@ -309,6 +353,30 @@ const ProductDetailScreen = (): React.JSX.Element => {
                     </Text>
                   </View>
                 ))}
+              </View>
+            </View>
+          )}
+
+          {/* Free Of Section */}
+          {productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Free Of</Text>
+              <View style={styles.chipSelectorContainer}>
+                {(() => {
+                  const freeOfItems = Array.from(new Set(
+                    productData.ingredients
+                      .flatMap((ingredient: any) => ingredient.free_of || [])
+                      .filter(Boolean)
+                  ));
+                  
+                  return freeOfItems.map((freeOfItem: any, index: number) => (
+                    <View key={index} style={styles.chipButton}>
+                      <Text style={styles.chipButtonText}>
+                        {formatFreeOfItem(freeOfItem)}
+                      </Text>
+                    </View>
+                  ));
+                })()}
               </View>
             </View>
           )}

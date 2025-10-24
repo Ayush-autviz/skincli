@@ -1212,7 +1212,14 @@ const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScr
     }
   }
 }}>
-          <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
+          <View style={{flexDirection: 'column', alignItems: 'flex-start'}}>
+            <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
+            {metric.metricName === 'poresScore' && (
+              <Text style={styles.disclaimerText}>
+                Work in Progress, still unreliable
+              </Text>
+            )}
+          </View>
           <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3}/>
         </TouchableOpacity>
         <View style={styles.metricStatsContainer}>
@@ -1662,6 +1669,12 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#2C2C2C',
     letterSpacing: 0.3,
+  },
+  disclaimerText: {
+    fontSize: 10,
+    color: '#999',
+    fontStyle: 'italic',
+    marginTop: 2,
   },
   dataSection: {
     height: 60,  // Adjusted for better proportions

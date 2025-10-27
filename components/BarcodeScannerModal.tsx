@@ -1,7 +1,7 @@
 // BarcodeScannerModal.tsx
 // Custom modal wrapper for barcode scanner with same design
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Modal,
   View,
@@ -34,8 +34,11 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 }) => {
   const [isScanning, setIsScanning] = useState<boolean>(true);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [hasScanned, setHasScanned] = useState<boolean>(false);
-  const [lastScanTime, setLastScanTime] = useState<number>(0);
+  
+  // Use refs for more reliable debouncing
+  const isProcessingRef = useRef<boolean>(false);
+  const lastScanTimeRef = useRef<number>(0);
+  const hasProcessedScanRef = useRef<boolean>(false);
   
   const devices = useCameraDevices();
   const device = devices.find(d => d.position === 'back');
@@ -50,18 +53,24 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13', 'ean-8', 'code-128', 'code-39', 'upc-a', 'upc-e'],
     onCodeScanned: async (codes) => {
-      if (isProcessing || !isScanning || hasScanned) return;
+      // More robust checking using refs
+      if (isProcessingRef.current || !isScanning || hasProcessedScanRef.current) {
+        return;
+      }
       
       const code = codes[0];
       if (code?.value) {
         const currentTime = Date.now();
+        
         // Debounce: only allow scans every 2 seconds
-        if (currentTime - lastScanTime < 2000) {
+        if (currentTime - lastScanTimeRef.current < 2000) {
           return;
         }
         
-        setLastScanTime(currentTime);
-        setHasScanned(true);
+        // Set all locks immediately
+        lastScanTimeRef.current = currentTime;
+        hasProcessedScanRef.current = true;
+        isProcessingRef.current = true;
         setIsScanning(false);
         setIsProcessing(true);
         
@@ -80,11 +89,11 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               !productData.product_name;
             
             if (isEmptyData) {
-              // Close modal and show error in parent screen
-              onClose();
+              // Call onError first, then close modal
               if (onError) {
                 onError('Product not found. Please try scanning again or add the product manually.');
               }
+              onClose();
             } else {
               // Call the callback first to pass product data with UPC code
               if (onProductScanned) {
@@ -98,14 +107,17 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               onClose();
             }
           } else {
-            // Close modal and show error in parent screen
-            onClose();
+            // Call onError first, then close modal
             if (onError) {
               onError('Product not found. Please try scanning again or add the product manually.');
             }
+            onClose();
           }
         } catch (error) {
           console.error('🔴 Error processing scanned product:', error);
+          // Reset refs on error to allow retry
+          isProcessingRef.current = false;
+          hasProcessedScanRef.current = false;
           setIsScanning(true);
           setIsProcessing(false);
         }
@@ -118,8 +130,9 @@ const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     if (visible) {
       setIsScanning(true);
       setIsProcessing(false);
-      setHasScanned(false);
-      setLastScanTime(0);
+      isProcessingRef.current = false;
+      hasProcessedScanRef.current = false;
+      lastScanTimeRef.current = 0;
     }
   }, [visible]);
 

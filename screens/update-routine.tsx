@@ -32,11 +32,13 @@ import {
   Trash2,
   X,
   Camera,
-  ChevronRight
+  ChevronRight,
+  Search
 } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
 import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import ProductSearchModal from '../components/ProductSearchModal';
 import { updateRoutineItem, deleteRoutineItem, searchProductByUPC, searchProducts } from '../utils/newApiService';
 
 interface UpdateRoutineParams {
@@ -108,18 +110,13 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const [productData, setProductData] = useState<any>(null);
   const [isProductCrossed, setIsProductCrossed] = useState<boolean>(false);
   const [showBarcodeModal, setShowBarcodeModal] = useState<boolean>(false);
+  const [showProductSearchModal, setShowProductSearchModal] = useState<boolean>(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
   const [showAllGoodFor, setShowAllGoodFor] = useState<boolean>(false);
   const [showAllIngredients, setShowAllIngredients] = useState<boolean>(false);
   const [showAllFreeOf, setShowAllFreeOf] = useState<boolean>(false);
   
-  // Autocomplete states
-  const [searchResults, setSearchResults] = useState<any[]>([]);
-  const [showSearchResults, setShowSearchResults] = useState<boolean>(false);
-  const [isSearching, setIsSearching] = useState<boolean>(false);
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const searchResultsRef = useRef<View>(null);
-  const [searchResultsBox, setSearchResultsBox] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+  // Search states (now only used for the modal)
   
   // Date picker states
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
@@ -203,6 +200,11 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     setShowBarcodeModal(true);
   };
 
+  // Handle product search modal
+  const handleProductSearch = () => {
+    setShowProductSearchModal(true);
+  };
+
   // Handle product scanned from modal
   const handleProductScanned = (scannedProductData: any) => {
     console.log('🔍 Product scanned:', scannedProductData);
@@ -246,8 +248,8 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         {
           text: 'OK',
           onPress: () => {
-            // Navigate back to previous screen
-            (navigation as any).goBack();
+            // Close the barcode modal instead of navigating back
+            setShowBarcodeModal(false);
           }
         }
       ]
@@ -263,119 +265,151 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     setShowAllGoodFor(false); // Reset show all states
     setShowAllIngredients(false);
     setShowAllFreeOf(false);
-    setSearchResults([]);
-    setShowSearchResults(false);
-    setSearchQuery('');
   };
 
-  // Measure dropdown area when visible for precise outside-tap detection
-  useEffect(() => {
-    if (showSearchResults) {
-      requestAnimationFrame(() => {
-        searchResultsRef.current?.measureInWindow((x, y, width, height) => {
-          setSearchResultsBox({ x, y, width, height });
-        });
-      });
-    } else {
-      setSearchResultsBox(null);
-    }
-  }, [showSearchResults]);
 
-  // Handle search for products
-  const handleSearchProducts = async (query: string) => {
-    if (query.length < 2) {
-      setSearchResults([]);
-      setShowSearchResults(false);
-      return;
-    }
+  // Search functionality is now handled by the ProductSearchModal
 
+  // Handle product selection from search modal
+  const handleProductSelectFromModal = async (product: any) => {
     try {
-      setIsSearching(true);
-      const response = await searchProducts(query, 5);
-      
-      if ((response as any).success && (response as any).data.products) {
-        setSearchResults((response as any).data.products);
-        setShowSearchResults(true);
+      console.log('🔍 Product selected from modal:', product);
+
+      // Fetch full product details using UPC (like the old implementation)
+      if (product.upc) {
+        setIsFetchingProduct(true);
+        const response = await searchProductByUPC(product.upc);
+
+        if ((response as any).success && (response as any).data) {
+          const fullProductData = (response as any).data;
+          console.log('🔍 Full product data fetched:', fullProductData);
+
+          setProductData(fullProductData);
+          setItemName(fullProductData.product_name || product.product_name || '');
+          setUpcCode(fullProductData.upc || product.upc || '');
+
+          // Auto-populate concerns based on good_for data
+          if (fullProductData.good_for && Array.isArray(fullProductData.good_for)) {
+            const mappedConcerns = fullProductData.good_for.map((concern: string) => {
+              // Map API concerns to our concerns options
+              const concernMapping: { [key: string]: string } = {
+                'dry_skin': 'Dry Skin',
+                'oily_skin': 'Oily Skin',
+                'combination_skin': 'Combination Skin',
+                'normal_skin': 'Normal Skin',
+                'sensitive_skin': 'Sensitive Skin',
+                'hydration': 'Hydration',
+                'fine_lines': 'Fine Lines',
+                'anti_aging': 'Anti-Aging',
+              };
+              return concernMapping[concern] || concern;
+            }).filter(Boolean);
+
+            setItemConcerns(mappedConcerns);
+          }
+        } else {
+          // Fallback to basic product data if UPC fetch fails
+          console.log('⚠️ UPC fetch failed, using basic product data');
+          setProductData(product);
+          setItemName(product.product_name || '');
+          setUpcCode(product.upc || '');
+
+          // Auto-populate concerns based on good_for data
+          if (product.good_for && Array.isArray(product.good_for)) {
+            const mappedConcerns = product.good_for.map((concern: string) => {
+              // Map API concerns to our concerns options
+              const concernMapping: { [key: string]: string } = {
+                'dry_skin': 'Dry Skin',
+                'oily_skin': 'Oily Skin',
+                'combination_skin': 'Combination Skin',
+                'normal_skin': 'Normal Skin',
+                'sensitive_skin': 'Sensitive Skin',
+                'hydration': 'Hydration',
+                'fine_lines': 'Fine Lines',
+                'anti_aging': 'Anti-Aging',
+              };
+              return concernMapping[concern] || concern;
+            }).filter(Boolean);
+
+            setItemConcerns(mappedConcerns);
+          }
+        }
       } else {
-        setSearchResults([]);
-        setShowSearchResults(false);
-      }
-    } catch (error) {
-      console.error('🔴 Error searching products:', error);
-      setSearchResults([]);
-      setShowSearchResults(false);
-    } finally {
-      setIsSearching(false);
-    }
-  };
+        // No UPC available, use basic product data
+        console.log('⚠️ No UPC available, using basic product data');
+        setProductData(product);
+        setItemName(product.product_name || '');
+        setUpcCode(product.upc || '');
 
-  // Handle closing search results when tapping outside
-  const handleCloseSearchResults = () => {
-    setShowSearchResults(false);
-  };
-
-  // Handle product selection from search results
-  const handleProductSelect = async (product: any) => {
-    try {
-      setIsFetchingProduct(true);
-      setShowSearchResults(false);
-      setSearchQuery('');
-      
-      // Fetch full product details using UPC
-      const response = await searchProductByUPC(product.upc);
-      
-      if ((response as any).success && (response as any).data) {
-        setProductData((response as any).data);
-        setItemName((response as any).data.product_name || '');
-        setUpcCode((response as any).data.upc || '');
-        setIsProductCrossed(false);
-        setShowAllGoodFor(false);
-        setShowAllIngredients(false);
-        setShowAllFreeOf(false);
-        
         // Auto-populate concerns based on good_for data
-        if ((response as any).data.good_for && Array.isArray((response as any).data.good_for)) {
-          const mappedConcerns = (response as any).data.good_for.map((concern: string) => {
+        if (product.good_for && Array.isArray(product.good_for)) {
+          const mappedConcerns = product.good_for.map((concern: string) => {
+            // Map API concerns to our concerns options
             const concernMapping: { [key: string]: string } = {
               'dry_skin': 'Dry Skin',
               'oily_skin': 'Oily Skin',
               'combination_skin': 'Combination Skin',
               'normal_skin': 'Normal Skin',
               'sensitive_skin': 'Sensitive Skin',
-              'acne_prone': 'Acne Prone',
-              'aging': 'Anti-Aging (Face)',
               'hydration': 'Hydration',
-              'brightening': 'Brightening',
-              'pore_minimizing': 'Visible Pores'
+              'fine_lines': 'Fine Lines',
+              'anti_aging': 'Anti-Aging',
             };
             return concernMapping[concern] || concern;
           }).filter(Boolean);
-          
+
           setItemConcerns(mappedConcerns);
         }
       }
+
+      // Reset display states
+      setIsProductCrossed(false);
+      setShowAllGoodFor(false);
+      setShowAllIngredients(false);
+      setShowAllFreeOf(false);
+
+      setShowProductSearchModal(false);
     } catch (error) {
-      console.error('🔴 Error fetching product details:', error);
-      Alert.alert('Error', 'Failed to load product details. Please try again.');
+      console.error('🔴 Error fetching full product details:', error);
+      // Fallback to basic product data
+      setProductData(product);
+      setItemName(product.product_name || '');
+      setUpcCode(product.upc || '');
+      setIsProductCrossed(false);
+      setShowAllGoodFor(false);
+      setShowAllIngredients(false);
+      setShowAllFreeOf(false);
+
+      // Auto-populate concerns based on good_for data
+      if (product.good_for && Array.isArray(product.good_for)) {
+        const mappedConcerns = product.good_for.map((concern: string) => {
+          // Map API concerns to our concerns options
+          const concernMapping: { [key: string]: string } = {
+            'dry_skin': 'Dry Skin',
+            'oily_skin': 'Oily Skin',
+            'combination_skin': 'Combination Skin',
+            'normal_skin': 'Normal Skin',
+            'sensitive_skin': 'Sensitive Skin',
+            'hydration': 'Hydration',
+            'fine_lines': 'Fine Lines',
+            'anti_aging': 'Anti-Aging',
+          };
+          return concernMapping[concern] || concern;
+        }).filter(Boolean);
+
+        setItemConcerns(mappedConcerns);
+      }
+
+      setShowProductSearchModal(false);
     } finally {
       setIsFetchingProduct(false);
     }
   };
 
-  // Handle text input change for search
+
+  // Handle text input change
   const handleNameChange = (text: string) => {
     setItemName(text);
-    setSearchQuery(text);
-    
-    // Only search if we're not showing product details (i.e., manual input mode)
-    if (!(upcCode && productData && !isProductCrossed)) {
-      if (text.trim().length > 0) {
-        handleSearchProducts(text);
-      } else {
-        setSearchResults([]);
-        setShowSearchResults(false);
-      }
-    }
   };
 
   // Format ingredient name for display
@@ -904,47 +938,29 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
               placeholderTextColor="#9CA3AF"
               returnKeyType="next"
             />
-              {/* Camera icon for barcode scanning - only show for Product type and when not treatment */}
+              {/* Camera and Search icons - only show for Product type and when not treatment */}
               {!isTreatmentType() && (
-                <TouchableOpacity 
-                  onPress={handleBarcodeScan}
-                  style={styles.cameraButton}
-                >
-                  <Camera size={20} color="#6B7280" />
-                </TouchableOpacity>
+                <View style={styles.actionButtonsContainer}>
+                  <TouchableOpacity 
+                    onPress={handleProductSearch}
+                    style={styles.searchButton}
+                  >
+                    <Search size={20} color="#6B7280" />
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    onPress={handleBarcodeScan}
+                    style={styles.cameraButton}
+                  >
+                    <Camera size={20} color="#6B7280" />
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
           )}
           
           {/* Scan instruction text - only show for Product type and when not treatment and not showing product details */}
           {!isTreatmentType() && !(upcCode && productData && !isProductCrossed) && (
-            <Text style={styles.scanInstructionText}>or scan barcode</Text>
-          )}
-          
-          {/* Search Suggestions Inside Card */}
-          {showSearchResults && searchResults.length > 0 && !isTreatmentType() && (
-            <View style={styles.searchSuggestionsContainer}>
-              <Text style={styles.searchSuggestionsTitle}>Suggestions</Text>
-              {searchResults.map((product, index) => (
-                <TouchableOpacity
-                  key={index}
-                  style={styles.searchSuggestionItem}
-                  onPress={() => handleProductSelect(product)}
-                >
-                  <View style={styles.searchSuggestionContent}>
-                    <Text style={styles.searchSuggestionName}>{product.product_name}</Text>
-                    <Text style={styles.searchSuggestionBrand}>{product.brand?.toUpperCase()}</Text>
-                  </View>
-                  <ChevronRight size={16} color={colors.textSecondary} />
-                </TouchableOpacity>
-              ))}
-              {isSearching && (
-                <View style={styles.searchLoadingContainer}>
-                  <ActivityIndicator size="small" color={colors.primary} />
-                  <Text style={styles.searchLoadingText}>Searching...</Text>
-                </View>
-              )}
-            </View>
+            <Text style={styles.scanInstructionText}>Scan Barcode, search our database or type a product name if product not found</Text>
           )}
         </View>
 
@@ -1237,6 +1253,14 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         visible={showBarcodeModal}
         onClose={() => setShowBarcodeModal(false)}
         onProductScanned={handleProductScanned}
+        onError={handleBarcodeError}
+      />
+
+      {/* Product Search Modal */}
+      <ProductSearchModal
+        visible={showProductSearchModal}
+        onClose={() => setShowProductSearchModal(false)}
+        onProductSelect={handleProductSelectFromModal}
         onError={handleBarcodeError}
       />
     </View>
@@ -1541,9 +1565,17 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: spacing.sm,
   },
-  cameraButton: {
+  actionButtonsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  searchButton: {
     padding: spacing.sm,
     marginLeft: spacing.sm,
+  },
+  cameraButton: {
+    padding: spacing.sm,
+    marginLeft: spacing.xs,
   },
   scanInstructionText: {
     fontSize: fontSize.sm,
@@ -1563,60 +1595,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     fontWeight: '600',
     textDecorationLine: 'underline',
-  },
-  searchSuggestionsContainer: {
-    marginTop: spacing.md,
-    backgroundColor: colors.background,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: colors.border,
-    padding: spacing.sm,
-    ...shadows.sm,
-  },
-  searchSuggestionsTitle: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    fontWeight: '600',
-    marginBottom: spacing.sm,
-    paddingHorizontal: spacing.xs,
-  },
-  searchSuggestionItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: spacing.md,
-    borderRadius: borderRadius.sm,
-    backgroundColor: colors.white,
-    marginBottom: spacing.xs,
-    borderWidth: 1,
-    borderColor: 'transparent',
-    ...shadows.sm,
-  },
-  searchSuggestionContent: {
-    flex: 1,
-  },
-  searchSuggestionName: {
-    fontSize: fontSize.md,
-    color: colors.textPrimary,
-    fontWeight: '500',
-    marginBottom: 2,
-  },
-  searchSuggestionBrand: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    fontWeight: '400',
-  },
-  searchLoadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: spacing.md,
-  },
-  searchLoadingText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginLeft: spacing.sm,
   },
 });
 

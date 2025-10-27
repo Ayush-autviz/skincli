@@ -4,7 +4,7 @@
 import axios from "axios";
 import useAuthStore from "../stores/authStore";
 
-const BASE_URL = "http://44.198.183.94:9000/api/v1";
+const BASE_URL = "http://44.198.183.94:8000/api/v1";
 
 // Create axios instance with enhanced configuration
 const apiClient = axios.create({
@@ -1982,7 +1982,7 @@ export const registerFCMToken = async (fcmToken) => {
  * @param {number} limit - Maximum number of results (default: 5)
  * @returns {Promise<Object>} List of matching products with UPC and basic info
  */
-export const searchProducts = async (query, limit = 5) => {
+export const searchProducts = async (query, limit = 20) => {
   try {
     console.log("🔵 Searching products by query:", query);
 

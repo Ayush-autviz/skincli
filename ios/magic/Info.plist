@@ -24,6 +24,8 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>FirebaseAppDelegateProxyEnabled</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -43,8 +45,6 @@
 			</dict>
 		</dict>
 	</dict>
-	<key>FirebaseAppDelegateProxyEnabled</key>
-    <false/>
 	<key>NSCameraUsageDescription</key>
 	<string>$(PRODUCT_NAME) needs access to your Camera.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>

@@ -33,6 +33,7 @@ interface ProductSearchModalProps {
   onClose: () => void;
   onProductSelect: (product: any) => Promise<void>;
   onError?: (message: string) => void;
+  onSaveCustomProduct?: (productName: string) => void;
 }
 
 const { height: screenHeight } = Dimensions.get('window');
@@ -42,6 +43,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
   onClose,
   onProductSelect,
   onError,
+  onSaveCustomProduct,
 }) => {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [searchResults, setSearchResults] = useState<any[]>([]);
@@ -139,6 +141,14 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
     setHasSearched(false);
   };
 
+  const handleSaveCustomProduct = () => {
+    console.log('🔍 handleSaveCustomProduct - searchQuery:', searchQuery);
+    if (onSaveCustomProduct && searchQuery.trim()) {
+      onSaveCustomProduct(searchQuery.trim());
+      handleClose();
+    }
+  };
+
 
   const getProductIcon = (product: any) => {
     // Dynamic icon based on product name or category
@@ -215,9 +225,23 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
         {/* <View style={styles.emptyStateIcon}>
           <AlertCircle size={32} color={colors.textSecondary} />
         </View> */}
-        <Text style={styles.emptyTitle}>No Products Found</Text>
+        {/* <Text style={styles.emptyTitle}>Product Not Found</Text> */}
         <Text style={styles.emptySubtitle}>
-          This product is not in our database.{'\n'}You can add it manually in the text box above.
+          Product not found in our database. Our team will work on it.
+        </Text>
+        <Text style={styles.customText}>
+          Click on{' '}
+          <TouchableOpacity onPress={() => handleSaveCustomProduct()}>
+            <Text style={styles.saveLink}>
+              Save
+            </Text>
+          </TouchableOpacity>
+          {' '}below to add this product's name to your Routine, or click{' '}
+          <TouchableOpacity onPress={() => handleClose()}>
+          <Text style={styles.cancelLink} onPress={() => handleClose()}>
+            Cancel
+          </Text>
+          </TouchableOpacity>
         </Text>
       </View>
     );
@@ -249,7 +273,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
                   </View>
                   <TextInput
                     style={styles.searchInput}
-                    placeholder="Search for skincare products..."
+                    placeholder="Enter product name"
                     placeholderTextColor={colors.textTertiary}
                     value={searchQuery}
                     onChangeText={setSearchQuery}
@@ -492,6 +516,27 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     maxWidth: 280,
     fontWeight: '400',
+    marginBottom: spacing.md,
+  },
+  customText: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    lineHeight: 24,
+    marginTop: spacing.md,
+    paddingHorizontal: spacing.lg,
+  },
+  saveLink: {
+    fontSize: fontSize.md,
+    color: colors.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
+  cancelLink: {
+    fontSize: fontSize.md,
+    color: colors.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
   emptyStateGradient: {
     position: 'absolute',

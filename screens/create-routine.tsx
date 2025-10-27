@@ -1170,6 +1170,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
         onClose={() => setShowProductSearchModal(false)}
         onProductSelect={handleProductSelectFromModal}
         onError={handleBarcodeError}
+        onSaveCustomProduct={(productName: string) => {
+          setItemName(productName);
+          setShowProductSearchModal(false);
+        }}
       />
     </View>
   );

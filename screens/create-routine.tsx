@@ -753,34 +753,7 @@ const CreateRoutineScreen = (): React.JSX.Element => {
                 </View>
               )}
 
-              {/* Key Ingredients Section */}
-              {scannedProductData.ingredients && scannedProductData.ingredients.length > 0 && (
-                <View style={styles.productSection}>
-                  <Text style={styles.productSectionTitle}>Key Ingredients</Text>
-                  <View style={styles.chipSelectorContainer}>
-                    {(showAllIngredients ? scannedProductData.ingredients : scannedProductData.ingredients.slice(0, 5)).map((ingredient: any, index: number) => (
-                      <View key={index} style={styles.chipButton}>
-                        <Text style={styles.chipButtonText}>
-                          {formatIngredientName(ingredient.ingredient_name)}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                  {scannedProductData.ingredients.length > 5 && (
-                    <TouchableOpacity 
-                      style={styles.showAllButton}
-                      onPress={() => setShowAllIngredients(!showAllIngredients)}
-                    >
-                      <Text style={styles.showAllButtonText}>
-                        {showAllIngredients ? 'Show Less' : `Show All (${scannedProductData.ingredients.length})`}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-
-              {/* Free Of Section */}
-              {scannedProductData.ingredients && scannedProductData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
+{scannedProductData.ingredients && scannedProductData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
                 <View style={styles.productSection}>
                   <Text style={styles.productSectionTitle}>Free Of</Text>
                   <View style={styles.chipSelectorContainer}>
@@ -820,6 +793,35 @@ const CreateRoutineScreen = (): React.JSX.Element => {
                   })()}
                 </View>
               )}
+
+              {/* Key Ingredients Section */}
+              {scannedProductData.ingredients && scannedProductData.ingredients.length > 0 && (
+                <View style={styles.productSection}>
+                  <Text style={styles.productSectionTitle}>Ingredients</Text>
+                  <View style={styles.chipSelectorContainer}>
+                    {(showAllIngredients ? scannedProductData.ingredients : scannedProductData.ingredients.slice(0, 5)).map((ingredient: any, index: number) => (
+                      <View key={index} style={styles.chipButton}>
+                        <Text style={styles.chipButtonText}>
+                          {formatIngredientName(ingredient.ingredient_name)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                  {scannedProductData.ingredients.length > 5 && (
+                    <TouchableOpacity 
+                      style={styles.showAllButton}
+                      onPress={() => setShowAllIngredients(!showAllIngredients)}
+                    >
+                      <Text style={styles.showAllButtonText}>
+                        {showAllIngredients ? 'Show Less' : `Show All (${scannedProductData.ingredients.length})`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {/* Free Of Section */}
+    
 
               {/* Cross button */}
               <TouchableOpacity 

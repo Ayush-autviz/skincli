@@ -66,42 +66,29 @@ const ProductDetailScreen = (): React.JSX.Element => {
     fetchProductData();
   }, [params.upc]);
 
-  // Calculate usage duration
-  const calculateUsageDuration = () => {
+  // Get usage date info
+  const getUsageDateInfo = () => {
     console.log('🔍 Routine data:', routineData);
-    if (!routineData.dateStarted) return 'Unknown duration';
+    if (!routineData.dateStarted) return 'Unknown date';
     
     const startDate = new Date(routineData.dateStarted);
-    const endDate = routineData.dateStopped ? new Date(routineData.dateStopped) : new Date();
+    const formattedDate = startDate.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric'
+    });
     
-    const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    const diffMonths = Math.floor(diffDays / 30);
-    const diffYears = Math.floor(diffMonths / 12);
-    
-    if (diffYears > 0) {
-      const remainingMonths = diffMonths % 12;
-      return remainingMonths > 0 
-        ? `${diffYears} year${diffYears !== 1 ? 's' : ''}, ${remainingMonths} month${remainingMonths !== 1 ? 's' : ''}`
-        : `${diffYears} year${diffYears !== 1 ? 's' : ''}`;
-    } else if (diffMonths > 0) {
-      return `${diffMonths} month${diffMonths !== 1 ? 's' : ''}`;
-    } else {
-      return `${diffDays} day${diffDays !== 1 ? 's' : ''}`;
+    if (routineData.dateStopped) {
+      const stopDate = new Date(routineData.dateStopped);
+      const formattedStopDate = stopDate.toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+      return `You started using this product on ${formattedDate} and stopped on ${formattedStopDate}`;
     }
-  };
-
-  // Get usage time description
-  const getUsageTimeDescription = () => {
-    if (!routineData.usage) return 'Unknown time';
     
-    const usage = routineData.usage.toLowerCase();
-    if (usage === 'am') return 'the mornings';
-    if (usage === 'pm') return 'the evenings';
-    if (usage === 'both' || usage === 'am + pm') return 'the mornings and evenings';
-    if (usage === 'as_needed') return 'as needed';
-    
-    return usage;
+    return `You started using this product on ${formattedDate}`;
   };
 
   // Handle edit button press
@@ -300,7 +287,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
           <View style={styles.section}>
             {/* <Text style={styles.sectionTitle}>Usage Information</Text> */}
             <Text style={styles.usageText}>
-              Using for <Text style={styles.usageBold}>{calculateUsageDuration()}</Text> in {getUsageTimeDescription()}
+              {getUsageDateInfo()}
             </Text>
             <View style={styles.actionRow}>
               <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
@@ -341,24 +328,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Key Ingredients Section */}
-          {productData.ingredients && productData.ingredients.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Key Ingredients</Text>
-              <View style={styles.chipSelectorContainer}>
-                {productData.ingredients.map((ingredient: any, index: number) => (
-                  <View key={index} style={styles.chipButton}>
-                    <Text style={styles.chipButtonText}>
-                      {formatIngredientName(ingredient.ingredient_name)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Free Of Section */}
-          {productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
+{productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Free Of</Text>
               <View style={styles.chipSelectorContainer}>
@@ -380,6 +350,25 @@ const ProductDetailScreen = (): React.JSX.Element => {
               </View>
             </View>
           )}
+
+          {/* Key Ingredients Section */}
+          {productData.ingredients && productData.ingredients.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Ingredients</Text>
+              <View style={styles.chipSelectorContainer}>
+                {productData.ingredients.map((ingredient: any, index: number) => (
+                  <View key={index} style={styles.chipButton}>
+                    <Text style={styles.chipButtonText}>
+                      {formatIngredientName(ingredient.ingredient_name)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* Free Of Section */}
+  
 
           {/* Bottom spacing */}
           <View style={styles.bottomSpacing} />
@@ -539,14 +528,11 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   usageText: {
-    fontSize: fontSize.md,
+    fontSize: 14,
     color: colors.textPrimary,
     lineHeight: 22,
     marginBottom: spacing.md,
     textAlign: 'center',
-  },
-  usageBold: {
-    fontWeight: '700',
   },
   actionRow: {
     flexDirection: 'row',

@@ -845,34 +845,7 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
                 </View>
               )}
 
-              {/* Key Ingredients Section */}
-              {productData.ingredients && productData.ingredients.length > 0 && (
-                <View style={styles.productSection}>
-                  <Text style={styles.productSectionTitle}>Key Ingredients</Text>
-                  <View style={styles.chipSelectorContainer}>
-                    {(showAllIngredients ? productData.ingredients : productData.ingredients.slice(0, 5)).map((ingredient: any, index: number) => (
-                      <View key={index} style={styles.chipButton}>
-                        <Text style={styles.chipButtonText}>
-                          {formatIngredientName(ingredient.ingredient_name)}
-                        </Text>
-                      </View>
-                    ))}
-                  </View>
-                  {productData.ingredients.length > 5 && (
-                    <TouchableOpacity 
-                      style={styles.showAllButton}
-                      onPress={() => setShowAllIngredients(!showAllIngredients)}
-                    >
-                      <Text style={styles.showAllButtonText}>
-                        {showAllIngredients ? 'Show Less' : `Show All (${productData.ingredients.length})`}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
-
-              {/* Free Of Section */}
-              {productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
+{productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
                 <View style={styles.productSection}>
                   <Text style={styles.productSectionTitle}>Free Of</Text>
                   <View style={styles.chipSelectorContainer}>
@@ -912,6 +885,35 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
                   })()}
                 </View>
               )}
+
+              {/* Key Ingredients Section */}
+              {productData.ingredients && productData.ingredients.length > 0 && (
+                <View style={styles.productSection}>
+                  <Text style={styles.productSectionTitle}>Ingredients</Text>
+                  <View style={styles.chipSelectorContainer}>
+                    {(showAllIngredients ? productData.ingredients : productData.ingredients.slice(0, 5)).map((ingredient: any, index: number) => (
+                      <View key={index} style={styles.chipButton}>
+                        <Text style={styles.chipButtonText}>
+                          {formatIngredientName(ingredient.ingredient_name)}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                  {productData.ingredients.length > 5 && (
+                    <TouchableOpacity 
+                      style={styles.showAllButton}
+                      onPress={() => setShowAllIngredients(!showAllIngredients)}
+                    >
+                      <Text style={styles.showAllButtonText}>
+                        {showAllIngredients ? 'Show Less' : `Show All (${productData.ingredients.length})`}
+                      </Text>
+                    </TouchableOpacity>
+                  )}
+                </View>
+              )}
+
+              {/* Free Of Section */}
+   
 
               {/* Cross button */}
               <TouchableOpacity 

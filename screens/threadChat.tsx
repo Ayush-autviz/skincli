@@ -9,8 +9,8 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Send, ScanLine, Search, PenTool } from 'lucide-react-native';
-import { colors, typography, spacing, shadows } from '../styles';
+import { ArrowLeft, Send, ScanLine, Search, PenTool, Check } from 'lucide-react-native';
+import { colors, typography, spacing, shadows, borderRadius } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
 import useAuthStore from '../stores/authStore';
 import BarcodeScannerModal from '../components/BarcodeScannerModal';
@@ -119,6 +119,8 @@ const ThreadChatScreen = (): React.JSX.Element => {
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
   const [showBarcodeScanner, setShowBarcodeScanner] = useState<boolean>(false);
   const [showProductSearch, setShowProductSearch] = useState<boolean>(false);
+  const [showManualInput, setShowManualInput] = useState<boolean>(false);
+  const [manualProductName, setManualProductName] = useState<string>('');
 
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
@@ -543,6 +545,83 @@ const ThreadChatScreen = (): React.JSX.Element => {
     }
   };
 
+  const handleManualProductSubmit = async (): Promise<void> => {
+    if (!manualProductName.trim() || !threadId) return;
+
+    const messageToSend = `add ${manualProductName.trim()} to my routine`;
+    
+    const userMessage: Message = {
+      id: `user-${Date.now()}`,
+      content: messageToSend,
+      role: 'user',
+      timestamp: new Date().toISOString()
+    };
+
+    setMessages(prev => [...prev, userMessage]);
+    setManualProductName('');
+    setShowManualInput(false);
+    setRequestProductInput(null);
+    
+    // Scroll to bottom after adding user message
+    setTimeout(() => {
+      flatListRef.current?.scrollToEnd({ animated: true });
+    }, 100);
+    
+    setIsLoading(true);
+
+    try {
+      const messageData: any = {
+        content: messageToSend,
+        role: 'user',
+        thread_type: chatType
+      };
+
+      // Add image_id for snapshot_feedback type
+      if (chatType === 'snapshot_feedback' && imageId) {
+        messageData.image_id = imageId;
+      }
+
+      const response = await sendThreadMessage(threadId, messageData);
+
+      if ((response as any).success) {
+        // Add AI response (last message from the response)
+        const aiMessages = (response as any).data.messages
+          .filter((msg: any) => msg.role === 'assistant')
+          .reverse();
+
+        if (aiMessages.length > 0) {
+          const latestAiMessage = aiMessages[0];
+          const aiMessage: Message = {
+            id: `ai-${Date.now()}`,
+            content: latestAiMessage.content,
+            role: 'assistant',
+            timestamp: latestAiMessage.created_at || new Date().toISOString()
+          };
+          setMessages(prev => [...prev, aiMessage]);
+
+          // Check for pending item or product input request
+          if ((response as any).data.pending_item) {
+            setPendingItem((response as any).data.pending_item);
+          }
+
+          if ((response as any).data.request_product_input) {
+            setRequestProductInput((response as any).data.request_product_input);
+          }
+
+          // Scroll to bottom after adding AI message
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
+      }
+    } catch (error) {
+      console.error('Error sending manual product:', error);
+      Alert.alert('Error', 'Failed to send message. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const scrollToBottom = useCallback((): void => {
     if (flatListRef.current && messages.length > 0) {
       setTimeout(() => {
@@ -653,50 +732,84 @@ const ThreadChatScreen = (): React.JSX.Element => {
         <View style={styles.productInputHeader}>
           <Text style={styles.productInputTitle}>{requestProductInput.message || 'How would you like to add this product?'}</Text>
         </View>
-        <View style={styles.productInputActions}>
-          {requestProductInput.options && requestProductInput.options.includes('Scan Barcode') && (
+        
+        {showManualInput ? (
+          /* Show text input when manual entry is selected */
+          <View style={styles.manualInputContainer}>
+            <View style={styles.manualInputWrapper}>
+              <PenTool size={20} color="#6B7280" style={styles.manualInputIcon} />
+              <TextInput
+                style={styles.manualTextInput}
+                placeholder="Enter product name"
+                value={manualProductName}
+                onChangeText={setManualProductName}
+                placeholderTextColor="#9CA3AF"
+                returnKeyType="send"
+                onSubmitEditing={handleManualProductSubmit}
+                autoFocus={true}
+              />
+              <TouchableOpacity
+                onPress={handleManualProductSubmit}
+                style={styles.manualSubmitButton}
+                disabled={!manualProductName.trim() || isLoading}
+              >
+                <Check size={20} color="#FFFFFF" />
+              </TouchableOpacity>
+            </View>
             <TouchableOpacity
-              style={[styles.productInputButton, styles.scanButton]}
-              onPress={() => setShowBarcodeScanner(true)}
-              disabled={isLoading}
-              activeOpacity={0.7}
-            >
-              <View style={styles.productInputButtonIcon}>
-                <ScanLine size={20} color="#FFFFFF" />
-              </View>
-              <Text style={styles.productInputButtonText}>Scan Barcode</Text>
-            </TouchableOpacity>
-          )}
-          {requestProductInput.options && requestProductInput.options.includes('Search by Name') && (
-            <TouchableOpacity
-              style={[styles.productInputButton, styles.searchButton]}
-              onPress={() => setShowProductSearch(true)}
-              disabled={isLoading}
-              activeOpacity={0.7}
-            >
-              <View style={styles.productInputButtonIcon}>
-                <Search size={20} color="#FFFFFF" />
-              </View>
-              <Text style={styles.productInputButtonText}>Search by Name</Text>
-            </TouchableOpacity>
-          )}
-          {requestProductInput.options && requestProductInput.options.includes('Enter Manually') && (
-            <TouchableOpacity
-              style={[styles.productInputButton, styles.manualButton]}
               onPress={() => {
-                setShowProductSearch(true);
-                // We'll handle manual entry through ProductSearchModal's save functionality
+                setShowManualInput(false);
+                setManualProductName('');
               }}
-              disabled={isLoading}
-              activeOpacity={0.7}
+              style={styles.cancelButton}
             >
-              <View style={styles.productInputButtonIcon}>
-                <PenTool size={20} color="#FFFFFF" />
-              </View>
-              <Text style={styles.productInputButtonText}>Enter Manually</Text>
+              <Text style={styles.cancelButtonText}>Cancel</Text>
             </TouchableOpacity>
-          )}
-        </View>
+          </View>
+        ) : (
+          /* Show action buttons */
+          <View style={styles.productInputActions}>
+            {requestProductInput.options && requestProductInput.options.includes('Scan Barcode') && (
+              <TouchableOpacity
+                style={[styles.productInputButton, styles.scanButton]}
+                onPress={() => setShowBarcodeScanner(true)}
+                disabled={isLoading}
+                activeOpacity={0.7}
+              >
+                <View style={styles.productInputButtonIcon}>
+                  <ScanLine size={20} color="#FFFFFF" />
+                </View>
+                <Text style={styles.productInputButtonText}>Scan Barcode</Text>
+              </TouchableOpacity>
+            )}
+            {requestProductInput.options && requestProductInput.options.includes('Search by Name') && (
+              <TouchableOpacity
+                style={[styles.productInputButton, styles.searchButton]}
+                onPress={() => setShowProductSearch(true)}
+                disabled={isLoading}
+                activeOpacity={0.7}
+              >
+                <View style={styles.productInputButtonIcon}>
+                  <Search size={20} color="#FFFFFF" />
+                </View>
+                <Text style={styles.productInputButtonText}>Search by Name</Text>
+              </TouchableOpacity>
+            )}
+            {requestProductInput.options && requestProductInput.options.includes('Enter Manually') && (
+              <TouchableOpacity
+                style={[styles.productInputButton, styles.manualButton]}
+                onPress={() => setShowManualInput(true)}
+                disabled={isLoading}
+                activeOpacity={0.7}
+              >
+                <View style={styles.productInputButtonIcon}>
+                  <PenTool size={20} color="#FFFFFF" />
+                </View>
+                <Text style={styles.productInputButtonText}>Enter Manually</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
       </View>
     );
   };
@@ -1119,6 +1232,50 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 4,
+  },
+  manualInputContainer: {
+    gap: spacing.md,
+  },
+  manualInputWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+    minHeight: 50,
+  },
+  manualInputIcon: {
+    marginRight: spacing.sm,
+  },
+  manualTextInput: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    fontSize: 16,
+    color: colors.textPrimary,
+    fontFamily: 'Inter',
+  },
+  manualSubmitButton: {
+    backgroundColor: colors.primary,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: spacing.sm,
+  },
+  cancelButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: 8,
+    backgroundColor: '#F3F4F6',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
 });
 

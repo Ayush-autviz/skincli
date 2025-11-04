@@ -13,11 +13,14 @@ import { ArrowLeft, Send } from 'lucide-react-native';
 import { colors, typography, spacing, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
 import useAuthStore from '../stores/authStore';
+import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import ProductSearchModal from '../components/ProductSearchModal';
 import {
   createThread,
   sendThreadMessage,
   confirmThreadItem,
-  getChatHistoryByImageId
+  getChatHistoryByImageId,
+  searchProductByUPC
 } from '../utils/newApiService';
 
 const { width } = Dimensions.get('window');
@@ -41,6 +44,12 @@ interface PendingItem {
   usage?: string;
   frequency?: string;
   concern?: string[];
+}
+
+interface RequestProductInput {
+  message: string;
+  options: string[];
+  nextAction?: any;
 }
 
 // Helper function to format timestamps consistently
@@ -106,7 +115,10 @@ const ThreadChatScreen = (): React.JSX.Element => {
   const [error, setError] = useState<string | null>(null);
   const [threadId, setThreadId] = useState<string | null>(null);
   const [pendingItem, setPendingItem] = useState<PendingItem | null>(null);
+  const [requestProductInput, setRequestProductInput] = useState<RequestProductInput | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
+  const [showBarcodeScanner, setShowBarcodeScanner] = useState<boolean>(false);
+  const [showProductSearch, setShowProductSearch] = useState<boolean>(false);
 
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
@@ -234,8 +246,15 @@ const ThreadChatScreen = (): React.JSX.Element => {
         setMessages(formattedMessages);
 
         // Check for pending item
-        if ((response as any).data.pendingAddItem && (response as any).data.pendingAddItem.length > 0) {
-          setPendingItem((response as any).data.pendingAddItem[0]);
+        if ((response as any).data.status.addItem) {
+          setPendingItem((response as any).data.status.addItem);
+        }
+
+        // Check for requestProductInput
+        if ((response as any).data.requestProductInput) {
+          setRequestProductInput((response as any).data.requestProductInput);
+        } else {
+          setRequestProductInput(null);
         }
       }
     } catch (error) {
@@ -304,11 +323,20 @@ const ThreadChatScreen = (): React.JSX.Element => {
           }, 100);
         }
 
+        console.log("🔵 response of sendMessage", response.data);
+
         // Check for pending item
-        if ((response as any).data.pendingAddItem && (response as any).data.pendingAddItem.length > 0) {
-          setPendingItem((response as any).data.pendingAddItem[0]);
+        if ((response as any).data.status.addItem) {
+          setPendingItem((response as any).data.status.addItem);
         } else {
           setPendingItem(null);
+        }
+
+        // Check for requestProductInput
+        if ((response as any).data.requestProductInput) {
+          setRequestProductInput((response as any).data.requestProductInput);
+        } else {
+          setRequestProductInput(null);
         }
       }
     } catch (error) {
@@ -392,6 +420,126 @@ const ThreadChatScreen = (): React.JSX.Element => {
       Alert.alert('Error', 'Failed to process confirmation. Please try again.');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Send UPC code silently (without showing in chat)
+  const sendUPCCode = async (upcCode: string): Promise<void> => {
+    if (!threadId || !upcCode) return;
+
+    try {
+      setIsLoading(true);
+
+      const messageData: any = {
+        content: upcCode,
+        role: 'user',
+        thread_type: chatType
+      };
+
+      // Add image_id for snapshot_feedback type
+      if (chatType === 'snapshot_feedback' && imageId) {
+        messageData.image_id = imageId;
+      }
+
+      const response = await sendThreadMessage(threadId, messageData);
+
+      if ((response as any).success) {
+        // Add AI response (last message from the response) to chat
+        const aiMessages = (response as any).data.messages || [];
+        const lastAiMessage = aiMessages[aiMessages.length - 1];
+        
+        if (lastAiMessage && lastAiMessage.role === 'assistant') {
+          const aiMessage: Message = {
+            id: `ai-${Date.now()}`,
+            content: lastAiMessage.content,
+            role: 'assistant',
+            timestamp: lastAiMessage.timestamp
+          };
+          setMessages(prev => [...prev, aiMessage]);
+          
+          // Scroll to bottom after adding AI message
+          setTimeout(() => {
+            flatListRef.current?.scrollToEnd({ animated: true });
+          }, 100);
+        }
+
+        console.log("🔵 response of sendUPCCode", response.data);
+
+        // Check for pending item or requestProductInput
+        if ((response as any).data.status.addItem) {
+          setPendingItem((response as any).data.status.addItem);
+        } else {
+          setPendingItem(null);
+        }
+
+        if ((response as any).data.requestProductInput) {
+          setRequestProductInput((response as any).data.requestProductInput);
+        } else {
+          setRequestProductInput(null);
+        }
+      }
+    } catch (error) {
+      console.error('Error sending UPC code:', error);
+      Alert.alert('Error', 'Failed to send product code. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Handle barcode scan
+  const handleBarcodeScan = async (productData: any): Promise<void> => {
+    if (productData && productData.upc) {
+      await sendUPCCode(productData.upc);
+      setShowBarcodeScanner(false);
+      setRequestProductInput(null);
+    }
+  };
+
+  // Handle product search selection
+  const handleProductSelect = async (product: any): Promise<void> => {
+    try {
+      console.log('🔍 Product selected from search:', product);
+
+      // If product has UPC, use it directly
+      if (product.upc) {
+        await sendUPCCode(product.upc);
+        setShowProductSearch(false);
+        setRequestProductInput(null);
+        return;
+      }
+
+      // If product doesn't have UPC, try to fetch full product details by searching by UPC
+      // But first, we need to search by product name to get UPC
+      // However, since we already searched by name, the product should have UPC
+      // If it doesn't, we'll try to fetch it using searchProductByUPC with the product name
+      // But that won't work - we need UPC to search by UPC
+      
+      // For now, if product doesn't have UPC, we'll send the product name
+      // The backend should handle product name to UPC conversion or accept product name
+      if (product.product_name) {
+        console.log('⚠️ Product UPC not found, sending product name:', product.product_name);
+        await sendUPCCode(product.product_name);
+        setShowProductSearch(false);
+        setRequestProductInput(null);
+      } else {
+        Alert.alert('Error', 'Product information is incomplete. Please try again.');
+        setShowProductSearch(false);
+      }
+    } catch (error) {
+      console.error('Error handling product select:', error);
+      Alert.alert('Error', 'Failed to process product selection.');
+      setShowProductSearch(false);
+    }
+  };
+
+  // Handle manual entry
+  const handleManualEntry = async (productName: string): Promise<void> => {
+    // For manual entry, we'll send the product name
+    // The backend should handle converting it to UPC or processing it
+    if (productName && productName.trim()) {
+      await sendUPCCode(productName.trim());
+      setShowProductSearch(false);
+      setRequestProductInput(null);
     }
   };
 
@@ -495,6 +643,50 @@ const ThreadChatScreen = (): React.JSX.Element => {
     );
   };
 
+  const ProductInputCard = (): React.JSX.Element | null => {
+    if (!requestProductInput) return null;
+
+    console.log("🔵 ProductInputCard - requestProductInput:", requestProductInput);
+
+    return (
+      <View style={styles.pendingItemCard}>
+        <Text style={styles.pendingItemTitle}>{requestProductInput.message || 'How would you like to add this product?'}</Text>
+        <View style={styles.pendingItemActions}>
+          {requestProductInput.options && requestProductInput.options.includes('Scan Barcode') && (
+            <TouchableOpacity
+              style={[styles.pendingItemButton, styles.confirmButton]}
+              onPress={() => setShowBarcodeScanner(true)}
+              disabled={isLoading}
+            >
+              <Text style={styles.confirmButtonText}>Scan Barcode</Text>
+            </TouchableOpacity>
+          )}
+          {requestProductInput.options && requestProductInput.options.includes('Search by Name') && (
+            <TouchableOpacity
+              style={[styles.pendingItemButton, styles.confirmButton]}
+              onPress={() => setShowProductSearch(true)}
+              disabled={isLoading}
+            >
+              <Text style={styles.confirmButtonText}>Search by Name</Text>
+            </TouchableOpacity>
+          )}
+          {requestProductInput.options && requestProductInput.options.includes('Enter Manually') && (
+            <TouchableOpacity
+              style={[styles.pendingItemButton, styles.confirmButton]}
+              onPress={() => {
+                setShowProductSearch(true);
+                // We'll handle manual entry through ProductSearchModal's save functionality
+              }}
+              disabled={isLoading}
+            >
+              <Text style={styles.confirmButtonText}>Enter Manually</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      </View>
+    );
+  };
+
   if (isInitializing) {
     return (
       <View style={styles.loadingContainer}>
@@ -563,8 +755,11 @@ const ThreadChatScreen = (): React.JSX.Element => {
           {/* Pending Item Card */}
           <PendingItemCard />
 
+          {/* Product Input Card */}
+          <ProductInputCard />
+
           {/* Input Area */}
-          {!pendingItem && (
+          {!pendingItem && !requestProductInput && (
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
                 <TextInput
@@ -600,6 +795,28 @@ const ThreadChatScreen = (): React.JSX.Element => {
           )}
         </Animated.View>
       </KeyboardAvoidingView>
+
+      {/* Barcode Scanner Modal */}
+      <BarcodeScannerModal
+        visible={showBarcodeScanner}
+        onClose={() => setShowBarcodeScanner(false)}
+        onProductScanned={handleBarcodeScan}
+        onError={(message) => {
+          Alert.alert('Error', message);
+          setShowBarcodeScanner(false);
+        }}
+      />
+
+      {/* Product Search Modal */}
+      <ProductSearchModal
+        visible={showProductSearch}
+        onClose={() => setShowProductSearch(false)}
+        onProductSelect={handleProductSelect}
+        onError={(message) => {
+          Alert.alert('Error', message);
+        }}
+        onSaveCustomProduct={handleManualEntry}
+      />
     </SafeAreaView>
   );
 };

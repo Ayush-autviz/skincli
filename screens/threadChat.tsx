@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Send } from 'lucide-react-native';
+import { ArrowLeft, Send, ScanLine, Search, PenTool } from 'lucide-react-native';
 import { colors, typography, spacing, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
 import useAuthStore from '../stores/authStore';
@@ -649,37 +649,51 @@ const ThreadChatScreen = (): React.JSX.Element => {
     console.log("🔵 ProductInputCard - requestProductInput:", requestProductInput);
 
     return (
-      <View style={styles.pendingItemCard}>
-        <Text style={styles.pendingItemTitle}>{requestProductInput.message || 'How would you like to add this product?'}</Text>
-        <View style={styles.pendingItemActions}>
+      <View style={styles.productInputCard}>
+        <View style={styles.productInputHeader}>
+          <Text style={styles.productInputTitle}>{requestProductInput.message || 'How would you like to add this product?'}</Text>
+        </View>
+        <View style={styles.productInputActions}>
           {requestProductInput.options && requestProductInput.options.includes('Scan Barcode') && (
             <TouchableOpacity
-              style={[styles.pendingItemButton, styles.confirmButton]}
+              style={[styles.productInputButton, styles.scanButton]}
               onPress={() => setShowBarcodeScanner(true)}
               disabled={isLoading}
+              activeOpacity={0.7}
             >
-              <Text style={styles.confirmButtonText}>Scan Barcode</Text>
+              <View style={styles.productInputButtonIcon}>
+                <ScanLine size={20} color="#FFFFFF" />
+              </View>
+              <Text style={styles.productInputButtonText}>Scan Barcode</Text>
             </TouchableOpacity>
           )}
           {requestProductInput.options && requestProductInput.options.includes('Search by Name') && (
             <TouchableOpacity
-              style={[styles.pendingItemButton, styles.confirmButton]}
+              style={[styles.productInputButton, styles.searchButton]}
               onPress={() => setShowProductSearch(true)}
               disabled={isLoading}
+              activeOpacity={0.7}
             >
-              <Text style={styles.confirmButtonText}>Search by Name</Text>
+              <View style={styles.productInputButtonIcon}>
+                <Search size={20} color="#FFFFFF" />
+              </View>
+              <Text style={styles.productInputButtonText}>Search by Name</Text>
             </TouchableOpacity>
           )}
           {requestProductInput.options && requestProductInput.options.includes('Enter Manually') && (
             <TouchableOpacity
-              style={[styles.pendingItemButton, styles.confirmButton]}
+              style={[styles.productInputButton, styles.manualButton]}
               onPress={() => {
                 setShowProductSearch(true);
                 // We'll handle manual entry through ProductSearchModal's save functionality
               }}
               disabled={isLoading}
+              activeOpacity={0.7}
             >
-              <Text style={styles.confirmButtonText}>Enter Manually</Text>
+              <View style={styles.productInputButtonIcon}>
+                <PenTool size={20} color="#FFFFFF" />
+              </View>
+              <Text style={styles.productInputButtonText}>Enter Manually</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -1018,6 +1032,93 @@ const styles = StyleSheet.create({
   },
   keyboardAvoidingView: {
     flex: 1,
+  },
+  productInputCard: {
+    backgroundColor: '#FFFFFF',
+    margin: spacing.lg,
+    padding: spacing.lg,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    ...shadows.sm,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  productInputHeader: {
+    marginBottom: spacing.md,
+  },
+  productInputTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    lineHeight: 22,
+    textAlign: 'center',
+  },
+  productInputActions: {
+    gap: spacing.md,
+  },
+  productInputButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 12,
+    minHeight: 56,
+    gap: spacing.sm,
+  },
+  productInputButtonIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: 'transparent',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  productInputButtonText: {
+    fontSize: 16,
+    color: '#FFFFFF',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  scanButton: {
+    backgroundColor: colors.primary,
+    shadowColor: '#3B82F6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  searchButton: {
+    backgroundColor: colors.primary,
+    shadowColor: '#10B981',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  manualButton: {
+    backgroundColor: colors.primary,
+    shadowColor: '#8B5CF6',
+    shadowOffset: {
+      width: 0,
+      height: 4,
+    },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 4,
   },
 });
 

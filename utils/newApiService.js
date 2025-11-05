@@ -1939,6 +1939,40 @@ export const getImageChatSummary = async (image_id) => {
 };
 
 // -----------------------------------------------------------------------------
+// COMPARISON / JOURNAL API FUNCTIONS
+// -----------------------------------------------------------------------------
+
+/**
+ * Get recent comparison/journal summaries
+ * @returns {Promise<Object>} Summaries array
+ */
+export const getComparisonSummaries = async () => {
+  try {
+    console.log('🔵 Fetching comparison summaries...');
+
+    const response = await apiClient.get('/comparison/summaries');
+
+    if (response.data.status === 200) {
+      console.log('✅ Comparison summaries fetched successfully');
+      const summaries = (response.data.data && response.data.data.summaries) || [];
+      return {
+        success: true,
+        data: summaries,
+      };
+    } else {
+      throw new Error(response.data.message || 'Failed to fetch comparison summaries');
+    }
+  } catch (error) {
+    console.error('🔴 getComparisonSummaries error:', error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        'Failed to fetch comparison summaries'
+    );
+  }
+};
+
+// -----------------------------------------------------------------------------
 // FCM NOTIFICATION API FUNCTIONS
 // -----------------------------------------------------------------------------
 

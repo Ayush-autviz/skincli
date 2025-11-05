@@ -1,7 +1,7 @@
 // ActivityList.tsx
 // Component to display user activity timeline
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
   TouchableOpacity,
   ListRenderItem,
 } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+import { getComparisonSummaries } from '../../utils/newApiService';
 import { colors, spacing, typography } from '../../styles';
 import { 
   FlaskConical, 
@@ -22,156 +24,80 @@ import {
   Clock 
 } from 'lucide-react-native';
 
-interface Activity {
-  id: string;
-  title: string;
-  source: string;
-  timestamp: string;
-  type: 'routine' | 'travel' | 'profile';
-  icon: string;
+interface JournalSummaryItem {
+  skin_result_id: string;
+  image_id: string;
+  created_at: string;
+  summary: string;
 }
 
 // Mock activity data - in a real app, this would come from an API
-const mockActivities: Activity[] = [
-  {
-    id: '1',
-    title: 'Started using Retinol Serum before bed',
-    source: 'Based on chat with Amber',
-    timestamp: '2 hours ago',
-    type: 'routine',
-    icon: 'bottle-tonic-outline',
-  },
-  {
-    id: '2',
-    title: 'Returned from a week in Florida',
-    source: 'Based on chat with Amber',
-    timestamp: '1 day ago',
-    type: 'travel',
-    icon: 'airplane',
-  },
-  {
-    id: '3',
-    title: 'Purchased and started using Vitamin C Serum',
-    source: 'Based on change to Routine Builder',
-    timestamp: '3 days ago',
-    type: 'routine',
-    icon: 'bottle-tonic-outline',
-  },
-  {
-    id: '4',
-    title: 'Traveled to Florida',
-    source: 'Based on chat with Amber',
-    timestamp: '1 week ago',
-    type: 'travel',
-    icon: 'airplane',
-  },
-  {
-    id: '5',
-    title: 'Completed morning skincare routine',
-    source: 'Routine tracking',
-    timestamp: '2 days ago',
-    type: 'routine',
-    icon: 'check-circle-outline',
-  },
-  {
-    id: '6',
-    title: 'Updated skin concerns',
-    source: 'Profile settings',
-    timestamp: '4 days ago',
-    type: 'profile',
-    icon: 'account-edit',
-  },
-  {
-    id: '7',
-    title: 'Added new product to routine',
-    source: 'Routine Builder',
-    timestamp: '1 week ago',
-    type: 'routine',
-    icon: 'plus-circle-outline',
-  },
-  {
-    id: '8',
-    title: 'Completed evening skincare routine',
-    source: 'Routine tracking',
-    timestamp: '3 days ago',
-    type: 'routine',
-    icon: 'check-circle-outline',
-  },
-];
+// No mock data; we fetch real summaries from the API
 
 const ActivityList: React.FC = (): React.JSX.Element => {
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const navigation = useNavigation();
+  const [summaries, setSummaries] = useState<JournalSummaryItem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Simulate API call
-    const loadActivities = async (): Promise<void> => {
-      setLoading(true);
-      // Simulate network delay
-      await new Promise<void>(resolve => setTimeout(resolve, 1000));
-      setActivities(mockActivities);
-      setLoading(false);
+    const loadSummaries = async (): Promise<void> => {
+      try {
+        setLoading(true);
+        setError(null);
+        const res = await getComparisonSummaries();
+        if (res.success) {
+          setSummaries(res.data || []);
+        } else {
+          setSummaries([]);
+        }
+      } catch (e: any) {
+        setError(e?.message || 'Failed to load summaries');
+        setSummaries([]);
+      } finally {
+        setLoading(false);
+      }
     };
 
-    loadActivities();
+    loadSummaries();
   }, []);
 
-  const getIconColor = (type: string): string => {
-    switch (type) {
-      case 'routine':
-        return colors.primary;
-      case 'travel':
-        return '#3B82F6';
-      case 'profile':
-        return '#10B981';
-      default:
-        return colors.textSecondary;
-    }
-  };
+  const getIconColor = (): string => colors.primary;
 
-  const getIconComponent = (iconName: string): React.ComponentType<any> => {
-    switch (iconName) {
-      case 'bottle-tonic-outline':
-        return FlaskConical;
-      case 'airplane':
-        return Plane;
-      case 'check-circle-outline':
-        return CheckCircle;
-      case 'account-edit':
-        return User;
-      case 'plus-circle-outline':
-        return PlusCircle;
-      case 'chevron-right':
-        return ChevronRight;
-      case 'timeline-clock-outline':
-        return Clock;
-      default:
-        return FlaskConical; // fallback
-    }
-  };
+  const getIconComponent = (): React.ComponentType<any> => FlaskConical;
 
-  const renderActivityItem: ListRenderItem<Activity> = ({ item }): React.JSX.Element => {
-    const IconComponent = getIconComponent(item.icon);
+  const handlePress = useCallback((item: JournalSummaryItem) => {
+    (navigation as any).navigate('ThreadChat', {
+      chatType: 'snapshot_feedback',
+      imageId: item.image_id,
+      initialMessage: item.summary,
+    });
+  }, [navigation]);
+
+  const renderSummaryItem: ListRenderItem<JournalSummaryItem> = ({ item }): React.JSX.Element => {
+    const IconComponent = getIconComponent();
+    const createdAt = new Date(item.created_at);
+    const dateLabel = createdAt.toLocaleString();
     
     return (
-      <View style={styles.activityItem}>
+      <TouchableOpacity style={styles.activityItem} onPress={() => handlePress(item)}>
         <View style={styles.activityIconContainer}>
           <IconComponent
             size={24}
-            color={getIconColor(item.type)}
+            color={getIconColor()}
           />
         </View>
         <View style={styles.activityContent}>
-          <Text style={styles.activityTitle} numberOfLines={1}>{item.title}</Text>
+          <Text style={styles.activityTitle} numberOfLines={2}>{item.summary}</Text>
           <View style={styles.activitySourceContainer}>
-            <Text style={styles.activitySource}>{item.source}</Text>
+            <Text style={styles.activitySource}>{dateLabel}</Text>
             <ChevronRight
               size={16}
               color={colors.textSecondary}
             />
           </View>
         </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
@@ -199,23 +125,15 @@ const ActivityList: React.FC = (): React.JSX.Element => {
 
   return (
     <View style={styles.container}>
-      {/* Coming Soon Watermark */}
-      <View style={styles.comingSoonOverlay} pointerEvents="none">
-        <Text style={styles.comingSoonText}>Coming Soon!</Text>
-      </View>
-
-      {/* Faded Background Content */}
-      <View style={styles.fadedContent}>
-        <FlatList
-          data={activities}
-          renderItem={renderActivityItem}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
-          showsVerticalScrollIndicator={false}
-          ListEmptyComponent={renderEmptyState}
-          ItemSeparatorComponent={() => <View style={styles.separator} />}
-        />
-      </View>
+      <FlatList
+        data={summaries}
+        renderItem={renderSummaryItem}
+        keyExtractor={(item) => item.skin_result_id}
+        contentContainerStyle={styles.listContainer}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={renderEmptyState}
+        ItemSeparatorComponent={() => <View style={styles.separator} />}
+      />
     </View>
   );
 };
@@ -314,34 +232,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  // Coming Soon Watermark Styles
-  comingSoonOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
-    alignItems: 'center',
-    zIndex: 9999,
-  },
-  comingSoonText: {
-    fontSize: 28,
-    fontWeight: '700',
-    color: colors.primary,
-    textAlign: 'center',
-    textTransform: 'uppercase',
-    letterSpacing: 3,
-    textShadowColor: 'rgba(0, 0, 0, 0.3)',
-    textShadowOffset: { width: 0, height: 2 },
-    textShadowRadius: 4,
-  },
-  // Faded Content Styles
-  fadedContent: {
-    flex: 1,
-    opacity: 0.2, // Faded appearance
-    backgroundColor: colors.background,
-  },
+  // Removed coming soon overlay and faded content to enable interaction
 });
 
 export default ActivityList;

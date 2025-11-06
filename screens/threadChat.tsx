@@ -798,7 +798,20 @@ const ThreadChatScreen = (): React.JSX.Element => {
             {requestProductInput.options && requestProductInput.options.includes('Enter Manually') && (
               <TouchableOpacity
                 style={[styles.productInputButton, styles.manualButton]}
-                onPress={() => setShowManualInput(true)}
+                onPress={() => {
+                  setShowManualInput(false);
+                  setRequestProductInput(null);
+                  const assistantMessage: Message = {
+                    id: `ai-${Date.now()}`,
+                    content: 'Type your product name in the input box.',
+                    role: 'assistant',
+                    timestamp: new Date().toISOString()
+                  };
+                  setMessages(prev => [...prev, assistantMessage]);
+                  setTimeout(() => {
+                    flatListRef.current?.scrollToEnd({ animated: true });
+                  }, 100);
+                }}
                 disabled={isLoading}
                 activeOpacity={0.7}
               >

@@ -236,7 +236,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
               Save
             </Text>
           </TouchableOpacity>
-          {' '}below to add this product's name to your Routine, or click{' '}
+          {' '} to add this product's name to your Routine, or click{' '}
           <TouchableOpacity onPress={() => handleClose()}>
           <Text style={styles.cancelLink} onPress={() => handleClose()}>
             Cancel

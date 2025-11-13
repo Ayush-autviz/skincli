@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Edit, Trash2, X } from 'lucide-react-native';
+import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import { searchProductByUPC, deleteRoutineItem } from '../utils/newApiService';
 
@@ -96,10 +96,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
     // Prepare the item data with the current product data
     const itemData = {
       name: productData.product_name || routineData.name || '',
-      type: 'Product',
+      type: routineData.type || 'Product',
       usage: routineData.usage || 'AM',
       frequency: routineData.frequency || 'Daily',
-      concerns: [], // Will be populated from product data
+      concerns: routineData.concerns || [], // Use concerns from routineData
       dateStarted: routineData.dateStarted || null,
       dateStopped: routineData.dateStopped || null,
       stopReason: routineData.stopReason || '',
@@ -111,12 +111,24 @@ const ProductDetailScreen = (): React.JSX.Element => {
         upc: params.upc,
         ingredients: productData.ingredients || [],
         good_for: productData.good_for || []
-      }
+      },
+      extra: routineData.extra || {} // Include extra data
     };
 
     (navigation as any).navigate('UpdateRoutine', {
       itemId: params.itemId,
       itemData: JSON.stringify(itemData)
+    });
+  };
+
+  // Handle start tracking button press
+  const handleStartTracking = () => {
+    // Navigate to tracking/effectiveness screen or show tracking options
+    // For now, navigate to progress screen if it exists, otherwise show alert
+    (navigation as any).navigate('Progress', {
+      itemId: params.itemId,
+      routineData: routineData,
+      productData: productData
     });
   };
 
@@ -239,6 +251,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
       .join(' ');
   };
 
+
+  console.log('🔍 Routine data:', routineData);
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -278,9 +293,11 @@ const ProductDetailScreen = (): React.JSX.Element => {
             <Text style={styles.productName}>
               {productData.product_name || 'Unknown Product'}
             </Text>
-            <Text style={styles.brandName}>
-              {productData.brand?.toUpperCase() || 'UNKNOWN BRAND'}
-            </Text>
+            {productData.brand && (
+              <Text style={styles.brandName}>
+                {productData.brand?.toUpperCase()}
+              </Text>
+            )}
           </View>
 
           {/* Usage Card */}
@@ -309,6 +326,20 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 )}
               </TouchableOpacity>
             </View>
+            {/* Start Tracking Button - Show if concern_tracking is null or empty */}
+            {( routineData.concern_tracking.length === 0) && (
+              <TouchableOpacity 
+                onPress={handleStartTracking} 
+                style={styles.startTrackingButton}
+                activeOpacity={0.8}
+              >
+                <View style={styles.startTrackingContent}>
+                  <TrendingUp size={18} color={colors.white} style={styles.startTrackingIcon} />
+                  <Text style={styles.startTrackingText}>Start Effective Tracking</Text>
+                  <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
+                </View>
+              </TouchableOpacity>
+            )}
           </View>
 
           {/* Product Description */}
@@ -552,6 +583,37 @@ const styles = StyleSheet.create({
   actionText: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
+  },
+  startTrackingButton: {
+    marginTop: spacing.md,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: '#915F6D',
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    // ...shadows.md,
+    // borderWidth: 1,
+    // borderColor: 'rgba(255, 255, 255, 0.2)',
+    // elevation: 4,
+  },
+  startTrackingContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  startTrackingIcon: {
+    marginRight: 2,
+  },
+  startTrackingText: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: colors.white,
+    letterSpacing: 0.3,
+  },
+  startTrackingArrow: {
+    marginLeft: 2,
   },
   sectionTitle: {
     fontSize: fontSize.lg,

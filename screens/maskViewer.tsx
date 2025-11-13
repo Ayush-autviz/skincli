@@ -25,12 +25,11 @@ import Animated, {
   useDerivedValue,
   interpolateColor
 } from 'react-native-reanimated';
-// import {
-//   PinchGestureHandler,
-//   PanGestureHandler,
-//   TapGestureHandler,
-//   GestureHandlerRootView
-// } from 'react-native-gesture-handler';
+import {
+  Gesture,
+  GestureDetector,
+  GestureHandlerRootView
+} from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConditionalImage } from '../utils/imageUtils';
 
@@ -115,12 +114,11 @@ const ZoomableMaskImage = ({
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
+  const savedScale = useSharedValue(1);
+  const savedTranslateX = useSharedValue(0);
+  const savedTranslateY = useSharedValue(0);
   const [imageLoaded, setImageLoaded] = useState<boolean>(false);
   const [maskLoaded, setMaskLoaded] = useState<boolean>(true);
-
-  // const pinchRef = useRef<PinchGestureHandler>(null);
-  // const panRef = useRef<PanGestureHandler>(null);
-  // const doubleTapRef = useRef<TapGestureHandler>(null);
 
   // Reset zoom when switching images
   useEffect(() => {
@@ -128,62 +126,89 @@ const ZoomableMaskImage = ({
       scale.value = withSpring(1, springConfig);
       translateX.value = withSpring(0, springConfig);
       translateY.value = withSpring(0, springConfig);
+      savedScale.value = 1;
+      savedTranslateX.value = 0;
+      savedTranslateY.value = 0;
     }
   }, [isActive]);
 
-  // Pinch gesture handler
-  // const pinchGestureHandler = useAnimatedGestureHandler({
-  //   onStart: (_, context: any) => {
-  //     context.startScale = scale.value;
-  //   },
-  //   onActive: (event: any, context: any) => {
-  //     const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, context.startScale * event.scale));
-  //     scale.value = newScale;
-  //   },
-  //   onEnd: () => {
-  //     if (scale.value < MIN_SCALE) {
-  //       scale.value = withSpring(MIN_SCALE, springConfig);
-  //       translateX.value = withSpring(0, springConfig);
-  //       translateY.value = withSpring(0, springConfig);
-  //     } else if (scale.value > MAX_SCALE) {
-  //       scale.value = withSpring(MAX_SCALE, springConfig);
-  //     }
-  //   },
-  // });
+  // Pinch gesture
+  const pinchGesture = Gesture.Pinch()
+    .onStart(() => {
+      savedScale.value = scale.value;
+    })
+    .onUpdate((e) => {
+      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, savedScale.value * e.scale));
+      scale.value = newScale;
+    })
+    .onEnd(() => {
+      if (scale.value < MIN_SCALE) {
+        scale.value = withSpring(MIN_SCALE, springConfig);
+        translateX.value = withSpring(0, springConfig);
+        translateY.value = withSpring(0, springConfig);
+        savedScale.value = MIN_SCALE;
+      } else if (scale.value > MAX_SCALE) {
+        scale.value = withSpring(MAX_SCALE, springConfig);
+        savedScale.value = MAX_SCALE;
+      } else {
+        savedScale.value = scale.value;
+      }
+    });
 
-  // Pan gesture handler
-  // const panGestureHandler = useAnimatedGestureHandler({
-  //   onStart: (_, context: any) => {
-  //     context.startX = translateX.value;
-  //     context.startY = translateY.value;
-  //   },
-  //   onActive: (event: any, context: any) => {
-  //     if (scale.value > 1) {
-  //       const maxTranslate = (scale.value - 1) * (IMAGE_SIZE / 2);
-  //       translateX.value = Math.max(-maxTranslate, Math.min(maxTranslate, context.startX + event.translationX));
-  //       translateY.value = Math.max(-maxTranslate, Math.min(maxTranslate, context.startY + event.translationY));
-  //     }
-  //   },
-  //   onEnd: () => {
-  //     if (scale.value <= 1) {
-  //       translateX.value = withSpring(0, springConfig);
-  //       translateY.value = withSpring(0, springConfig);
-  //     }
-  //   },
-  // });
+  // Pan gesture - only active when zoomed
+  const panGesture = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .activeOffsetY([-10, 10])
+    .onStart(() => {
+      savedTranslateX.value = translateX.value;
+      savedTranslateY.value = translateY.value;
+    })
+    .onUpdate((e) => {
+      if (scale.value > 1) {
+        // Calculate bounds based on current scale
+        const scaledSize = IMAGE_SIZE * scale.value;
+        const maxTranslateX = (scaledSize - IMAGE_SIZE) / 2;
+        const maxTranslateY = (scaledSize - IMAGE_SIZE) / 2;
+        
+        translateX.value = Math.max(-maxTranslateX, Math.min(maxTranslateX, savedTranslateX.value + e.translationX));
+        translateY.value = Math.max(-maxTranslateY, Math.min(maxTranslateY, savedTranslateY.value + e.translationY));
+      }
+    })
+    .onEnd(() => {
+      if (scale.value <= 1) {
+        translateX.value = withSpring(0, springConfig);
+        translateY.value = withSpring(0, springConfig);
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+      } else {
+        savedTranslateX.value = translateX.value;
+        savedTranslateY.value = translateY.value;
+      }
+    });
 
-  // Double tap to zoom
-  // const doubleTapGestureHandler = useAnimatedGestureHandler({
-  //   onActive: () => {
-  //     if (scale.value > 1) {
-  //       scale.value = withSpring(1, springConfig);
-  //       translateX.value = withSpring(0, springConfig);
-  //       translateY.value = withSpring(0, springConfig);
-  //     } else {
-  //       scale.value = withSpring(2, springConfig);
-  //     }
-  //   },
-  // });
+  // Double tap gesture
+  const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      if (scale.value > 1) {
+        scale.value = withSpring(1, springConfig);
+        translateX.value = withSpring(0, springConfig);
+        translateY.value = withSpring(0, springConfig);
+        savedScale.value = 1;
+        savedTranslateX.value = 0;
+        savedTranslateY.value = 0;
+      } else {
+        scale.value = withSpring(2, springConfig);
+        savedScale.value = 2;
+      }
+    });
+
+  // Compose gestures
+  const composedGesture = Gesture.Simultaneous(
+    pinchGesture,
+    panGesture,
+    doubleTapGesture
+  );
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [
@@ -210,28 +235,9 @@ const ZoomableMaskImage = ({
         </View>
       )}
       
-      {/* <GestureHandlerRootView style={styles.gestureContainer}>
-        <PanGestureHandler
-          ref={panRef}
-          onGestureEvent={panGestureHandler}
-          simultaneousHandlers={[pinchRef]}
-          minPointers={1}
-          maxPointers={1}
-          avgTouches
-        > */}
-          <Animated.View style={styles.gestureWrapper}>
-            {/* <PinchGestureHandler
-              ref={pinchRef}
-              onGestureEvent={pinchGestureHandler}
-              simultaneousHandlers={[panRef]}
-            > */}
-              <Animated.View style={styles.gestureWrapper}>
-                {/* <TapGestureHandler
-                  ref={doubleTapRef}
-                  onGestureEvent={doubleTapGestureHandler}
-                  numberOfTaps={2}
-                > */}
-                  <Animated.View style={[styles.imageWrapper, animatedStyle]}>
+      <GestureHandlerRootView style={styles.gestureContainer}>
+        <GestureDetector gesture={composedGesture}>
+          <Animated.View style={[styles.imageWrapper, animatedStyle]}>
                     {/* Check if maskUri is SVG or regular image */}
                     {maskUri && maskUri.toLowerCase().includes('.svg') ? (
                       // For SVG masks, show background image with mask overlay
@@ -285,13 +291,9 @@ const ZoomableMaskImage = ({
                         }}
                       />
                     )}
-                  </Animated.View>
-                {/* </TapGestureHandler> */}
-              </Animated.View>
-            {/* </PinchGestureHandler> */}
           </Animated.View>
-      {/* //   </PanGestureHandler> */}
-      {/* // </GestureHandlerRootView> */}
+        </GestureDetector>
+      </GestureHandlerRootView>
     </View>
   );
 };

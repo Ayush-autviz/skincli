@@ -90,6 +90,7 @@ interface RoutineItem {
   usage: string;
   frequency: string;
   concerns: string[];
+  concern_tracking?: any[]; // Array of concern tracking data
   dateStarted: Date | null;
   dateStopped: Date | null;
   treatmentDate: Date | null;
@@ -232,6 +233,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       usage: usageMap[apiItem.usage] || apiItem.usage,
       frequency: frequencyMap[apiItem.frequency] || apiItem.frequency,
       concerns: apiItem.concern || [],
+      concern_tracking: apiItem.concern_tracking || [],
       dateStarted: apiItem.extra?.dateStarted ? new Date(apiItem.extra.dateStarted) : null,
       dateStopped: apiItem.extra?.dateStopped ? new Date(apiItem.extra.dateStopped) : null,
       treatmentDate: apiItem.extra?.treatmentDate ? new Date(apiItem.extra.treatmentDate) : null,
@@ -266,6 +268,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         const response = await getRoutineItems() as ApiResponse;
         
         if (response.success && response.data) {
+          console.log('🔄 MyRoutine: Routine items fetchedHHHHHHHHH:', response.data);
           const transformedItems = response.data.map(transformApiItem);
           setRoutineItems(transformedItems);
           shouldRefetchOnFocusRef.current = false; // No need to refetch if we have data
@@ -746,6 +749,13 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
     console.log('item', item);
     
+    // Determine tracking text based on concern_tracking length
+    const trackingText = item.concern_tracking && item.concern_tracking.length === 0
+      ? 'Start Effective Tracking'
+      : item.concern_tracking && item.concern_tracking.length > 0
+      ? 'Effectiveness Tracking'
+      : null;
+    
     // Determine icon based on item type
     const getItemIcon = (): string => {
       if (item.type === 'Product') {
@@ -798,6 +808,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           showChevron={false}
           onPress={() => handleNavigateToProductDetail(item)}
           dateInfo={dateInfo as any}
+          bottomText={trackingText as any}
           rightElement={item.upc ? (
             <ChevronRight 
               size={20} 
@@ -917,33 +928,31 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   }, [routineItems]);
 
-  // Function to navigate to product detail screen
+  // Function to navigate to product detail screen - always navigate to ProductDetail
   const handleNavigateToProductDetail = (item: RoutineItem): void => {
-    if (!item.upc) {
-      // If no UPC, just edit the item normally
-      handleEditItem(item);
-      return;
-    }
-
-    // Navigate to product detail screen with UPC data
+    // Always navigate to product detail screen, with or without UPC
     (navigation as any).navigate('ProductDetail', {
       itemId: item.id,
       productData: {
         product_name: item.name,
-        brand: item.extra?.brand || 'Unknown',
-        upc: item.upc,
+        brand: item.extra?.brand,
+        upc: item.upc || undefined,
         ingredients: item.extra?.ingredients || [],
         good_for: item.extra?.good_for || []
       },
       routineData: {
         name: item.name,
+        type: item.type,
         usage: item.usage,
         frequency: item.frequency,
+        concerns: item.concerns || [],
+        concern_tracking: item.concern_tracking || [],
         dateStarted: item.dateStarted,
         dateStopped: item.dateStopped,
-        stopReason: item.stopReason
+        stopReason: item.stopReason,
+        extra: item.extra || {}
       },
-      upc: item.upc
+      upc: item.upc || undefined
     });
   };
 

@@ -298,34 +298,37 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
   const plotAreaWidth = processedData.length * barSlotWidth;
   const chartHeight = 48;
 
+  const paddingTop = 28;
+  const effectiveChartHeight = chartHeight;
+
   return (
     <View style={{ height: chartHeight + 40 }}>
-      <ScrollView
-        ref={scrollViewRef}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        style={{ height: chartHeight }}
-        contentContainerStyle={{
-          paddingTop: 28,
-          paddingRight: 16
-        }}
-      >
-        <View style={[styles.plotArea, { width: plotAreaWidth, height: chartHeight }]}>
-  {/* Y-Axis Grid Lines and Labels */}
-  <View style={styles.gridContainer}>
-    <View style={[styles.yAxisGridLine, { bottom: chartHeight - 1 }]} />
-    <View style={[styles.yAxisGridLine, { bottom: chartHeight / 2 }]} />
-    <View style={[styles.yAxisGridLine, { bottom: 0 }]} />
-  </View>
-  
-  {/* Y-Axis Labels */}
-  <View style={styles.yAxisLabelsContainer}>
-    <Text style={styles.yAxisLabel}>100</Text>
-    <Text style={styles.yAxisLabel}>50</Text>
-    <Text style={styles.yAxisLabel}>0</Text>
-  </View>
+      <View style={{ flexDirection: 'row', height: chartHeight, paddingTop: paddingTop }}>
+        {/* Y-Axis Labels - Fixed, outside ScrollView */}
+        <View style={[styles.yAxisLabelsContainerFixed, { height: effectiveChartHeight, marginLeft: -20 }]}>
+          <Text style={[styles.yAxisLabel, { position: 'absolute', top: 0 }]}>100</Text>
+          <Text style={[styles.yAxisLabel, { position: 'absolute', top: effectiveChartHeight / 2 - 6 }]}>50</Text>
+          <Text style={[styles.yAxisLabel, { position: 'absolute', bottom: 0 }]}>0</Text>
+        </View>
+        
+        <ScrollView
+          ref={scrollViewRef}
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{ flex: 1, height: effectiveChartHeight, marginLeft: 10 }}
+          contentContainerStyle={{
+            paddingRight: 16
+          }}
+        >
+          <View style={[styles.plotArea, { width: plotAreaWidth, height: effectiveChartHeight }]}>
+            {/* Y-Axis Grid Lines */}
+            <View style={styles.gridContainer}>
+              <View style={[styles.yAxisGridLine, { bottom: effectiveChartHeight - 1 }]} />
+              <View style={[styles.yAxisGridLine, { bottom: effectiveChartHeight / 2 }]} />
+              <View style={[styles.yAxisGridLine, { bottom: 0 }]} />
+            </View>
           
-          {/* Bars */}
+            {/* Bars */}
           {processedData.map((scoreData, index) => {
             const actualAge = calculateActualAge(profile?.birth_date);
             const color = getAgeComparisonColor(scoreData.score, actualAge);
@@ -340,7 +343,7 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
                     styles.nullBarContainer,
                     {
                       left: xPosition,
-                      bottom: chartHeight / 2 - 2,
+                      bottom: effectiveChartHeight / 2 - 2,
                     }
                   ]}
                 >
@@ -350,7 +353,7 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
             }
             
             // Calculate bar height and position
-            const barHeight = (scoreData.score / 100) * chartHeight;
+            const barHeight = (scoreData.score / 100) * effectiveChartHeight;
             const xPosition = index * barSlotWidth;
             const isRecent = index >= processedData.length - 3;
             
@@ -365,7 +368,7 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
                 <View
                   style={{
                     width: barSlotWidth,
-                    height: chartHeight,
+                    height: effectiveChartHeight,
                     alignItems: 'center',
                     justifyContent: 'flex-end',
                   }}
@@ -412,6 +415,7 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
           })}
         </View>
       </ScrollView>
+      </View>
     </View>
   );
 };
@@ -2871,9 +2875,10 @@ const styles = StyleSheet.create({
   },
   // Chart styles for perceived age
   plotArea: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    marginLeft: 24,
+    position: 'relative',
+    borderLeftWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#E0E0E0',
   },
     // Age Guidance styles
     ageGuidanceContainer: {
@@ -2959,6 +2964,12 @@ const styles = StyleSheet.create({
     top: 0,
     bottom: 0,
     justifyContent: 'space-between',
+    alignItems: 'flex-end',
+  },
+  yAxisLabelsContainerFixed: {
+    width: 35,
+    paddingRight: 5,
+    position: 'relative',
     alignItems: 'flex-end',
   },
   yAxisLabel: {

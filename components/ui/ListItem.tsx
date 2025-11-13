@@ -24,7 +24,7 @@ DEVELOPMENT HISTORY
 
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
-import { ClipboardPlus, Pill, ChevronRight } from 'lucide-react-native';
+import { ClipboardPlus, Pill, ChevronRight, ArrowRight } from 'lucide-react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { colors, spacing, typography } from '../../styles';
 import Chip from './Chip';
@@ -54,6 +54,7 @@ interface ListItemProps {
   isNew?: boolean;
   rightElement?: React.ReactNode;
   dateInfo?: string | null;
+  bottomText?: string | null;
 }
 
 export default function ListItem({
@@ -75,26 +76,27 @@ export default function ListItem({
   isNew = false, // Shows "NEW" badge
   rightElement = null, // Custom right-side content
   dateInfo = null, // New prop for date information
+  bottomText = null, // New prop for bottom text (e.g., tracking status)
 }: ListItemProps) {
   const getIconComponent = () => {
     // Handle MaterialCommunityIcons
     if (iconLibrary === 'MaterialCommunityIcons') {
       return MaterialCommunityIcons;
     }
-    
+
     // Handle specific Lucide icons
     if (icon === 'clipboard-plus') return ClipboardPlus;
     if (icon === 'pill') return Pill;
     if (icon === 'chevron-right') return ChevronRight;
     return ClipboardPlus; // fallback
   };
-  
+
   const IconComponent = getIconComponent();
-  
+
   // Dynamic styles based on variant and priority
   const getContainerStyle = () => {
     let baseStyle = styles.container;
-    
+
     switch (variant) {
       case 'compact':
         baseStyle = { ...baseStyle, ...styles.containerCompact };
@@ -106,7 +108,7 @@ export default function ListItem({
         baseStyle = { ...baseStyle, ...styles.containerMinimal };
         break;
     }
-    
+
     switch (priority) {
       case 'high':
         baseStyle = { ...baseStyle, ...styles.containerHigh };
@@ -115,7 +117,7 @@ export default function ListItem({
         baseStyle = { ...baseStyle, ...styles.containerLow };
         break;
     }
-    
+
     return baseStyle;
   };
 
@@ -131,7 +133,7 @@ export default function ListItem({
 
   const getTitleStyle = () => {
     let baseStyle = styles.title;
-    
+
     switch (titleSize) {
       case 'small':
         baseStyle = { ...baseStyle, ...styles.titleSmall };
@@ -140,11 +142,11 @@ export default function ListItem({
         baseStyle = { ...baseStyle, ...styles.titleLarge };
         break;
     }
-    
+
     if (priority === 'high') {
       baseStyle = { ...baseStyle, ...styles.titleHigh };
     }
-    
+
     return baseStyle;
   };
 
@@ -161,20 +163,20 @@ export default function ListItem({
         {icon && (
           <View style={getIconStyle()}>
             {iconLibrary === 'MaterialCommunityIcons' ? (
-              <MaterialCommunityIcons 
+              <MaterialCommunityIcons
                 name={icon}
                 size={variant === 'compact' ? 20 : 24}
                 color={iconBackgroundColor ? colors.white : iconColor}
               />
             ) : (
-              <IconComponent 
+              <IconComponent
                 size={variant === 'compact' ? 20 : 24}
                 color={iconBackgroundColor ? colors.white : iconColor}
               />
             )}
           </View>
         )}
-        
+
         {/* Text Content */}
         <View style={styles.textContainer}>
           {/* Title with optional NEW badge */}
@@ -188,53 +190,68 @@ export default function ListItem({
               </View>
             )}
           </View>
-          
+
           {/* {subtitle && (
             <Text style={styles.subtitle} numberOfLines={1}>
               {subtitle}
             </Text>
           )} */}
-          
+
           {description && (
-            <Text 
-              style={styles.subtitle} 
-          //    numberOfLines={variant === 'compact' ? 2 : 3}
+            <Text
+              style={styles.subtitle}
+            //    numberOfLines={variant === 'compact' ? 2 : 3}
             >
               {description}
             </Text>
           )}
-          
+
           {/* Chips */}
           {chips.length > 0 && (
             <View style={styles.chipsContainer}>
               {chips.map((chip, index) => (
-                <Chip 
+                <Chip
                   key={index}
-                  label={chip.label} 
+                  label={chip.label}
                   type={chip.type || 'default'}
                   size={variant === 'compact' ? 'xs' : 'sm'}
                   styleVariant={chip.styleVariant || 'normal'}
-                  onPress={() => {}}
+                  onPress={() => { }}
                 />
               ))}
             </View>
           )}
-          
+
           {/* Date Information */}
           {dateInfo && (
             <Text style={styles.dateInfo}>
               {dateInfo}
             </Text>
           )}
+
+          {/* Bottom Text (e.g., tracking status) */}
+          {bottomText && (
+            <>
+              <View style={{ height: 1, backgroundColor: '#E0E0E0', marginVertical: 8 }}></View>
+              <View style={{ flexDirection: 'row', alignItems: 'center',}}>
+                <Text style={bottomText === 'Start Effective Tracking' ? styles.bottomTextStartTracking : styles.bottomText}>
+                  {bottomText}
+                </Text>
+                {bottomText === 'Start Effective Tracking' && (
+                  <ArrowRight size={11} color="#770737" style={{ marginTop: 2 }} />
+                )}
+              </View>
+            </>
+          )}
         </View>
       </View>
-      
+
       {/* Right Side Content */}
       <View style={styles.rightContent}>
         {rightElement}
         {showChevron && !rightElement && (
-          <ChevronRight 
-            size={20} 
+          <ChevronRight
+            size={20}
             color={colors.textSecondary}
             style={styles.chevron}
           />
@@ -245,8 +262,8 @@ export default function ListItem({
 
   if (onPress && !disabled) {
     return (
-      <TouchableOpacity 
-        onPress={onPress} 
+      <TouchableOpacity
+        onPress={onPress}
         activeOpacity={0.7}
         style={styles.touchableContainer}
       >
@@ -385,6 +402,18 @@ const styles = StyleSheet.create({
     color: colors.textTertiary,
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  bottomTextStartTracking: {
+    fontSize: 11,
+    color: '#770737',
+    // marginTop: 2,
+    fontWeight: '500',
+  },
+  bottomText: {
+    fontSize: 11,
+    color: colors.primary,
+    // marginTop: 2,
+    fontWeight: '500',
   },
   newBadge: {
     backgroundColor: colors.success,

@@ -67,6 +67,12 @@ const TrackingReviewScreen = (): React.JSX.Element => {
     navigation.goBack();
   };
 
+  const handleMarkEffectiveness = () => {
+    // TODO: Implement mark effectiveness functionality
+    console.log('Mark effectiveness clicked');
+    // You can add navigation or API call here
+  };
+
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -297,6 +303,17 @@ const TrackingReviewScreen = (): React.JSX.Element => {
           <View style={styles.bottomSpacing} />
         </View>
       </ScrollView>
+
+      {/* Footer Button */}
+      <View style={styles.footerContainer}>
+        <TouchableOpacity 
+          style={styles.footerButton}
+          onPress={handleMarkEffectiveness}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.footerButtonText}>Mark Effectiveness</Text>
+        </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -392,7 +409,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xl,
+    paddingBottom: spacing.xl + 80, // Extra padding for footer button
   },
   content: {
     padding: spacing.lg,
@@ -655,7 +672,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    backgroundColor: '#915F6D',
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.md,
@@ -669,6 +686,33 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     fontWeight: '600',
     color: colors.white,
+  },
+  footerContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: colors.white,
+    paddingVertical: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    ...shadows.md,
+  },
+  footerButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  footerButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: colors.white,
+    letterSpacing: 0.3,
   },
 });
 

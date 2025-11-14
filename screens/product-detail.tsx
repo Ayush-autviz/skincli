@@ -13,7 +13,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight } from 'lucide-react-native';
+import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import { searchProductByUPC, deleteRoutineItem } from '../utils/newApiService';
 
@@ -132,6 +132,17 @@ const ProductDetailScreen = (): React.JSX.Element => {
     });
   };
 
+  // Handle review tracking button press
+  const handleReviewTracking = () => {
+    // Navigate to tracking review screen
+    (navigation as any).navigate('TrackingReview', {
+      itemId: params.itemId,
+      routineData: routineData,
+      productData: productData,
+      concernTracking: routineData.concern_tracking || []
+    });
+  };
+
   // Handle remove button press
   const handleRemove = () => {
     Alert.alert(
@@ -224,6 +235,28 @@ const ProductDetailScreen = (): React.JSX.Element => {
     
     return item
       .split('_')
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+      .join(' ');
+  };
+
+  // Get improvement status icon and color
+  const getImprovementStatus = (status: string | null) => {
+    switch (status) {
+      case 'improving':
+        return { icon: TrendingUp, color: '#10B981', label: 'Improving' };
+      case 'declining':
+        return { icon: TrendingDown, color: '#EF4444', label: 'Declining' };
+      case 'stable':
+        return { icon: Minus, color: '#6B7280', label: 'Stable' };
+      default:
+        return { icon: AlertCircle, color: '#9CA3AF', label: 'No Data' };
+    }
+  };
+
+  // Format concern name for display
+  const formatConcernName = (name: string) => {
+    return name
+      .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   };
@@ -326,8 +359,8 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 )}
               </TouchableOpacity>
             </View>
-            {/* Start Tracking Button - Show if concern_tracking is null or empty */}
-            {( routineData.concern_tracking.length === 0) && (
+            {/* Start/Review Tracking Button */}
+            {routineData.concern_tracking && routineData.concern_tracking.length === 0 ? (
               <TouchableOpacity 
                 onPress={handleStartTracking} 
                 style={styles.startTrackingButton}
@@ -339,8 +372,22 @@ const ProductDetailScreen = (): React.JSX.Element => {
                   <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
                 </View>
               </TouchableOpacity>
-            )}
+            ) : routineData.concern_tracking && routineData.concern_tracking.length > 0 ? (
+              <TouchableOpacity 
+                onPress={handleReviewTracking} 
+                style={styles.reviewTrackingButton}
+                activeOpacity={0.8}
+              >
+                <View style={styles.startTrackingContent}>
+                  <TrendingUp size={18} color={colors.white} style={styles.startTrackingIcon} />
+                  <Text style={styles.startTrackingText}>Review Effective Tracking</Text>
+                  <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
+                </View>
+              </TouchableOpacity>
+            ) : null}
           </View>
+
+       
 
           {/* Product Description */}
 
@@ -382,8 +429,8 @@ const ProductDetailScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Key Ingredients Section */}
-          {productData.ingredients && productData.ingredients.length > 0 && (
+          {/* Key Ingredients Section - Show ingredients if available, otherwise show concerns */}
+          {productData.ingredients && productData.ingredients.length > 0 ? (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Ingredients</Text>
               <View style={styles.chipSelectorContainer}>
@@ -396,7 +443,20 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 ))}
               </View>
             </View>
-          )}
+          ) : routineData.concerns && routineData.concerns.length > 0 ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Concerns</Text>
+              <View style={styles.chipSelectorContainer}>
+                {routineData.concerns.map((concern: string, index: number) => (
+                  <View key={index} style={styles.chipButton}>
+                    <Text style={styles.chipButtonText}>
+                      {formatConcernName(concern)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
 
           {/* Free Of Section */}
   
@@ -597,6 +657,15 @@ const styles = StyleSheet.create({
     // borderColor: 'rgba(255, 255, 255, 0.2)',
     // elevation: 4,
   },
+  reviewTrackingButton: {
+    marginTop: spacing.md,
+    paddingVertical: 10,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: '#915F6D',
+    borderRadius: borderRadius.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   startTrackingContent: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -645,6 +714,203 @@ const styles = StyleSheet.create({
   },
   bottomSpacing: {
     height: 40,
+  },
+  trackingSubtitle: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.md,
+  },
+  trackingCard: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
+    borderWidth: 1,
+    borderColor: '#F3F4F6',
+    ...shadows.sm,
+  },
+  trackingHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.lg,
+  },
+  trackingHeaderLeft: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  trackingConcernName: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    letterSpacing: 0.2,
+  },
+  completedBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    backgroundColor: '#10B98115',
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill || 12,
+  },
+  completedText: {
+    fontSize: fontSize.xs,
+    fontWeight: '600',
+    color: '#10B981',
+  },
+  statusBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill || 12,
+  },
+  statusText: {
+    fontSize: fontSize.xs,
+    fontWeight: '600',
+  },
+  scoresRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  scoreBox: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 70,
+  },
+  scoreBoxLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    // letterSpacing: 0.5,
+  },
+  scoreBoxValue: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  changeBox: {
+    flex: 1,
+    borderRadius: borderRadius.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 70,
+  },
+  positiveChange: {
+    backgroundColor: '#22C55E15',
+  },
+  negativeChange: {
+    backgroundColor: '#EF444415',
+  },
+  neutralChange: {
+    backgroundColor: '#6B728015',
+  },
+  changeBoxLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    marginBottom: 4,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  changeValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  changeBoxValue: {
+    fontSize: 20,
+    fontWeight: '700',
+  },
+  progressSection: {
+    marginBottom: spacing.lg,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.sm,
+  },
+  progressLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  progressPercentage: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: colors.primary,
+  },
+  progressBarContainer: {
+    marginBottom: spacing.xs,
+  },
+  progressBar: {
+    height: 8,
+    backgroundColor: '#E5E7EB',
+    borderRadius: borderRadius.pill || 5,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    borderRadius: borderRadius.pill || 5,
+  },
+  progressText: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  trackingFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  footerItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  footerLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    marginRight: 4,
+  },
+  footerValue: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  footerDivider: {
+    width: 1,
+    height: 20,
+    backgroundColor: '#E5E7EB',
+    marginHorizontal: spacing.md,
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
 });
 

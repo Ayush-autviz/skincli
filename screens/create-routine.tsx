@@ -199,24 +199,24 @@ const CreateRoutineScreen = (): React.JSX.Element => {
           setUpcCode(fullProductData.upc || product.upc || '');
 
           // Auto-populate concerns based on good_for data
-          if (fullProductData.good_for && Array.isArray(fullProductData.good_for)) {
-            const mappedConcerns = fullProductData.good_for.map((concern: string) => {
-              // Map API concerns to our concerns options
-              const concernMapping: { [key: string]: string } = {
-                'dry_skin': 'Dry Skin',
-                'oily_skin': 'Oily Skin',
-                'combination_skin': 'Combination Skin',
-                'normal_skin': 'Normal Skin',
-                'sensitive_skin': 'Sensitive Skin',
-                'hydration': 'Hydration',
-                'fine_lines': 'Fine Lines',
-                'anti_aging': 'Anti-Aging',
-              };
-              return concernMapping[concern] || concern;
-            }).filter(Boolean);
+          // if (fullProductData.good_for && Array.isArray(fullProductData.good_for)) {
+          //   const mappedConcerns = fullProductData.good_for.map((concern: string) => {
+          //     // Map API concerns to our concerns options
+          //     const concernMapping: { [key: string]: string } = {
+          //       'dry_skin': 'Dry Skin',
+          //       'oily_skin': 'Oily Skin',
+          //       'combination_skin': 'Combination Skin',
+          //       'normal_skin': 'Normal Skin',
+          //       'sensitive_skin': 'Sensitive Skin',
+          //       'hydration': 'Hydration',
+          //       'fine_lines': 'Fine Lines',
+          //       'anti_aging': 'Anti-Aging',
+          //     };
+          //     return concernMapping[concern] || concern;
+          //   }).filter(Boolean);
 
-            setItemConcerns(mappedConcerns);
-          }
+          //   setItemConcerns(mappedConcerns);
+          // }
         } else {
           // Fallback to basic product data if UPC fetch fails
           console.log('⚠️ UPC fetch failed, using basic product data');
@@ -225,24 +225,24 @@ const CreateRoutineScreen = (): React.JSX.Element => {
           setUpcCode(product.upc || '');
 
           // Auto-populate concerns based on good_for data
-          if (product.good_for && Array.isArray(product.good_for)) {
-            const mappedConcerns = product.good_for.map((concern: string) => {
-              // Map API concerns to our concerns options
-              const concernMapping: { [key: string]: string } = {
-                'dry_skin': 'Dry Skin',
-                'oily_skin': 'Oily Skin',
-                'combination_skin': 'Combination Skin',
-                'normal_skin': 'Normal Skin',
-                'sensitive_skin': 'Sensitive Skin',
-                'hydration': 'Hydration',
-                'fine_lines': 'Fine Lines',
-                'anti_aging': 'Anti-Aging',
-              };
-              return concernMapping[concern] || concern;
-            }).filter(Boolean);
+          // if (product.good_for && Array.isArray(product.good_for)) {
+          //   const mappedConcerns = product.good_for.map((concern: string) => {
+          //     // Map API concerns to our concerns options
+          //     const concernMapping: { [key: string]: string } = {
+          //       'dry_skin': 'Dry Skin',
+          //       'oily_skin': 'Oily Skin',
+          //       'combination_skin': 'Combination Skin',
+          //       'normal_skin': 'Normal Skin',
+          //       'sensitive_skin': 'Sensitive Skin',
+          //       'hydration': 'Hydration',
+          //       'fine_lines': 'Fine Lines',
+          //       'anti_aging': 'Anti-Aging',
+          //     };
+          //     return concernMapping[concern] || concern;
+          //   }).filter(Boolean);
 
-            setItemConcerns(mappedConcerns);
-          }
+          //   setItemConcerns(mappedConcerns);
+          // }
         }
       } else {
         // No UPC available, use basic product data
@@ -252,24 +252,24 @@ const CreateRoutineScreen = (): React.JSX.Element => {
         setUpcCode(product.upc || '');
 
         // Auto-populate concerns based on good_for data
-        if (product.good_for && Array.isArray(product.good_for)) {
-          const mappedConcerns = product.good_for.map((concern: string) => {
-            // Map API concerns to our concerns options
-            const concernMapping: { [key: string]: string } = {
-              'dry_skin': 'Dry Skin',
-              'oily_skin': 'Oily Skin',
-              'combination_skin': 'Combination Skin',
-              'normal_skin': 'Normal Skin',
-              'sensitive_skin': 'Sensitive Skin',
-              'hydration': 'Hydration',
-              'fine_lines': 'Fine Lines',
-              'anti_aging': 'Anti-Aging',
-            };
-            return concernMapping[concern] || concern;
-          }).filter(Boolean);
+        // if (product.good_for && Array.isArray(product.good_for)) {
+        //   const mappedConcerns = product.good_for.map((concern: string) => {
+        //     // Map API concerns to our concerns options
+        //     const concernMapping: { [key: string]: string } = {
+        //       'dry_skin': 'Dry Skin',
+        //       'oily_skin': 'Oily Skin',
+        //       'combination_skin': 'Combination Skin',
+        //       'normal_skin': 'Normal Skin',
+        //       'sensitive_skin': 'Sensitive Skin',
+        //       'hydration': 'Hydration',
+        //       'fine_lines': 'Fine Lines',
+        //       'anti_aging': 'Anti-Aging',
+        //     };
+        //     return concernMapping[concern] || concern;
+        //   }).filter(Boolean);
 
-          setItemConcerns(mappedConcerns);
-        }
+        //   setItemConcerns(mappedConcerns);
+        // }
       }
 
       // Reset display states
@@ -291,24 +291,24 @@ const CreateRoutineScreen = (): React.JSX.Element => {
       setShowAllFreeOf(false);
 
       // Auto-populate concerns based on good_for data
-      if (product.good_for && Array.isArray(product.good_for)) {
-        const mappedConcerns = product.good_for.map((concern: string) => {
-          // Map API concerns to our concerns options
-          const concernMapping: { [key: string]: string } = {
-            'dry_skin': 'Dry Skin',
-            'oily_skin': 'Oily Skin',
-            'combination_skin': 'Combination Skin',
-            'normal_skin': 'Normal Skin',
-            'sensitive_skin': 'Sensitive Skin',
-            'hydration': 'Hydration',
-            'fine_lines': 'Fine Lines',
-            'anti_aging': 'Anti-Aging',
-          };
-          return concernMapping[concern] || concern;
-        }).filter(Boolean);
+      // if (product.good_for && Array.isArray(product.good_for)) {
+      //   const mappedConcerns = product.good_for.map((concern: string) => {
+      //     // Map API concerns to our concerns options
+      //     const concernMapping: { [key: string]: string } = {
+      //       'dry_skin': 'Dry Skin',
+      //       'oily_skin': 'Oily Skin',
+      //       'combination_skin': 'Combination Skin',
+      //       'normal_skin': 'Normal Skin',
+      //       'sensitive_skin': 'Sensitive Skin',
+      //       'hydration': 'Hydration',
+      //       'fine_lines': 'Fine Lines',
+      //       'anti_aging': 'Anti-Aging',
+      //     };
+      //     return concernMapping[concern] || concern;
+      //   }).filter(Boolean);
 
-        setItemConcerns(mappedConcerns);
-      }
+      //   setItemConcerns(mappedConcerns);
+      // }
 
       setShowProductSearchModal(false);
     } finally {

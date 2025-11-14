@@ -22,6 +22,7 @@ import SnapshotScreen from '../screens/snapshot';
 import NameScreen from '../screens/name';
 import BarcodeScannerScreen from '../screens/barcode-scanner';
 import ProductDetailScreen from '../screens/product-detail';
+import TrackingReviewScreen from '../screens/tracking-review';
 
 // Import auth store
 
@@ -169,6 +170,15 @@ function AuthenticatedNavigator() {
             <Stack.Screen
               name="ProductDetail"
               component={ProductDetailScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="TrackingReview"
+              component={TrackingReviewScreen}
               options={{
                 animation: 'slide_from_right',
                 headerShown: false,

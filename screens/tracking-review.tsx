@@ -1,17 +1,16 @@
 // tracking-review.tsx
 // Screen to review effectiveness tracking data
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Modal,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, CheckCircle, TrendingDown, TrendingUp, Minus, AlertCircle, X, Check } from 'lucide-react-native';
+import { ArrowLeft, CheckCircle, TrendingDown, TrendingUp, Minus, AlertCircle, Camera } from 'lucide-react-native';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../styles';
 
 interface TrackingReviewParams {
@@ -19,6 +18,7 @@ interface TrackingReviewParams {
   routineData: any;
   productData: any;
   concernTracking: any[];
+  usageResponse?: 'yes' | 'no' | null;
 }
 
 const TrackingReviewScreen = (): React.JSX.Element => {
@@ -27,49 +27,30 @@ const TrackingReviewScreen = (): React.JSX.Element => {
   const params = route.params as TrackingReviewParams || {};
   
   const concernTracking = params.concernTracking || [];
-  
-  // State for first visit modal
-  const [showUsageModal, setShowUsageModal] = useState<boolean>(true);
-  const [usageResponse, setUsageResponse] = useState<string | null>(null);
+  const usageResponse = params.usageResponse || null;
+
+  // Get usage response text
+  const getUsageResponseText = () => {
+    if (usageResponse === 'yes') {
+      return "Yes, I've been using it consistently - Missing once or twice is okay";
+    } else if (usageResponse === 'no') {
+      return "No, I haven't been using it consistently - I've missed multiple times per week";
+    }
+    return null;
+  };
 
   // Helper function to get improvement status
   const getImprovementStatus = (status: string | null | undefined) => {
-    if (!status) {
-      return {
-        label: 'No Data',
-        icon: AlertCircle,
-        color: '#9CA3AF'
-      };
+    switch (status) {
+      case 'improving':
+        return { icon: TrendingUp, color: '#10B981', label: 'Improving' };
+      case 'declining':
+        return { icon: TrendingDown, color: '#EF4444', label: 'Declining' };
+      case 'stable':
+        return { icon: Minus, color: '#6B7280', label: 'Stable' };
+      default:
+        return { icon: AlertCircle, color: '#9CA3AF', label: 'No Data' };
     }
-    
-    const statusMap: { [key: string]: { label: string; icon: any; color: string } } = {
-      'improved': {
-        label: 'Improved',
-        icon: TrendingUp,
-        color: '#22C55E'
-      },
-      'worsened': {
-        label: 'Worsened',
-        icon: TrendingDown,
-        color: '#EF4444'
-      },
-      'no_change': {
-        label: 'No Data',
-        icon: AlertCircle,
-        color: '#9CA3AF'
-      },
-      'insufficient_data': {
-        label: 'Insufficient Data',
-        icon: AlertCircle,
-        color: '#F59E0B'
-      }
-    };
-    
-    return statusMap[status] || {
-      label: 'No Data',
-      icon: AlertCircle,
-      color: '#9CA3AF'
-    };
   };
 
   // Helper function to format concern names
@@ -86,146 +67,8 @@ const TrackingReviewScreen = (): React.JSX.Element => {
     navigation.goBack();
   };
 
-  // Format usage and frequency for display
-  const getUsageInfo = () => {
-    const routineData = params.routineData || {};
-    const usage = routineData.usage || '';
-    const frequency = routineData.frequency || '';
-    const concerns = routineData.concerns || [];
-    
-    // Format usage
-    let usageText = '';
-    if (usage === 'am') usageText = 'AM';
-    else if (usage === 'pm') usageText = 'PM';
-    else if (usage === 'both') usageText = 'AM / PM';
-    else if (usage === 'as_needed') usageText = 'As needed';
-    else usageText = usage;
-    
-    // Format frequency
-    let frequencyText = '';
-    if (frequency === 'daily') frequencyText = 'Daily';
-    else if (frequency === 'weekly') frequencyText = 'Weekly';
-    else if (frequency === 'monthly') frequencyText = 'Monthly';
-    else frequencyText = frequency;
-    
-    // Format concerns
-    const concernsText = concerns.length > 0 
-      ? concerns.map((c: string) => c.toLowerCase()).join(', ')
-      : '';
-    
-    if (usage === 'as_needed') {
-      return `Using ${usageText} / ${frequencyText}${concernsText ? ` for ${concernsText}` : ''}`;
-    }
-    return `Using ${usageText} / ${frequencyText}${concernsText ? ` for ${concernsText}` : ''}`;
-  };
-
-  const handleUsageResponse = (response: 'yes' | 'no') => {
-    setUsageResponse(response);
-    setShowUsageModal(false);
-  };
-
   return (
     <View style={styles.container}>
-      {/* Usage Modal - Shows on first visit */}
-      <Modal
-        visible={showUsageModal}
-        transparent={true}
-        animationType="fade"
-        onRequestClose={() => setShowUsageModal(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            {/* Close Button */}
-            <TouchableOpacity
-              style={styles.modalCloseButton}
-              onPress={() => setShowUsageModal(false)}
-            >
-              <View style={styles.modalCloseIconContainer}>
-                <X size={18} color={colors.textPrimary} />
-              </View>
-            </TouchableOpacity>
-
-            {/* Title */}
-            <Text style={styles.modalTitle}>Review Effectiveness</Text>
-
-            {/* Product Info */}
-            {params.productData?.product_name && (
-              <View style={styles.modalProductInfo}>
-                <Text style={styles.modalProductName}>
-                  {params.productData.product_name}
-                </Text>
-                <Text style={styles.modalUsageInfo}>
-                  {getUsageInfo()}
-                </Text>
-              </View>
-            )}
-
-            {/* Question */}
-            <Text style={styles.modalQuestion}>
-              Have you been using this product as needed?
-            </Text>
-
-            {/* Response Options */}
-            <View style={styles.modalOptionsContainer}>
-              {/* Yes Option */}
-              <TouchableOpacity
-                style={[
-                  styles.modalOption,
-                  usageResponse === 'yes' && styles.modalOptionSelected
-                ]}
-                onPress={() => handleUsageResponse('yes')}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.modalOptionIcon,
-                  usageResponse === 'yes' && styles.modalOptionIconSelected
-                ]}>
-                  <Check size={16} color={usageResponse === 'yes' ? colors.white : colors.textSecondary} />
-                </View>
-                <View style={styles.modalOptionTextContainer}>
-                  <Text style={[
-                    styles.modalOptionText,
-                    usageResponse === 'yes' && styles.modalOptionTextSelected
-                  ]}>
-                    Yes, I've been using it consistently
-                  </Text>
-                  <Text style={styles.modalOptionSubtext}>
-                    Missing once or twice is okay
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* No Option */}
-              <TouchableOpacity
-                style={[
-                  styles.modalOption,
-                  usageResponse === 'no' && styles.modalOptionSelected
-                ]}
-                onPress={() => handleUsageResponse('no')}
-                activeOpacity={0.7}
-              >
-                <View style={[
-                  styles.modalOptionIcon,
-                  usageResponse === 'no' && styles.modalOptionIconSelected
-                ]}>
-                  <X size={16} color={usageResponse === 'no' ? colors.white : colors.textSecondary} />
-                </View>
-                <View style={styles.modalOptionTextContainer}>
-                  <Text style={[
-                    styles.modalOptionText,
-                    usageResponse === 'no' && styles.modalOptionTextSelected
-                  ]}>
-                    No, I haven't been using it consistently
-                  </Text>
-                  <Text style={styles.modalOptionSubtext}>
-                    I've missed multiple times per week
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
       {/* Header */}
       <View style={styles.headerContainer}>
         <View style={styles.header}>
@@ -264,8 +107,17 @@ const TrackingReviewScreen = (): React.JSX.Element => {
             </View>
           )} */}
 
+          {/* Usage Response Text */}
+          {getUsageResponseText() && (
+            <View style={styles.usageResponseContainer}>
+              <Text style={styles.usageResponseText}>
+                {getUsageResponseText()}
+              </Text>
+            </View>
+          )}
+
           {/* Tracking Subtitle */}
-          <Text style={styles.trackingSubtitle}>
+          <Text style={[styles.trackingSubtitle, !getUsageResponseText() && { marginTop: 20 }]}>
             Track your progress for each concern
           </Text>
 
@@ -278,12 +130,23 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                 ? (tracking.weeks_completed / tracking.total_weeks) * 100 
                 : 0;
               
+              // Check if completed but all scores are null
+              const isCompletedWithNullScores = tracking.is_completed && 
+                tracking.scores?.baseline_score === null && 
+                tracking.scores?.current_score === null && 
+                tracking.scores?.score_difference === null && 
+                tracking.scores?.improvement_status === null;
+              
               // Determine score box background color based on current score
               const getScoreBgColor = (score: number | null) => {
                 if (score === null) return '#f5f5f5';
                 if (score >= 70) return '#4CAF5015'; // Light green
                 if (score >= 50) return '#FF980015'; // Light orange
                 return '#F4433615'; // Light red
+              };
+
+              const handleTakePhoto = () => {
+                (navigation as any).navigate('Camera');
               };
               
               return (
@@ -309,59 +172,76 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                     </View>
                   </View>
 
-                  {/* Scores Row - Similar to metricDetail design */}
-                  {tracking.scores && (tracking.scores.baseline_score !== null || tracking.scores.current_score !== null) && (
-                    <View style={styles.scoresRow}>
-                      {tracking.scores.baseline_score !== null && (
-                        <View style={[styles.scoreBox, { backgroundColor: getScoreBgColor(tracking.scores.baseline_score) }]}>
-                          <Text style={styles.scoreBoxLabel}>Baseline</Text>
-                          <Text style={styles.scoreBoxValue}>
-                            {tracking.scores.baseline_score}
-                          </Text>
-                        </View>
-                      )}
-                      {tracking.scores.current_score !== null && (
-                        <View style={[styles.scoreBox, { backgroundColor: getScoreBgColor(tracking.scores.current_score) }]}>
-                          <Text style={styles.scoreBoxLabel}>Current</Text>
-                          <Text style={styles.scoreBoxValue}>
-                            {tracking.scores.current_score}
-                          </Text>
-                        </View>
-                      )}
-                      {tracking.scores.score_difference !== null && (
-                        <View style={[
-                          styles.changeBox,
-                          tracking.scores.score_difference > 0 
-                            ? styles.positiveChange 
-                            : tracking.scores.score_difference < 0 
-                            ? styles.negativeChange 
-                            : styles.neutralChange
-                        ]}>
-                          <Text style={styles.changeBoxLabel}>Change</Text>
-                          <View style={styles.changeValueContainer}>
-                            {tracking.scores.score_difference !== 0 && (
-                              <StatusIcon 
-                                size={14} 
-                                color={tracking.scores.score_difference > 0 ? '#22C55E' : '#EF4444'} 
-                              />
-                            )}
-                            <Text style={[
-                              styles.changeBoxValue,
-                              { 
-                                color: tracking.scores.score_difference > 0 
-                                  ? '#22C55E' 
-                                  : tracking.scores.score_difference < 0 
-                                  ? '#EF4444' 
-                                  : '#6B7280'
-                              }
-                            ]}>
-                              {tracking.scores.score_difference > 0 ? '+' : ''}
-                              {tracking.scores.score_difference}
+                  {/* Show Take Photo button if completed but scores are null */}
+                  {isCompletedWithNullScores ? (
+                    <View style={styles.takePhotoSection}>
+                      <Text style={styles.takePhotoText}>
+                        Take a photo to see your results
+                      </Text>
+                      <TouchableOpacity 
+                        style={styles.takePhotoButton}
+                        onPress={handleTakePhoto}
+                        activeOpacity={0.8}
+                      >
+                        <Camera size={16} color={colors.white} style={styles.takePhotoButtonIcon} />
+                        <Text style={styles.takePhotoButtonText}>Take a Photo</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : (
+                    /* Scores Row - Similar to metricDetail design */
+                    tracking.scores && (tracking.scores.baseline_score !== null || tracking.scores.current_score !== null) && (
+                      <View style={styles.scoresRow}>
+                        {tracking.scores.baseline_score !== null && (
+                          <View style={[styles.scoreBox, { backgroundColor: getScoreBgColor(tracking.scores.baseline_score) }]}>
+                            <Text style={styles.scoreBoxLabel}>Baseline</Text>
+                            <Text style={styles.scoreBoxValue}>
+                              {tracking.scores.baseline_score}
                             </Text>
                           </View>
-                        </View>
-                      )}
-                    </View>
+                        )}
+                        {tracking.scores.current_score !== null && (
+                          <View style={[styles.scoreBox, { backgroundColor: getScoreBgColor(tracking.scores.current_score) }]}>
+                            <Text style={styles.scoreBoxLabel}>Current</Text>
+                            <Text style={styles.scoreBoxValue}>
+                              {tracking.scores.current_score}
+                            </Text>
+                          </View>
+                        )}
+                        {tracking.scores.score_difference !== null && (
+                          <View style={[
+                            styles.changeBox,
+                            tracking.scores.score_difference > 0 
+                              ? styles.positiveChange 
+                              : tracking.scores.score_difference < 0 
+                              ? styles.negativeChange 
+                              : styles.neutralChange
+                          ]}>
+                            <Text style={styles.changeBoxLabel}>Change</Text>
+                            <View style={styles.changeValueContainer}>
+                              {tracking.scores.score_difference !== 0 && (
+                                <StatusIcon 
+                                  size={14} 
+                                  color={tracking.scores.score_difference > 0 ? '#22C55E' : '#EF4444'} 
+                                />
+                              )}
+                              <Text style={[
+                                styles.changeBoxValue,
+                                { 
+                                  color: tracking.scores.score_difference > 0 
+                                    ? '#22C55E' 
+                                    : tracking.scores.score_difference < 0 
+                                    ? '#EF4444' 
+                                    : '#6B7280'
+                                }
+                              ]}>
+                                {tracking.scores.score_difference > 0 ? '+' : ''}
+                                {tracking.scores.score_difference}
+                              </Text>
+                            </View>
+                          </View>
+                        )}
+                      </View>
+                    )
                   )}
 
                   {/* Progress Section */}
@@ -533,6 +413,22 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
     fontWeight: '500',
+  },
+  usageResponseContainer: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.md,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    ...shadows.sm,
+  },
+  usageResponseText: {
+    fontSize: fontSize.sm,
+    color: colors.textPrimary,
+    fontWeight: '500',
+    lineHeight: 20,
   },
   trackingSubtitle: {
     marginTop: 20,
@@ -744,108 +640,35 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: 40,
   },
-  // Modal Styles
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.lg,
-  },
-  modalContent: {
-    backgroundColor: colors.white,
-    borderRadius: borderRadius.lg,
-    padding: spacing.xl,
-    width: '100%',
-    maxWidth: 400,
-    ...shadows.lg,
-  },
-  modalCloseButton: {
-    position: 'absolute',
-    top: spacing.md,
-    right: spacing.md,
-    zIndex: 10,
-  },
-  modalCloseIconContainer: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: colors.textPrimary,
+  takePhotoSection: {
     marginBottom: spacing.lg,
+    alignItems: 'center',
+  },
+  takePhotoText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    marginBottom: spacing.sm,
     textAlign: 'center',
+    fontWeight: '500',
   },
-  modalProductInfo: {
-    marginBottom: spacing.xl,
-  },
-  modalProductName: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  modalUsageInfo: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: 20,
-  },
-  modalQuestion: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: spacing.lg,
-  },
-  modalOptionsContainer: {
-    gap: spacing.md,
-  },
-  modalOption: {
+  takePhotoButton: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    padding: spacing.md,
-    borderRadius: borderRadius.md,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    backgroundColor: colors.white,
-  },
-  modalOptionSelected: {
-    borderColor: colors.primary,
-    backgroundColor: `${colors.primary}05`,
-  },
-  modalOptionIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
-    backgroundColor: '#F3F4F6',
-    justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
-    marginTop: 2,
-  },
-  modalOptionIconSelected: {
+    justifyContent: 'center',
     backgroundColor: colors.primary,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    borderRadius: borderRadius.md,
+    gap: spacing.xs,
+    ...shadows.sm,
   },
-  modalOptionTextContainer: {
-    flex: 1,
+  takePhotoButtonIcon: {
+    marginRight: 2,
   },
-  modalOptionText: {
-    fontSize: fontSize.md,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
-  },
-  modalOptionTextSelected: {
-    color: colors.primary,
-  },
-  modalOptionSubtext: {
+  takePhotoButtonText: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    lineHeight: 18,
+    fontWeight: '600',
+    color: colors.white,
   },
 });
 

@@ -11,9 +11,10 @@ import {
   SafeAreaView,
   Alert,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle } from 'lucide-react-native';
+import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle, Check } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import { searchProductByUPC, deleteRoutineItem } from '../utils/newApiService';
 
@@ -38,6 +39,8 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const [routineData, setRoutineData] = useState<any>(params.routineData || {});
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
+  const [showUsageModal, setShowUsageModal] = useState<boolean>(false);
+  const [usageResponse, setUsageResponse] = useState<string | null>(null);
 
   // Fetch fresh product data from API using UPC code
   useEffect(() => {
@@ -132,15 +135,56 @@ const ProductDetailScreen = (): React.JSX.Element => {
     });
   };
 
-  // Handle review tracking button press
-  const handleReviewTracking = () => {
-    // Navigate to tracking review screen
+  // Format usage and frequency for display in modal
+  const getUsageInfo = () => {
+    const usage = routineData.usage || '';
+    const frequency = routineData.frequency || '';
+    const concerns = routineData.concerns || [];
+    
+    // Format usage
+    let usageText = '';
+    if (usage === 'am') usageText = 'AM';
+    else if (usage === 'pm') usageText = 'PM';
+    else if (usage === 'both') usageText = 'AM / PM';
+    else if (usage === 'as_needed') usageText = 'As needed';
+    else usageText = usage;
+    
+    // Format frequency
+    let frequencyText = '';
+    if (frequency === 'daily') frequencyText = 'Daily';
+    else if (frequency === 'weekly') frequencyText = 'Weekly';
+    else if (frequency === 'monthly') frequencyText = 'Monthly';
+    else frequencyText = frequency;
+    
+    // Format concerns
+    const concernsText = concerns.length > 0 
+      ? concerns.map((c: string) => c.toLowerCase()).join(', ')
+      : '';
+    
+    if (usage === 'as_needed') {
+      return `Using ${usageText} / ${frequencyText}${concernsText ? ` for ${concernsText}` : ''}`;
+    }
+    return `Using ${usageText} / ${frequencyText}${concernsText ? ` for ${concernsText}` : ''}`;
+  };
+
+  // Handle usage response and navigate to tracking review
+  const handleUsageResponse = (response: 'yes' | 'no') => {
+    setUsageResponse(response);
+    setShowUsageModal(false);
+    // Navigate to tracking review screen after response
     (navigation as any).navigate('TrackingReview', {
       itemId: params.itemId,
       routineData: routineData,
       productData: productData,
-      concernTracking: routineData.concern_tracking || []
+      concernTracking: routineData.concern_tracking || [],
+      usageResponse: response
     });
+  };
+
+  // Handle review tracking button press
+  const handleReviewTracking = () => {
+    // Show the usage modal first
+    setShowUsageModal(true);
   };
 
   // Handle remove button press
@@ -289,6 +333,106 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   return (
     <View style={styles.container}>
+      {/* Usage Modal - Shows when Review Effective Tracking is clicked */}
+      <Modal
+        visible={showUsageModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowUsageModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            {/* Close Button */}
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setShowUsageModal(false)}
+            >
+              <View style={styles.modalCloseIconContainer}>
+                <X size={18} color={colors.textPrimary} />
+              </View>
+            </TouchableOpacity>
+
+            {/* Title */}
+            <Text style={styles.modalTitle}>Review Effectiveness</Text>
+
+            {/* Product Info */}
+            {productData.product_name && (
+              <View style={styles.modalProductInfo}>
+                <Text style={styles.modalProductName}>
+                  {productData.product_name}
+                </Text>
+                <Text style={styles.modalUsageInfo}>
+                  {getUsageInfo()}
+                </Text>
+              </View>
+            )}
+
+            {/* Question */}
+            <Text style={styles.modalQuestion}>
+              Have you been using this product as needed?
+            </Text>
+
+            {/* Response Options */}
+            <View style={styles.modalOptionsContainer}>
+              {/* Yes Option */}
+              <TouchableOpacity
+                style={[
+                  styles.modalOption,
+                  usageResponse === 'yes' && styles.modalOptionSelected
+                ]}
+                onPress={() => handleUsageResponse('yes')}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.modalOptionIcon,
+                  usageResponse === 'yes' && styles.modalOptionIconSelected
+                ]}>
+                  <Check size={16} color={usageResponse === 'yes' ? colors.white : colors.textSecondary} />
+                </View>
+                <View style={styles.modalOptionTextContainer}>
+                  <Text style={[
+                    styles.modalOptionText,
+                    usageResponse === 'yes' && styles.modalOptionTextSelected
+                  ]}>
+                    Yes, I've been using it consistently
+                  </Text>
+                  <Text style={styles.modalOptionSubtext}>
+                    Missing once or twice is okay
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {/* No Option */}
+              <TouchableOpacity
+                style={[
+                  styles.modalOption,
+                  usageResponse === 'no' && styles.modalOptionSelected
+                ]}
+                onPress={() => handleUsageResponse('no')}
+                activeOpacity={0.7}
+              >
+                <View style={[
+                  styles.modalOptionIcon,
+                  usageResponse === 'no' && styles.modalOptionIconSelected
+                ]}>
+                  <X size={16} color={usageResponse === 'no' ? colors.white : colors.textSecondary} />
+                </View>
+                <View style={styles.modalOptionTextContainer}>
+                  <Text style={[
+                    styles.modalOptionText,
+                    usageResponse === 'no' && styles.modalOptionTextSelected
+                  ]}>
+                    No, I haven't been using it consistently
+                  </Text>
+                  <Text style={styles.modalOptionSubtext}>
+                    I've missed multiple times per week
+                  </Text>
+                </View>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
       {/* Header */}
       <View style={styles.headerContainer}>
         <View style={styles.header}>
@@ -911,6 +1055,109 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
+  },
+  // Modal Styles
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    ...shadows.lg,
+  },
+  modalCloseButton: {
+    position: 'absolute',
+    top: spacing.md,
+    right: spacing.md,
+    zIndex: 10,
+  },
+  modalCloseIconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+    textAlign: 'center',
+  },
+  modalProductInfo: {
+    marginBottom: spacing.xl,
+  },
+  modalProductName: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  modalUsageInfo: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 20,
+  },
+  modalQuestion: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.lg,
+  },
+  modalOptionsContainer: {
+    gap: spacing.md,
+  },
+  modalOption: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    padding: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+    backgroundColor: colors.white,
+  },
+  modalOptionSelected: {
+    borderColor: colors.primary,
+    backgroundColor: `${colors.primary}05`,
+  },
+  modalOptionIcon: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#F3F4F6',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: spacing.md,
+    marginTop: 2,
+  },
+  modalOptionIconSelected: {
+    backgroundColor: colors.primary,
+  },
+  modalOptionTextContainer: {
+    flex: 1,
+  },
+  modalOptionText: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  modalOptionTextSelected: {
+    color: colors.primary,
+  },
+  modalOptionSubtext: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    lineHeight: 18,
   },
 });
 

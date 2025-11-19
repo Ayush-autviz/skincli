@@ -305,7 +305,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
       </ScrollView>
 
       {/* Footer Button */}
-      <View style={styles.footerContainer}>
+      {/* <View style={styles.footerContainer}>
         <TouchableOpacity 
           style={styles.footerButton}
           onPress={handleMarkEffectiveness}
@@ -313,7 +313,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
         >
           <Text style={styles.footerButtonText}>Mark Effectiveness</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
     </View>
   );
 };

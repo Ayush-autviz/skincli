@@ -226,6 +226,16 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       'as_needed': 'As needed'
     };
 
+    // Helper to get date from root level only
+    const getDate = (dateValue: any): Date | null => {
+      if (!dateValue) return null;
+      try {
+        return new Date(dateValue);
+      } catch (e) {
+        return null;
+      }
+    };
+
     return {
       id: apiItem.id,
       name: apiItem.name,
@@ -234,11 +244,11 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       frequency: frequencyMap[apiItem.frequency] || apiItem.frequency,
       concerns: apiItem.concern || [],
       concern_tracking: apiItem.concern_tracking || [],
-      dateStarted: apiItem.extra?.dateStarted ? new Date(apiItem.extra.dateStarted) : null,
-      dateStopped: apiItem.extra?.dateStopped ? new Date(apiItem.extra.dateStopped) : null,
-      treatmentDate: apiItem.extra?.treatmentDate ? new Date(apiItem.extra.treatmentDate) : null,
-      stopReason: apiItem.extra?.stopReason || '',
-      dateCreated: apiItem.extra?.dateCreated ? new Date(apiItem.extra.dateCreated) : new Date(),
+      dateStarted: getDate(apiItem.start_date),
+      dateStopped: getDate(apiItem.end_date),
+      treatmentDate: getDate(apiItem.treatment_date),
+      stopReason: apiItem.end_reason || '',
+      dateCreated: getDate(apiItem.dateCreated) || new Date(),
       upc: apiItem.upc || undefined, // Include UPC code if present
       extra: apiItem.extra || {}
     };

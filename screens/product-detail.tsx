@@ -360,22 +360,51 @@ const ProductDetailScreen = (): React.JSX.Element => {
             {/* Title */}
             <Text style={styles.modalTitle}>Review Effectiveness</Text>
 
-            {/* Product Info */}
-            {productData.product_name && (
-              <View style={styles.modalProductInfo}>
-                <Text style={styles.modalProductName}>
-                  {productData.product_name}
-                </Text>
-                <Text style={styles.modalUsageInfo}>
-                  {getUsageInfo()}
-                </Text>
-              </View>
-            )}
+             {/* Product Info */}
+             {productData.product_name && (
+               <View style={styles.modalProductInfo}>
+                {productData.brand && (
+                   <Text style={styles.modalBrandName}>
+                     {productData.brand.toUpperCase()}
+                   </Text>
+                 )}
+                 <Text style={styles.modalProductName}>
+                   {productData.product_name}
+                 </Text>
+                 
+                 <Text style={styles.modalUsageInfo}>
+                   {getUsageInfo()}
+                 </Text>
+               </View>
+             )}
 
-            {/* Question */}
-            <Text style={styles.modalQuestion}>
-              Have you been using this product as needed?
-            </Text>
+             {/* Concerns Tracking Section */}
+             {routineData.concern_tracking && routineData.concern_tracking.length > 0 && (
+               <View style={styles.modalConcernTrackingSection}>
+                 <Text style={styles.modalConcernTrackingTitle}>Concern Tracking</Text>
+                 <View style={styles.modalConcernTrackingList}>
+                   {routineData.concern_tracking.map((tracking: any, index: number) => {
+                     const weeksCompleted = tracking.weeks_completed || 0;
+                     const totalWeeks = tracking.total_weeks || 0;
+                     return (
+                       <View key={index} style={styles.modalConcernTrackingItem}>
+                         <Text style={styles.modalConcernTrackingName}>
+                           {formatConcernName(tracking.concern_name || 'Unknown Concern')}
+                         </Text>
+                         <Text style={styles.modalConcernTrackingWeeks}>
+                           {weeksCompleted}/{totalWeeks}
+                         </Text>
+                       </View>
+                     );
+                   })}
+                 </View>
+               </View>
+             )}
+
+             {/* Question */}
+             <Text style={styles.modalQuestion}>
+               Have you been using this product as needed?
+             </Text>
 
             {/* Response Options */}
             <View style={styles.modalOptionsContainer}>
@@ -1163,25 +1192,73 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: 24,
+    fontSize: fontSize.xl,
     fontWeight: '700',
     color: colors.textPrimary,
     marginBottom: spacing.lg,
     textAlign: 'center',
   },
   modalProductInfo: {
-    marginBottom: spacing.xl,
+    // marginBottom: spacing.sm,
   },
   modalProductName: {
-    fontSize: fontSize.lg,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
+    textAlign: 'center',
+  },
+  modalBrandName: {
+    fontSize: fontSize.md,
+    textAlign: 'center',
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 1.5,
+    marginBottom: spacing.sm,
   },
   modalUsageInfo: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
-    lineHeight: 20,
+    // lineHeight: 22,
+    textAlign: 'center',
+  },
+  modalConcernTrackingSection: {
+    marginTop: spacing.md,
+    marginBottom: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  modalConcernTrackingTitle: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  modalConcernTrackingList: {
+    gap: spacing.xs,
+  },
+  modalConcernTrackingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: `${colors.primary}08`,
+    borderRadius: borderRadius.sm || 8,
+    borderWidth: 1,
+    borderColor: `${colors.primary}20`,
+  },
+  modalConcernTrackingName: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    flex: 1,
+  },
+  modalConcernTrackingWeeks: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: colors.primary,
   },
   modalQuestion: {
     fontSize: fontSize.lg,
@@ -1190,12 +1267,12 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   modalOptionsContainer: {
-    gap: spacing.md,
+    gap: spacing.sm,
   },
   modalOption: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: spacing.md,
+    padding: spacing.sm,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -1206,13 +1283,13 @@ const styles = StyleSheet.create({
     backgroundColor: `${colors.primary}05`,
   },
   modalOptionIcon: {
-    width: 24,
-    height: 24,
-    borderRadius: 12,
+    width: 22,
+    height: 22,
+    borderRadius: 11,
     backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
+    marginRight: spacing.sm,
     marginTop: 2,
   },
   modalOptionIconSelected: {
@@ -1225,15 +1302,15 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    marginBottom: 2,
   },
   modalOptionTextSelected: {
     color: colors.primary,
   },
   modalOptionSubtext: {
-    fontSize: fontSize.sm,
+    fontSize: fontSize.md,
     color: colors.textSecondary,
-    lineHeight: 18,
+    lineHeight: 20,
   },
   concernTrackingContainer: {
     gap: spacing.md,

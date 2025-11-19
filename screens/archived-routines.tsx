@@ -64,14 +64,17 @@ interface ApiItem {
   type: string;
   usage: string;
   frequency: string;
-  dateStarted: string | Date | { toDate: () => Date };
+  start_date?: string;
+  end_date?: string;
+  treatment_date?: string;
+  end_reason?: string;
   isActive: boolean;
   category?: string;
   brand?: string;
   notes?: string;
   extra?: any;
-  treatmentDate?: string | Date;
-  dateStopped?: string | Date;
+  concern?: any[];
+  concern_tracking?: any[];
 }
 
 // Helper function to calculate usage duration
@@ -146,6 +149,16 @@ const ArchivedRoutines: React.FC = () => {
       'as_needed': 'As needed'
     };
 
+    // Helper to get date from root level only
+    const getDate = (dateValue: any): Date | null => {
+      if (!dateValue) return null;
+      try {
+        return new Date(dateValue);
+      } catch (e) {
+        return null;
+      }
+    };
+
     // Check if this is a treatment type
     const isTreatment = apiItem.type && (
       apiItem.type === 'treatment_facial' || 
@@ -160,17 +173,17 @@ const ArchivedRoutines: React.FC = () => {
       usage: usageMap[apiItem.usage] || apiItem.usage,
       frequency: frequencyMap[apiItem.frequency] || apiItem.frequency,
       isActive: apiItem.isActive,
-      concerns: apiItem.extra?.concerns || [],
-      // For treatment types, use treatment date; for others, use start/stop dates
+      concerns: apiItem.concern || apiItem.extra?.concerns || [],
+      // For treatment types, use treatment date; for others, use start/stop dates from root level
       dateStarted: isTreatment ? 
-        (apiItem.extra?.treatmentDate ? new Date(apiItem.extra.treatmentDate) : apiItem.dateStarted) :
-        (apiItem.extra?.dateStarted ? new Date(apiItem.extra.dateStarted) : apiItem.dateStarted),
+        getDate(apiItem.treatment_date) :
+        getDate(apiItem.start_date),
       dateStopped: isTreatment ? undefined : // Treatments don't have stop dates
-        (apiItem.extra?.dateStopped ? new Date(apiItem.extra.dateStopped) : apiItem.dateStopped),
+        getDate(apiItem.end_date),
       treatmentDate: isTreatment ? 
-        (apiItem.extra?.treatmentDate ? new Date(apiItem.extra.treatmentDate) : apiItem.treatmentDate) : apiItem.treatmentDate,
-      stopReason: apiItem.extra?.stopReason || '',
-      dateCreated: apiItem.extra?.dateCreated ? new Date(apiItem.extra.dateCreated) : new Date(),
+        getDate(apiItem.treatment_date) : undefined,
+      stopReason: apiItem.end_reason || '',
+      dateCreated: getDate(apiItem.dateCreated) || new Date(),
       extra: apiItem.extra || {}
     };
   };

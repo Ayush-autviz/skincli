@@ -1,17 +1,19 @@
 // tracking-review.tsx
 // Screen to review effectiveness tracking data
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, CheckCircle, TrendingDown, TrendingUp, Minus, AlertCircle, Camera } from 'lucide-react-native';
+import { ArrowLeft } from 'lucide-react-native';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../styles';
+import { updateRoutineItem, rateEffectiveness } from '../utils/newApiService';
 
 interface TrackingReviewParams {
   itemId: string;
@@ -28,6 +30,10 @@ const TrackingReviewScreen = (): React.JSX.Element => {
   
   const concernTracking = params.concernTracking || [];
   const usageResponse = params.usageResponse || null;
+  const itemId = params.itemId;
+  
+  // Track which concerns have been rated
+  const [ratedConcerns, setRatedConcerns] = useState<Set<string>>(new Set());
 
   // Get usage response text
   const getUsageResponseText = () => {
@@ -39,19 +45,6 @@ const TrackingReviewScreen = (): React.JSX.Element => {
     return null;
   };
 
-  // Helper function to get improvement status
-  const getImprovementStatus = (status: string | null | undefined) => {
-    switch (status) {
-      case 'improving':
-        return { icon: TrendingUp, color: '#10B981', label: 'Improving' };
-      case 'declining':
-        return { icon: TrendingDown, color: '#EF4444', label: 'Declining' };
-      case 'stable':
-        return { icon: Minus, color: '#6B7280', label: 'Stable' };
-      default:
-        return { icon: AlertCircle, color: '#9CA3AF', label: 'No Data' };
-    }
-  };
 
   // Helper function to format concern names
   const formatConcernName = (name: string): string => {
@@ -67,10 +60,106 @@ const TrackingReviewScreen = (): React.JSX.Element => {
     navigation.goBack();
   };
 
-  const handleMarkEffectiveness = () => {
-    // TODO: Implement mark effectiveness functionality
-    console.log('Mark effectiveness clicked');
-    // You can add navigation or API call here
+  const handleStopTracking = async () => {
+    Alert.alert(
+      'Stop Tracking',
+      'Are you sure you want to stop tracking this product?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Stop Tracking',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              const routineData = params.routineData || {};
+              const itemId = params.itemId;
+              
+              if (!itemId) {
+                Alert.alert('Error', 'Item ID not found');
+                return;
+              }
+
+              const today = new Date().toISOString().split('T')[0];
+              
+              // Format type for API
+              const formatType = (type: string): string => {
+                if (!type) return 'product';
+                const typeLower = type.toLowerCase();
+                if (typeLower === 'product') return 'product';
+                if (typeLower === 'activity') return 'activity';
+                if (typeLower === 'nutrition') return 'nutrition';
+                if (typeLower.includes('treatment')) {
+                  if (typeLower.includes('facial')) return 'treatment_facial';
+                  if (typeLower.includes('injection')) return 'treatment_injection';
+                  return 'treatment_other';
+                }
+                return 'product';
+              };
+
+              // Format usage for API
+              const formatUsage = (usage: string): string => {
+                if (!usage) return 'am';
+                const usageLower = usage.toLowerCase();
+                if (usageLower === 'am' || usageLower === 'pm') return usageLower;
+                if (usageLower.includes('both') || usageLower.includes('am + pm')) return 'both';
+                if (usageLower.includes('as needed')) return 'as_needed';
+                return 'am';
+              };
+
+              // Format frequency for API
+              const formatFrequency = (frequency: string): string => {
+                if (!frequency) return 'daily';
+                const freqLower = frequency.toLowerCase();
+                if (freqLower === 'daily' || freqLower === 'weekly') return freqLower;
+                if (freqLower.includes('as needed')) return 'as_needed';
+                return 'daily';
+              };
+
+              const updateData: any = {
+                name: routineData.name || '',
+                type: formatType(routineData.type || 'Product'),
+                usage: formatUsage(routineData.usage || 'AM'),
+                frequency: formatFrequency(routineData.frequency || 'Daily'),
+                concern: routineData.concerns || [],
+                end_date: today,
+                extra: {
+                  ...routineData.extra,
+                  dateStopped: new Date().toISOString(),
+                  stopReason: 'Not using consistently'
+                }
+              };
+
+              if (routineData.upc) {
+                updateData.upc = routineData.upc;
+              }
+
+              await updateRoutineItem(itemId, updateData);
+              
+              Alert.alert(
+                'Tracking Stopped',
+                'Product tracking has been stopped.',
+                [
+                  {
+                    text: 'OK',
+                    onPress: () => navigation.goBack()
+                  }
+                ]
+              );
+            } catch (error) {
+              console.error('Error stopping tracking:', error);
+              Alert.alert(
+                'Error',
+                'Failed to stop tracking. Please try again.',
+                [{ text: 'OK' }]
+              );
+            }
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -122,175 +211,161 @@ const TrackingReviewScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* Tracking Subtitle */}
-          <Text style={[styles.trackingSubtitle, !getUsageResponseText() && { marginTop: 20 }]}>
-            Track your progress for each concern
-          </Text>
-
           {/* Concern Tracking Cards */}
           {concernTracking.length > 0 ? (
             concernTracking.map((tracking: any, index: number) => {
-              const statusInfo = getImprovementStatus(tracking.scores?.improvement_status);
-              const StatusIcon = statusInfo.icon;
-              const progressPercentage = tracking.total_weeks > 0 
-                ? (tracking.weeks_completed / tracking.total_weeks) * 100 
-                : 0;
+              const weeksCompleted = tracking.weeks_completed || 0;
+              const totalWeeks = tracking.total_weeks || 0;
+              const isCompleted = tracking.is_completed || false;
+              const baselineScore = tracking.scores?.baseline_score;
+              const currentScore = tracking.scores?.current_score;
               
-              // Check if completed but all scores are null
-              const isCompletedWithNullScores = tracking.is_completed && 
-                tracking.scores?.baseline_score === null && 
-                tracking.scores?.current_score === null && 
-                tracking.scores?.score_difference === null && 
-                tracking.scores?.improvement_status === null;
+              // Determine review status text
+              const reviewStatusText = isCompleted 
+                ? `Review complete week ${weeksCompleted}/${totalWeeks}`
+                : `Review Incomplete week ${weeksCompleted}/${totalWeeks}`;
               
-              // Determine score box background color based on current score
-              const getScoreBgColor = (score: number | null) => {
-                if (score === null) return '#f5f5f5';
-                if (score >= 70) return '#4CAF5015'; // Light green
-                if (score >= 50) return '#FF980015'; // Light orange
-                return '#F4433615'; // Light red
+              // Score change display
+              const scoreChangeText = baselineScore !== null && currentScore !== null
+                ? `${baselineScore} -> ${currentScore}`
+                : null;
+
+              const handleEffective = async () => {
+                if (!itemId || ratedConcerns.has(tracking.concern_name)) {
+                  return;
+                }
+
+                try {
+                  await rateEffectiveness(itemId, [
+                    {
+                      concern_name: tracking.concern_name,
+                      is_effective: true
+                    }
+                  ]);
+                  
+                  setRatedConcerns(prev => new Set(prev).add(tracking.concern_name));
+                  Alert.alert(
+                    'Success',
+                    `${formatConcernName(tracking.concern_name)} marked as effective`,
+                    [{ text: 'OK' }]
+                  );
+                } catch (error: any) {
+                  console.error('Error rating effectiveness:', error);
+                  Alert.alert(
+                    'Error',
+                    'Failed to rate effectiveness. Please try again.',
+                    [{ text: 'OK' }]
+                  );
+                }
               };
 
-              const handleTakePhoto = () => {
-                (navigation as any).navigate('Camera');
+              const handleNotEffective = async () => {
+                if (!itemId || ratedConcerns.has(tracking.concern_name)) {
+                  return;
+                }
+
+                try {
+                  await rateEffectiveness(itemId, [
+                    {
+                      concern_name: tracking.concern_name,
+                      is_effective: false
+                    }
+                  ]);
+                  
+                  setRatedConcerns(prev => new Set(prev).add(tracking.concern_name));
+                  Alert.alert(
+                    'Success',
+                    `${formatConcernName(tracking.concern_name)} marked as not effective`,
+                    [{ text: 'OK' }]
+                  );
+                } catch (error: any) {
+                  console.error('Error rating effectiveness:', error);
+                  Alert.alert(
+                    'Error',
+                    'Failed to rate effectiveness. Please try again.',
+                    [{ text: 'OK' }]
+                  );
+                }
+              };
+
+              const handleContinueTracking = () => {
+                // TODO: Implement continue tracking
+                console.log('Continue tracking:', tracking.concern_name);
               };
               
               return (
                 <View key={index} style={styles.trackingCard}>
-                  {/* Header with Concern Name and Status */}
-                  <View style={styles.trackingHeader}>
-                    <View style={styles.trackingHeaderLeft}>
-                      <Text style={styles.trackingConcernName}>
-                        {formatConcernName(tracking.concern_name)}
-                      </Text>
-                      {tracking.is_completed && (
-                        <View style={styles.completedBadge}>
-                          <CheckCircle size={12} color="#10B981" />
-                          <Text style={styles.completedText}>Completed</Text>
-                        </View>
-                      )}
-                    </View>
-                    <View style={[styles.statusBadge, { backgroundColor: `${statusInfo.color}15` }]}>
-                      <StatusIcon size={12} color={statusInfo.color} />
-                      <Text style={[styles.statusText, { color: statusInfo.color }]}>
-                        {statusInfo.label}
-                      </Text>
-                    </View>
+                  {/* Section Header */}
+                  <View style={styles.sectionHeader}>
+                    <Text style={styles.sectionHeaderLabel}>Concern</Text>
+                    <Text style={styles.sectionHeaderLabel}>Score Change</Text>
                   </View>
 
-                  {/* Show Take Photo button if completed but scores are null */}
-                  {isCompletedWithNullScores ? (
-                    <View style={styles.takePhotoSection}>
-                      <Text style={styles.takePhotoText}>
-                        Take a photo to see your results
-                      </Text>
-                      <TouchableOpacity 
-                        style={styles.takePhotoButton}
-                        onPress={handleTakePhoto}
-                        activeOpacity={0.8}
-                      >
-                        <Camera size={16} color={colors.white} style={styles.takePhotoButtonIcon} />
-                        <Text style={styles.takePhotoButtonText}>Take a Photo</Text>
-                      </TouchableOpacity>
-                    </View>
-                  ) : (
-                    /* Scores Row - Similar to metricDetail design */
-                    tracking.scores && (tracking.scores.baseline_score !== null || tracking.scores.current_score !== null) && (
-                      <View style={styles.scoresRow}>
-                        {tracking.scores.baseline_score !== null && (
-                          <View style={[styles.scoreBox, { backgroundColor: getScoreBgColor(tracking.scores.baseline_score) }]}>
-                            <Text style={styles.scoreBoxLabel}>Baseline</Text>
-                            <Text style={styles.scoreBoxValue}>
-                              {tracking.scores.baseline_score}
-                            </Text>
-                          </View>
-                        )}
-                        {tracking.scores.current_score !== null && (
-                          <View style={[styles.scoreBox, { backgroundColor: getScoreBgColor(tracking.scores.current_score) }]}>
-                            <Text style={styles.scoreBoxLabel}>Current</Text>
-                            <Text style={styles.scoreBoxValue}>
-                              {tracking.scores.current_score}
-                            </Text>
-                          </View>
-                        )}
-                        {tracking.scores.score_difference !== null && (
-                          <View style={[
-                            styles.changeBox,
-                            tracking.scores.score_difference > 0 
-                              ? styles.positiveChange 
-                              : tracking.scores.score_difference < 0 
-                              ? styles.negativeChange 
-                              : styles.neutralChange
-                          ]}>
-                            <Text style={styles.changeBoxLabel}>Change</Text>
-                            <View style={styles.changeValueContainer}>
-                              {tracking.scores.score_difference !== 0 && (
-                                <StatusIcon 
-                                  size={14} 
-                                  color={tracking.scores.score_difference > 0 ? '#22C55E' : '#EF4444'} 
-                                />
-                              )}
-                              <Text style={[
-                                styles.changeBoxValue,
-                                { 
-                                  color: tracking.scores.score_difference > 0 
-                                    ? '#22C55E' 
-                                    : tracking.scores.score_difference < 0 
-                                    ? '#EF4444' 
-                                    : '#6B7280'
-                                }
-                              ]}>
-                                {tracking.scores.score_difference > 0 ? '+' : ''}
-                                {tracking.scores.score_difference}
-                              </Text>
-                            </View>
-                          </View>
-                        )}
-                      </View>
-                    )
-                  )}
+                  {/* Concern Name */}
+                  <Text style={styles.concernName}>
+                    {formatConcernName(tracking.concern_name)}
+                  </Text>
 
-                  {/* Progress Section */}
-                  <View style={styles.progressSection}>
-                    <View style={styles.progressHeader}>
-                      <Text style={styles.progressLabel}>Progress</Text>
-                      <Text style={styles.progressPercentage}>
-                        {Math.round(progressPercentage)}%
-                      </Text>
-                    </View>
-                    <View style={styles.progressBarContainer}>
-                      <View style={styles.progressBar}>
-                        <View 
-                          style={[
-                            styles.progressFill, 
-                            { 
-                              width: `${progressPercentage}%`,
-                              backgroundColor: tracking.is_completed ? '#10B981' : colors.primary
-                            }
-                          ]} 
-                        />
-                      </View>
-                    </View>
-                    <Text style={styles.progressText}>
-                      {tracking.weeks_completed} of {tracking.total_weeks} weeks completed
+                  {/* Review Status and Score Change Row */}
+                  <View style={styles.reviewRow}>
+                    <Text style={styles.reviewStatus}>
+                      {reviewStatusText}
                     </Text>
+                    {scoreChangeText && (
+                      <Text style={styles.scoreChange}>
+                        {scoreChangeText}
+                      </Text>
+                    )}
                   </View>
 
-                  {/* Footer Info */}
-                  <View style={styles.trackingFooter}>
-                    <View style={styles.footerItem}>
-                      <Text style={styles.footerLabel}>Required Days</Text>
-                      <Text style={styles.footerValue}>{tracking.required_days}</Text>
-                    </View>
-                    <View style={styles.footerDivider} />
-                    <View style={styles.footerItem}>
-                      <Text style={styles.footerLabel}>Status</Text>
-                      <View style={[styles.statusDot, { backgroundColor: tracking.is_active ? '#10B981' : '#9CA3AF' }]} />
-                      <Text style={[styles.footerValue, { color: tracking.is_active ? '#10B981' : '#9CA3AF' }]}>
-                        {tracking.is_active ? 'Active' : 'Inactive'}
+                  {/* Action Buttons */}
+                  <View style={styles.actionButtonsRow}>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionButton, 
+                        styles.effectiveButton,
+                        (!isCompleted || ratedConcerns.has(tracking.concern_name)) && styles.disabledButton
+                      ]}
+                      onPress={isCompleted && !ratedConcerns.has(tracking.concern_name) ? handleEffective : undefined}
+                      activeOpacity={isCompleted && !ratedConcerns.has(tracking.concern_name) ? 0.7 : 1}
+                      disabled={!isCompleted || ratedConcerns.has(tracking.concern_name)}
+                    >
+                      <Text style={[
+                        styles.effectiveButtonText,
+                        (!isCompleted || ratedConcerns.has(tracking.concern_name)) && styles.disabledButtonText
+                      ]}>
+                        {ratedConcerns.has(tracking.concern_name) ? 'Rated' : 'Effective'}
                       </Text>
-                    </View>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={[
+                        styles.actionButton, 
+                        styles.notEffectiveButton,
+                        (!isCompleted || ratedConcerns.has(tracking.concern_name)) && styles.disabledButton
+                      ]}
+                      onPress={isCompleted && !ratedConcerns.has(tracking.concern_name) ? handleNotEffective : undefined}
+                      activeOpacity={isCompleted && !ratedConcerns.has(tracking.concern_name) ? 0.7 : 1}
+                      disabled={!isCompleted || ratedConcerns.has(tracking.concern_name)}
+                    >
+                      <Text style={[
+                        styles.notEffectiveButtonText,
+                        (!isCompleted || ratedConcerns.has(tracking.concern_name)) && styles.disabledButtonText
+                      ]}>
+                        {ratedConcerns.has(tracking.concern_name) ? 'Rated' : 'Not Effective'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
+
+                  {/* Continue Tracking Button (only for incomplete reviews) */}
+                  {/* {!isCompleted && (
+                    <TouchableOpacity
+                      style={styles.continueTrackingButton}
+                      onPress={handleContinueTracking}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.continueTrackingText}>Continue tracking</Text>
+                    </TouchableOpacity>
+                  )} */}
                 </View>
               );
             })
@@ -304,16 +379,18 @@ const TrackingReviewScreen = (): React.JSX.Element => {
         </View>
       </ScrollView>
 
-      {/* Footer Button */}
-      {/* <View style={styles.footerContainer}>
-        <TouchableOpacity 
-          style={styles.footerButton}
-          onPress={handleMarkEffectiveness}
-          activeOpacity={0.8}
-        >
-          <Text style={styles.footerButtonText}>Mark Effectiveness</Text>
-        </TouchableOpacity>
-      </View> */}
+      {/* Stop Tracking Button - Show when user selected "no" */}
+      {usageResponse === 'no' && (
+        <View style={styles.footerContainer}>
+          <TouchableOpacity 
+            style={styles.stopTrackingButton}
+            onPress={handleStopTracking}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.stopTrackingButtonText}>Stop Tracking</Text>
+          </TouchableOpacity>
+        </View>
+      )}
     </View>
   );
 };
@@ -409,7 +486,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: spacing.xl + 80, // Extra padding for footer button
+    paddingBottom: spacing.xl + 100, // Extra padding for footer button when visible
   },
   content: {
     padding: spacing.lg,
@@ -462,187 +539,92 @@ const styles = StyleSheet.create({
     borderColor: '#F3F4F6',
     ...shadows.sm,
   },
-  trackingHeader: {
+  sectionHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: spacing.lg,
-  },
-  trackingHeaderLeft: {
-    flex: 1,
-    flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
+    marginBottom: spacing.md,
   },
-  trackingConcernName: {
+  sectionHeaderLabel: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  concernName: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    marginBottom: spacing.sm,
+  },
+  reviewRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  reviewStatus: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: '500',
+  },
+  scoreChange: {
     fontSize: fontSize.sm,
     fontWeight: '700',
     color: colors.textPrimary,
-    letterSpacing: 0.2,
   },
-  completedBadge: {
+  actionButtonsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    backgroundColor: '#10B98115',
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.pill || 12,
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
   },
-  completedText: {
-    fontSize: fontSize.xs,
+  actionButton: {
+    flex: 1,
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
+    borderRadius: borderRadius.md,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  effectiveButton: {
+    backgroundColor: colors.white,
+    borderColor: '#10B981',
+  },
+  notEffectiveButton: {
+    backgroundColor: colors.white,
+    borderColor: '#EF4444',
+  },
+  effectiveButtonText: {
+    fontSize: fontSize.sm,
     fontWeight: '600',
     color: '#10B981',
   },
-  statusBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
-    borderRadius: borderRadius.pill || 12,
-  },
-  statusText: {
-    fontSize: fontSize.xs,
+  notEffectiveButtonText: {
+    fontSize: fontSize.sm,
     fontWeight: '600',
+    color: '#EF4444',
   },
-  scoresRow: {
-    flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.lg,
+  disabledButton: {
+    opacity: 0.5,
+    borderColor: colors.border,
   },
-  scoreBox: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
+  disabledButtonText: {
+    color: colors.textSecondary,
+  },
+  continueTrackingButton: {
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.md,
     borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.background,
+    borderWidth: 1,
+    borderColor: colors.border,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 70,
   },
-  scoreBoxLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    fontWeight: '500',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-  },
-  scoreBoxValue: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: colors.textPrimary,
-  },
-  changeBox: {
-    flex: 1,
-    borderRadius: borderRadius.md,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 70,
-  },
-  positiveChange: {
-    backgroundColor: '#22C55E15',
-  },
-  negativeChange: {
-    backgroundColor: '#EF444415',
-  },
-  neutralChange: {
-    backgroundColor: '#6B728015',
-  },
-  changeBoxLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    fontWeight: '500',
-    marginBottom: 4,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  changeValueContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  changeBoxValue: {
-    fontSize: 20,
-    fontWeight: '700',
-  },
-  progressSection: {
-    marginBottom: spacing.lg,
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.sm,
-  },
-  progressLabel: {
+  continueTrackingText: {
     fontSize: fontSize.sm,
     fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  progressPercentage: {
-    fontSize: fontSize.sm,
-    fontWeight: '700',
-    color: colors.primary,
-  },
-  progressBarContainer: {
-    marginBottom: spacing.xs,
-  },
-  progressBar: {
-    height: 8,
-    backgroundColor: '#E5E7EB',
-    borderRadius: borderRadius.pill || 5,
-    overflow: 'hidden',
-  },
-  progressFill: {
-    height: '100%',
-    borderRadius: borderRadius.pill || 5,
-  },
-  progressText: {
-    fontSize: fontSize.xs,
     color: colors.textSecondary,
-    fontWeight: '500',
-  },
-  trackingFooter: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingTop: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: '#F3F4F6',
-  },
-  footerItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  footerLabel: {
-    fontSize: fontSize.xs,
-    color: colors.textSecondary,
-    fontWeight: '500',
-    marginRight: 4,
-  },
-  footerValue: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  footerDivider: {
-    width: 1,
-    height: 20,
-    backgroundColor: '#E5E7EB',
-    marginHorizontal: spacing.md,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
   },
   emptyState: {
     padding: spacing.xl,
@@ -657,36 +639,6 @@ const styles = StyleSheet.create({
   bottomSpacing: {
     height: 40,
   },
-  takePhotoSection: {
-    marginBottom: spacing.lg,
-    alignItems: 'center',
-  },
-  takePhotoText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    marginBottom: spacing.sm,
-    textAlign: 'center',
-    fontWeight: '500',
-  },
-  takePhotoButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#915F6D',
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    borderRadius: borderRadius.md,
-    gap: spacing.xs,
-    ...shadows.sm,
-  },
-  takePhotoButtonIcon: {
-    marginRight: 2,
-  },
-  takePhotoButtonText: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.white,
-  },
   footerContainer: {
     position: 'absolute',
     bottom: 0,
@@ -699,8 +651,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#E5E7EB',
     ...shadows.md,
   },
-  footerButton: {
-    backgroundColor: colors.primary,
+  stopTrackingButton: {
+    backgroundColor: '#EF4444',
     paddingVertical: spacing.md,
     paddingHorizontal: spacing.lg,
     borderRadius: borderRadius.md,
@@ -708,7 +660,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     ...shadows.sm,
   },
-  footerButtonText: {
+  stopTrackingButtonText: {
     fontSize: fontSize.md,
     fontWeight: '700',
     color: colors.white,

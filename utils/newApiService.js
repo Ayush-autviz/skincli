@@ -1885,6 +1885,47 @@ export const updateRoutineItem = async (itemId, itemData) => {
 };
 
 /**
+ * Rate effectiveness for routine item concerns
+ * @param {string} routineItemId - Routine item ID
+ * @param {Array} ratings - Array of rating objects with concern_name and is_effective
+ * @returns {Promise<Object>} Rating response
+ */
+export const rateEffectiveness = async (routineItemId, ratings) => {
+  try {
+    console.log("🔵 Rating effectiveness for routine item:", routineItemId, ratings);
+
+    const response = await apiClient.patch(
+      `/routine/${routineItemId}/rate-effectiveness`,
+      {
+        ratings: ratings
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.data.status === 200 || response.status === 200) {
+      console.log("✅ Effectiveness rated successfully");
+      return {
+        success: true,
+        data: response.data.data || response.data,
+      };
+    } else {
+      throw new Error(response.data.message || "Failed to rate effectiveness");
+    }
+  } catch (error) {
+    console.error("🔴 rateEffectiveness error:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to rate effectiveness"
+    );
+  }
+};
+
+/**
  * Delete a routine item
  * @param {string} itemId - Item ID to delete
  * @returns {Promise<Object>} Delete response

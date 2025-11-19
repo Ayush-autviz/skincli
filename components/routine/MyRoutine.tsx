@@ -808,7 +808,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           showChevron={false}
           onPress={() => handleNavigateToProductDetail(item)}
           dateInfo={dateInfo as any}
-          bottomText={trackingText as any}
+          // bottomText={trackingText as any}
           rightElement={
             // item.upc ? (
             <ChevronRight 

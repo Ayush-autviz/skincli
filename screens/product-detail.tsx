@@ -14,7 +14,7 @@ import {
   Modal,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle, Check } from 'lucide-react-native';
+import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle, Check, ChevronRight, Calendar } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import { searchProductByUPC, deleteRoutineItem } from '../utils/newApiService';
 
@@ -72,7 +72,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
   // Get usage date info
   const getUsageDateInfo = () => {
     console.log('🔍 Routine data:', routineData);
-    if (!routineData.dateStarted) return 'Unknown date';
+    if (!routineData.dateStarted) return '';
     
     const startDate = new Date(routineData.dateStarted);
     const formattedDate = startDate.toLocaleDateString('en-US', {
@@ -184,6 +184,11 @@ const ProductDetailScreen = (): React.JSX.Element => {
   // Handle review tracking button press
   const handleReviewTracking = () => {
     // Show the usage modal first
+    setShowUsageModal(true);
+  };
+
+  // Handle concern tracking item click - opens the usage modal
+  const handleConcernClick = (tracking: any) => {
     setShowUsageModal(true);
   };
 
@@ -477,18 +482,33 @@ const ProductDetailScreen = (): React.JSX.Element => {
             )}
           </View>
 
+          <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Your Concerns</Text>
+              <View style={styles.chipSelectorContainer}>
+                {routineData.concerns.map((concern: string, index: number) => (
+                  <View key={index} style={styles.chipButton}>
+                    <Text style={styles.chipButtonText}>
+                      {formatConcernName(concern)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+
           {/* Usage Card */}
           <View style={styles.section}>
             {/* <Text style={styles.sectionTitle}>Usage Information</Text> */}
+            {getUsageDateInfo() !== '' && (
             <Text style={styles.usageText}>
-              {getUsageDateInfo()}
-            </Text>
+                {getUsageDateInfo()}
+              </Text>
+            )}
             <View style={styles.actionRow}>
               <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
                 <Edit size={16} color={colors.textSecondary} />
                 <Text style={styles.actionText}>Edit</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
+              {/* <TouchableOpacity 
                 onPress={handleRemove} 
                 style={styles.actionButton}
                 disabled={isDeleting}
@@ -501,10 +521,13 @@ const ProductDetailScreen = (): React.JSX.Element => {
                     <Text style={styles.actionText}>Remove from routine</Text>
                   </>
                 )}
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </View>
+
+            
+
             {/* Start/Review Tracking Button */}
-            {routineData.concern_tracking && routineData.concern_tracking.length === 0 ? (
+            {/* {routineData.concern_tracking && routineData.concern_tracking.length === 0 ? (
               <TouchableOpacity 
                 onPress={handleStartTracking} 
                 style={styles.startTrackingButton}
@@ -528,10 +551,63 @@ const ProductDetailScreen = (): React.JSX.Element => {
                   <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
                 </View>
               </TouchableOpacity>
-            ) : null}
+            ) : null} */}
           </View>
 
-       
+          {/* Concern Tracking Section */}
+          {routineData.concern_tracking && routineData.concern_tracking.length > 0 && (
+            <TouchableOpacity
+              style={styles.section}
+              onPress={() => handleConcernClick(null)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sectionTitle}>Concern Tracking</Text>
+              <View style={styles.concernTrackingContainer}>
+                {routineData.concern_tracking.map((tracking: any, index: number) => {
+                  const weeksCompleted = tracking.weeks_completed || 0;
+                  const totalWeeks = tracking.total_weeks || 0;
+                  const progressPercentage = totalWeeks > 0 ? (weeksCompleted / totalWeeks) * 100 : 0;
+                  
+                  return (
+                    <View
+                      key={index}
+                      style={styles.concernTrackingItem}
+                    >
+                      <View style={styles.concernTrackingLeft}>
+                        <View style={styles.concernTrackingIconContainer}>
+                          <Calendar size={18} color={colors.primary} />
+                        </View>
+                        <View style={styles.concernTrackingContent}>
+                          <Text style={styles.concernTrackingName}>
+                            {formatConcernName(tracking.concern_name || 'Unknown Concern')}
+                          </Text>
+                          <View style={styles.concernTrackingProgressBarContainer}>
+                            <View style={styles.concernTrackingProgressBar}>
+                              <View 
+                                style={[
+                                  styles.concernTrackingProgressFill,
+                                  { width: `${progressPercentage}%` }
+                                ]} 
+                              />
+                            </View>
+                          </View>
+                        </View>
+                      </View>
+                      <View style={styles.concernTrackingRight}>
+                        <View style={styles.concernTrackingWeeksContainer}>
+                          <Text style={styles.concernTrackingWeeks}>
+                            {weeksCompleted}/{totalWeeks}
+                          </Text>
+                          <Text style={styles.concernTrackingWeeksLabel}>weeks</Text>
+                        </View>
+                        <ChevronRight size={20} color={colors.textSecondary} />
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </TouchableOpacity>
+          )}
 
           {/* Product Description */}
 
@@ -749,7 +825,7 @@ const styles = StyleSheet.create({
   },
   brandName: {
     fontSize: fontSize.sm,
-    fontWeight: '400',
+    fontWeight: '700',
     color: colors.textSecondary,
     letterSpacing: 1.5,
     textAlign: 'center',
@@ -1158,6 +1234,78 @@ const styles = StyleSheet.create({
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     lineHeight: 18,
+  },
+  concernTrackingContainer: {
+    gap: spacing.md,
+  },
+  concernTrackingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.md,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    marginBottom: spacing.sm,
+  },
+  concernTrackingLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: spacing.md,
+  },
+  concernTrackingIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: borderRadius.md,
+    backgroundColor: `${colors.primary}15`,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  concernTrackingContent: {
+    flex: 1,
+    gap: spacing.xs,
+  },
+  concernTrackingName: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: spacing.xs,
+  },
+  concernTrackingProgressBarContainer: {
+    marginTop: spacing.xs,
+  },
+  concernTrackingProgressBar: {
+    height: 6,
+    backgroundColor: '#E5E7EB',
+    borderRadius: borderRadius.pill || 3,
+    overflow: 'hidden',
+  },
+  concernTrackingProgressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: borderRadius.pill || 3,
+  },
+  concernTrackingRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    marginLeft: spacing.md,
+  },
+  concernTrackingWeeksContainer: {
+    alignItems: 'flex-end',
+  },
+  concernTrackingWeeks: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.primary,
+    lineHeight: 24,
+  },
+  concernTrackingWeeksLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: '500',
+    marginTop: -2,
   },
 });
 

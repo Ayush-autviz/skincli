@@ -13,7 +13,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft } from 'lucide-react-native';
 import { colors, fontSize, spacing, borderRadius, shadows } from '../styles';
-import { updateRoutineItem, rateEffectiveness } from '../utils/newApiService';
+import { updateRoutineItem, rateEffectiveness, toggleTracking } from '../utils/newApiService';
 
 interface TrackingReviewParams {
   itemId: string;
@@ -32,8 +32,16 @@ const TrackingReviewScreen = (): React.JSX.Element => {
   const usageResponse = params.usageResponse || null;
   const itemId = params.itemId;
   
-  // Track which concerns have been rated
-  const [ratedConcerns, setRatedConcerns] = useState<Set<string>>(new Set());
+  // Track effectiveness ratings - initialize from API data
+  const [effectivenessRatings, setEffectivenessRatings] = useState<Map<string, boolean | null>>(() => {
+    const ratings = new Map<string, boolean | null>();
+    concernTracking.forEach((tracking: any) => {
+      if (tracking.concern_name) {
+        ratings.set(tracking.concern_name, tracking.is_effective);
+      }
+    });
+    return ratings;
+  });
 
   // Get usage response text
   const getUsageResponseText = () => {
@@ -74,7 +82,6 @@ const TrackingReviewScreen = (): React.JSX.Element => {
           style: 'destructive',
           onPress: async () => {
             try {
-              const routineData = params.routineData || {};
               const itemId = params.itemId;
               
               if (!itemId) {
@@ -82,61 +89,8 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                 return;
               }
 
-              const today = new Date().toISOString().split('T')[0];
-              
-              // Format type for API
-              const formatType = (type: string): string => {
-                if (!type) return 'product';
-                const typeLower = type.toLowerCase();
-                if (typeLower === 'product') return 'product';
-                if (typeLower === 'activity') return 'activity';
-                if (typeLower === 'nutrition') return 'nutrition';
-                if (typeLower.includes('treatment')) {
-                  if (typeLower.includes('facial')) return 'treatment_facial';
-                  if (typeLower.includes('injection')) return 'treatment_injection';
-                  return 'treatment_other';
-                }
-                return 'product';
-              };
-
-              // Format usage for API
-              const formatUsage = (usage: string): string => {
-                if (!usage) return 'am';
-                const usageLower = usage.toLowerCase();
-                if (usageLower === 'am' || usageLower === 'pm') return usageLower;
-                if (usageLower.includes('both') || usageLower.includes('am + pm')) return 'both';
-                if (usageLower.includes('as needed')) return 'as_needed';
-                return 'am';
-              };
-
-              // Format frequency for API
-              const formatFrequency = (frequency: string): string => {
-                if (!frequency) return 'daily';
-                const freqLower = frequency.toLowerCase();
-                if (freqLower === 'daily' || freqLower === 'weekly') return freqLower;
-                if (freqLower.includes('as needed')) return 'as_needed';
-                return 'daily';
-              };
-
-              const updateData: any = {
-                name: routineData.name || '',
-                type: formatType(routineData.type || 'Product'),
-                usage: formatUsage(routineData.usage || 'AM'),
-                frequency: formatFrequency(routineData.frequency || 'Daily'),
-                concern: routineData.concerns || [],
-                end_date: today,
-                extra: {
-                  ...routineData.extra,
-                  dateStopped: new Date().toISOString(),
-                  stopReason: 'Not using consistently'
-                }
-              };
-
-              if (routineData.upc) {
-                updateData.upc = routineData.upc;
-              }
-
-              await updateRoutineItem(itemId, updateData);
+              // Use toggle-tracking API to pause tracking
+              await toggleTracking(itemId, 'pause');
               
               Alert.alert(
                 'Tracking Stopped',
@@ -148,11 +102,11 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                   }
                 ]
               );
-            } catch (error) {
+            } catch (error: any) {
               console.error('Error stopping tracking:', error);
               Alert.alert(
                 'Error',
-                'Failed to stop tracking. Please try again.',
+                error.message || 'Failed to stop tracking. Please try again.',
                 [{ text: 'OK' }]
               );
             }
@@ -230,8 +184,14 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                 ? `${baselineScore} -> ${currentScore}`
                 : null;
 
+              // Get current rating from state or API data
+              const currentRating = effectivenessRatings.get(tracking.concern_name) ?? tracking.is_effective;
+              const isEffectiveSelected = currentRating === true;
+              const isNotEffectiveSelected = currentRating === false;
+              const isRatingNull = currentRating === null || currentRating === undefined;
+
               const handleEffective = async () => {
-                if (!itemId || ratedConcerns.has(tracking.concern_name)) {
+                if (!itemId || !isCompleted || isEffectiveSelected) {
                   return;
                 }
 
@@ -243,12 +203,12 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                     }
                   ]);
                   
-                  setRatedConcerns(prev => new Set(prev).add(tracking.concern_name));
-                  Alert.alert(
-                    'Success',
-                    `${formatConcernName(tracking.concern_name)} marked as effective`,
-                    [{ text: 'OK' }]
-                  );
+                  // Update local state
+                  setEffectivenessRatings(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(tracking.concern_name, true);
+                    return newMap;
+                  });
                 } catch (error: any) {
                   console.error('Error rating effectiveness:', error);
                   Alert.alert(
@@ -260,7 +220,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
               };
 
               const handleNotEffective = async () => {
-                if (!itemId || ratedConcerns.has(tracking.concern_name)) {
+                if (!itemId || !isCompleted || isNotEffectiveSelected) {
                   return;
                 }
 
@@ -272,12 +232,12 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                     }
                   ]);
                   
-                  setRatedConcerns(prev => new Set(prev).add(tracking.concern_name));
-                  Alert.alert(
-                    'Success',
-                    `${formatConcernName(tracking.concern_name)} marked as not effective`,
-                    [{ text: 'OK' }]
-                  );
+                  // Update local state
+                  setEffectivenessRatings(prev => {
+                    const newMap = new Map(prev);
+                    newMap.set(tracking.concern_name, false);
+                    return newMap;
+                  });
                 } catch (error: any) {
                   console.error('Error rating effectiveness:', error);
                   Alert.alert(
@@ -324,34 +284,38 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                       style={[
                         styles.actionButton, 
                         styles.effectiveButton,
-                        (!isCompleted || ratedConcerns.has(tracking.concern_name)) && styles.disabledButton
+                        !isCompleted && styles.disabledButton,
+                        isEffectiveSelected && styles.selectedButton
                       ]}
-                      onPress={isCompleted && !ratedConcerns.has(tracking.concern_name) ? handleEffective : undefined}
-                      activeOpacity={isCompleted && !ratedConcerns.has(tracking.concern_name) ? 0.7 : 1}
-                      disabled={!isCompleted || ratedConcerns.has(tracking.concern_name)}
+                      onPress={isCompleted && !isEffectiveSelected ? handleEffective : undefined}
+                      activeOpacity={isCompleted && !isEffectiveSelected ? 0.7 : 1}
+                      disabled={!isCompleted || isEffectiveSelected}
                     >
                       <Text style={[
                         styles.effectiveButtonText,
-                        (!isCompleted || ratedConcerns.has(tracking.concern_name)) && styles.disabledButtonText
+                        !isCompleted && styles.disabledButtonText,
+                        isEffectiveSelected && styles.selectedButtonText
                       ]}>
-                        {ratedConcerns.has(tracking.concern_name) ? 'Rated' : 'Effective'}
+                        Effective
                       </Text>
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={[
                         styles.actionButton, 
                         styles.notEffectiveButton,
-                        (!isCompleted || ratedConcerns.has(tracking.concern_name)) && styles.disabledButton
+                        !isCompleted && styles.disabledButton,
+                        isNotEffectiveSelected && styles.selectedButton
                       ]}
-                      onPress={isCompleted && !ratedConcerns.has(tracking.concern_name) ? handleNotEffective : undefined}
-                      activeOpacity={isCompleted && !ratedConcerns.has(tracking.concern_name) ? 0.7 : 1}
-                      disabled={!isCompleted || ratedConcerns.has(tracking.concern_name)}
+                      onPress={isCompleted && !isNotEffectiveSelected ? handleNotEffective : undefined}
+                      activeOpacity={isCompleted && !isNotEffectiveSelected ? 0.7 : 1}
+                      disabled={!isCompleted || isNotEffectiveSelected}
                     >
                       <Text style={[
                         styles.notEffectiveButtonText,
-                        (!isCompleted || ratedConcerns.has(tracking.concern_name)) && styles.disabledButtonText
+                        !isCompleted && styles.disabledButtonText,
+                        isNotEffectiveSelected && styles.selectedButtonText
                       ]}>
-                        {ratedConcerns.has(tracking.concern_name) ? 'Rated' : 'Not Effective'}
+                        Not Effective
                       </Text>
                     </TouchableOpacity>
                   </View>
@@ -610,6 +574,13 @@ const styles = StyleSheet.create({
   },
   disabledButtonText: {
     color: colors.textSecondary,
+  },
+  selectedButton: {
+    backgroundColor: colors.primary + '15',
+    borderWidth: 2,
+  },
+  selectedButtonText: {
+    fontWeight: '700',
   },
   continueTrackingButton: {
     paddingVertical: spacing.sm,

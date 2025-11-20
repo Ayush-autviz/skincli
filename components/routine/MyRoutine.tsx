@@ -96,6 +96,7 @@ interface RoutineItem {
   treatmentDate: Date | null;
   stopReason: string;
   dateCreated: Date;
+  is_tracking_paused: boolean;
   upc?: string; // UPC code for scanned products
   extra: any;
 }
@@ -247,6 +248,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       dateStarted: getDate(apiItem.start_date),
       dateStopped: getDate(apiItem.end_date),
       treatmentDate: getDate(apiItem.treatment_date),
+      is_tracking_paused: apiItem.is_tracking_paused ,
       stopReason: apiItem.end_reason || '',
       dateCreated: getDate(apiItem.dateCreated) || new Date(),
       upc: apiItem.upc || undefined, // Include UPC code if present
@@ -962,7 +964,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         dateStarted: item.dateStarted,
         dateStopped: item.dateStopped,
         stopReason: item.stopReason,
-        extra: item.extra || {}
+        extra: item.extra || {},
+        is_tracking_paused: item.is_tracking_paused 
       },
       upc: item.upc || undefined
     });

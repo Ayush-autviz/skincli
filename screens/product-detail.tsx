@@ -36,7 +36,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const params = route.params as ProductDetailParams || {};
   
   const [productData, setProductData] = useState<any>(params.productData || {});
-  const [routineData, setRoutineData] = useState<any>(params.routineData || {});
+  const [routineData, setRoutineData] = useState<any>({
+    ...(params.routineData || {}),
+    is_tracking_paused: params.routineData?.is_tracking_paused ?? false
+  });
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
   const [showUsageModal, setShowUsageModal] = useState<boolean>(false);

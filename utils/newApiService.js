@@ -1926,6 +1926,47 @@ export const rateEffectiveness = async (routineItemId, ratings) => {
 };
 
 /**
+ * Toggle tracking for routine item (pause/resume)
+ * @param {string} routineItemId - Routine item ID
+ * @param {string} action - Action to perform: "pause" or "resume"
+ * @returns {Promise<Object>} Toggle response
+ */
+export const toggleTracking = async (routineItemId, action) => {
+  try {
+    console.log("🔵 Toggling tracking for routine item:", routineItemId, action);
+
+    const response = await apiClient.patch(
+      `/routine/${routineItemId}/toggle-tracking`,
+      {
+        action: action
+      },
+      {
+        headers: {
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    if (response.data.status === 200 || response.status === 200) {
+      console.log("✅ Tracking toggled successfully");
+      return {
+        success: true,
+        data: response.data.data || response.data,
+      };
+    } else {
+      throw new Error(response.data.message || "Failed to toggle tracking");
+    }
+  } catch (error) {
+    console.error("🔴 toggleTracking error:", error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        "Failed to toggle tracking"
+    );
+  }
+};
+
+/**
  * Delete a routine item
  * @param {string} itemId - Item ID to delete
  * @returns {Promise<Object>} Delete response

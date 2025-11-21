@@ -16,7 +16,7 @@ import {
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle, Check, ChevronRight, Calendar } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
-import { searchProductByUPC, deleteRoutineItem } from '../utils/newApiService';
+import { searchProductByUPC, deleteRoutineItem, toggleTracking } from '../utils/newApiService';
 
 interface ProductDetailParams {
   itemId: string;
@@ -38,7 +38,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const [productData, setProductData] = useState<any>(params.productData || {});
   const [routineData, setRoutineData] = useState<any>({
     ...(params.routineData || {}),
-    is_tracking_paused: params.routineData?.is_tracking_paused ?? false
+    is_tracking_paused: params.routineData?.is_tracking_paused
   });
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
@@ -128,14 +128,36 @@ const ProductDetailScreen = (): React.JSX.Element => {
   };
 
   // Handle start tracking button press
-  const handleStartTracking = () => {
-    // Navigate to tracking/effectiveness screen or show tracking options
-    // For now, navigate to progress screen if it exists, otherwise show alert
-    (navigation as any).navigate('Progress', {
-      itemId: params.itemId,
-      routineData: routineData,
-      productData: productData
-    });
+  const handleStartTracking = async () => {
+    if (!params.itemId) {
+      Alert.alert('Error', 'Item ID not found');
+      return;
+    }
+
+    try {
+      await toggleTracking(params.itemId, 'resume');
+      
+      Alert.alert(
+        'Tracking Started',
+        'Product tracking has been started.',
+        [
+          {
+            text: 'OK',
+            onPress: () => {
+              // Refresh the screen or navigate back
+              navigation.goBack();
+            }
+          }
+        ]
+      );
+    } catch (error: any) {
+      console.error('Error starting tracking:', error);
+      Alert.alert(
+        'Error',
+        error.message || 'Failed to start tracking. Please try again.',
+        [{ text: 'OK' }]
+      );
+    }
   };
 
   // Format usage and frequency for display in modal
@@ -587,7 +609,22 @@ const ProductDetailScreen = (): React.JSX.Element => {
           </View>
 
           {/* Concern Tracking Section */}
-          {routineData.concern_tracking && routineData.concern_tracking.length > 0 && (
+          {(!routineData.concern_tracking || routineData.concern_tracking.length === 0 || routineData.is_tracking_paused) ? (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Concern Tracking</Text>
+              <TouchableOpacity
+                style={styles.startTrackingButton}
+                onPress={handleStartTracking}
+                activeOpacity={0.8}
+              >
+                <View style={styles.startTrackingContent}>
+                  <TrendingUp size={18} color={colors.white} style={styles.startTrackingIcon} />
+                  <Text style={styles.startTrackingText}>Start Tracking</Text>
+                  <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
+                </View>
+              </TouchableOpacity>
+            </View>
+          ) : routineData.concern_tracking && routineData.concern_tracking.length > 0 ? (
             <TouchableOpacity
               style={styles.section}
               onPress={() => handleConcernClick(null)}
@@ -639,7 +676,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 })}
               </View>
             </TouchableOpacity>
-          )}
+          ) : null}
 
           {/* Product Description */}
 

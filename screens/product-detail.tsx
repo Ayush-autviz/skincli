@@ -72,7 +72,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
     fetchProductData();
   }, [params.upc]);
 
-  // Get usage date info
+  // Check if product is manually added (no UPC means manually added)
+  const isManuallyAdded = !params.upc;
+
+  // Get usage date info (without AM/PM)
   const getUsageDateInfo = () => {
     console.log('🔍 Routine data:', routineData);
     if (!routineData.dateStarted) return '';
@@ -95,6 +98,54 @@ const ProductDetailScreen = (): React.JSX.Element => {
     }
     
     return `You started using this product on ${formattedDate}`;
+  };
+
+  // Get usage pills (AM/PM)
+  const getUsagePills = () => {
+    const usage = routineData.usage || '';
+    const pills: string[] = [];
+    
+    if (usage === 'am') {
+      pills.push('AM');
+    } else if (usage === 'pm') {
+      pills.push('PM');
+    } else if (usage === 'both') {
+      pills.push('AM', 'PM');
+    } else if (usage === 'as_needed') {
+      pills.push('As needed');
+    } else if (usage) {
+      pills.push(usage);
+    }
+    
+    return pills;
+  };
+
+  // Get frequency pills
+  const getFrequencyPills = () => {
+    const frequency = routineData.frequency || '';
+    const pills: string[] = [];
+    
+    if (frequency === 'daily') {
+      pills.push('Daily');
+    } else if (frequency === 'weekly') {
+      pills.push('Weekly');
+    } else if (frequency === 'monthly') {
+      pills.push('Monthly');
+    } else if (frequency) {
+      pills.push(frequency);
+    }
+    
+    return pills;
+  };
+
+  // Get completed concerns for modal
+  const getCompletedConcerns = () => {
+    if (!routineData.concern_tracking || routineData.concern_tracking.length === 0) {
+      return [];
+    }
+    return routineData.concern_tracking
+      .filter((tracking: any) => tracking.is_completed === true)
+      .map((tracking: any) => tracking.concern_name);
   };
 
   // Handle edit button press
@@ -212,9 +263,42 @@ const ProductDetailScreen = (): React.JSX.Element => {
     setShowUsageModal(true);
   };
 
-  // Handle concern tracking item click - opens the usage modal
+  // Check if concern tracking can open modal
+  const canOpenModal = (tracking: any) => {
+    // If not completed, can't open modal
+    if (!tracking.is_completed) {
+      return false;
+    }
+    // If effective status is set (true or false), can't open modal
+    if (tracking.is_effective !== null) {
+      return false;
+    }
+    // If completed and is_effective is null, can open modal (ready to review)
+    return true;
+  };
+
+  // Get status text for concern tracking
+  const getTrackingStatusText = (tracking: any) => {
+    if (!tracking.is_completed) {
+      return null; // Show progress
+    }
+    if (tracking.is_effective === null) {
+      return 'Ready to Review';
+    }
+    if (tracking.is_effective === true) {
+      return 'Proven';
+    }
+    if (tracking.is_effective === false) {
+      return 'Unproven';
+    }
+    return null;
+  };
+
+  // Handle concern tracking item click - opens the usage modal only if allowed
   const handleConcernClick = (tracking: any) => {
-    setShowUsageModal(true);
+    if (canOpenModal(tracking)) {
+      setShowUsageModal(true);
+    }
   };
 
   // Handle remove button press
@@ -382,54 +466,63 @@ const ProductDetailScreen = (): React.JSX.Element => {
               </View>
             </TouchableOpacity>
 
-            {/* Title */}
-            <Text style={styles.modalTitle}>Review Effectiveness</Text>
+            {/* Title with underline */}
+            <View style={styles.modalTitleContainer}>
+              <Text style={styles.modalTitle}>Review Effectiveness</Text>
+              <View style={styles.modalTitleUnderline} />
+            </View>
 
-             {/* Product Info */}
-             {productData.product_name && (
-               <View style={styles.modalProductInfo}>
-                {productData.brand && (
-                   <Text style={styles.modalBrandName}>
-                     {productData.brand.toUpperCase()}
-                   </Text>
-                 )}
-                 <Text style={styles.modalProductName}>
-                   {productData.product_name}
-                 </Text>
-                 
-                 <Text style={styles.modalUsageInfo}>
-                   {getUsageInfo()}
-                 </Text>
-               </View>
-             )}
+            {/* Brand Name */}
+            {!isManuallyAdded && productData.brand && (
+              <Text style={styles.modalBrandName}>
+                {productData.brand.toUpperCase()}
+              </Text>
+            )}
 
-             {/* Concerns Tracking Section */}
-             {routineData.concern_tracking && routineData.concern_tracking.length > 0 && (
-               <View style={styles.modalConcernTrackingSection}>
-                 <Text style={styles.modalConcernTrackingTitle}>Concern Tracking</Text>
-                 <View style={styles.modalConcernTrackingList}>
-                   {routineData.concern_tracking.map((tracking: any, index: number) => {
-                     const weeksCompleted = tracking.weeks_completed || 0;
-                     const totalWeeks = tracking.total_weeks || 0;
-                     return (
-                       <View key={index} style={styles.modalConcernTrackingItem}>
-                         <Text style={styles.modalConcernTrackingName}>
-                           {formatConcernName(tracking.concern_name || 'Unknown Concern')}
-                         </Text>
-                         <Text style={styles.modalConcernTrackingWeeks}>
-                           {weeksCompleted}/{totalWeeks}
-                         </Text>
-                       </View>
-                     );
-                   })}
-                 </View>
-               </View>
-             )}
+            {/* Product Name */}
+            {productData.product_name && (
+              <Text style={styles.modalProductName}>
+                {productData.product_name}
+              </Text>
+            )}
 
-             {/* Question */}
-             <Text style={styles.modalQuestion}>
-               Have you been using this product as needed?
-             </Text>
+            {/* Using Section */}
+            <Text style={styles.modalSectionHeading}>Using</Text>
+            <View style={styles.modalChipContainer}>
+              {/* AM/PM Pills */}
+              {getUsagePills().map((pill: string, index: number) => (
+                <View key={`usage-${index}`} style={styles.modalChip}>
+                  <Text style={styles.modalChipText}>{pill}</Text>
+                </View>
+              ))}
+              {/* Frequency Pills */}
+              {getFrequencyPills().map((pill: string, index: number) => (
+                <View key={`frequency-${index}`} style={styles.modalChip}>
+                  <Text style={styles.modalChipText}>{pill}</Text>
+                </View>
+              ))}
+            </View>
+
+            {/* Concerns Reviewed Section */}
+            {getCompletedConcerns().length > 0 && (
+              <>
+                <Text style={styles.modalSectionHeading}>Concerns Reviewed</Text>
+                <View style={styles.modalChipContainer}>
+                  {getCompletedConcerns().map((concern: string, index: number) => (
+                    <View key={index} style={styles.modalChip}>
+                      <Text style={styles.modalChipText}>
+                        {formatConcernName(concern)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </>
+            )}
+
+            {/* Question */}
+            <Text style={styles.modalQuestion}>
+              Have you been using this product as needed?
+            </Text>
 
             {/* Response Options */}
             <View style={styles.modalOptionsContainer}>
@@ -524,94 +617,103 @@ const ProductDetailScreen = (): React.JSX.Element => {
         </View>
       ) : (
         <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Product Title and Brand */}
-          <View style={styles.productTitleContainer}>
-            <Text style={styles.productName}>
-              {productData.product_name || 'Unknown Product'}
-            </Text>
-            {productData.brand && (
+          {/* 1. First Card: Brand Name, Product Name, and Usage Date */}
+          <View style={styles.section}>
+            {!isManuallyAdded && productData.brand && (
               <Text style={styles.brandName}>
                 {productData.brand?.toUpperCase()}
               </Text>
             )}
-          </View>
-
-          <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Your Concerns</Text>
-              <View style={styles.chipSelectorContainer}>
-                {routineData.concerns.map((concern: string, index: number) => (
-                  <View key={index} style={styles.chipButton}>
-                    <Text style={styles.chipButtonText}>
-                      {formatConcernName(concern)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-
-          {/* Usage Card */}
-          <View style={styles.section}>
-            {/* <Text style={styles.sectionTitle}>Usage Information</Text> */}
+            <Text style={styles.productName}>
+              {productData.product_name || routineData.name || 'Unknown Product'}
+            </Text>
             {getUsageDateInfo() !== '' && (
-            <Text style={styles.usageText}>
+              <Text style={styles.usageText}>
                 {getUsageDateInfo()}
               </Text>
             )}
-            <View style={styles.actionRow}>
-              <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
-                <Edit size={16} color={colors.textSecondary} />
-                <Text style={styles.actionText}>Edit</Text>
-              </TouchableOpacity>
-              {/* <TouchableOpacity 
-                onPress={handleRemove} 
-                style={styles.actionButton}
-                disabled={isDeleting}
-              >
-                {isDeleting ? (
-                  <ActivityIndicator size="small" color={colors.textSecondary} />
-                ) : (
-                  <>
-                    <X size={16} color={colors.textSecondary} />
-                    <Text style={styles.actionText}>Remove from routine</Text>
-                  </>
-                )}
-              </TouchableOpacity> */}
-            </View>
-
-            
-
-            {/* Start/Review Tracking Button */}
-            {/* {routineData.concern_tracking && routineData.concern_tracking.length === 0 ? (
-              <TouchableOpacity 
-                onPress={handleStartTracking} 
-                style={styles.startTrackingButton}
-                activeOpacity={0.8}
-              >
-                <View style={styles.startTrackingContent}>
-                  <TrendingUp size={18} color={colors.white} style={styles.startTrackingIcon} />
-                  <Text style={styles.startTrackingText}>Start Effective Tracking</Text>
-                  <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
-                </View>
-              </TouchableOpacity>
-            ) : routineData.concern_tracking && routineData.concern_tracking.length > 0 ? (
-              <TouchableOpacity 
-                onPress={handleReviewTracking} 
-                style={styles.reviewTrackingButton}
-                activeOpacity={0.8}
-              >
-                <View style={styles.startTrackingContent}>
-                  <TrendingUp size={18} color={colors.white} style={styles.startTrackingIcon} />
-                  <Text style={styles.startTrackingText}>Review Effective Tracking</Text>
-                  <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
-                </View>
-              </TouchableOpacity>
-            ) : null} */}
           </View>
 
-          {/* Concern Tracking Section */}
+          {/* 2. Combined Card: Usage (AM/PM and Daily/Weekly), Your Concerns, and Edit */}
+          <View style={styles.section}>
+            {/* Usage Pills (AM/PM and Frequency) */}
+            {(getUsagePills().length > 0 || getFrequencyPills().length > 0) && (
+              <View style={styles.usageSection}>
+                <Text style={styles.sectionTitle}>Usage</Text>
+                <View style={styles.chipSelectorContainer}>
+                  {/* AM/PM Pills */}
+                  {getUsagePills().map((pill: string, index: number) => (
+                    <View key={`usage-${index}`} style={styles.chipButton}>
+                      <Text style={styles.chipButtonText}>
+                        {pill}
+                      </Text>
+                    </View>
+                  ))}
+                  {/* Frequency Pills */}
+                  {getFrequencyPills().map((pill: string, index: number) => (
+                    <View key={`frequency-${index}`} style={styles.chipButton}>
+                      <Text style={styles.chipButtonText}>
+                        {pill}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Your Concerns */}
+            {routineData.concerns && routineData.concerns.length > 0 && (
+              <View style={styles.concernsSection}>
+                <Text style={styles.sectionTitle}>Your Concerns</Text>
+                <View style={styles.chipSelectorContainer}>
+                  {routineData.concerns.map((concern: string, index: number) => (
+                    <View key={index} style={styles.chipButton}>
+                      <Text style={styles.chipButtonText}>
+                        {formatConcernName(concern)}
+                      </Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {/* Edit Button */}
+            <View style={styles.editSection}>
+              <View style={styles.actionRow}>
+                <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
+                  <Edit size={16} color={colors.primary} />
+                  <Text style={styles.actionText}>Edit</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+
+          {/* 6. Effectiveness Tracking Status */}
+          {/* <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Effectiveness Tracking Status</Text>
+            {(!routineData.concern_tracking || routineData.concern_tracking.length === 0 || routineData.is_tracking_paused) ? (
+              <TouchableOpacity
+                style={styles.startTrackingButton}
+                onPress={handleStartTracking}
+                activeOpacity={0.8}
+              >
+                <View style={styles.startTrackingContent}>
+                  <TrendingUp size={18} color={colors.white} style={styles.startTrackingIcon} />
+                  <Text style={styles.startTrackingText}>Start Tracking</Text>
+                  <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
+                </View>
+              </TouchableOpacity>
+            ) : (
+              <Text style={styles.trackingStatusText}>
+                Tracking in progress
+              </Text>
+            )}
+          </View> */}
+
+          {/* 7. Effectiveness Tracking Status */}
           {(!routineData.concern_tracking || routineData.concern_tracking.length === 0 || routineData.is_tracking_paused) ? (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Concern Tracking</Text>
+              <Text style={styles.sectionTitle}>Effectiveness Tracking Status</Text>
               <TouchableOpacity
                 style={styles.startTrackingButton}
                 onPress={handleStartTracking}
@@ -624,23 +726,26 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 </View>
               </TouchableOpacity>
             </View>
-          ) : routineData.concern_tracking && routineData.concern_tracking.length > 0 ? (
-            <TouchableOpacity
-              style={styles.section}
-              onPress={() => handleConcernClick(null)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.sectionTitle}>Concern Tracking</Text>
+          ) : (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Effectiveness Tracking Status</Text>
               <View style={styles.concernTrackingContainer}>
                 {routineData.concern_tracking.map((tracking: any, index: number) => {
                   const weeksCompleted = tracking.weeks_completed || 0;
                   const totalWeeks = tracking.total_weeks || 0;
                   const progressPercentage = totalWeeks > 0 ? (weeksCompleted / totalWeeks) * 100 : 0;
+                  const canOpen = canOpenModal(tracking);
+                  const statusText = getTrackingStatusText(tracking);
+                  
+                  const ConcernItem = canOpen ? TouchableOpacity : View;
                   
                   return (
-                    <View
+                    <ConcernItem
                       key={index}
                       style={styles.concernTrackingItem}
+                      onPress={() => handleConcernClick(tracking)}
+                      activeOpacity={0.7}
+                      disabled={!canOpen}
                     >
                       <View style={styles.concernTrackingLeft}>
                         <View style={styles.concernTrackingIconContainer}>
@@ -650,39 +755,57 @@ const ProductDetailScreen = (): React.JSX.Element => {
                           <Text style={styles.concernTrackingName}>
                             {formatConcernName(tracking.concern_name || 'Unknown Concern')}
                           </Text>
-                          <View style={styles.concernTrackingProgressBarContainer}>
-                            <View style={styles.concernTrackingProgressBar}>
-                              <View 
-                                style={[
-                                  styles.concernTrackingProgressFill,
-                                  { width: `${progressPercentage}%` }
-                                ]} 
-                              />
+                          {!tracking.is_completed && (
+                            <View style={styles.concernTrackingProgressBarContainer}>
+                              <View style={styles.concernTrackingProgressBar}>
+                                <View 
+                                  style={[
+                                    styles.concernTrackingProgressFill,
+                                    { width: `${progressPercentage}%` }
+                                  ]} 
+                                />
+                              </View>
                             </View>
-                          </View>
+                          )}
+                          {statusText && (
+                            <Text style={[
+                              styles.trackingStatusBadge,
+                              tracking.is_effective === true && styles.trackingStatusProven,
+                              tracking.is_effective === false && styles.trackingStatusUnproven,
+                              tracking.is_effective === null && styles.trackingStatusReady
+                            ]}>
+                              {statusText}
+                            </Text>
+                          )}
                         </View>
                       </View>
                       <View style={styles.concernTrackingRight}>
-                        <View style={styles.concernTrackingWeeksContainer}>
-                          <Text style={styles.concernTrackingWeeks}>
-                            {weeksCompleted}/{totalWeeks}
-                          </Text>
-                          <Text style={styles.concernTrackingWeeksLabel}>weeks</Text>
-                        </View>
-                        <ChevronRight size={20} color={colors.textSecondary} />
+                        {!tracking.is_completed ? (
+                          <View style={styles.concernTrackingWeeksContainer}>
+                            <Text style={styles.concernTrackingWeeks}>
+                              {weeksCompleted}/{totalWeeks}
+                            </Text>
+                            <Text style={styles.concernTrackingWeeksLabel}>weeks</Text>
+                          </View>
+                        ) : (
+                          <View style={styles.concernTrackingWeeksContainer}>
+                            <Text style={styles.concernTrackingWeeks}>
+                              {totalWeeks}/{totalWeeks}
+                            </Text>
+                            <Text style={styles.concernTrackingWeeksLabel}>weeks</Text>
+                          </View>
+                        )}
+                        {canOpen && <ChevronRight size={20} color={colors.textSecondary} />}
                       </View>
-                    </View>
+                    </ConcernItem>
                   );
                 })}
               </View>
-            </TouchableOpacity>
-          ) : null}
+            </View>
+          )}
 
-          {/* Product Description */}
-
-
-          {/* Good For Section */}
-          {productData.good_for && productData.good_for.length > 0 && (
+          {/* 8. Good For (only if not manually added) */}
+          {!isManuallyAdded && productData.good_for && productData.good_for.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Good For</Text>
               <View style={styles.chipSelectorContainer}>
@@ -695,7 +818,24 @@ const ProductDetailScreen = (): React.JSX.Element => {
             </View>
           )}
 
-{productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
+          {/* 9. Key Ingredients (only if not manually added) */}
+          {!isManuallyAdded && productData.ingredients && productData.ingredients.length > 0 && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Ingredients</Text>
+              <View style={styles.chipSelectorContainer}>
+                {productData.ingredients.map((ingredient: any, index: number) => (
+                  <View key={index} style={styles.chipButton}>
+                    <Text style={styles.chipButtonText}>
+                      {formatIngredientName(ingredient.ingredient_name)}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            </View>
+          )}
+
+          {/* 10. Free Of (only if not manually added) */}
+          {!isManuallyAdded && productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Free Of</Text>
               <View style={styles.chipSelectorContainer}>
@@ -717,38 +857,6 @@ const ProductDetailScreen = (): React.JSX.Element => {
               </View>
             </View>
           )}
-
-          {/* Key Ingredients Section - Show ingredients if available, otherwise show concerns */}
-          {productData.ingredients && productData.ingredients.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Ingredients</Text>
-              <View style={styles.chipSelectorContainer}>
-                {productData.ingredients.map((ingredient: any, index: number) => (
-                  <View key={index} style={styles.chipButton}>
-                    <Text style={styles.chipButtonText}>
-                      {formatIngredientName(ingredient.ingredient_name)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : routineData.concerns && routineData.concerns.length > 0 ? (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Concerns</Text>
-              <View style={styles.chipSelectorContainer}>
-                {routineData.concerns.map((concern: string, index: number) => (
-                  <View key={index} style={styles.chipButton}>
-                    <Text style={styles.chipButtonText}>
-                      {formatConcernName(concern)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          ) : null}
-
-          {/* Free Of Section */}
-  
 
           {/* Bottom spacing */}
           <View style={styles.bottomSpacing} />
@@ -890,7 +998,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: spacing.md,
   },
   brandName: {
     fontSize: fontSize.sm,
@@ -898,6 +1006,7 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     letterSpacing: 1.5,
     textAlign: 'center',
+    marginBottom: spacing.sm,
   },
   section: {
     marginHorizontal: spacing.lg,
@@ -907,12 +1016,27 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.lg,
     ...shadows.sm,
   },
+  usageSection: {
+    marginBottom: spacing.sm,
+  },
   usageText: {
     fontSize: 14,
     color: colors.textPrimary,
     lineHeight: 22,
-    marginBottom: spacing.md,
+    marginTop: spacing.sm,
     textAlign: 'center',
+  },
+  concernsSection: {
+    marginTop: spacing.xs,
+  },
+  editSection: {
+    marginTop: spacing.md,
+  },
+  divider: {
+    height: 1,
+    backgroundColor: colors.border || '#E5E7EB',
+    marginVertical: spacing.md,
+    opacity: 0.5,
   },
   actionRow: {
     flexDirection: 'row',
@@ -930,8 +1054,8 @@ const styles = StyleSheet.create({
     color: '#666666',
   },
   actionText: {
-    fontSize: fontSize.sm,
-    color: colors.textSecondary,
+    fontSize: fontSize.md,
+    color: colors.primary,
   },
   startTrackingButton: {
     marginTop: spacing.md,
@@ -1212,7 +1336,8 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
-    padding: spacing.xl,
+    paddingTop:55,
+    padding: 25,
     width: '100%',
     maxWidth: 400,
     ...shadows.lg,
@@ -1231,12 +1356,22 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  modalTitleContainer: {
+    alignItems: 'center',
+    marginBottom: spacing.lg,
+  },
   modalTitle: {
     fontSize: fontSize.xl,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xs,
     textAlign: 'center',
+  },
+  modalTitleUnderline: {
+    width: 60,
+    height: 3,
+    backgroundColor: colors.primary,
+    borderRadius: 2,
   },
   modalProductInfo: {
     // marginBottom: spacing.sm,
@@ -1254,7 +1389,37 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textSecondary,
     letterSpacing: 1.5,
+    marginBottom: spacing.xs,
+  },
+  modalSectionHeading: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginTop: spacing.md,
     marginBottom: spacing.sm,
+  },
+  modalChipContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.sm,
+  },
+  modalChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: borderRadius.pill,
+    borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: colors.background,
+    gap: spacing.xs,
+    minHeight: 40,
+  },
+  modalChipText: {
+    fontSize: fontSize.sm,
+    color: colors.textSecondary,
+    fontWeight: '500',
   },
   modalUsageInfo: {
     fontSize: fontSize.sm,
@@ -1301,10 +1466,11 @@ const styles = StyleSheet.create({
     color: colors.primary,
   },
   modalQuestion: {
-    fontSize: fontSize.lg,
-    fontWeight: '700',
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 10,
     color: colors.textPrimary,
-    marginBottom: spacing.lg,
+    marginBottom: 10,
   },
   modalOptionsContainer: {
     gap: spacing.sm,
@@ -1312,7 +1478,7 @@ const styles = StyleSheet.create({
   modalOption: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    padding: spacing.sm,
+    padding: spacing.md,
     borderRadius: borderRadius.md,
     borderWidth: 1,
     borderColor: '#E5E7EB',
@@ -1360,7 +1526,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
+   // paddingHorizontal: spacing.md,
     backgroundColor: colors.background,
     borderRadius: borderRadius.md,
     marginBottom: spacing.sm,
@@ -1423,6 +1589,33 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '500',
     marginTop: -2,
+  },
+  trackingStatusText: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    fontStyle: 'italic',
+    marginTop: spacing.sm,
+  },
+  trackingStatusBadge: {
+    fontSize: fontSize.sm,
+    fontWeight: '600',
+    marginTop: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 4,
+    borderRadius: borderRadius.pill || 12,
+    alignSelf: 'flex-start',
+  },
+  trackingStatusProven: {
+    backgroundColor: '#10B98115',
+    color: '#10B981',
+  },
+  trackingStatusUnproven: {
+    backgroundColor: '#EF444415',
+    color: '#EF4444',
+  },
+  trackingStatusReady: {
+    backgroundColor: `${colors.primary}15`,
+    color: colors.primary,
   },
 });
 

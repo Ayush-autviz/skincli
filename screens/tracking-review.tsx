@@ -131,7 +131,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
           </TouchableOpacity>
           
           <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>Effectiveness Tracking</Text>
+            <Text style={styles.headerTitle}>Effectiveness Dashboard</Text>
             <View style={styles.titleUnderline} />
           </View>
           
@@ -145,29 +145,41 @@ const TrackingReviewScreen = (): React.JSX.Element => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
       >
-        <View style={[styles.content, { paddingTop: 120 }]}>
+        <View style={[styles.content, { paddingTop: 150 }]}>
           {/* Product Info */}
-          {/* {params.productData?.product_name && (
+          {params.productData?.product_name && (
             <View style={styles.productInfoSection}>
-              <Text style={styles.productName}>{params.productData.product_name}</Text>
               {params.productData.brand && (
-                <Text style={styles.productBrand}>{params.productData.brand}</Text>
+                <Text style={styles.productBrand}>
+                  {params.productData.brand.toUpperCase()}
+                </Text>
               )}
-            </View>
-          )} */}
-
-          {/* Usage Response Text */}
-          {getUsageResponseText() && (
-            <View style={styles.usageResponseContainer}>
-              <Text style={styles.usageResponseText}>
-                {getUsageResponseText()}
-              </Text>
+              <Text style={styles.productName}>{params.productData.product_name}</Text>
             </View>
           )}
 
-          {/* Concern Tracking Cards */}
-          {concernTracking.length > 0 ? (
-            concernTracking.map((tracking: any, index: number) => {
+          {/* Usage Response Text */}
+          {getUsageResponseText() && (
+            <TouchableOpacity
+              style={styles.usageResponseContainer}
+              onPress={usageResponse === 'no' ? handleStopTracking : undefined}
+              activeOpacity={usageResponse === 'no' ? 0.7 : 1}
+              disabled={usageResponse !== 'no'}
+            >
+              <Text style={styles.usageResponseText}>
+                {getUsageResponseText()}
+              </Text>
+              {usageResponse === 'no' && (
+                <Text style={styles.stopTrackingLink}>Tap to stop tracking</Text>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Concern Tracking Cards - Only show completed concerns */}
+          {concernTracking.filter((tracking: any) => tracking.is_completed === true).length > 0 ? (
+            concernTracking
+              .filter((tracking: any) => tracking.is_completed === true)
+              .map((tracking: any, index: number) => {
               const weeksCompleted = tracking.weeks_completed || 0;
               const totalWeeks = tracking.total_weeks || 0;
               const isCompleted = tracking.is_completed || false;
@@ -253,83 +265,138 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                 console.log('Continue tracking:', tracking.concern_name);
               };
               
+              // Calculate score difference
+              const scoreDifference = baselineScore !== null && currentScore !== null
+                ? currentScore - baselineScore
+                : null;
+              
+              // Determine score change text color
+              const getScoreChangeTextColor = () => {
+                if (scoreDifference === null) return colors.textSecondary;
+                if (scoreDifference > 0) return '#10B981'; // Green for improvement
+                if (scoreDifference < 0) return '#EF4444'; // Red for decline
+                return colors.textSecondary; // Gray for no change
+              };
+
+              // Determine score change border color
+              const getScoreChangeBorderColor = () => {
+                if (scoreDifference === null) return colors.border;
+                if (scoreDifference > 0) return '#10B981'; // Green for improvement
+                if (scoreDifference < 0) return '#EF4444'; // Red for decline
+                return colors.border; // Gray for no change
+              };
+
               return (
                 <View key={index} style={styles.trackingCard}>
-                  {/* Section Header */}
-                  <View style={styles.sectionHeader}>
-                    <Text style={styles.sectionHeaderLabel}>Concern</Text>
-                    <Text style={styles.sectionHeaderLabel}>Score Change</Text>
-                  </View>
-
                   {/* Concern Name */}
                   <Text style={styles.concernName}>
                     {formatConcernName(tracking.concern_name)}
                   </Text>
 
-                  {/* Review Status and Score Change Row */}
-                  <View style={styles.reviewRow}>
+                  {/* Score Change Section - Dashboard Style */}
+                  {scoreChangeText && (
+                    <View style={styles.scoreChangeSection}>
+                      <View style={styles.scoreBox}>
+                        <Text style={styles.scoreLabel}>Baseline</Text>
+                        <Text style={styles.scoreValue}>{baselineScore}</Text>
+                      </View>
+                      <View style={styles.scoreArrowContainer}>
+                        <Text style={styles.scoreArrow}>→</Text>
+                      </View>
+                      <View style={styles.scoreBox}>
+                        <Text style={styles.scoreLabel}>Current</Text>
+                        <Text style={[styles.scoreValue, { color: getScoreChangeTextColor() }]}>
+                          {currentScore}
+                        </Text>
+                      </View>
+                      {scoreDifference !== null && (
+                        <View style={[styles.scoreDifferenceBox, { borderColor: getScoreChangeBorderColor() }]}>
+                          <Text style={[styles.scoreDifferenceText, { color: getScoreChangeTextColor() }]}>
+                            {scoreDifference > 0 ? '+' : ''}{scoreDifference}
+                          </Text>
+                        </View>
+                      )}
+                    </View>
+                  )}
+
+                  {/* Review Status */}
+                  <View style={styles.reviewStatusContainer}>
                     <Text style={styles.reviewStatus}>
                       {reviewStatusText}
                     </Text>
-                    {scoreChangeText && (
-                      <Text style={styles.scoreChange}>
-                        {scoreChangeText}
-                      </Text>
-                    )}
                   </View>
 
-                  {/* Action Buttons */}
-                  <View style={styles.actionButtonsRow}>
-                    <TouchableOpacity
-                      style={[
-                        styles.actionButton, 
-                        styles.effectiveButton,
-                        !isCompleted && styles.disabledButton,
-                        isEffectiveSelected && styles.selectedButton
-                      ]}
-                      onPress={isCompleted && !isEffectiveSelected ? handleEffective : undefined}
-                      activeOpacity={isCompleted && !isEffectiveSelected ? 0.7 : 1}
-                      disabled={!isCompleted || isEffectiveSelected}
-                    >
-                      <Text style={[
-                        styles.effectiveButtonText,
-                        !isCompleted && styles.disabledButtonText,
-                        isEffectiveSelected && styles.selectedButtonText
-                      ]}>
-                        Effective
-                      </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={[
-                        styles.actionButton, 
-                        styles.notEffectiveButton,
-                        !isCompleted && styles.disabledButton,
-                        isNotEffectiveSelected && styles.selectedButton
-                      ]}
-                      onPress={isCompleted && !isNotEffectiveSelected ? handleNotEffective : undefined}
-                      activeOpacity={isCompleted && !isNotEffectiveSelected ? 0.7 : 1}
-                      disabled={!isCompleted || isNotEffectiveSelected}
-                    >
-                      <Text style={[
-                        styles.notEffectiveButtonText,
-                        !isCompleted && styles.disabledButtonText,
-                        isNotEffectiveSelected && styles.selectedButtonText
-                      ]}>
-                        Not Effective
-                      </Text>
-                    </TouchableOpacity>
+                  {/* Toggle/Radio Button Group */}
+                  <View style={styles.toggleContainer}>
+                    <Text style={styles.toggleLabel}>Was this product effective?</Text>
+                    <View style={styles.toggleGroup}>
+                      <TouchableOpacity
+                        style={[
+                          styles.toggleOption,
+                          styles.toggleOptionLeft,
+                          isEffectiveSelected && styles.toggleOptionSelected,
+                          isEffectiveSelected && styles.toggleOptionEffective,
+                          !isCompleted && styles.toggleOptionDisabled
+                        ]}
+                        onPress={isCompleted && !isEffectiveSelected ? handleEffective : undefined}
+                        activeOpacity={isCompleted && !isEffectiveSelected ? 0.7 : 1}
+                        disabled={!isCompleted || isEffectiveSelected}
+                      >
+                        <View style={styles.toggleContent}>
+                          <View style={[
+                            styles.toggleRadio,
+                            isEffectiveSelected && styles.toggleRadioSelected,
+                            isEffectiveSelected && styles.toggleRadioEffective
+                          ]}>
+                            {isEffectiveSelected && (
+                              <View style={[styles.toggleRadioInner, styles.toggleRadioInnerEffective]} />
+                            )}
+                          </View>
+                          <Text style={[
+                            styles.toggleText,
+                            isEffectiveSelected && styles.toggleTextSelected,
+                            isEffectiveSelected && styles.toggleTextEffective,
+                            !isCompleted && styles.toggleTextDisabled
+                          ]}>
+                            Effective
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                      
+                      <TouchableOpacity
+                        style={[
+                          styles.toggleOption,
+                          styles.toggleOptionRight,
+                          isNotEffectiveSelected && styles.toggleOptionSelected,
+                          isNotEffectiveSelected && styles.toggleOptionNotEffective,
+                          !isCompleted && styles.toggleOptionDisabled
+                        ]}
+                        onPress={isCompleted && !isNotEffectiveSelected ? handleNotEffective : undefined}
+                        activeOpacity={isCompleted && !isNotEffectiveSelected ? 0.7 : 1}
+                        disabled={!isCompleted || isNotEffectiveSelected}
+                      >
+                        <View style={styles.toggleContent}>
+                          <View style={[
+                            styles.toggleRadio,
+                            isNotEffectiveSelected && styles.toggleRadioSelected,
+                            isNotEffectiveSelected && styles.toggleRadioNotEffective
+                          ]}>
+                            {isNotEffectiveSelected && (
+                              <View style={[styles.toggleRadioInner, styles.toggleRadioInnerNotEffective]} />
+                            )}
+                          </View>
+                          <Text style={[
+                            styles.toggleText,
+                            isNotEffectiveSelected && styles.toggleTextSelected,
+                            isNotEffectiveSelected && styles.toggleTextNotEffective,
+                            !isCompleted && styles.toggleTextDisabled
+                          ]}>
+                            Not Effective
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-
-                  {/* Continue Tracking Button (only for incomplete reviews) */}
-                  {/* {!isCompleted && (
-                    <TouchableOpacity
-                      style={styles.continueTrackingButton}
-                      onPress={handleContinueTracking}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.continueTrackingText}>Continue tracking</Text>
-                    </TouchableOpacity>
-                  )} */}
                 </View>
               );
             })
@@ -342,19 +409,6 @@ const TrackingReviewScreen = (): React.JSX.Element => {
           <View style={styles.bottomSpacing} />
         </View>
       </ScrollView>
-
-      {/* Stop Tracking Button - Show when user selected "no" */}
-      {usageResponse === 'no' && (
-        <View style={styles.footerContainer}>
-          <TouchableOpacity 
-            style={styles.stopTrackingButton}
-            onPress={handleStopTracking}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.stopTrackingButtonText}>Stop Tracking</Text>
-          </TouchableOpacity>
-        </View>
-      )}
     </View>
   );
 };
@@ -410,7 +464,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
     color: colors.textPrimary,
     letterSpacing: 0.5,
@@ -457,36 +511,41 @@ const styles = StyleSheet.create({
   },
   productInfoSection: {
     marginBottom: spacing.lg,
-    paddingBottom: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: colors.border,
-  },
-  productName: {
-    fontSize: fontSize.xl,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginBottom: spacing.xs,
+    alignItems: 'center',
   },
   productBrand: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.sm,
+    fontWeight: '700',
     color: colors.textSecondary,
-    fontWeight: '500',
+    letterSpacing: 1.5,
+    marginBottom: spacing.xs,
+    textAlign: 'center',
+  },
+  productName: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    textAlign: 'center',
   },
   usageResponseContainer: {
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(139, 115, 85, 0.1)',
     borderRadius: borderRadius.md,
     padding: spacing.md,
     marginBottom: spacing.md,
     marginTop: 20,
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
-    ...shadows.sm,
   },
   usageResponseText: {
     fontSize: fontSize.sm,
     color: colors.textPrimary,
     fontWeight: '500',
     lineHeight: 20,
+  },
+  stopTrackingLink: {
+    color: colors.primary,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    marginTop: spacing.xs,
+    fontSize: fontSize.sm,
   },
   trackingSubtitle: {
     marginTop: 20,
@@ -503,84 +562,186 @@ const styles = StyleSheet.create({
     borderColor: '#F3F4F6',
     ...shadows.sm,
   },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: spacing.md,
-  },
-  sectionHeaderLabel: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
   concernName: {
-    fontSize: fontSize.md,
+    fontSize: fontSize.lg,
     fontWeight: '700',
     color: colors.textPrimary,
-    marginBottom: spacing.sm,
-  },
-  reviewRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
     marginBottom: spacing.md,
+  },
+  scoreChangeSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.md,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.md,
+    gap: spacing.sm,
+  },
+  scoreBox: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: spacing.sm,
+    paddingHorizontal: spacing.xs,
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.sm,
+    minWidth: 80,
+  },
+  scoreLabel: {
+    fontSize: fontSize.xs,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: spacing.xs,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  scoreValue: {
+    fontSize: fontSize.xl,
+    fontWeight: '700',
+    color: colors.textPrimary,
+  },
+  scoreArrowContainer: {
+    paddingHorizontal: spacing.xs,
+  },
+  scoreArrow: {
+    fontSize: fontSize.lg,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  scoreDifferenceBox: {
+    paddingVertical: spacing.xs,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.pill || 12,
+    backgroundColor: colors.background,
+    borderWidth: 2,
+  },
+  scoreDifferenceText: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+  },
+  reviewStatusContainer: {
+    marginBottom: spacing.md,
+    paddingVertical: spacing.sm,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#F3F4F6',
   },
   reviewStatus: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
     fontWeight: '500',
+    textAlign: 'center',
   },
-  scoreChange: {
-    fontSize: fontSize.sm,
-    fontWeight: '700',
+  toggleContainer: {
+    marginTop: spacing.xs,
+  },
+  toggleLabel: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
     color: colors.textPrimary,
+    marginBottom: spacing.md,
+    textAlign: 'center',
   },
-  actionButtonsRow: {
+  toggleGroup: {
     flexDirection: 'row',
-    gap: spacing.sm,
-    marginBottom: spacing.sm,
-  },
-  actionButton: {
-    flex: 1,
-    paddingVertical: spacing.sm,
-    paddingHorizontal: spacing.md,
-    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
+    borderRadius: borderRadius.lg,
+    padding: 4,
     borderWidth: 1,
+    borderColor: '#E5E7EB',
+    gap: 4,
+  },
+  toggleOption: {
+    flex: 1,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.sm,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 56,
+  },
+  toggleOptionLeft: {
+    borderTopRightRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+  toggleOptionRight: {
+    borderTopLeftRadius: 0,
+    borderBottomLeftRadius: 0,
+  },
+  toggleOptionSelected: {
+    backgroundColor: colors.white,
+    ...shadows.sm,
+  },
+  toggleOptionEffective: {
+    backgroundColor: '#F0FDF4',
+    borderWidth: 2,
+    borderColor: '#10B981',
+  },
+  toggleOptionNotEffective: {
+    backgroundColor: '#FEF2F2',
+    borderWidth: 2,
+    borderColor: '#EF4444',
+  },
+  toggleOptionDisabled: {
+    opacity: 0.5,
+    backgroundColor: colors.background,
+  },
+  toggleContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+  },
+  toggleRadio: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: colors.border,
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
-  effectiveButton: {
-    backgroundColor: colors.white,
-    borderColor: '#10B981',
-  },
-  notEffectiveButton: {
-    backgroundColor: colors.white,
-    borderColor: '#EF4444',
-  },
-  effectiveButtonText: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: '#10B981',
-  },
-  notEffectiveButtonText: {
-    fontSize: fontSize.sm,
-    fontWeight: '600',
-    color: '#EF4444',
-  },
-  disabledButton: {
-    opacity: 0.5,
-    borderColor: colors.border,
-  },
-  disabledButtonText: {
-    color: colors.textSecondary,
-  },
-  selectedButton: {
-    backgroundColor: colors.primary + '15',
+  toggleRadioSelected: {
     borderWidth: 2,
   },
-  selectedButtonText: {
+  toggleRadioEffective: {
+    borderColor: '#10B981',
+  },
+  toggleRadioNotEffective: {
+    borderColor: '#EF4444',
+  },
+  toggleRadioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  toggleRadioInnerEffective: {
+    backgroundColor: '#10B981',
+  },
+  toggleRadioInnerNotEffective: {
+    backgroundColor: '#EF4444',
+  },
+  toggleText: {
+    fontSize: fontSize.md,
+    fontWeight: '600',
+    color: colors.textSecondary,
+  },
+  toggleTextSelected: {
     fontWeight: '700',
+  },
+  toggleTextEffective: {
+    color: '#10B981',
+  },
+  toggleTextNotEffective: {
+    color: '#EF4444',
+  },
+  toggleTextDisabled: {
+    color: colors.textSecondary,
+    opacity: 0.6,
   },
   continueTrackingButton: {
     paddingVertical: spacing.sm,

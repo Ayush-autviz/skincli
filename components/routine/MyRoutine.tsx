@@ -761,12 +761,25 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
     console.log('item', item);
     
-    // Determine tracking text based on concern_tracking length
-    const trackingText = item.concern_tracking && item.concern_tracking.length === 0
-      ? 'Start Effective Tracking'
-      : item.concern_tracking && item.concern_tracking.length > 0
-      ? 'Effectiveness Tracking'
-      : null;
+    // Determine tracking text for Product type only
+    let trackingText: string | null = null;
+    if (item.type === 'Product') {
+      const hasTracking = item.concern_tracking && item.concern_tracking.length > 0;
+      const isTrackingPaused = item.is_tracking_paused;
+      
+      if (!hasTracking || isTrackingPaused) {
+        // Tracking not started or paused
+        trackingText = 'Start effectiveness tracking';
+      } else {
+        // Check if all concerns tracking is completed
+        const allCompleted = item.concern_tracking.every((tracking: any) => tracking.is_completed === true);
+        if (allCompleted) {
+          trackingText = 'Review effectiveness tracking';
+        } else {
+          trackingText = 'Effectiveness tracking in progress';
+        }
+      }
+    }
     
     // Determine icon based on item type
     const getItemIcon = (): string => {
@@ -820,7 +833,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           showChevron={false}
           onPress={() => handleNavigateToProductDetail(item)}
           dateInfo={dateInfo as any}
-          // bottomText={trackingText as any}
+          bottomText={trackingText as any}
           rightElement={
             // item.upc ? (
             <ChevronRight 
@@ -1197,7 +1210,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           <AiMessageCard
             overrideText={routineMessage}
             actions={[
-              { label: "Tell me more about your routine", onPress: handleNavigateToChat },
+              { label: "Add to your Routine", onPress: handleNavigateToChat },
             ] as any}
             disableNavigation={true}
             fixedToBottom={true}

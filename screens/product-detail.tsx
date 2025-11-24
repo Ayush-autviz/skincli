@@ -1,7 +1,7 @@
 // product-detail.tsx
 // Product detail screen for scanned products - Redesigned to match mockup
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,16 +13,17 @@ import {
   ActivityIndicator,
   Modal,
 } from 'react-native';
-import { useNavigation, useRoute } from '@react-navigation/native';
+import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
 import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle, Check, ChevronRight, Calendar } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
-import { searchProductByUPC, deleteRoutineItem, toggleTracking } from '../utils/newApiService';
+import { searchProductByUPC, deleteRoutineItem, toggleTracking, getRoutineItems } from '../utils/newApiService';
 
 interface ProductDetailParams {
   itemId: string;
   productData: any;
   routineData: any;
   upc?: string;
+  refresh?: boolean;
 }
 
 interface ApiResponse {
@@ -42,8 +43,55 @@ const ProductDetailScreen = (): React.JSX.Element => {
   });
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
+  const [isFetchingRoutine, setIsFetchingRoutine] = useState<boolean>(false);
   const [showUsageModal, setShowUsageModal] = useState<boolean>(false);
   const [usageResponse, setUsageResponse] = useState<string | null>(null);
+
+  // Fetch fresh routine data from API
+  const fetchRoutineData = useCallback(async () => {
+    if (!params.itemId) return;
+
+    try {
+      setIsFetchingRoutine(true);
+      console.log('🔍 Fetching fresh routine data for itemId:', params.itemId);
+      
+      const response = await getRoutineItems() as ApiResponse;
+      
+      if (response.success && response.data) {
+        // Find the specific item by itemId
+        const item = response.data.find((item: any) => item.id === params.itemId);
+        
+        if (item) {
+          console.log('✅ Fresh routine data fetched:', item);
+          
+          // Transform the API item to match routineData format
+          const transformedData = {
+            name: item.name,
+            type: item.type,
+            usage: item.usage,
+            frequency: item.frequency,
+            concerns: item.concern || [],
+            concern_tracking: item.concern_tracking || [],
+            dateStarted: item.start_date ? new Date(item.start_date) : null,
+            dateStopped: item.end_date ? new Date(item.end_date) : null,
+            stopReason: item.end_reason || '',
+            extra: item.extra || {},
+            is_tracking_paused: item.is_tracking_paused
+          };
+          
+          setRoutineData(transformedData);
+        } else {
+          console.log('⚠️ Item not found in routine data');
+        }
+      } else {
+        console.log('⚠️ No routine data found');
+      }
+    } catch (error) {
+      console.error('🔴 Error fetching fresh routine data:', error);
+    } finally {
+      setIsFetchingRoutine(false);
+    }
+  }, [params.itemId]);
 
   // Fetch fresh product data from API using UPC code
   useEffect(() => {
@@ -71,6 +119,25 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
     fetchProductData();
   }, [params.upc]);
+
+  // Refetch routine data when refresh param is true (on mount or param change)
+  useEffect(() => {
+    if (params.refresh === true) {
+      console.log('🔄 ProductDetail: Refreshing routine data after rating...');
+      fetchRoutineData();
+    }
+  }, [params.refresh, fetchRoutineData]);
+
+  // Also refetch when screen comes into focus with refresh flag
+  useFocusEffect(
+    useCallback(() => {
+      // Only refresh if explicitly requested via refresh param
+      if (params.refresh === true) {
+        console.log('🔄 ProductDetail: Screen focused, refreshing routine data...');
+        fetchRoutineData();
+      }
+    }, [params.refresh, fetchRoutineData])
+  );
 
   // Check if product is manually added (no UPC means manually added)
   const isManuallyAdded = !params.upc;

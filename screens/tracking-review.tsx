@@ -9,6 +9,7 @@ import {
   ScrollView,
   TouchableOpacity,
   Alert,
+  Modal,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { ArrowLeft } from 'lucide-react-native';
@@ -42,6 +43,9 @@ const TrackingReviewScreen = (): React.JSX.Element => {
     });
     return ratings;
   });
+
+  // Modal state
+  const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
 
   // Get usage response text
   const getUsageResponseText = () => {
@@ -221,6 +225,9 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                     newMap.set(tracking.concern_name, true);
                     return newMap;
                   });
+
+                  // Show success modal
+                  setShowSuccessModal(true);
                 } catch (error: any) {
                   console.error('Error rating effectiveness:', error);
                   Alert.alert(
@@ -250,6 +257,9 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                     newMap.set(tracking.concern_name, false);
                     return newMap;
                   });
+
+                  // Show success modal
+                  setShowSuccessModal(true);
                 } catch (error: any) {
                   console.error('Error rating effectiveness:', error);
                   Alert.alert(
@@ -409,6 +419,38 @@ const TrackingReviewScreen = (): React.JSX.Element => {
           <View style={styles.bottomSpacing} />
         </View>
       </ScrollView>
+
+      {/* Success Modal */}
+      <Modal
+        visible={showSuccessModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowSuccessModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>
+              Your effectiveness rating has been recorded.
+            </Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setShowSuccessModal(false);
+                // Navigate back to product detail screen with refresh flag
+                (navigation as any).navigate('ProductDetail', {
+                  itemId: params.itemId,
+                  productData: params.productData,
+                  routineData: params.routineData,
+                  upc: params.productData?.upc,
+                  refresh: true, // Flag to trigger API refresh
+                }, { replace: true });
+              }}
+            >
+              <Text style={styles.modalButtonText}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -793,6 +835,46 @@ const styles = StyleSheet.create({
     ...shadows.sm,
   },
   stopTrackingButtonText: {
+    fontSize: fontSize.md,
+    fontWeight: '700',
+    color: colors.white,
+    letterSpacing: 0.3,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: spacing.lg,
+  },
+  modalContent: {
+    backgroundColor: colors.white,
+    borderRadius: borderRadius.lg,
+    padding: spacing.xl,
+    width: '100%',
+    maxWidth: 400,
+    alignItems: 'center',
+    ...shadows.lg,
+  },
+  modalTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    textAlign: 'center',
+    marginBottom: spacing.xl,
+    lineHeight: 24,
+  },
+  modalButton: {
+    backgroundColor: colors.primary,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    borderRadius: borderRadius.md,
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    ...shadows.sm,
+  },
+  modalButtonText: {
     fontSize: fontSize.md,
     fontWeight: '700',
     color: colors.white,

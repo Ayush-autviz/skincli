@@ -14,6 +14,8 @@ import {
   Dimensions,
   StatusBar,
   Keyboard,
+  KeyboardAvoidingView,
+  Platform,
 } from 'react-native';
 import {
   Search,
@@ -292,7 +294,11 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
             </View>
 
             {/* Content */}
-            <View style={styles.content}>
+            <KeyboardAvoidingView
+              style={styles.content}
+              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+              keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+            >
               {searchResults.length > 0 ? (
                 <>
                   {/* Results Counter */}
@@ -313,7 +319,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
               ) : (
                 renderEmptyState()
               )}
-            </View>
+            </KeyboardAvoidingView>
         </View>
       </View>
     </Modal>

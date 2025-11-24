@@ -61,18 +61,44 @@ interface RoutineItem {
 }
 
 // Define concerns options
+// const concernsOptions = [
+//   'Breakouts',
+//   'Evenness',
+//   'Redness', 
+//   'Visible Pores',
+//   'Lines',
+//   'Eye Area Condition',
+//   'Pigmentation',
+//   'Dewiness',
+//   'Anti-Aging (Face)',
+//   'Anti-Aging (Eyes)'
+// ];
+
 const concernsOptions = [
   'Breakouts',
   'Evenness',
-  'Redness', 
+  'Redness',
   'Visible Pores',
   'Lines',
   'Eye Area Condition',
   'Pigmentation',
   'Dewiness',
   'Anti-Aging (Face)',
-  'Anti-Aging (Eyes)'
+  'Anti-Aging (Eyes)',
+  'Crepey Skin',
+  'Discoloration / Dark Spots',
+  'Dry Skin',
+  'Enlarged Pores',
+  'I Don\'t Know',
+  'Jowls',
+  'Look Tired',
+  'Sagging',
+  'Sensitive Skin',
+  'Sun Damage',
+  'Under Eye Circles',
+  'Wrinkles'
 ];
+
 
 // Define stop reasons
 const stopReasons = [

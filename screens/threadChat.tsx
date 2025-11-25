@@ -795,7 +795,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
                 <Text style={styles.productInputButtonText}>Search by Name</Text>
               </TouchableOpacity>
             )}
-            {requestProductInput.options && requestProductInput.options.includes('Enter Manually') && (
+            {/* {requestProductInput.options && requestProductInput.options.includes('Enter Manually') && (
               <TouchableOpacity
                 style={[styles.productInputButton, styles.manualButton]}
                 onPress={() => {
@@ -820,7 +820,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
                 </View>
                 <Text style={styles.productInputButtonText}>Enter Manually</Text>
               </TouchableOpacity>
-            )}
+            )} */}
           </View>
         )}
       </View>

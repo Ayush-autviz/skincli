@@ -772,7 +772,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         trackingText = 'Start effectiveness tracking';
       } else {
         // Check if all concerns tracking is completed
-        const allCompleted = item.concern_tracking.every((tracking: any) => tracking.is_completed === true);
+        const allCompleted = item.concern_tracking.some((tracking: any) => tracking.is_completed === true);
         if (allCompleted) {
           trackingText = 'Review effectiveness tracking';
         } else {

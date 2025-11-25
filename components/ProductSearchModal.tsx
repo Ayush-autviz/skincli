@@ -79,7 +79,7 @@ const ProductSearchModal: React.FC<ProductSearchModalProps> = ({
   }, [searchQuery]);
 
   const performSearch = async (query: string) => {
-    if (query.length < 3) return;
+    if (query.trimEnd().length < 3) return;
 
     setIsSearching(true);
     setHasSearched(true);

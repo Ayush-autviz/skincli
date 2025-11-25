@@ -143,7 +143,7 @@ const AiMessageCard: React.FC<AiMessageCardProps> = ({
           borderTopColor: palette.gray4,
           paddingHorizontal: spacing.lg,
           paddingTop: spacing.lg,
-          paddingBottom: insets.bottom + spacing.md,
+          paddingBottom: insets.bottom + spacing.sm,
           marginHorizontal: 0,
           marginBottom: 0,
           marginTop: 0,
@@ -238,8 +238,8 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
-    marginTop: 2,
+    // marginRight: spacing.md,
+    // marginTop: 2,
   },
   avatarText: {
     color: palette.gray1,
@@ -257,6 +257,8 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     lineHeight: 20,
     marginBottom: 8,
+    paddingTop: 4,
+    marginLeft: spacing.md,
     
   },
   promptText: {
@@ -267,6 +269,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     marginTop: spacing.sm,
+    justifyContent: 'center',
   },
   actionChipTouchable: {
     marginRight: spacing.sm,

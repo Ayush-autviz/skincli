@@ -456,6 +456,11 @@ const CameraScreen = (): React.JSX.Element => {
           />
           )}
           <FaceOverlay />
+          <View style={styles.instructionsContainer}>
+            <Text style={styles.instructionsText}>Face a source of light</Text>
+            <Text style={styles.instructionsText}>Center your face in full frame</Text>
+            <Text style={styles.instructionsText}>Do not wear makeup</Text>
+          </View>
           <View style={styles.buttonContainer}>
             <TouchableOpacity 
               style={styles.textButton}
@@ -474,12 +479,7 @@ const CameraScreen = (): React.JSX.Element => {
               <View style={styles.captureButtonInner} />
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.textButton}
-              onPress={handleUpload}
-            >
-              <Text style={styles.buttonText}>Upload</Text>
-            </TouchableOpacity>
+            <View style={styles.textButton} />
           </View>
         </>
       ) : (
@@ -496,6 +496,25 @@ const styles = StyleSheet.create({
   },
   camera: {
     flex: 1,
+  },
+  
+  // Instructions
+  instructionsContainer: {
+    position: 'absolute',
+    top: 60,
+    left: 0,
+    right: 0,
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+  },
+  instructionsText: {
+    color: 'white',
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: spacing.sm,
+    textShadowColor: 'rgba(0, 0, 0, 0.75)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 3,
   },
   
   // Camera Controls

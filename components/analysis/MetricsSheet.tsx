@@ -28,9 +28,10 @@ import {
   Animated,
   PanResponder,
   Dimensions,
-  Alert
+  Alert,
+  Image
 } from 'react-native';
-import { ChevronRight, AlertCircle, AlertTriangle } from 'lucide-react-native';
+import { ChevronRight, ChevronLeft, AlertCircle, AlertTriangle } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { usePhotoContext } from '../../contexts/PhotoContext';
 import AiMessageCard from '../chat/AiMessageCard'; // Import AiMessageCard
@@ -482,14 +483,7 @@ const MetricsSheet = forwardRef<MetricsSheetRef, MetricsSheetProps>(({
                                 {formattedKey.toUpperCase()}
                               </Text>
                               <View style={styles.metricValueContainer}>
-                                {isAgeMetric ? (
-                                  <View style={styles.ageContainer}>
-                                    <Text style={styles.metricValue}>{displayValue}</Text>
-                                    <Text style={styles.ageSuffix}> / YEARS</Text>
-                                  </View>
-                                ) : (
-                                  <Text style={styles.metricValue}>{displayValue}</Text>
-                                )}
+                                <Text style={styles.metricValue}>{displayValue}</Text>
                                 <ChevronRight size={18} color={palette.gray6} style={{ marginLeft: 8 }} />
                               </View>
                             </TouchableOpacity>
@@ -498,7 +492,16 @@ const MetricsSheet = forwardRef<MetricsSheetRef, MetricsSheetProps>(({
                    </View>
                    {/* Group 2: Score metrics */}
                     <View style={styles.metricGroup}>
-                      <Text style={styles.metricGroupTitle}>SKIN SCORES</Text>
+                      <Text style={styles.metricGroupTitle}>SKIN ANALYSIS</Text>
+                      {/* Table header for Skin Analysis */}
+                      <View style={styles.tableHeaderRow}>
+                        <Text style={styles.tableHeaderLeft}>CONCERN</Text>
+                        <View style={styles.tableHeaderRight}>
+                          <Text style={styles.tableHeaderRightText}>SCORE</Text>
+                          <ChevronLeft size={14} color={palette.gray6} style={{ marginLeft: 4 }} />
+                          <Text style={styles.tableHeaderRightText}>IMPROVE</Text>
+                        </View>
+                      </View>
                       {Object.entries(metrics)
                         .filter(([key, value]) => !isStandaloneMetric(key) && typeof value === 'number')
                         .sort(([keyA], [keyB]) => {
@@ -664,35 +667,42 @@ const MetricsSheet = forwardRef<MetricsSheetRef, MetricsSheetProps>(({
 
         {/* AI Insights Section - Chat Style Message - Only show when analysis is complete */}
         {uiState === 'complete' && (
-        <TouchableOpacity 
-          style={styles.aiInsightsMessage}
-          onPress={() => {
-            if (photoData && metrics) {
-              // Get firstName from profile or user
-              const firstName = profile?.user_name || user?.user_name || 'there';
-              
-              navigation.navigate('ThreadChat', {
-                chatType: 'snapshot_feedback',
-                imageId: photoData?.imageId,
-                initialMessage: summary
-              });
-            }
-          }}
-        >
-          {/* <View style={styles.aiAvatar}>
-            <Text style={styles.aiAvatarText}>a</Text>
-          </View> */}
-          <View style={styles.aiMessageContent}>
-            <Text style={styles.aiMessageText}>
-              {summary ? summary : (summaryLoading ? "Loading summary..." : "Loading summary...")}
-            </Text>
-            <View style={styles.aiMessageFooter}>
-              <Text style={styles.aiMessageTime}>
-                {summary ? "Tap to chat more" : "Tap to chat"}
-              </Text>
+        <View style={styles.aiInsightsContainer}>
+          <Text style={styles.aiInstructionText}>Tap to chat with Amber, your AI Skin Guide</Text>
+          <TouchableOpacity 
+            style={styles.aiInsightsMessage}
+            onPress={() => {
+              if (photoData && metrics) {
+                // Get firstName from profile or user
+                const firstName = profile?.user_name || user?.user_name || 'there';
+                
+                navigation.navigate('ThreadChat', {
+                  chatType: 'snapshot_feedback',
+                  imageId: photoData?.imageId,
+                  initialMessage: summary
+                });
+              }
+            }}
+          >
+            <View style={styles.aiAvatar}>
+              <Image 
+                source={require('../../assets/images/amber-avatar.png')} 
+                style={styles.aiAvatarImage}
+                resizeMode="contain"
+              />
             </View>
-          </View>
-        </TouchableOpacity>
+            <View style={styles.aiMessageContent}>
+              <Text style={styles.aiMessageText}>
+                {summary ? summary : (summaryLoading ? "Loading summary..." : "Loading summary...")}
+              </Text>
+              <View style={styles.aiMessageFooter}>
+                <Text style={styles.aiMessageTime}>
+                  Record in your Journal how you are feeling? Or ask me any Skin Care questions!
+                </Text>
+              </View>
+            </View>
+          </TouchableOpacity>
+        </View>
         )}
 
         {/* Scrollable Metrics Content Area */}
@@ -857,10 +867,39 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   metricGroupTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginVertical: 12,
+    letterSpacing: 0.5,
+    textAlign: 'center',
+  },
+  tableHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 0,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    marginBottom: 4,
+  },
+  tableHeaderLeft: {
     fontSize: 12,
-    fontWeight: '800',
-    color: '#999',
-    marginVertical: 8,
+    fontWeight: '600',
+    color: '#666',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  tableHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  tableHeaderRightText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   lowQualityContainer: {
@@ -997,21 +1036,33 @@ const styles = StyleSheet.create({
     color: 'rgba(0, 0, 0, 0.6)',
     marginLeft: 1,
   },
+  aiInsightsContainer: {
+    paddingHorizontal: 16,
+    marginBottom: 16,
+  },
+  aiInstructionText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
   aiInsightsMessage: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    paddingHorizontal: 16,
     paddingVertical: 12,
-    marginBottom: 16,
   },
   aiAvatar: {
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#6E46FF',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
+    overflow: 'hidden',
+  },
+  aiAvatarImage: {
+    width: 32,
+    height: 32,
   },
   aiAvatarText: {
     color: 'white',

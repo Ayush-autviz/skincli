@@ -62,7 +62,7 @@ import {
   Alert 
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ChevronLeft, MoreVertical, Minimize2, Trash2, Share } from 'lucide-react-native';
+import { ChevronLeft, MoreVertical, Minimize2, Trash2 } from 'lucide-react-native';
 import Header from '../components/ui/Header';
 import { formatDate } from '../utils/dateUtils';
 import { 
@@ -134,12 +134,10 @@ const SNAP_POINTS = {
 // Modified EllipsisMenu component to handle zoom state
 const EllipsisMenu = ({ 
   onDelete, 
-  onShare, 
   viewState, 
   onExitZoom 
 }: { 
   onDelete: () => void; 
-  onShare: () => void; 
   viewState: string; 
   onExitZoom: () => void; 
 }): React.JSX.Element => {
@@ -184,10 +182,6 @@ const EllipsisMenu = ({
     );
   };
 
-  const handleShare = (): void => {
-    setIsMenuVisible(false);
-    onShare();
-  };
 
   return (
     <>
@@ -238,8 +232,6 @@ const EllipsisMenu = ({
               flexDirection: 'row',
               alignItems: 'center',
               padding: 15,
-              borderBottomWidth: 1,
-              borderBottomColor: '#f0f0f0',
             }}
             onPress={handleDelete}
           >
@@ -249,22 +241,6 @@ const EllipsisMenu = ({
               marginLeft: 10,
               color: '#FF3B30',
             }}>Delete</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity 
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              padding: 15,
-            }}
-            onPress={handleShare}
-          >
-            <Share size={20} color="#333" />
-            <Text style={{
-              fontSize: 16,
-              marginLeft: 10,
-              color: '#333',
-            }}>Share</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -745,10 +721,33 @@ const SnapshotScreen = (): React.JSX.Element => {
     if (uiState === 'loading' || !photoData?.timestamp) return 'Loading...'; 
     
     try {
-      const timestamp = photoData.timestamp?.toDate?.() 
-        ? photoData.timestamp.toDate() 
-        : new Date(photoData.timestamp);
-      return formatDate(timestamp);
+      let date: Date;
+      const timestamp = photoData.timestamp;
+      
+      // Handle Firebase Timestamp
+      if (timestamp?.toDate) {
+        date = timestamp.toDate();
+      } 
+      // Handle string timestamps (from API)
+      else if (typeof timestamp === 'string') {
+        // If it's a UTC string without timezone, ensure it's parsed as UTC
+        let utcTimestamp = timestamp;
+        if (!timestamp.endsWith('Z') && !timestamp.includes('+') && !timestamp.includes('-', 10)) {
+          utcTimestamp = timestamp + 'Z';
+        }
+        date = new Date(utcTimestamp);
+      } 
+      // Handle Date objects
+      else {
+        date = new Date(timestamp);
+      }
+      
+      // Ensure we have a valid date
+      if (isNaN(date.getTime())) {
+        return 'Snapshot';
+      }
+      
+      return formatDate(date);
     } catch (error) {
       console.error('Error formatting timestamp:', error);
       return 'Snapshot';
@@ -927,7 +926,6 @@ const SnapshotScreen = (): React.JSX.Element => {
           {/* Right: Contextual Ellipsis Menu or Exit Zoom button */}
           <EllipsisMenu 
             onDelete={handleDelete} 
-            onShare={()=>{}}
             viewState={viewState}
             onExitZoom={handleExitZoom}
           />

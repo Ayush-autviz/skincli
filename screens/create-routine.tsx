@@ -79,7 +79,9 @@ const concernsOptions = [
   'Sensitive Skin',
   'Sun Damage',
   'Under Eye Circles',
-  'Wrinkles'
+  'Wrinkles',
+  'I don\'t know',
+  'Others'
 ];
 
 
@@ -103,6 +105,7 @@ const CreateRoutineScreen = (): React.JSX.Element => {
   const [itemUsage, setItemUsage] = useState<string[]>(['']);
   const [itemFrequency, setItemFrequency] = useState<string>('');
   const [itemConcerns, setItemConcerns] = useState<string[]>([]);
+  const [customConcern, setCustomConcern] = useState<string>('');
   const [startDate, setStartDate] = useState<Date>(new Date()); // Default to today's date
   const [endDate, setEndDate] = useState<Date | null>(null);
   const [treatmentDate, setTreatmentDate] = useState<Date>(new Date()); // For treatment types
@@ -447,10 +450,32 @@ const CreateRoutineScreen = (): React.JSX.Element => {
     setItemConcerns(currentConcerns => {
       const isSelected = currentConcerns.includes(concern);
       if (isSelected) {
+        // If deselecting "Others", clear custom concern text
+        if (concern === 'Others') {
+          setCustomConcern('');
+        }
         return currentConcerns.filter(c => c !== concern);
       } else {
+        // If selecting "Others", keep it in the list
+        // The custom concern text will be added when user types
         return [...currentConcerns, concern];
       }
+    });
+  };
+
+  // Handle custom concern text change
+  const handleCustomConcernChange = (text: string): void => {
+    setCustomConcern(text);
+    // Update concerns: remove old custom concern if exists, add new one
+    setItemConcerns(currentConcerns => {
+      // Remove any existing custom concern (starts with "Others: ") and plain "Others"
+      const filtered = currentConcerns.filter(c => c !== 'Others' && !c.startsWith('Others: '));
+      // Add new custom concern if text is not empty
+      if (text.trim()) {
+        return [...filtered, `Others: ${text.trim()}`];
+      }
+      // If text is empty but "Others" chip is selected, keep "Others" in the list
+      return filtered;
     });
   };
 
@@ -905,7 +930,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
           <Text style={styles.sectionSubtitle}>Select all that apply</Text>
           <View style={styles.chipSelectorContainer}>
             {concernsOptions.map((concern) => {
-              const isActive = itemConcerns.includes(concern);
+              // Check if concern is active (either exact match or "Others: [text]" for Others)
+              const isActive = concern === 'Others' 
+                ? (itemConcerns.includes('Others') || itemConcerns.some(c => c.startsWith('Others: ')))
+                : itemConcerns.includes(concern);
               
               return (
                 <TouchableOpacity
@@ -926,6 +954,19 @@ const CreateRoutineScreen = (): React.JSX.Element => {
               );
             })}
           </View>
+          {/* Custom Concern Input - Show when "Others" is selected */}
+          {(itemConcerns.includes('Others') || itemConcerns.some(c => c.startsWith('Others: '))) && (
+            <View style={styles.customConcernContainer}>
+              <Text style={styles.customConcernLabel}>Please specify your concern:</Text>
+              <TextInput
+                style={styles.customConcernInput}
+                placeholder="Type your concern here..."
+                value={customConcern}
+                onChangeText={handleCustomConcernChange}
+                multiline={false}
+              />
+            </View>
+          )}
         </View>
 
         {/* Frequency Selection - Only show for non-treatment types */}
@@ -1365,6 +1406,29 @@ const styles = StyleSheet.create({
   chipButtonTextActive: {
     color: colors.white,
     fontWeight: '600',
+  },
+  customConcernContainer: {
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+  },
+  customConcernLabel: {
+    fontSize: fontSize.sm,
+    color: colors.textPrimary,
+    fontWeight: '600',
+    marginBottom: spacing.sm,
+  },
+  customConcernInput: {
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: borderRadius.md,
+    backgroundColor: colors.background,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+    minHeight: 44,
   },
   inputWrapper: {
     flexDirection: 'row',

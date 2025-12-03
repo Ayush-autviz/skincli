@@ -498,7 +498,7 @@ const MetricsSheet = forwardRef<MetricsSheetRef, MetricsSheetProps>(({
                         <Text style={styles.tableHeaderLeft}>CONCERN</Text>
                         <View style={styles.tableHeaderRight}>
                           <Text style={styles.tableHeaderRightText}>SCORE</Text>
-                          <ChevronLeft size={14} color={palette.gray6} style={{ marginLeft: 4 }} />
+                          <ChevronRight size={14} color={palette.gray6} style={{ marginLeft: 4 }} />
                           <Text style={styles.tableHeaderRightText}>IMPROVE</Text>
                         </View>
                       </View>

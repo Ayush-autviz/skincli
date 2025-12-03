@@ -140,7 +140,7 @@ const METRIC_KEYS = [
   'skinType'
 ];
 
-const METRIC_LABELS = {
+export const METRIC_LABELS = {
   acneScore: 'Breakouts',
   rednessScore: 'Redness',
   eyeAreaCondition: 'Eye Area Condition',
@@ -160,7 +160,7 @@ const IMAGE_QUALITY_KEYS = [
   'overall'
 ];
 
-const processPhotoMetrics = (photos) => {
+export const processPhotoMetrics = (photos) => {
   if (!photos?.length) return { metrics: [], timestamps: [] };
 
   // Refined timestamp extraction - prioritize created_at field from API
@@ -1026,7 +1026,7 @@ const SkinTypeTrendChart = ({
   );
 };
 
-const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScrollSyncRef, photos, profile, navigateToSnapshot, navigateToMetricDetail }) => {
+export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScrollSyncRef, photos, profile, navigateToSnapshot, navigateToMetricDetail }) => {
   if (!metric?.scores?.length) return null;
 
   const scrollViewRef = useRef(null);

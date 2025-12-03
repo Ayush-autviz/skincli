@@ -31,6 +31,39 @@ interface JournalSummaryItem {
   summary: string;
 }
 
+// Helper function to format timestamps from UTC to local time
+const formatJournalTimestamp = (timestamp: string): string => {
+  if (!timestamp) return '';
+  
+  try {
+    // If it's a UTC string without timezone, ensure it's parsed as UTC
+    let utcTimestamp = timestamp;
+    if (!timestamp.endsWith('Z') && !timestamp.includes('+') && !timestamp.includes('-', 10)) {
+      utcTimestamp = timestamp + 'Z';
+    }
+    const date = new Date(utcTimestamp);
+    
+    // Check if date is valid
+    if (isNaN(date.getTime())) {
+      console.warn('Invalid timestamp:', timestamp);
+      return '';
+    }
+    
+    // Convert to local time and format
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true
+    });
+  } catch (error) {
+    console.error('Error formatting timestamp:', error, timestamp);
+    return '';
+  }
+};
+
 // Mock activity data - in a real app, this would come from an API
 // No mock data; we fetch real summaries from the API
 
@@ -46,6 +79,7 @@ const ActivityList: React.FC = (): React.JSX.Element => {
         setLoading(true);
         setError(null);
         const res = await getComparisonSummaries();
+        console.log(res.data,'data from journal');
         if (res.success) {
           setSummaries(res.data || []);
         } else {
@@ -76,8 +110,7 @@ const ActivityList: React.FC = (): React.JSX.Element => {
 
   const renderSummaryItem: ListRenderItem<JournalSummaryItem> = ({ item }): React.JSX.Element => {
     const IconComponent = getIconComponent();
-    const createdAt = new Date(item.created_at);
-    const dateLabel = createdAt.toLocaleString();
+    const dateLabel = formatJournalTimestamp(item.created_at);
     
     return (
       <TouchableOpacity style={styles.activityItem} onPress={() => handlePress(item)}>
@@ -88,7 +121,7 @@ const ActivityList: React.FC = (): React.JSX.Element => {
           />
         </View>
         <View style={styles.activityContent}>
-          <Text style={styles.activityTitle} numberOfLines={2}>{item.summary}</Text>
+          <Text style={styles.activityTitle} >{item.summary}</Text>
           <View style={styles.activitySourceContainer}>
             <Text style={styles.activitySource}>{dateLabel}</Text>
             <ChevronRight

@@ -757,7 +757,6 @@
       "advice": {
         "disclaimer": "Remember, Magic Mirror does not provide medical advice",
         "ingredients": [
-         "Simplify your routine during flare-ups as they may be caused by products you are using and should cease using. Adding new ingredients should be a subsequent step so look for products with minimal ingredients, avoiding fragrance and alcohol.",
          "Niacinamide: Inhibits melanin transfer and has anti‑inflammatory properties.",
          "Ceramides: Restore barrier function to protect and retain moisture.",
          "Azelaic Acid: Reduces redness through anti-inflammatory and antimicrobial actions.",
@@ -766,6 +765,7 @@
          "Green Tea Extract: Potent antioxidant with anti-inflammatory properties."
         ],
         "Behavior": [
+          "Simplify your routine during flare-ups as they may be caused by products you are using and should cease using. Adding new ingredients should be a subsequent step so look for products with minimal ingredients, avoiding fragrance and alcohol.",
           "Use lukewarm (never hot) water when cleansing.",
           "Consider environmental factors like humidity, heating/cooling systems.",
           "Track flare patterns with Magic Mirror to identify triggers and treatment efficacy.",

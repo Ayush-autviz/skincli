@@ -198,7 +198,8 @@ import { LineChart } from 'react-native-chart-kit';
 // Import the JSON data
 import concernsData from '../data/concerns.json';
 import MetricsSeries_simple from '../components/analysis/MetricsSeries_simple';
-import MetricsSeries from '../../components/analysis/MetricsSeries';
+import MetricsSeries, { MetricRow, processPhotoMetrics, METRIC_LABELS } from '../components/analysis/MetricsSeries';
+
 
 // Helper functions for perceived age chart
 const calculateActualAge = (birthDate: string | Date | undefined): number | null => {
@@ -1167,6 +1168,10 @@ export default function MetricDetailScreen(): React.JSX.Element {
   // State for skin trend scores
   const [trendScores, setTrendScores] = useState(null);
   const [isLoadingTrends, setIsLoadingTrends] = useState(false);
+  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const forceScrollSyncRef = useRef(false);
+  const initialSelectionDoneRef = useRef(false);
   
 
 
@@ -1420,6 +1425,59 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
     fetchTrendScores();
   }, [metricKey]);
+
+  // Auto-select last point and scroll to end when trendScores data is loaded (similar to Progress screen)
+  useEffect(() => {
+    if (!trendScores || !Array.isArray(trendScores) || trendScores.length === 0) {
+      return;
+    }
+
+    // Transform photos to get timestamps
+    const transformedPhotos = trendScores.map((item: any) => ({
+      id: item.skin_result_id || item.id || item.image_id,
+      created_at: item.created_at,
+      timestamp: item.created_at,
+      metrics: {
+        [metricKey]: metricKey === 'skinType' 
+          ? (item.skin_condition_type || item.skinType || null)
+          : (item.skin_condition_score || item.score || null)
+      }
+    }));
+
+    const { timestamps, metrics } = processPhotoMetrics(transformedPhotos);
+    const currentMetric = metrics.find(m => m.metricName === metricKey);
+
+    if (!initialSelectionDoneRef.current && timestamps && timestamps.length > 0 && currentMetric) {
+      const timer = setTimeout(() => {
+        const lastIndex = timestamps.length - 1;
+        if (lastIndex >= 0) {
+          setSelectedIndex(lastIndex);
+          
+          // Calculate scroll position to scroll to end
+          const barSlotWidth = 16;
+          const plotAreaWidth = currentMetric.scores.length * barSlotWidth;
+          const rightPadding = 120;
+          const { width: screenWidth } = Dimensions.get('window');
+          const totalContentWidth = plotAreaWidth + rightPadding;
+          const maxScrollPosition = Math.max(0, totalContentWidth - screenWidth);
+          
+          // Set scroll position and force sync
+          setTimeout(() => {
+            setScrollPosition(maxScrollPosition);
+            forceScrollSyncRef.current = true;
+            // Clear the force flag after a delay
+            setTimeout(() => {
+              forceScrollSyncRef.current = false;
+            }, 500);
+          }, 200);
+          
+          initialSelectionDoneRef.current = true;
+        }
+      }, 100);
+
+      return () => clearTimeout(timer);
+    }
+  }, [trendScores, metricKey]);
 
   // Helper function to get smart context text using scoreLevels when available
   const getSmartContextText = (metricValue, metricKey, currentConcernDetails) => {
@@ -1902,29 +1960,95 @@ export default function MetricDetailScreen(): React.JSX.Element {
           return null;
         })()}
         
-        {/* Trend/History Card - Show for skin score metrics and perceived age */}
+        {/* Progress/History Card - Show for skin score metrics and perceived age */}
         {(!currentConcernDetails?._isProfileMetric || metricKey === 'perceivedAge' || metricKey === 'eyeAge' || metricKey === 'skinType') && (
-          <View style={{ marginHorizontal: 16 }}>
-            <Text style={styles.sectionTitle}>Trend</Text>
-            <View style={styles.metricCard}>
+          <View >
+            <View style={styles.progressHeaderContainer}>
+              <Text style={styles.sectionTitle}>Progress</Text>
+              {trendScores && trendScores.length > 0 && (
+                <TouchableOpacity 
+                  onPress={() => (navigation as any).navigate('Tabs', { screen: 'Progress' })}
+                  style={styles.progressLink}
+                >
+                  <Text style={styles.progressLinkText}>All Charts</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+            <View >
               {trendScores && trendScores.length > 0 ? (
                 metricKey === 'perceivedAge' || metricKey === 'eyeAge' ? (
                   <PerceivedAgeChart photos={trendScores} />
                 ) : metricKey === 'skinType' ? (
                   <SkinTypeTrendChart photos={trendScores} />
-                ) : (
-                  <MetricsSeries_simple
-                    photos={trendScores}
-                    metricKeyToDisplay={metricKey}
-                    chartHeight={100}
-                    pointsVisibleInWindow={5}
-                    showXAxisLabels={true}
-                    showYAxisLabels={true}
-                    chartBackgroundColor="#F8F8F8"
-                    scrollToEnd={true}
-                    onSelectionChange={handleChartSelection}
-                  />
-                )
+                ) : (() => {
+                  // Transform API response data to match processPhotoMetrics expected format
+                  if (!trendScores || !Array.isArray(trendScores) || trendScores.length === 0) {
+                    return <Text style={styles.trendPlaceholderText}>No trend data available.</Text>;
+                  }
+                  
+                  const transformedPhotos = trendScores.map((item: any) => {
+                    // Map API response fields to expected format
+                    const transformed: any = {
+                      id: item.skin_result_id || item.id || item.image_id,
+                      created_at: item.created_at,
+                      timestamp: item.created_at,
+                      metrics: {}
+                    };
+                    
+                    // Map the score to the correct metric key
+                    // For skin type, use skin_condition_type, otherwise use skin_condition_score
+                    if (metricKey === 'skinType') {
+                      transformed.metrics[metricKey] = item.skin_condition_type || item.skinType || null;
+                    } else {
+                      transformed.metrics[metricKey] = item.skin_condition_score || item.score || null;
+                    }
+                    
+                    // Also include storageUrl if available for navigation
+                    if (item.storage_url) {
+                      transformed.storageUrl = item.storage_url;
+                    }
+                    if (item.image_id) {
+                      transformed.imageId = item.image_id;
+                    }
+                    
+                    return transformed;
+                  });
+                  
+                  // Process photos to get metric data for current metricKey
+                  const { metrics } = processPhotoMetrics(transformedPhotos);
+                  const currentMetric = metrics.find(m => m.metricName === metricKey);
+                  
+                  if (!currentMetric || !currentMetric.scores?.length) {
+                    return <Text style={styles.trendPlaceholderText}>No trend data available.</Text>;
+                  }
+                  
+                  return (
+                    <MetricRow
+                      metric={currentMetric}
+                      selectedIndex={selectedIndex}
+                      onDotPress={(index) => {
+                        setSelectedIndex(index);
+                        // Update scroll position when user selects a different point
+                        const barSlotWidth = 16;
+                        const selectedBarPosition = index * barSlotWidth;
+                        const { width: screenWidth } = Dimensions.get('window');
+                        const targetPosition = selectedBarPosition - (screenWidth / 2) + (barSlotWidth / 2);
+                        const plotAreaWidth = currentMetric.scores.length * barSlotWidth;
+                        const rightPadding = 120;
+                        const totalContentWidth = plotAreaWidth + rightPadding;
+                        const maxScrollPosition = Math.max(0, totalContentWidth - screenWidth);
+                        const boundedPosition = Math.max(0, Math.min(targetPosition, maxScrollPosition));
+                        setScrollPosition(boundedPosition);
+                      }}
+                      scrollPosition={scrollPosition}
+                      forceScrollSyncRef={forceScrollSyncRef}
+                      photos={transformedPhotos}
+                      profile={profile}
+                      navigateToSnapshot={(params: any) => (navigation as any).navigate('Snapshot', params)}
+                      navigateToMetricDetail={(params: any) => (navigation as any).navigate('MetricDetail', params)}
+                    />
+                  );
+                })()
               ) : (
                 <Text style={styles.trendPlaceholderText}>No trend data available.</Text>
               )}
@@ -2166,7 +2290,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
             {/* Ingredients */}
             {currentConcernDetails.advice?.ingredients && currentConcernDetails.advice.ingredients.length > 0 && (
               <View style={styles.adviceItem}>
-                <Text style={styles.adviceLabel}>Key Ingredients</Text>
+                <Text style={styles.adviceLabel}>Helpful Ingredients</Text>
                 {currentConcernDetails.advice.ingredients.map((ingredient, index) => {
                   // Parse ingredient to get name and description
                   const colonIndex = ingredient.indexOf(':');
@@ -2325,6 +2449,22 @@ const styles = StyleSheet.create({
   sectionContainer: {
     marginHorizontal: 16,
     marginBottom: 24,
+  },
+  progressHeaderContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 16,
+    marginHorizontal: 16,
+  },
+  progressLink: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+  },
+  progressLinkText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: colors.primary,
   },
   sectionTitle: {
     fontSize: 18,
@@ -2521,8 +2661,10 @@ const styles = StyleSheet.create({
   },
   adviceListItemText: {
     fontSize: 14,
-    lineHeight: 20,
+   // lineHeight: 10,
     color: '#555',
+    paddingRight: 6,
+    marginBottom: 6,
   },
   
   // Numeric value styles
@@ -2639,7 +2781,8 @@ const styles = StyleSheet.create({
     marginHorizontal: 16,
     marginBottom: 24,
     padding: 0,
-    backgroundColor: '#fff',
+    marginTop: 16,
+   // backgroundColor: '#fff',
     borderRadius: 8,
   },
   contentSectionTitle: {

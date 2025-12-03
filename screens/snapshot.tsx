@@ -488,13 +488,13 @@ const SnapshotScreen = (): React.JSX.Element => {
             console.log('🔵 About to call getHautMaskResults...');
             maskResults = await getHautMaskResults(imgId);
             console.log('🔵 maskResults:', maskResults);
-            console.log('✅ Mask results retrieved successfully');
+            console.log('✅ Mask results retrieved successfully',maskResults);
             
             // Get mask images with S3 URLs for each skin condition
             try {
               console.log('🔵 Fetching mask images with S3 URLs');
               maskImages = await getHautMaskImages(imgId);
-              console.log('✅ Mask images retrieved successfully');
+              console.log('✅ Mask images retrieved successfully',maskImages);
             } catch (maskImageError) {
               console.log('⚠️ Mask images not ready yet or error occurred:', maskImageError.message);
               // Continue without mask images - they're not critical for the main flow
@@ -505,11 +505,29 @@ const SnapshotScreen = (): React.JSX.Element => {
           }
           
           // Create photo data structure
+          // Parse timestamp from API, ensuring UTC strings are properly converted
+          let parsedTimestamp: Date;
+          if (maskResults?.[0]?.created_at) {
+            const created_at = maskResults[0].created_at;
+            // If it's a UTC string without timezone, ensure it's parsed as UTC
+            if (typeof created_at === 'string') {
+              let utcTimestamp = created_at;
+              if (!created_at.endsWith('Z') && !created_at.includes('+') && !created_at.includes('-', 10)) {
+                utcTimestamp = created_at + 'Z';
+              }
+              parsedTimestamp = new Date(utcTimestamp);
+            } else {
+              parsedTimestamp = new Date(created_at);
+            }
+          } else {
+            parsedTimestamp = new Date();
+          }
+          
           const photoDataObj: PhotoData = {
             id: photoId || '',
             imageId: imgId,
             storageUrl: localUri,
-            timestamp: timestamp ? new Date(timestamp) : new Date(),
+            timestamp: parsedTimestamp,
             metrics: transformedMetrics,
             maskResults: maskResults, // Add mask results to photo data
             maskImages: maskImages, // Add mask images with S3 URLs for each condition
@@ -719,7 +737,7 @@ const SnapshotScreen = (): React.JSX.Element => {
   const getHeaderTitle = (): string => {
     // Show placeholder during initial loading
     if (uiState === 'loading' || !photoData?.timestamp) return 'Loading...'; 
-    
+console.log(photoData,'photo data time');
     try {
       let date: Date;
       const timestamp = photoData.timestamp;
@@ -746,6 +764,8 @@ const SnapshotScreen = (): React.JSX.Element => {
       if (isNaN(date.getTime())) {
         return 'Snapshot';
       }
+
+      console.log(date,"dateee")
       
       return formatDate(date);
     } catch (error) {

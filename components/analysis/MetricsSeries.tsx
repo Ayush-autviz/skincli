@@ -475,6 +475,33 @@ const TimeSelector = forwardRef(
     const summary = selectedPhoto?.apiData?.image?.summary || null;
     const routineFlag = selectedPhoto?.apiData?.image?.routine_flag || null;
 
+    const formatDisplayText = (value: any) => {
+      if (!value) return null;
+      if (typeof value === 'string') return value;
+      if (typeof value === 'object') {
+        if (typeof value.summary === 'string') return value.summary;
+        if (typeof value.text === 'string') return value.text;
+        // Fallback to JSON string to avoid rendering plain objects
+        try {
+          return JSON.stringify(value);
+        } catch {
+          return String(value);
+        }
+      }
+      return String(value);
+    };
+
+    const routineFlagText = formatDisplayText(routineFlag);
+    const summaryText = formatDisplayText(summary);
+
+    let routineFlagUpdatedAt = null;
+    if (routineFlag && typeof routineFlag === 'object' && routineFlag?.updated_at) {
+      const parsed = new Date(routineFlag.updated_at);
+      routineFlagUpdatedAt = isNaN(parsed.getTime())
+        ? routineFlag.updated_at
+        : parsed.toLocaleString();
+    }
+
     return (
       <View style={{ alignItems: "center" }}>
         {/* Arrow pointing up */}
@@ -527,7 +554,7 @@ const TimeSelector = forwardRef(
               </Text>
             </View>
           )}
-          {!routineFlagLoading && routineFlag && (
+          {!routineFlagLoading && routineFlagText && (
             <View
               style={{
                 flexDirection: "row",
@@ -536,19 +563,26 @@ const TimeSelector = forwardRef(
               }}
             >
               <Flag size={16} color="#8B7355" style={{ marginRight: 6 }} />
-              <Text style={{ color: "#333", flex: 1 }}>{routineFlag}</Text>
+              <View style={{ flex: 1 }}>
+                <Text style={{ color: "#333" }}>{routineFlagText}</Text>
+                {routineFlagUpdatedAt && (
+                  <Text style={{ color: "#777", fontSize: 12, marginTop: 2 }}>
+                    Updated: {routineFlagUpdatedAt}
+                  </Text>
+                )}
+              </View>
             </View>
           )}
-          {!summaryLoading && summary && (
+          {!summaryLoading && summaryText && (
             <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
               <BookOpen size={16} color="#8B7355" style={{ marginRight: 6 }} />
-              <Text style={{ color: "#333", flex: 1 }}>{summary}</Text>
+              <Text style={{ color: "#333", flex: 1 }}>{summaryText}</Text>
             </View>
           )}
           {!routineFlagLoading &&
             !summaryLoading &&
-            !routineFlag &&
-            !summary && (
+            !routineFlagText &&
+            !summaryText && (
               <View style={{ alignItems: "center", paddingVertical: 8 }}>
                 <Text
                   style={{

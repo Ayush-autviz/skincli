@@ -184,7 +184,7 @@ import {
   Dimensions
 } from 'react-native';
 import SvgUri from 'react-native-svg-uri';
-import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, Info, AlertCircle, Star, Droplets, Palette, FlaskConical } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, TrendingUp, TrendingDown, Minus, Info, AlertCircle, Star, Droplets, Palette, FlaskConical, CheckCircle } from 'lucide-react-native';
 import { ConditionalImage } from '../utils/imageUtils';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { usePhotoContext } from '../contexts/PhotoContext';
@@ -192,7 +192,7 @@ import ListItem from '../../components/ui/ListItem';
 //import FloatingTooltip from '../../components/ui/FloatingTooltip';
 import { colors } from '../styles';
 import useAuthStore from '../stores/authStore';
-import { getSkinTrendScores, getHautMaskImages } from '../utils/newApiService';
+import { getSkinTrendScores, getHautMaskImages, generateConcernMessage } from '../utils/newApiService';
 import { LineChart } from 'react-native-chart-kit';
 
 // Import the JSON data
@@ -685,6 +685,44 @@ const getSkinConditionNameForMetric = (metricKey) => {
   return mapping[metricKey] || null;
 };
 
+// Helper function to convert metricKey to concern name for API
+const getConcernNameForAPI = (metricKey) => {
+  if (!metricKey) return null;
+  
+  // Remove "Score" suffix if present
+  let processedKey = metricKey;
+  if (processedKey.endsWith('Score')) {
+    processedKey = processedKey.substring(0, processedKey.length - 'Score'.length);
+  }
+  
+  // Convert camelCase to Title Case
+  // Handle special cases first
+  const specialCases = {
+    'hydration': 'Hydration',
+    'redness': 'Redness',
+    'pores': 'Pores',
+    'acne': 'Acne',
+    'lines': 'Lines',
+    'translucency': 'Translucency',
+    'pigmentation': 'Pigmentation',
+    'uniformness': 'Uniformness',
+    'eyeAge': 'Eye Age',
+    'eyeAreaCondition': 'Eye Area Condition',
+    'perceivedAge': 'Perceived Age',
+    'skinTone': 'Skin Tone',
+    'skinType': 'Skin Type'
+  };
+  
+  if (specialCases[processedKey]) {
+    return specialCases[processedKey];
+  }
+  
+  // Default: convert camelCase to Title Case
+  return processedKey.replace(/([A-Z])/g, ' $1')
+    .replace(/^./, str => str.toUpperCase())
+    .trim();
+};
+
 // Helper functions for processing metrics data
 const metricHelpers = {
   // Convert camelCase metric key to snake_case tech_name format
@@ -1172,6 +1210,54 @@ export default function MetricDetailScreen(): React.JSX.Element {
   const [scrollPosition, setScrollPosition] = useState(0);
   const forceScrollSyncRef = useRef(false);
   const initialSelectionDoneRef = useRef(false);
+  
+  // State for concern message API
+  const [concernMessageData, setConcernMessageData] = useState<{
+    message?: string;
+    found_ingredients?: string[];
+    has_routine?: boolean;
+  } | null>(null);
+  const [concernMessageLoading, setConcernMessageLoading] = useState<boolean>(false);
+  const [concernMessageError, setConcernMessageError] = useState<string | null>(null);
+
+  // Fetch concern message when ingredients are available
+  useEffect(() => {
+    const fetchConcernMessage = async () => {
+      if (!currentConcernDetails?.advice?.ingredients || currentConcernDetails.advice.ingredients.length === 0) {
+        return;
+      }
+
+      const concernName = getConcernNameForAPI(metricKey);
+      console.log('🔵 concernName:', concernName);
+      if (!concernName) {
+        console.log('⚠️ No concern name found for metricKey:', metricKey);
+        return;
+      }
+
+      try {
+        setConcernMessageLoading(true);
+        setConcernMessageError(null);
+        console.log('🔵 Fetching concern message for:', concernName);
+        
+        const response = await generateConcernMessage(concernName);
+        
+        if (response.success && response.data) {
+          setConcernMessageData(response.data);
+          console.log('✅ Concern message fetched successfully',response.data);
+        } else {
+          throw new Error('Failed to fetch concern message');
+        }
+      } catch (error: any) {
+        console.error('🔴 Error fetching concern message:', error);
+        setConcernMessageError(error?.message || 'Failed to fetch concern message');
+        setConcernMessageData(null);
+      } finally {
+        setConcernMessageLoading(false);
+      }
+    };
+
+    fetchConcernMessage();
+  }, [currentConcernDetails?.advice?.ingredients, metricKey]);
   
 
 
@@ -2046,7 +2132,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                       profile={profile}
                       navigateToSnapshot={(params: any) => (navigation as any).navigate('Snapshot', params)}
                       navigateToMetricDetail={(params: any) => (navigation as any).navigate('MetricDetail', params)}
-                    />
+                  />
                   );
                 })()
               ) : (
@@ -2275,10 +2361,83 @@ export default function MetricDetailScreen(): React.JSX.Element {
                 {/* Advice Details Section */}
         {currentConcernDetails?.advice && (
           <View style={styles.contentSectionContainer}>
-            <Text style={styles.contentSectionTitle}>For your Consideration</Text>
+            {/* <Text style={styles.contentSectionTitle}>For your Consideration</Text> */}
+
             
             {/* Disclaimer - Moved to top with attractive styling */}
-            {currentConcernDetails.advice?.disclaimer && (
+
+  
+            {/* Ingredients */}
+            {currentConcernDetails.advice?.ingredients && currentConcernDetails.advice.ingredients.length > 0 && (
+              <View style={styles.adviceItem}>
+                            {concernMessageData?.message && (
+              <View style={styles.adviceItem}>
+                {/* <Text style={styles.aiInstructionText}>Tap to chat with Amber, your AI Skin Guide</Text> */}
+                <TouchableOpacity 
+                  style={styles.aiInsightsMessage}
+                  onPress={() => {
+                    (navigation as any).navigate('ThreadChat', {
+                      chatType: 'routine_add_discussion',
+                      initialMessage: concernMessageData.message
+                    });
+                  }}
+                >
+                  <View style={styles.aiAvatar}>
+                    <Image 
+                      source={require('../assets/images/amber-avatar.png')} 
+                      style={styles.aiAvatarImage}
+                      resizeMode="contain"
+                    />
+                  </View>
+                  <View style={styles.aiMessageContent}>
+                    <Text style={styles.aiMessageText}>
+                      {concernMessageData.message}
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            )}
+                <Text style={styles.adviceLabel}>Helpful Ingredients</Text>
+                {currentConcernDetails.advice.ingredients.map((ingredient, index) => {
+                  // Parse ingredient to get name and description
+                  const colonIndex = ingredient.indexOf(':');
+                  const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
+                  const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
+                  
+                  // Check if this ingredient is in the found_ingredients list
+                  const isFound = concernMessageData?.found_ingredients?.some(
+                    found => found.toLowerCase().trim() === ingredientName.toLowerCase().trim()
+                  ) || false;
+
+                  return (
+                    <View 
+                      key={index} 
+                      style={styles.adviceCard}
+                    >
+                      <View style={styles.adviceCardContent}>
+                        <View style={styles.adviceCardLeft}>
+                          <View style={styles.adviceCardIcon}>
+                            {isFound ? (
+                              <CheckCircle size={20} color={colors.primary} />
+                            ) : (
+                              <AlertCircle size={20} color={colors.primary} />
+                            )}
+                          </View>
+                          <View style={styles.adviceCardText}>
+                            <Text style={styles.adviceCardTitle}>{ingredient}</Text>
+                            {concernMessageData && (
+                              <Text style={styles.ingredientStatusText}>
+                                {isFound ? 'Present in routine' : 'Absent in routine'}
+                              </Text>
+                            )}
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+
+{currentConcernDetails.advice?.disclaimer && (
               <View style={styles.disclaimerContainer}>
                 <View style={styles.disclaimerIconContainer}>
                   <Info size={20} color="#fff" />
@@ -2286,65 +2445,14 @@ export default function MetricDetailScreen(): React.JSX.Element {
                 <Text style={styles.disclaimerText}>{currentConcernDetails.advice.disclaimer}</Text>
               </View>
             )}
-  
-            {/* Ingredients */}
-            {currentConcernDetails.advice?.ingredients && currentConcernDetails.advice.ingredients.length > 0 && (
-              <View style={styles.adviceItem}>
-                <Text style={styles.adviceLabel}>Helpful Ingredients</Text>
-                {currentConcernDetails.advice.ingredients.map((ingredient, index) => {
-                  // Parse ingredient to get name and description
-                  const colonIndex = ingredient.indexOf(':');
-                  const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex) : ingredient;
-                  const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
-                  
-                  // const handleIngredientPress = () => {
-                  //   // Create a personalized message about the ingredient
-                  //   let initialMessage = '';
-                    
-                  //   if (ingredientDesc) {
-                  //     // If we have a description, use it to create a more specific message
-                  //     initialMessage = `I'm interested in learning more about ${ingredientName}. ${ingredientDesc} Can you tell me more about how this ingredient works and how I can incorporate it into my skincare routine?`;
-                  //   } else {
-                  //     // Fallback message if no description
-                  //     initialMessage = `I'd like to learn more about ${ingredientName} and how it can benefit my skin. Can you explain how this ingredient works and provide recommendations for products that contain it?`;
-                  //   }
-                    
-                  //   // Navigate to thread chat
-                  //   router.push({
-                  //     pathname: '/(authenticated)/threadChat',
-                  //     params: {
-                  //       chatType: 'snapshot_feedback',
-                  //       initialMessage: initialMessage
-                  //     }
-                  //   });
-                  // };
 
-                  return (
-                    <View 
-                      key={index} 
-                      style={styles.adviceCard}
-                      // onPress={handleIngredientPress}
-                      activeOpacity={0.8}
-                    >
-                      <View style={styles.adviceCardContent}>
-                        <View style={styles.adviceCardLeft}>
-                          {/* <View style={styles.adviceCardIcon}>
-                            <FlaskConical size={20} color={colors.primary} />
-                          </View> */}
-                          <View style={styles.adviceCardText}>
-                            <Text style={styles.adviceCardTitle}>{ingredient}</Text>
-                            {/* {ingredientDesc && (
-                              <Text style={styles.adviceCardSubtitle}>{ingredientDesc}</Text>
-                            )} */}
-                          </View>
-                        </View>
-                        {/* <Feather name="chevron-right" size={20} color="#999" /> */}
-                      </View>
-                    </View>
-                  );
-                })}
+
+
               </View>
             )}
+
+            {/* Amber Message Card */}
+
 
             {/* Behavior */}
             {currentConcernDetails.advice?.Behavior && currentConcernDetails.advice.Behavior.length > 0 && (
@@ -3183,6 +3291,45 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     flex: 1,
   },
+  aiInstructionText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginBottom: 8,
+    paddingHorizontal: 4,
+  },
+  aiInsightsMessage: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: 12,
+  },
+  aiAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+    overflow: 'hidden',
+  },
+  aiAvatarImage: {
+    width: 32,
+    height: 32,
+  },
+  aiMessageContent: {
+    flex: 1,
+    backgroundColor: '#F8F9FA',
+    borderRadius: 18,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomLeftRadius: 4,
+    borderWidth: 1,
+    borderColor: '#E5E7EB',
+  },
+  aiMessageText: {
+    fontSize: 16,
+    color: '#374151',
+    lineHeight: 20,
+  },
   adviceCardIcon: {
     width: 40,
     height: 40,
@@ -3192,6 +3339,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 12,
     marginTop: 2,
+  },
+  emptyIconPlaceholder: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 2,
+    borderColor: '#D1D5DB',
   },
   adviceCardText: {
     flex: 1,
@@ -3203,6 +3357,12 @@ const styles = StyleSheet.create({
     color: '#333',
     marginBottom: 4,
     lineHeight: 20,
+  },
+  ingredientStatusText: {
+    fontSize: 12,
+    color: '#6B7280',
+    marginTop: 2,
+    fontStyle: 'italic',
   },
   adviceCardSubtitle: {
     fontSize: 13,

@@ -28,6 +28,7 @@ interface JournalSummaryItem {
   skin_result_id: string;
   image_id: string;
   created_at: string;
+  updated_at: string;
   summary: string;
 }
 
@@ -105,12 +106,14 @@ const ActivityList: React.FC = (): React.JSX.Element => {
       chatType: 'snapshot_feedback',
       imageId: item.image_id,
       initialMessage: item.summary,
+      fromJournal: true,
+      journalSummary: item.summary,
     });
   }, [navigation]);
 
   const renderSummaryItem: ListRenderItem<JournalSummaryItem> = ({ item }): React.JSX.Element => {
     const IconComponent = getIconComponent();
-    const dateLabel = formatJournalTimestamp(item.created_at);
+    const dateLabel = formatJournalTimestamp(item.updated_at || item.created_at);
     
     return (
       <TouchableOpacity style={styles.activityItem} onPress={() => handlePress(item)}>

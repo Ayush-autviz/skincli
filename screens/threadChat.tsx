@@ -29,6 +29,8 @@ interface ThreadChatParams {
   chatType?: string;
   initialMessage?: string;
   imageId?: string;
+  fromJournal?: boolean;
+  journalSummary?: string;
 }
 
 interface Message {
@@ -104,6 +106,8 @@ const ThreadChatScreen = (): React.JSX.Element => {
   const chatType = params.chatType || 'snapshot_feedback';
   const initialMessage = params.initialMessage;
   const imageId = params.imageId;
+  const fromJournal = params.fromJournal;
+  const journalSummary = params.journalSummary;
 
   console.log("🔵 ThreadChatScreen - params:", params);
 
@@ -898,8 +902,8 @@ const ThreadChatScreen = (): React.JSX.Element => {
           {/* Product Input Card */}
           <ProductInputCard />
 
-          {/* Input Area */}
-          {!pendingItem && !requestProductInput && (
+          {/* Input Area - Hidden when coming from journal */}
+          {!fromJournal && !pendingItem && !requestProductInput && (
             <View style={styles.inputContainer}>
               <View style={styles.inputWrapper}>
                 <TextInput
@@ -931,6 +935,13 @@ const ThreadChatScreen = (): React.JSX.Element => {
                   )}
                 </TouchableOpacity>
               </View>
+            </View>
+          )}
+
+          {/* Journal Summary Footer - Shown when coming from journal */}
+          {fromJournal && journalSummary && (
+            <View style={styles.journalSummaryFooter}>
+              <Text style={styles.journalSummaryText}>{journalSummary}</Text>
             </View>
           )}
         </Animated.View>
@@ -1158,6 +1169,19 @@ const styles = StyleSheet.create({
   },
   keyboardAvoidingView: {
     flex: 1,
+  },
+  journalSummaryFooter: {
+    backgroundColor: '#FFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+  },
+  journalSummaryText: {
+    fontSize: 15,
+    lineHeight: 22,
+    color: colors.textPrimary,
+    textAlign: 'center',
   },
   productInputCard: {
     backgroundColor: '#FFFFFF',

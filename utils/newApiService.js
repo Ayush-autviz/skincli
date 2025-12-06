@@ -2055,6 +2055,47 @@ export const getComparisonSummaries = async () => {
 };
 
 // -----------------------------------------------------------------------------
+// ROUTINE API FUNCTIONS
+// -----------------------------------------------------------------------------
+
+/**
+ * Generate concern message for helpful ingredients
+ * @param {string} concernName - The name of the concern (e.g., "Hydration", "Redness")
+ * @returns {Promise<Object>} Response with message, has_routine, found_ingredients, missing_ingredients
+ */
+export const generateConcernMessage = async (concernName) => {
+  try {
+    console.log('🔵 Generating concern message for:', concernName);
+
+    const formData = new URLSearchParams();
+    formData.append('concern_name', concernName);
+
+    const response = await apiClient.post('/routine/generate-concern-message', formData.toString(), {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+    });
+
+    if (response.data.status === 200) {
+      console.log('✅ Concern message generated successfully');
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    } else {
+      throw new Error(response.data.message || 'Failed to generate concern message');
+    }
+  } catch (error) {
+    console.error('🔴 generateConcernMessage error:', error);
+    throw new Error(
+      error.response?.data?.message ||
+        error.message ||
+        'Failed to generate concern message'
+    );
+  }
+};
+
+// -----------------------------------------------------------------------------
 // FCM NOTIFICATION API FUNCTIONS
 // -----------------------------------------------------------------------------
 

@@ -34,8 +34,8 @@ import ListItem from '../ui/ListItem';
 import { colors, spacing, typography } from '../../styles';
 import useAuthStore from '../../stores/authStore';
 // import { useThreadContext } from '../../contexts/ThreadContext';
-import { getComparison, transformComparisonData } from '../../utils/newApiService';
-import { Camera } from 'lucide-react-native';
+import { getComparison, transformComparisonData, generateConcernMessage } from '../../utils/newApiService';
+import { Camera, CheckCircle, AlertCircle } from 'lucide-react-native';
 
 // Import the concerns data
 
@@ -104,6 +104,31 @@ interface Photo {
   metrics?: Record<string, number>;
 }
 
+interface ConcernMessageData {
+  message?: string;
+  found_ingredients?: Array<
+    | string
+    | {
+        ingredient: string;
+        products?: string[];
+      }
+  >;
+  missing_ingredients?: string[];
+  has_routine?: boolean;
+}
+
+interface ConcernMessageResponse {
+  success?: boolean;
+  data?: ConcernMessageData;
+}
+
+type IngredientPresenceStatus = 'present' | 'absent' | 'unknown';
+
+interface IngredientPresenceResult {
+  status: IngredientPresenceStatus;
+  products?: string[];
+}
+
 const RecommendationsList = ({ recommendations = [], onRecommendationPress }: RecommendationsListProps): React.JSX.Element => {
   const navigation = useNavigation();
   const { user, profile } = useAuthStore();
@@ -120,6 +145,7 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
   const [isLoadingComparison, setIsLoadingComparison] = useState<boolean>(true);
   const [lowestScoringConcerns, setLowestScoringConcerns] = useState<string[]>([]);
   const [latestScores, setLatestScores] = useState<Record<string, number>>({});
+  const [concernMessages, setConcernMessages] = useState<Record<string, ConcernMessageData>>({});
 
   // Get all concerns from the data
   const allConcerns: Concern[] = Object.values(concernsData.skinConcerns);
@@ -161,7 +187,34 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
     
     return latestScores;
   };
-  
+
+  const getConcernNameForAPI = (concernKey: string): string | null => {
+    if (!concernKey) return null;
+
+    const mapping: Record<string, string> = {
+      acneScore: 'Acne',
+      poresScore: 'Pores',
+      rednessScore: 'Redness',
+      pigmentationScore: 'Pigmentation',
+      linesScore: 'Lines',
+      hydrationScore: 'Hydration',
+      uniformnessScore: 'Uniformness',
+      eyeAreaCondition: 'Eye Area Condition',
+      saggingScore: 'Sagging',
+      translucencyScore: 'Translucency'
+    };
+
+    if (mapping[concernKey]) {
+      return mapping[concernKey];
+    }
+
+    const processedKey = concernKey.replace(/Score$/, '');
+    return processedKey
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, (str) => str.toUpperCase())
+      .trim();
+  };
+
   // Function to identify the 3 lowest scoring concerns from latest image
   const getLowestScoringConcerns = (latestScores: Record<string, number>): string[] => {
     const concernEntries = Object.entries(latestScores)
@@ -276,6 +329,48 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
     return allConcerns.filter(concern => concern.advice);
   })();
 
+  useEffect(() => {
+    let isCancelled = false;
+    const fetchConcernMessages = async (): Promise<void> => {
+      const concernsToFetch = filteredConcerns
+        .slice(0, 3)
+        .filter((concern) => concern.advice?.ingredients?.length)
+        .filter((concern) => !concernMessages[concern.keyForLookup]);
+
+      if (concernsToFetch.length === 0) {
+        return;
+      }
+
+      const updates: Record<string, ConcernMessageData> = {};
+
+      for (const concern of concernsToFetch) {
+        const concernName = getConcernNameForAPI(concern.keyForLookup);
+        if (!concernName) {
+          continue;
+        }
+
+        try {
+          const response = await generateConcernMessage(concernName) as ConcernMessageResponse;
+          if (response.success && response.data) {
+            updates[concern.keyForLookup] = response.data;
+          }
+        } catch (error) {
+          console.error('🔴 Error fetching concern message:', error);
+        }
+      }
+
+      if (!isCancelled && Object.keys(updates).length > 0) {
+        setConcernMessages((prev) => ({ ...prev, ...updates }));
+      }
+    };
+
+    fetchConcernMessages();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [filteredConcerns, concernMessages]);
+
   const toggleExpanded = (concernKey: string): void => {
     const newExpanded = new Set(expandedConcerns);
     if (newExpanded.has(concernKey)) {
@@ -337,16 +432,85 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
   };
 
   // Render ingredient item from advice
+  const getIngredientPresence = (ingredientName: string, concernKey: string): IngredientPresenceResult => {
+    const concernData = concernMessages[concernKey];
+    const normalizedName = ingredientName.toLowerCase().trim();
+
+    if (!concernData) {
+      return { status: 'unknown' };
+    }
+
+    const foundEntry = concernData.found_ingredients?.find((found) => {
+      if (typeof found === 'string') {
+        return found.toLowerCase().trim() === normalizedName;
+      }
+      return found?.ingredient?.toLowerCase().trim() === normalizedName;
+    });
+
+    if (foundEntry) {
+      const products =
+        typeof foundEntry === 'string'
+          ? []
+          : Array.isArray(foundEntry.products)
+            ? foundEntry.products
+            : [];
+      return { status: 'present', products };
+    }
+
+    const isMissing =
+      concernData.missing_ingredients?.some(
+        (missing) => missing.toLowerCase().trim() === normalizedName
+      ) || false;
+
+    return { status: isMissing ? 'absent' : 'absent' };
+  };
+
   const renderIngredientItem = (ingredient: string, itemIndex: number, concernKey: string): React.JSX.Element => {
+    const colonIndex = ingredient.indexOf(':');
+    const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
+    const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
+    const presence = getIngredientPresence(ingredientName, concernKey);
+    const isUnknown = presence.status === 'unknown';
+    const chips = isUnknown
+      ? [
+          {
+            label: 'Checking routine',
+            type: 'default',
+            styleVariant: 'normal',
+          },
+        ]
+      : [
+          {
+            label: presence.status === 'present' ? 'Present in routine' : 'Not in routine',
+            type: presence.status === 'present' ? 'ingredient' : 'default',
+            styleVariant: presence.status === 'present' ? 'bold' : 'normal',
+          },
+        ];
+
+    const rightElement =
+      presence.status === 'present'
+        ? <CheckCircle size={20} color={colors.primary} />
+        : presence.status === 'absent'
+          ? <AlertCircle size={20} color={colors.primary} />
+          : <></>;
+
+    const bottomText =
+      presence.products && presence.products.length > 0
+        ? `Products: ${presence.products.join(', ')}`
+        : null;
+
     return (
-      <View key={`${concernKey}-ingredient-${itemIndex}`} style={{ marginBottom: 12 }}>
+      <View key={`${concernKey}-ingredient-${itemIndex}`} style={{ marginBottom: 0 }}>
         <ListItem
-          title={ingredient}
+          title={ingredientName}
+          description={ingredientDesc || undefined}
           icon="bottle-tonic-outline"
           iconColor={colors.primary}
           iconLibrary="MaterialCommunityIcons"
           showChevron={false}
-          onPress={() => {}}
+          chips={chips}
+          //rightElement={rightElement}
+          bottomText={bottomText}
         />
       </View>
     );

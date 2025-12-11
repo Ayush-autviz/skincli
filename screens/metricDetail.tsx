@@ -1214,7 +1214,14 @@ export default function MetricDetailScreen(): React.JSX.Element {
   // State for concern message API
   const [concernMessageData, setConcernMessageData] = useState<{
     message?: string;
-    found_ingredients?: string[];
+    found_ingredients?: Array<
+      | string
+      | {
+          ingredient: string;
+          products?: string[];
+        }
+    >;
+    missing_ingredients?: string[];
     has_routine?: boolean;
   } | null>(null);
   const [concernMessageLoading, setConcernMessageLoading] = useState<boolean>(false);
@@ -2404,10 +2411,18 @@ export default function MetricDetailScreen(): React.JSX.Element {
                   const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
                   const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
                   
-                  // Check if this ingredient is in the found_ingredients list
-                  const isFound = concernMessageData?.found_ingredients?.some(
-                    found => found.toLowerCase().trim() === ingredientName.toLowerCase().trim()
-                  ) || false;
+                  // Find entry in found_ingredients (supports both string and object formats)
+                  const foundEntry = concernMessageData?.found_ingredients?.find((found) => {
+                    if (typeof found === 'string') {
+                      return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                    }
+                    return found?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                  });
+                  const isFound = Boolean(foundEntry);
+                  const foundProducts =
+                    foundEntry && typeof foundEntry !== 'string' && Array.isArray(foundEntry.products)
+                      ? foundEntry.products
+                      : [];
 
                   return (
                     <View 
@@ -2428,6 +2443,11 @@ export default function MetricDetailScreen(): React.JSX.Element {
                             {concernMessageData && (
                               <Text style={styles.ingredientStatusText}>
                                 {isFound ? 'Present in routine' : 'Absent in routine'}
+                              </Text>
+                            )}
+                            {isFound && foundProducts.length > 0 && (
+                              <Text style={[styles.ingredientStatusText, { marginTop: 4 }]}>
+                                Products: {foundProducts.join(', ')}
                               </Text>
                             )}
                           </View>

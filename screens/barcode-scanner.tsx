@@ -33,6 +33,7 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
   const device = devices.find(d => d.position === 'back');
   const { hasPermission, requestPermission } = useCameraPermission();
 
+  
   const codeScanner = useCodeScanner({
     codeTypes: ['qr', 'ean-13', 'ean-8', 'code-128', 'code-39', 'upc-a', 'upc-e'],
     onCodeScanned: async (codes) => {

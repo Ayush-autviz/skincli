@@ -749,7 +749,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
               <View style={styles.actionRow}>
                 <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
                   <Edit size={16} color={colors.primary} />
-                  <Text style={styles.actionText}>Edit</Text>
+                  <Text style={styles.actionText}>Edit/Delete</Text>
                 </TouchableOpacity>
               </View>
             </View>

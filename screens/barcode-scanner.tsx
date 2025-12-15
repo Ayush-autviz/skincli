@@ -39,6 +39,7 @@ const BarcodeScannerScreen = (): React.JSX.Element => {
     onCodeScanned: async (codes) => {
       if (isProcessing || !isScanning) return;
       
+      
       const code = codes[0];
       if (code?.value) {
         setIsScanning(false);

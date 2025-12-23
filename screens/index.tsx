@@ -85,8 +85,12 @@ export default function Home(): React.JSX.Element {
               <Camera size={48} color={colors.primary} />
             </View>
             <Text style={styles.emptyTitle}>No snapshots yet</Text>
-            <Text style={styles.emptySubtitle}>Tap the + to capture or upload your first face snapshot. Center your face for best results</Text>
-            <Text style={styles.emptySubtitle}>On your first visit, take 2 photos to unlock your tracker.</Text>
+            <Text style={styles.emptySubtitle}>Take a Selfie!</Text>
+            <Text style={styles.emptySubtitle}>Look at a source of light.</Text>
+            <Text style={styles.emptySubtitle}>Center your face in the frame.</Text>
+            <Text style={styles.emptySubtitle}>No make up, please!</Text>
+            <Text style={styles.emptySubtitle}>Click + below</Text>
+            <Text style={styles.emptySubtitle}>On your first visit, repeat to unlock the Progress Charts</Text>
           </View>
         ) : (
           <PhotoGrid 

@@ -2,7 +2,7 @@
 // Component to display and manage the user's routine items
 
 import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, SectionList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Alert, Platform } from 'react-native';
+import { View, Text, SectionList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image } from 'react-native';
 import { colors, spacing, typography, palette } from '../../styles';
 import { useNavigation } from '@react-navigation/native';
 import { ClipboardPlus, Pill } from 'lucide-react-native';
@@ -1145,20 +1145,22 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           activeOpacity={0.85}
           onPress={handleNavigateToChat}
         >
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>a</Text>
-            </View>
+            <Image 
+              source={require('../../assets/images/amber-avatar.png')}
+              style={styles.avatarImage}
+              resizeMode="contain"
+            />
             <Text style={styles.motivationalText}>
-              {"Let's get started! Tell me about your current routine."}
+              {"Let’s get started! You can chat with me here and we will input your current skin care routine. But if you prefer to fill out a form, click on the + below."}
             </Text>
-            <Plus
+            {/* <Plus
               size={24}
               color={colors.primary}
               style={styles.arrowIcon}
-            />
+            /> */}
           </TouchableOpacity>
           <TouchableOpacity onPress={openAddModal} style={{  padding: 16, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{color: colors.primary, fontSize: 16, fontWeight: '500'}}>+ Add a routine item</Text>
+            <Text style={{color: colors.primary, fontSize: 16, fontWeight: '500'}}>+ Input your current routine with a form</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -1534,6 +1536,11 @@ const styles = StyleSheet.create({
     color: 'white',
     fontWeight: 'bold',
     fontSize: 12,
+  },
+  avatarImage: {
+    width: 28,
+    height: 28,
+    marginRight: 10,
   },
   motivationalText: {
     fontSize: 13,

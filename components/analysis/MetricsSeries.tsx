@@ -1060,7 +1060,7 @@ const SkinTypeTrendChart = ({
   );
 };
 
-export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScrollSyncRef, photos, profile, navigateToSnapshot, navigateToMetricDetail }) => {
+export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScrollSyncRef, photos, profile, navigateToSnapshot, navigateToMetricDetail, hideNavigation = false }) => {
   if (!metric?.scores?.length) return null;
 
   const scrollViewRef = useRef(null);
@@ -1072,49 +1072,53 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
       <View style={styles.card2}>
         {/* Title Section */}
         <View style={styles.titleRow}>
-          <TouchableOpacity
-            style={{flexDirection: 'row', alignItems: 'center'}}
-            onPress={() => {
-              // Navigate to metric detail with proper parameters
-              if (selectedIndex !== null && photos[selectedIndex]) {
-                const selectedPhoto = photos[selectedIndex];
-                console.log('Navigating to metric detail from MetricsSeries (skin type):', {
-                  metricKey: metric.metricName,
-                  metricValue: metric.scores[selectedIndex]?.score,
-                  photoId: selectedPhoto.id
-                });
-                
-                navigateToMetricDetail({
-                  maskResults: selectedPhoto?.maskResults,
-                  maskImages: selectedPhoto?.maskImages,
-                  metricKey: metric.metricName,
-                  metricValue: metric.scores[selectedIndex]?.score,
-                  photoData: JSON.stringify(selectedPhoto)
-                });
-              } else {
-                // Fallback if no photo is selected - use the first photo
-                const firstPhoto = photos[0];
-                if (firstPhoto) {
-                  console.log('Navigating to metric detail from MetricsSeries (skin type fallback):', {
+          {hideNavigation ? (
+            <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
+          ) : (
+            <TouchableOpacity
+              style={{flexDirection: 'row', alignItems: 'center'}}
+              onPress={() => {
+                // Navigate to metric detail with proper parameters
+                if (selectedIndex !== null && photos[selectedIndex]) {
+                  const selectedPhoto = photos[selectedIndex];
+                  console.log('Navigating to metric detail from MetricsSeries (skin type):', {
                     metricKey: metric.metricName,
-                    metricValue: metric.scores[0]?.score,
-                    photoId: firstPhoto.id
+                    metricValue: metric.scores[selectedIndex]?.score,
+                    photoId: selectedPhoto.id
                   });
                   
                   navigateToMetricDetail({
-                    maskResults: firstPhoto?.maskResults,
-                    maskImages: firstPhoto?.maskImages,
+                    maskResults: selectedPhoto?.maskResults,
+                    maskImages: selectedPhoto?.maskImages,
                     metricKey: metric.metricName,
-                    metricValue: metric.scores[0]?.score,
-                    photoData: JSON.stringify(firstPhoto)
+                    metricValue: metric.scores[selectedIndex]?.score,
+                    photoData: JSON.stringify(selectedPhoto)
                   });
+                } else {
+                  // Fallback if no photo is selected - use the first photo
+                  const firstPhoto = photos[0];
+                  if (firstPhoto) {
+                    console.log('Navigating to metric detail from MetricsSeries (skin type fallback):', {
+                      metricKey: metric.metricName,
+                      metricValue: metric.scores[0]?.score,
+                      photoId: firstPhoto.id
+                    });
+                    
+                    navigateToMetricDetail({
+                      maskResults: firstPhoto?.maskResults,
+                      maskImages: firstPhoto?.maskImages,
+                      metricKey: metric.metricName,
+                      metricValue: metric.scores[0]?.score,
+                      photoData: JSON.stringify(firstPhoto)
+                    });
+                  }
                 }
-              }
-            }}
-          >
-            <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
-            <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3}/>
-          </TouchableOpacity>
+              }}
+            >
+              <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
+              {/* <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3}/> */}
+            </TouchableOpacity>
+          )}
         </View>
         
         {/* Skin Type Chart */}
@@ -1207,45 +1211,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
     <View style={styles.card}>
       {/* Title Section with average and percentage change */}
       <View style={styles.titleRow}>
-        <TouchableOpacity
-        style={{flexDirection: 'row', alignItems: 'center'}}
-        onPress={() => {
-  // Navigate to metric detail with proper parameters
-  if (selectedIndex !== null && photos[selectedIndex]) {
-    const selectedPhoto = photos[selectedIndex];
-    console.log('Navigating to metric detail from MetricsSeries:', {
-      metricKey: metric.metricName,
-      metricValue: metric.scores[selectedIndex]?.score,
-      photoId: selectedPhoto.id
-    });
-    
-    navigateToMetricDetail({
-      maskResults: selectedPhoto?.maskResults,
-      maskImages: selectedPhoto?.maskImages,
-      metricKey: metric.metricName,
-      metricValue: metric.scores[selectedIndex]?.score,
-      photoData: JSON.stringify(selectedPhoto)
-    });
-  } else {
-    // Fallback if no photo is selected - use the first photo
-    const firstPhoto = photos[0];
-    if (firstPhoto) {
-      console.log('Navigating to metric detail from MetricsSeries (fallback):', {
-        metricKey: metric.metricName,
-        metricValue: metric.scores[0]?.score,
-        photoId: firstPhoto.id
-      });
-      
-      navigateToMetricDetail({
-        maskResults: firstPhoto?.maskResults,
-        maskImages: firstPhoto?.maskImages,
-        metricKey: metric.metricName,
-        metricValue: metric.scores[0]?.score,
-        photoData: JSON.stringify(firstPhoto)
-      });
-    }
-  }
-}}>
+        {hideNavigation ? (
           <View style={{flexDirection: 'column', alignItems: 'flex-start'}}>
             <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
             {metric.metricName === 'poresScore' && (
@@ -1254,8 +1220,58 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
               </Text>
             )}
           </View>
-          <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3}/>
-        </TouchableOpacity>
+        ) : (
+          <TouchableOpacity
+            style={{flexDirection: 'row', alignItems: 'center'}}
+            onPress={() => {
+              // Navigate to metric detail with proper parameters
+              if (selectedIndex !== null && photos[selectedIndex]) {
+                const selectedPhoto = photos[selectedIndex];
+                console.log('Navigating to metric detail from MetricsSeries:', {
+                  metricKey: metric.metricName,
+                  metricValue: metric.scores[selectedIndex]?.score,
+                  photoId: selectedPhoto.id
+                });
+                
+                navigateToMetricDetail({
+                  maskResults: selectedPhoto?.maskResults,
+                  maskImages: selectedPhoto?.maskImages,
+                  metricKey: metric.metricName,
+                  metricValue: metric.scores[selectedIndex]?.score,
+                  photoData: JSON.stringify(selectedPhoto)
+                });
+              } else {
+                // Fallback if no photo is selected - use the first photo
+                const firstPhoto = photos[0];
+                if (firstPhoto) {
+                  console.log('Navigating to metric detail from MetricsSeries (fallback):', {
+                    metricKey: metric.metricName,
+                    metricValue: metric.scores[0]?.score,
+                    photoId: firstPhoto.id
+                  });
+                  
+                  navigateToMetricDetail({
+                    maskResults: firstPhoto?.maskResults,
+                    maskImages: firstPhoto?.maskImages,
+                    metricKey: metric.metricName,
+                    metricValue: metric.scores[0]?.score,
+                    photoData: JSON.stringify(firstPhoto)
+                  });
+                }
+              }
+            }}
+          >
+            <View style={{flexDirection: 'column', alignItems: 'flex-start'}}>
+              <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
+              {metric.metricName === 'poresScore' && (
+                <Text style={styles.disclaimerText}>
+                  Work in Progress, still unreliable
+                </Text>
+              )}
+            </View>
+            <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3}/>
+          </TouchableOpacity>
+        )}
         <View style={styles.metricStatsContainer}>
           {mockAverage !== null && (
             <Text style={styles.averageText}>Average Score:{mockAverage}</Text>

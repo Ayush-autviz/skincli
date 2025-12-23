@@ -57,7 +57,7 @@ export default function RoutineTab(): React.JSX.Element {
   return (
     <View style={styles.outerContainer}>
       <TabHeader 
-        title="Routine"
+        title="My Routine"
         onMenuPress={handleMenuPress}
         showBack={true}
       />

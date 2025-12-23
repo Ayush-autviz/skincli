@@ -341,26 +341,38 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
             <Text style={styles.dateHeaderText}>{title}</Text>
           </View>
         )}
-        renderItem={({ item: row }) => (
-          <View style={{ flexDirection: 'row', columnGap: gutter, marginBottom: gutter }}>
-            {row.map((photo, i) => (
-              <TouchableOpacity
-                key={photo.id}
-                style={[styles.photoContainer, { marginLeft: i === 0 ? 0 : 0 }]}
-                onPress={() => handlePhotoPress(photo)}
-              >
-                <View style={styles.photoWrapper}>
-                  <Image
-                    source={{ uri: photo.storageUrl }}
-                    style={styles.photo}
-                    resizeMode="cover"
-                  />
-                </View>
-              </TouchableOpacity>
-            ))}
-            {row.length === 1 && <View style={[styles.photoContainer, { opacity: 0 }]} />} {/* filler for uneven */}
-          </View>
-        )}
+        renderItem={({ item: row }) => {
+          // Safety check: ensure row is an array
+          if (!Array.isArray(row)) {
+            return null;
+          }
+          return (
+            <View style={{ flexDirection: 'row', marginBottom: gutter }}>
+              {row.map((photo, i) => {
+                // Safety check: ensure photo is an object
+                if (!photo || typeof photo !== 'object') {
+                  return null;
+                }
+                return (
+                  <TouchableOpacity
+                    key={photo.id || `photo-${i}`}
+                    style={[styles.photoContainer, { marginLeft: i === 0 ? 0 : gutter }]}
+                    onPress={() => handlePhotoPress(photo)}
+                  >
+                    <View style={styles.photoWrapper}>
+                      <Image
+                        source={{ uri: photo.storageUrl }}
+                        style={styles.photo}
+                        resizeMode="cover"
+                      />
+                    </View>
+                  </TouchableOpacity>
+                );
+              })}
+              {row.length === 1 && <View style={[styles.photoContainer, { opacity: 0 }]} />} {/* filler for uneven */}
+            </View>
+          );
+        }}
         contentContainerStyle={styles.grid}
         showsVerticalScrollIndicator={false}
         stickySectionHeadersEnabled={false}

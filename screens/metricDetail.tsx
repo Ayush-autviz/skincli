@@ -2043,7 +2043,9 @@ export default function MetricDetailScreen(): React.JSX.Element {
                         ))}
                       </View>
                     ) : (
-                      currentConcernDetails?.maskVerbiage || `Analysis visualization for ${formatMetricName(metricKey).toLowerCase()}.`
+                      <Text style={styles.maskVerbiageText}>
+                        {currentConcernDetails?.maskVerbiage || `Analysis visualization for ${formatMetricName(metricKey).toLowerCase()}.`}
+                      </Text>
                     )}
                   {/* </Text> */}
                 </View>
@@ -2057,7 +2059,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
         {(!currentConcernDetails?._isProfileMetric || metricKey === 'perceivedAge' || metricKey === 'eyeAge' || metricKey === 'skinType') && (
           <View >
             <View style={styles.progressHeaderContainer}>
-              <Text style={styles.sectionTitle}>Progress Chart</Text>
+              <Text style={styles.sectionTitle}>Progress</Text>
               {trendScores && trendScores.length > 0 && (
                 <TouchableOpacity 
                   onPress={() => (navigation as any).navigate('Tabs', { screen: 'Progress' })}
@@ -2070,11 +2072,11 @@ export default function MetricDetailScreen(): React.JSX.Element {
             <View >
               {trendScores && trendScores.length > 0 ? (
                 metricKey === 'perceivedAge' || metricKey === 'eyeAge' ? (
-                  <View style={{marginHorizontal:20}}>
+                  <View style={{ marginHorizontal: 20 }}>
                   <PerceivedAgeChart photos={trendScores} />
                   </View>
                 ) : metricKey === 'skinType' ? (
-                  <View style={{marginHorizontal:20}}>
+                   <View style={{ marginHorizontal: 20 }}>
                   <SkinTypeTrendChart photos={trendScores} />
                   </View>
                 ) : (() => {
@@ -2118,15 +2120,10 @@ export default function MetricDetailScreen(): React.JSX.Element {
                   if (!currentMetric || !currentMetric.scores?.length) {
                     return <Text style={styles.trendPlaceholderText}>No trend data available.</Text>;
                   }
-
-                  console.log(currentMetric,'cureent metric')
-                  const reversedMetric = {
-                    ...currentMetric,
-                    scores: [...currentMetric.scores].reverse(),
-                  };
+                  
                   return (
                     <MetricRow
-                      metric={reversedMetric}
+                      metric={currentMetric}
                       selectedIndex={selectedIndex}
                       onDotPress={(index) => {
                         setSelectedIndex(index);
@@ -2148,7 +2145,6 @@ export default function MetricDetailScreen(): React.JSX.Element {
                       profile={profile}
                       navigateToSnapshot={(params: any) => (navigation as any).navigate('Snapshot', params)}
                       navigateToMetricDetail={(params: any) => (navigation as any).navigate('MetricDetail', params)}
-                      hideNavigation={true}
                   />
                   );
                 })()

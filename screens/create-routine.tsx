@@ -724,7 +724,7 @@ const CreateRoutineScreen = (): React.JSX.Element => {
         >
         {/* Category Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle2}>Indicate if Product</Text>
+          <Text style={styles.sectionTitle2}>What are you adding?</Text>
           <View style={styles.chipSelectorContainer}>
             {[
               { name: 'Product', icon: FlaskConical, color: '#8B7355' },

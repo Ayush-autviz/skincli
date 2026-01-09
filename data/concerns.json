@@ -1725,9 +1725,21 @@
         },
         {
           "type": "product",
-          "text": "Look for ingredients like peptides, hyaluronic acid, and caffeine in eye products.",
+          "text": "Caffeine: Helps reduce puffiness and dark circles by improving micro-circulation.",
           "icon": "list",
-          "initialChatMessage": "Peptides, hyaluronic acid, and caffeine are effective ingredients for the eye area. Would you like to learn more about these ingredients?"
+          "initialChatMessage": "Caffeine is great for reducing puffiness and dark circles by boosting circulation around the eyes. Have you tried caffeine-based eye creams before, or would you like recommendations?"
+        },
+        {
+          "type": "product",
+          "text": "Hyaluronic Acid: Provides deep hydration to plump and smooth fine lines.",
+          "icon": "list",
+          "initialChatMessage": "Hyaluronic Acid delivers lasting hydration and helps soften fine lines around the eyes. Want to explore whether it could be a good addition to your routine?"
+        },
+        {
+          "type": "product",
+          "text": "Peptides: Support collagen production to improve firmness and reduce wrinkles.",
+          "icon": "list",
+          "initialChatMessage": "Peptides help strengthen and firm the delicate eye area by supporting collagen. Would you like suggestions for peptide-rich eye products?"
         },
         {
           "type": "activity",

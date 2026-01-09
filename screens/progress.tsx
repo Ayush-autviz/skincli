@@ -148,7 +148,7 @@ export default function ProgressTab(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <TabHeader
-        title="Progress"
+        title="Progress Charts"
         onMenuPress={handleMenuPress}
         showBack={true}
       />

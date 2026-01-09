@@ -1718,7 +1718,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                     marginTop: 4,
                     marginBottom: 8,
                   }}>
-                    Work in Progress, still unreliable
+                    Face a light source for best results
                   </Text>
                 )}
                 {/* Context Text - below the box */}
@@ -1889,7 +1889,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                     marginTop: 4,
                     marginBottom: 8,
                   }}>
-                    Work in Progress, still unreliable
+                    Face a light source for best results
                   </Text>
                 )}
                   </>
@@ -2059,7 +2059,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
         {(!currentConcernDetails?._isProfileMetric || metricKey === 'perceivedAge' || metricKey === 'eyeAge' || metricKey === 'skinType') && (
           <View >
             <View style={styles.progressHeaderContainer}>
-              <Text style={styles.sectionTitle}>Progress</Text>
+              <Text style={styles.sectionTitle}>Progress Chart</Text>
               {trendScores && trendScores.length > 0 && (
                 <TouchableOpacity 
                   onPress={() => (navigation as any).navigate('Tabs', { screen: 'Progress' })}
@@ -2390,7 +2390,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                   style={styles.aiInsightsMessage}
                   onPress={() => {
                     (navigation as any).navigate('ThreadChat', {
-                      chatType: 'routine_add_discussion',
+                      chatType: 'ingredients_related_chat',
                       initialMessage: concernMessageData.message
                     });
                   }}

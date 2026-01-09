@@ -1216,13 +1216,13 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
             <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
             {metric.metricName === 'poresScore' && (
               <Text style={styles.disclaimerText}>
-                Work in Progress, still unreliable
+                Face a light source for best results
               </Text>
             )}
           </View>
         ) : (
           <TouchableOpacity
-            style={{flexDirection: 'row', alignItems: 'center'}}
+            style={{flexDirection: 'column', alignItems: 'flex-start'}}
             onPress={() => {
               // Navigate to metric detail with proper parameters
               if (selectedIndex !== null && photos[selectedIndex]) {
@@ -1261,15 +1261,15 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
               }
             }}
           >
-            <View style={{flexDirection: 'column', alignItems: 'flex-start'}}>
+            <View style={{flexDirection: 'row', alignItems: 'center', width: '100%'}}>
               <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
-              {metric.metricName === 'poresScore' && (
-                <Text style={styles.disclaimerText}>
-                  Work in Progress, still unreliable
-                </Text>
-              )}
+              <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3} style={{ marginLeft: 8 }}/>
             </View>
-            <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3}/>
+            {metric.metricName === 'poresScore' && (
+              <Text style={styles.disclaimerText}>
+                Face a light source for best results
+              </Text>
+            )}
           </TouchableOpacity>
         )}
         <View style={styles.metricStatsContainer}>

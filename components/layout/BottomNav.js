@@ -19,7 +19,6 @@ DEV PRINCIPLES
 ------------------------------------------------------*/
 
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { Feather } from '@expo/vector-icons';
 import { colors, spacing } from '../../styles';
 import { router, usePathname } from 'expo-router';
 
@@ -61,16 +60,12 @@ export default function BottomNav({ onCameraPress }) {
           onPress={() => handleTabPress('progress')}
         >
           <View style={styles.tabContent}>
-            <Feather 
-              name="trending-up"
-              size={20} 
-              color={activeTab === 'progress' ? colors.textOnPrimary : colors.textTertiary}
-            />
-            <Text style={[
-              styles.tabText,
-              activeTab === 'progress' ? styles.activeTabText : styles.inactiveTabText
-            ]}>
-              Progress
+            <Text 
+              style={[
+                styles.tabText,
+                activeTab === 'progress' ? styles.activeTabText : styles.inactiveTabText
+              ]}>
+              Progress Charts
             </Text>
             {activeTab === 'progress' && <View style={styles.tabUnderline} />}
           </View>
@@ -88,16 +83,11 @@ export default function BottomNav({ onCameraPress }) {
           onPress={() => handleTabPress('routine')}
         >
           <View style={styles.tabContent}>
-            <Feather 
-              name="calendar"
-              size={20} 
-              color={activeTab === 'routine' ? colors.textOnPrimary : colors.textTertiary}
-            />
             <Text style={[
               styles.tabText,
               activeTab === 'routine' ? styles.activeTabText : styles.inactiveTabText
             ]}>
-              Routine
+              My Routine
             </Text>
             {activeTab === 'routine' && <View style={styles.tabUnderline} />}
           </View>
@@ -144,10 +134,11 @@ const styles = StyleSheet.create({
   tabButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 26,
     flex: 1,
+    minWidth: 0,
   },
   activeTabButton: {
     backgroundColor: colors.primary, // #8B7355
@@ -184,8 +175,10 @@ const styles = StyleSheet.create({
     marginTop: -2,
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
+    flexShrink: 0,
+    textAlign: 'center',
   },
   activeTabText: {
     color: colors.textOnPrimary, // White text on active tab
@@ -198,6 +191,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    flexShrink: 0,
+    flexWrap: 'nowrap',
   },
   tabUnderline: {
     position: 'absolute',

@@ -1,7 +1,6 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
-import { TrendingUp, Calendar } from 'lucide-react-native';
 import { colors, spacing } from '../styles';
 
 // Import tab screens
@@ -56,15 +55,12 @@ function CustomTabBar({ state, descriptors, navigation }) {
           activeOpacity={1} // Disable opacity change on press
         >
           <View style={styles.tabContent}>
-            <TrendingUp 
-              size={20} 
-              color={isTabActive('Progress') ? colors.textOnPrimary : colors.textTertiary}
-            />
-            <Text style={[
-              styles.tabText,
-              isTabActive('Progress') ? styles.activeTabText : styles.inactiveTabText
-            ]}>
-              Progress
+            <Text 
+              style={[
+                styles.tabText,
+                isTabActive('Progress') ? styles.activeTabText : styles.inactiveTabText
+              ]}>
+              Progress Charts
             </Text>
           </View>
         </TouchableOpacity>
@@ -82,15 +78,11 @@ function CustomTabBar({ state, descriptors, navigation }) {
           activeOpacity={1} // Disable opacity change on press
         >
           <View style={styles.tabContent}>
-            <Calendar 
-              size={20} 
-              color={isTabActive('Routine') ? colors.textOnPrimary : colors.textTertiary}
-            />
             <Text style={[
               styles.tabText,
               isTabActive('Routine') ? styles.activeTabText : styles.inactiveTabText
             ]}>
-              Routine
+              My Routine
             </Text>
           </View>
         </TouchableOpacity>
@@ -168,12 +160,13 @@ const styles = StyleSheet.create({
   tabButton: {
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: 12,
     paddingVertical: 12,
     borderRadius: 26,
     flex: 1,
     backgroundColor: 'transparent', // Explicitly set transparent background
     opacity: 1, // Ensure no opacity issues
+    minWidth: 0,
   },
   activeTabButton: {
     backgroundColor: colors.primary,
@@ -212,10 +205,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
+    flexShrink: 0,
+    flexWrap: 'nowrap',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
+    flexShrink: 0,
+    textAlign: 'center',
   },
   activeTabText: {
     color: colors.textOnPrimary,

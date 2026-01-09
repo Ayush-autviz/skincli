@@ -565,7 +565,7 @@ const MetricsSheet = forwardRef<MetricsSheetRef, MetricsSheetProps>(({
                                 </Text>
                                 {key === 'poresScore' && (
                                   <Text style={styles.disclaimerText}>
-                                    Work in Progress, still unreliable
+                                    Face a light source for best results
                                   </Text>
                                 )}
                               </View>

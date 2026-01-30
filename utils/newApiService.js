@@ -9,7 +9,7 @@ const BASE_URL = "http://44.198.183.94:8000/api/v1";
 // Create axios instance with enhanced configuration
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  timeout: 45000, // Increased from 30000 to 45000ms (45 seconds)
+  //timeout: 45000, // Increased from 30000 to 45000ms (45 seconds)
   // Add retry configuration
   retry: 1,
   retryDelay: 1000,
@@ -2191,6 +2191,79 @@ export const searchProductByUPC = async (upc) => {
         error.message ||
         "Failed to search product"
     );
+  }
+};
+
+/**
+ * Extract product information from an image using AI
+ * @param {string} imageUri - Local URI of the product image
+ * @returns {Promise<Object>} Product details including name, brand, and UPC
+ */
+export const extractProductFromImage = async (imageUri) => {
+  try {
+    console.log("🔵 Extracting product from image:", imageUri);
+
+    // Create form data for multipart upload
+    const formData = new FormData();
+    
+    // Get the file extension from URI
+    const uriParts = imageUri.split('.');
+    const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
+    
+    // Determine MIME type
+    let mimeType = 'image/jpeg';
+    if (fileExtension === 'png') {
+      mimeType = 'image/png';
+    } else if (fileExtension === 'webp') {
+      mimeType = 'image/webp';
+    }
+    
+    // Append the image file
+    formData.append('image', {
+      uri: imageUri,
+      type: mimeType,
+      name: `product_image.${fileExtension}`,
+    });
+
+    const response = await apiClient.post('/product_search/extract-product', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+     // timeout: 60000, // 60 second timeout for image processing
+    });
+
+    console.log("🔵 Response of extractProductFromImage:", response);
+
+    if (response.data.status === 200) {
+      console.log("✅ Product extracted successfully:", response.data.data);
+      
+      // Transform response to match expected format
+      const productData = response.data.data;
+      return {
+        success: true,
+        data: {
+          product_name: productData.product?.cleaned_product_name || productData.search_product_name,
+          brand: productData.product?.brand || productData.search_brand_name,
+          upc: productData.product?.upc || '',
+          original_product_name: productData.product?.product_name,
+          search_product_name: productData.search_product_name,
+          search_brand_name: productData.search_brand_name,
+          image_url: productData.image_url,
+        },
+      };
+    } else {
+      console.log("⚠️ Product not found in image");
+      return {
+        success: false,
+        message: response.data.message || "Product not found in image",
+      };
+    }
+  } catch (error) {
+    console.error("🔴 extractProductFromImage error:", error);
+    return {
+      success: false,
+      message: error.response?.data?.message || error.message || "Failed to extract product from image",
+    };
   }
 };
 

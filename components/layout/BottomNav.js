@@ -62,9 +62,9 @@ export default function BottomNav({ onCameraPress }) {
           <View style={styles.tabContent}>
             <Text 
               style={[
-                styles.tabText,
-                activeTab === 'progress' ? styles.activeTabText : styles.inactiveTabText
-              ]}>
+              styles.tabText,
+              activeTab === 'progress' ? styles.activeTabText : styles.inactiveTabText
+            ]}>
               Progress Charts
             </Text>
             {activeTab === 'progress' && <View style={styles.tabUnderline} />}

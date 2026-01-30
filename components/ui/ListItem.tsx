@@ -55,6 +55,7 @@ interface ListItemProps {
   rightElement?: React.ReactNode;
   dateInfo?: string | null;
   bottomText?: string | null;
+  brand?: string | null;
 }
 
 export default function ListItem({
@@ -77,6 +78,7 @@ export default function ListItem({
   rightElement = null, // Custom right-side content
   dateInfo = null, // New prop for date information
   bottomText = null, // New prop for bottom text (e.g., tracking status)
+  brand = null, // Brand name to display above title
 }: ListItemProps) {
   const getIconComponent = () => {
     // Handle MaterialCommunityIcons
@@ -179,6 +181,12 @@ export default function ListItem({
 
         {/* Text Content */}
         <View style={styles.textContainer}>
+          {/* Brand name at the top if available */}
+          {brand && (
+            <Text style={styles.brandValue}>
+              {brand.toUpperCase()}
+            </Text>
+          )}
           {/* Title with optional NEW badge */}
           <View style={styles.titleRow}>
             <Text style={getTitleStyle()} >
@@ -378,6 +386,20 @@ const styles = StyleSheet.create({
   },
   titleHigh: {
     color: colors.primary,
+  },
+  brandName: {
+    fontSize: 11,
+    color: colors.textTertiary,
+    fontWeight: '500',
+    marginBottom: 2,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  brandValue: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,

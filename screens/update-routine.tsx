@@ -37,7 +37,7 @@ import {
 } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
-import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import ProductImageScannerModal from '../components/ProductImageScannerModal';
 import ProductSearchModal from '../components/ProductSearchModal';
 import { updateRoutineItem, deleteRoutineItem, searchProductByUPC, searchProducts } from '../utils/newApiService';
 
@@ -97,7 +97,7 @@ const concernsOptions = [
   'Under Eye Circles',
   'Wrinkles',
   'I don\'t know',
-  'Others'
+  'Other'
 ];
 
 
@@ -137,7 +137,7 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const [upcCode, setUpcCode] = useState<string>('');
   const [productData, setProductData] = useState<any>(null);
   const [isProductCrossed, setIsProductCrossed] = useState<boolean>(false);
-  const [showBarcodeModal, setShowBarcodeModal] = useState<boolean>(false);
+  const [showProductImageModal, setShowProductImageModal] = useState<boolean>(false);
   const [showProductSearchModal, setShowProductSearchModal] = useState<boolean>(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
   const [showAllGoodFor, setShowAllGoodFor] = useState<boolean>(false);
@@ -192,10 +192,10 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         
         setItemConcerns(itemData.concerns || []);
         
-        // Initialize custom concern if "Others: [text]" exists
-        const othersConcern = itemData.concerns?.find((c: string) => c.startsWith('Others: '));
+        // Initialize custom concern if "Other: [text]" exists
+        const othersConcern = itemData.concerns?.find((c: string) => c.startsWith('Other: '));
         if (othersConcern) {
-          setCustomConcern(othersConcern.replace('Others: ', ''));
+          setCustomConcern(othersConcern.replace('Other: ', ''));
         }
         
         // Handle dates
@@ -229,9 +229,9 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     }
   }, [isStopped]);
 
-  // Handle barcode scanning
-  const handleBarcodeScan = () => {
-    setShowBarcodeModal(true);
+  // Handle product image scanning
+  const handleProductImageScan = () => {
+    setShowProductImageModal(true);
   };
 
   // Handle product search modal
@@ -273,17 +273,16 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     }
   };
 
-  // Handle error from barcode modal
-  const handleBarcodeError = (message: string) => {
+  // Handle error from product image scanner modal
+  const handleProductImageError = (message: string) => {
     Alert.alert(
       'Product Not Found',
-      'This product is not in our database. Please add it manually in the text box and our research team will work on this.',
+      message || 'Could not identify the product. Please try again or add it manually.',
       [
         {
           text: 'OK',
           onPress: () => {
-            // Close the barcode modal instead of navigating back
-            setShowBarcodeModal(false);
+            setShowProductImageModal(false);
           }
         }
       ]
@@ -534,13 +533,13 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     setItemConcerns(currentConcerns => {
       const isSelected = currentConcerns.includes(concern);
       if (isSelected) {
-        // If deselecting "Others", clear custom concern text
-        if (concern === 'Others') {
+        // If deselecting "Other", clear custom concern text
+        if (concern === 'Other') {
           setCustomConcern('');
         }
         return currentConcerns.filter(c => c !== concern);
       } else {
-        // If selecting "Others", keep it in the list
+        // If selecting "Other", keep it in the list
         // The custom concern text will be added when user types
         return [...currentConcerns, concern];
       }
@@ -552,13 +551,13 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     setCustomConcern(text);
     // Update concerns: remove old custom concern if exists, add new one
     setItemConcerns(currentConcerns => {
-      // Remove any existing custom concern (starts with "Others: ") and plain "Others"
-      const filtered = currentConcerns.filter(c => c !== 'Others' && !c.startsWith('Others: '));
+      // Remove any existing custom concern (starts with "Other: ") and plain "Other"
+      const filtered = currentConcerns.filter(c => c !== 'Other' && !c.startsWith('Other: '));
       // Add new custom concern if text is not empty
       if (text.trim()) {
-        return [...filtered, `Others: ${text.trim()}`];
+        return [...filtered, `Other: ${text.trim()}`];
       }
-      // If text is empty but "Others" chip is selected, keep "Others" in the list
+      // If text is empty but "Other" chip is selected, keep "Other" in the list
       return filtered;
     });
   };
@@ -1006,7 +1005,7 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
                     <Search size={20} color="#6B7280" />
                   </TouchableOpacity>
                   <TouchableOpacity 
-                    onPress={handleBarcodeScan}
+                    onPress={handleProductImageScan}
                     style={styles.cameraButton}
                   >
                     <Camera size={20} color="#6B7280" />
@@ -1018,19 +1017,19 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
           
           {/* Scan instruction text - only show for Product type and when not treatment and not showing product details */}
           {!isTreatmentType() && !(upcCode && productData && !isProductCrossed) && (
-            <Text style={styles.scanInstructionText}>Scan Barcode, search our database or type a product name if product not found</Text>
+            <Text style={styles.scanInstructionText}>Scan product with camera, search our database, or type a product name</Text>
           )}
         </View>
 
         {/* Concerns Selection */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Concerns</Text>
+          <Text style={styles.sectionTitle}>Why are you Using this Product</Text>
           <Text style={styles.sectionSubtitle}>Select all that apply</Text>
           <View style={styles.chipSelectorContainer}>
             {concernsOptions.map((concern) => {
-              // Check if concern is active (either exact match or "Others: [text]" for Others)
-              const isActive = concern === 'Others' 
-                ? (itemConcerns.includes('Others') || itemConcerns.some(c => c.startsWith('Others: ')))
+              // Check if concern is active (either exact match or "Other: [text]" for Other)
+              const isActive = concern === 'Other' 
+                ? (itemConcerns.includes('Other') || itemConcerns.some(c => c.startsWith('Other: ')))
                 : itemConcerns.includes(concern);
               
               return (
@@ -1052,8 +1051,8 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
               );
             })}
           </View>
-          {/* Custom Concern Input - Show when "Others" is selected */}
-          {(itemConcerns.includes('Others') || itemConcerns.some(c => c.startsWith('Others: '))) && (
+          {/* Custom Concern Input - Show when "Other" is selected */}
+          {(itemConcerns.includes('Other') || itemConcerns.some(c => c.startsWith('Other: '))) && (
             <View style={styles.customConcernContainer}>
               <Text style={styles.customConcernLabel}>Please specify your concern:</Text>
               <TextInput
@@ -1322,12 +1321,12 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
       </KeyboardAvoidingView>
 
 
-      {/* Barcode Scanner Modal */}
-      <BarcodeScannerModal
-        visible={showBarcodeModal}
-        onClose={() => setShowBarcodeModal(false)}
+      {/* Product Image Scanner Modal */}
+      <ProductImageScannerModal
+        visible={showProductImageModal}
+        onClose={() => setShowProductImageModal(false)}
         onProductScanned={handleProductScanned}
-        onError={handleBarcodeError}
+        onError={handleProductImageError}
       />
 
       {/* Product Search Modal */}
@@ -1335,7 +1334,7 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         visible={showProductSearchModal}
         onClose={() => setShowProductSearchModal(false)}
         onProductSelect={handleProductSelectFromModal}
-        onError={handleBarcodeError}
+        onError={handleProductImageError}
         onSaveCustomProduct={(productName: string) => {
           setItemName(productName);
           setShowProductSearchModal(false);

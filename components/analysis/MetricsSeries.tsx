@@ -1265,11 +1265,11 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
               <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
               <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3} style={{ marginLeft: 8 }}/>
             </View>
-            {metric.metricName === 'poresScore' && (
-              <Text style={styles.disclaimerText}>
+              {metric.metricName === 'poresScore' && (
+                <Text style={styles.disclaimerText}>
                 Face a light source for best results
-              </Text>
-            )}
+                </Text>
+              )}
           </TouchableOpacity>
         )}
         <View style={styles.metricStatsContainer}>

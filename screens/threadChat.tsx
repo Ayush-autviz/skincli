@@ -13,7 +13,7 @@ import { ArrowLeft, Send, ScanLine, Search, PenTool, Check } from 'lucide-react-
 import { colors, typography, spacing, shadows, borderRadius } from '../styles';
 import TabHeader from '../components/ui/TabHeader';
 import useAuthStore from '../stores/authStore';
-import BarcodeScannerModal from '../components/BarcodeScannerModal';
+import ProductImageScannerModal from '../components/ProductImageScannerModal';
 import ProductSearchModal from '../components/ProductSearchModal';
 import {
   createThread,
@@ -121,7 +121,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
   const [pendingItem, setPendingItem] = useState<PendingItem | null>(null);
   const [requestProductInput, setRequestProductInput] = useState<RequestProductInput | null>(null);
   const [keyboardHeight, setKeyboardHeight] = useState<number>(0);
-  const [showBarcodeScanner, setShowBarcodeScanner] = useState<boolean>(false);
+  const [showProductImageScanner, setShowProductImageScanner] = useState<boolean>(false);
   const [showProductSearch, setShowProductSearch] = useState<boolean>(false);
   const [showManualInput, setShowManualInput] = useState<boolean>(false);
   const [manualProductName, setManualProductName] = useState<string>('');
@@ -492,13 +492,19 @@ const ThreadChatScreen = (): React.JSX.Element => {
     }
   };
 
-  // Handle barcode scan
-  const handleBarcodeScan = async (productData: any): Promise<void> => {
+  // Handle product image scan
+  const handleProductImageScan = async (productData: any): Promise<void> => {
     if (productData && productData.upc) {
       await sendUPCCode(productData.upc);
-      setShowBarcodeScanner(false);
+      setShowProductImageScanner(false);
       setRequestProductInput(null);
     }
+  };
+
+  // Handle error from product image scanner
+  const handleProductImageError = (message: string): void => {
+    Alert.alert('Error', message);
+    setShowProductImageScanner(false);
   };
 
   // Handle product search selection
@@ -776,14 +782,14 @@ const ThreadChatScreen = (): React.JSX.Element => {
             {requestProductInput.options && requestProductInput.options.includes('Scan Barcode') && (
               <TouchableOpacity
                 style={[styles.productInputButton, styles.scanButton]}
-                onPress={() => setShowBarcodeScanner(true)}
+                onPress={() => setShowProductImageScanner(true)}
                 disabled={isLoading}
                 activeOpacity={0.7}
               >
                 <View style={styles.productInputButtonIcon}>
                   <ScanLine size={20} color="#FFFFFF" />
                 </View>
-                <Text style={styles.productInputButtonText}>Scan Barcode</Text>
+                <Text style={styles.productInputButtonText}>Scan Product</Text>
               </TouchableOpacity>
             )}
             {requestProductInput.options && requestProductInput.options.includes('Search by Name') && (
@@ -947,15 +953,12 @@ const ThreadChatScreen = (): React.JSX.Element => {
         </Animated.View>
       </KeyboardAvoidingView>
 
-      {/* Barcode Scanner Modal */}
-      <BarcodeScannerModal
-        visible={showBarcodeScanner}
-        onClose={() => setShowBarcodeScanner(false)}
-        onProductScanned={handleBarcodeScan}
-        onError={(message) => {
-          Alert.alert('Error', message);
-          setShowBarcodeScanner(false);
-        }}
+      {/* Product Image Scanner Modal */}
+      <ProductImageScannerModal
+        visible={showProductImageScanner}
+        onClose={() => setShowProductImageScanner(false)}
+        onProductScanned={handleProductImageScan}
+        onError={handleProductImageError}
       />
 
       {/* Product Search Modal */}

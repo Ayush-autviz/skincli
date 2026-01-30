@@ -57,9 +57,9 @@ function CustomTabBar({ state, descriptors, navigation }) {
           <View style={styles.tabContent}>
             <Text 
               style={[
-                styles.tabText,
-                isTabActive('Progress') ? styles.activeTabText : styles.inactiveTabText
-              ]}>
+              styles.tabText,
+              isTabActive('Progress') ? styles.activeTabText : styles.inactiveTabText
+            ]}>
               Progress Charts
             </Text>
           </View>

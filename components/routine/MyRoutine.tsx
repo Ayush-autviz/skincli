@@ -821,6 +821,9 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       return 'MaterialCommunityIcons';
     };
 
+    // Get brand name if available
+    const brandName = item.extra?.brand || null;
+
     return (
         <ListItem
           title={item.name}
@@ -834,6 +837,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           onPress={() => handleNavigateToProductDetail(item)}
           dateInfo={dateInfo as any}
           bottomText={trackingText as any}
+          brand={brandName}
           rightElement={
             // item.upc ? (
             <ChevronRight 

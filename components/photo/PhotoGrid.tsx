@@ -354,23 +354,23 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
                   return null;
                 }
                 return (
-                  <TouchableOpacity
+              <TouchableOpacity
                     key={photo.id || `photo-${i}`}
                     style={[styles.photoContainer, { marginLeft: i === 0 ? 0 : gutter }]}
-                    onPress={() => handlePhotoPress(photo)}
-                  >
-                    <View style={styles.photoWrapper}>
-                      <Image
-                        source={{ uri: photo.storageUrl }}
-                        style={styles.photo}
-                        resizeMode="cover"
-                      />
-                    </View>
-                  </TouchableOpacity>
+                onPress={() => handlePhotoPress(photo)}
+              >
+                <View style={styles.photoWrapper}>
+                  <Image
+                    source={{ uri: photo.storageUrl }}
+                    style={styles.photo}
+                    resizeMode="cover"
+                  />
+                </View>
+              </TouchableOpacity>
                 );
               })}
-              {row.length === 1 && <View style={[styles.photoContainer, { opacity: 0 }]} />} {/* filler for uneven */}
-            </View>
+            {row.length === 1 && <View style={[styles.photoContainer, { opacity: 0 }]} />} {/* filler for uneven */}
+          </View>
           );
         }}
         contentContainerStyle={styles.grid}

@@ -13,13 +13,13 @@ import AiMessageCard from '../chat/AiMessageCard';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ListItem from '../ui/ListItem';
-import { 
-  FlaskConical, 
-  Dumbbell, 
-  Apple, 
-  Sun, 
-  Moon, 
-  Calendar, 
+import {
+  FlaskConical,
+  Dumbbell,
+  Apple,
+  Sun,
+  Moon,
+  Calendar,
   CalendarX,
   CheckCircle,
   CalendarDays,
@@ -29,58 +29,58 @@ import {
   Archive,
   ChevronRight
 } from 'lucide-react-native';
-import { 
-  getRoutineItems, 
-  createRoutineItem, 
-  updateRoutineItem, 
+import {
+  getRoutineItems,
+  createRoutineItem,
+  updateRoutineItem,
   deleteRoutineItem,
   clearPendingRequests
 } from '../../utils/newApiService';
 
 // Define static messages based on routine size
 const staticAiMessages = [
-    {
-        numItems: 0,
-        msg: "Build a routine to see some results!"
-    },
-    {
-        numItems: 1,
-        msg: "What else do you use or do? Add another item!"
-    },
-    {
-        numItems: 3, // Use this threshold for 2 or 3 items
-        msg: "Looking good! Do you want help building more of a routine?"
-    },
-    {
-        // numItems: "full", // Use a condition check instead of string key
-        msgs: [ // Array of messages for > 3 items
-            "Consistency is key! Keep up the great work.",
-            "Your routine is looking comprehensive!",
-            "Looking good! Remember to review your routine periodically."
-        ]
-    }
+  {
+    numItems: 0,
+    msg: "Build a routine to see some results!"
+  },
+  {
+    numItems: 1,
+    msg: "What else do you use or do? Add another item!"
+  },
+  {
+    numItems: 3, // Use this threshold for 2 or 3 items
+    msg: "Looking good! Do you want help building more of a routine?"
+  },
+  {
+    // numItems: "full", // Use a condition check instead of string key
+    msgs: [ // Array of messages for > 3 items
+      "Consistency is key! Keep up the great work.",
+      "Your routine is looking comprehensive!",
+      "Looking good! Remember to review your routine periodically."
+    ]
+  }
 ];
 
 // Define concerns options
 const concernsOptions = [
-    'Evenness',
-    'Redness', 
-    'Visible Pores',
-    'Lines',
-    'Eye Area Condition',
-    'Skin Type',
-    'Skin Tone',
-    'Perceived Age',
-    'Perceived Eye Age'
+  'Evenness',
+  'Redness',
+  'Visible Pores',
+  'Lines',
+  'Eye Area Condition',
+  'Skin Type',
+  'Skin Tone',
+  'Perceived Age',
+  'Perceived Eye Age'
 ];
 
 // Define stop reasons
 const stopReasons = [
-    'Not effective',
-    'Doesn\'t feel right',
-    'Allergy',
-    'Too expensive',
-    'Other'
+  'Not effective',
+  'Doesn\'t feel right',
+  'Allergy',
+  'Too expensive',
+  'Other'
 ];
 
 interface RoutineItem {
@@ -111,7 +111,7 @@ interface ApiResponse {
   data: any[];
 }
 
-interface MyRoutineProps {}
+interface MyRoutineProps { }
 
 interface MyRoutineRef {
   refetchRoutines: () => void;
@@ -123,11 +123,11 @@ const calculateUsageDuration = (dateStarted: any): string | null => {
   // Firestore Timestamp
   if (dateStarted && typeof dateStarted.toDate === 'function') {
     start = dateStarted.toDate();
-  } 
+  }
   // JS Date
   else if (dateStarted instanceof Date) {
     start = dateStarted;
-  } 
+  }
   // String date (MM/DD/YY or MM/DD/YYYY)
   else if (typeof dateStarted === 'string' && dateStarted.includes('/')) {
     // Normalize to MM/DD/YYYY if needed
@@ -183,22 +183,22 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   const insets = useSafeAreaInsets();
   const [fixedCardHeight, setFixedCardHeight] = useState<number>(150);
-  
+
   // Ref to track if fetch is in progress
   const fetchInProgressRef = useRef<boolean>(false);
-  
+
   // Ref to track debounce timeout
   const debounceTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   // Ref to track if we've already attempted to fetch data
   const hasAttemptedFetchRef = useRef<boolean>(false);
-  
+
   // Ref to track if we should refetch on focus
   const shouldRefetchOnFocusRef = useRef<boolean>(false);
-  
+
   // Ref to track the refetch timeout
   const refetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  
+
   // Ref to track focus effect debounce
   const focusEffectDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -207,20 +207,20 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     // Normalize API values to component expected format
     const typeMap: { [key: string]: string } = {
       'product': 'Product',
-      'activity': 'Activity', 
+      'activity': 'Activity',
       'nutrition': 'Nutrition',
       'treatment_facial': 'Treatment / Facial',
       'treatment_injection': 'Treatment / Injection',
       'treatment_other': 'Treatment / Other'
     };
-    
+
     const usageMap: { [key: string]: string } = {
       'am': 'AM',
       'pm': 'PM',
       'both': 'AM + PM',
       'as_needed': 'As needed'
     };
-    
+
     const frequencyMap: { [key: string]: string } = {
       'daily': 'Daily',
       'weekly': 'Weekly',
@@ -248,7 +248,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       dateStarted: getDate(apiItem.start_date),
       dateStopped: getDate(apiItem.end_date),
       treatmentDate: getDate(apiItem.treatment_date),
-      is_tracking_paused: apiItem.is_tracking_paused ,
+      is_tracking_paused: apiItem.is_tracking_paused,
       stopReason: apiItem.end_reason || '',
       dateCreated: getDate(apiItem.dateCreated) || new Date(),
       upc: apiItem.upc || undefined, // Include UPC code if present
@@ -262,7 +262,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     if (debounceTimeoutRef.current) {
       clearTimeout(debounceTimeoutRef.current);
     }
-    
+
     // Debounce the fetch call to prevent rapid successive calls
     debounceTimeoutRef.current = setTimeout(async () => {
       // Prevent multiple simultaneous fetch calls
@@ -270,21 +270,21 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         console.log('🔄 MyRoutine: Fetch already in progress, skipping...');
         return;
       }
-      
+
       try {
         fetchInProgressRef.current = true;
         hasAttemptedFetchRef.current = true; // Mark that we've attempted to fetch
         setLoading(true);
         setError(null);
-        
+
         const response = await getRoutineItems() as ApiResponse;
-        
+
         if (response.success && response.data) {
           console.log('🔄 MyRoutine: Routine items fetchedHHHHHHHHH:', response.data);
           const transformedItems = response.data.map(transformApiItem);
           setRoutineItems(transformedItems);
           shouldRefetchOnFocusRef.current = false; // No need to refetch if we have data
-          
+
           // Clear any existing timeout
           if (refetchTimeoutRef.current) {
             clearTimeout(refetchTimeoutRef.current);
@@ -293,11 +293,11 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           setRoutineItems([]);
           shouldRefetchOnFocusRef.current = true; // Mark that we should refetch on focus if no data
         }
-        
+
         setLoading(false);
       } catch (err: any) {
         console.error('🔴 MyRoutine: Error fetching routine items:', err);
-        
+
         // Handle specific error types
         if (err.message === 'DUPLICATE_REQUEST' || err.message === 'REQUEST_IN_PROGRESS') {
           console.log('🔄 MyRoutine: Request in progress, will retry shortly...');
@@ -311,7 +311,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           }, 500);
           return;
         }
-        
+
         setError(err.message || 'Failed to load routine items.');
         setRoutineItems([]); // Set empty array on error
         shouldRefetchOnFocusRef.current = true; // Mark that we should refetch on focus after error
@@ -332,15 +332,15 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   useEffect(() => {
     let isMounted = true;
-    
+
     const loadRoutines = async (): Promise<void> => {
       if (isMounted) {
         await fetchRoutineItems();
       }
     };
-    
+
     loadRoutines();
-    
+
     // Cleanup function to prevent state updates on unmounted component
     return () => {
       isMounted = false;
@@ -372,21 +372,21 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       if (focusEffectDebounceRef.current) {
         clearTimeout(focusEffectDebounceRef.current);
       }
-      
+
       // Debounce the focus effect to prevent rapid successive calls
       focusEffectDebounceRef.current = setTimeout(() => {
         // Clear any stuck pending requests first
         clearPendingRequests();
-        
+
         // Only refetch if:
         // 1. We haven't attempted to fetch yet (first time), OR
         // 2. We should refetch on focus AND we have no data AND we're not loading
         // 
         // We NEVER refetch when we already have data to prevent unnecessary re-renders
-        const shouldRefetch = 
-          !hasAttemptedFetchRef.current || 
+        const shouldRefetch =
+          !hasAttemptedFetchRef.current ||
           (shouldRefetchOnFocusRef.current && !loading && !fetchInProgressRef.current && routineItems.length === 0);
-        
+
         if (shouldRefetch) {
           console.log('🔄 MyRoutine: Screen focused, refetching routines...', {
             hasAttempted: hasAttemptedFetchRef.current,
@@ -455,11 +455,11 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       case 3: return newItemConcerns.length > 0; // At least one concern selected
       case 4: return !!newItemFrequency; // Frequency selected
       case 5: return newItemUsage.length > 0; // At least one usage time selected
-      case 6: 
+      case 6:
         // For treatment types, check treatment date; for others, check start date
         const isTreatment = newItemType && (
-          newItemType === 'Treatment / Facial' || 
-          newItemType === 'Treatment / Injection' || 
+          newItemType === 'Treatment / Facial' ||
+          newItemType === 'Treatment / Injection' ||
           newItemType === 'Treatment / Other'
         );
         return isTreatment ? !!newItemTreatmentDate : !!newItemDateStarted;
@@ -469,7 +469,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   // Date picker handlers
   const handleStartDateChange = (event: any, selectedDate?: Date): void => {
-   // setShowStartDatePicker(false);
+    // setShowStartDatePicker(false);
     if (event.type === 'dismissed') return;
     if (selectedDate) {
       setNewItemDateStarted(selectedDate);
@@ -492,7 +492,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
   };
 
   // Handler for navigating to the chat screen for routine discussion
-  const handleNavigateToChat = async (): Promise<void> => { 
+  const handleNavigateToChat = async (): Promise<void> => {
     // if (!routineItems || routineItems.length === 0) {
     //   console.error("MyRoutine: Cannot create routine thread, no user context.");
     //   alert("Please log in to chat about your routine.");
@@ -502,10 +502,10 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     try {
       // Conditional initial message based on whether user has existing routine items
       const hasRoutineItems = routineItems && routineItems.length > 0;
-      const initialMessage = hasRoutineItems 
+      const initialMessage = hasRoutineItems
         ? "Have you made any changes to your routine lately, or are you thinking about trying something new?"
         : "Let's walk through your current skincare routine. Tell me what you're currently doing, one product or activity at a time.";
-      
+
       // TODO: Replace with actual API call to create thread
       // const { success, threadId: newThreadId } = await createThread(user.uid, {
       //     type: 'routine_add_discussion',
@@ -518,8 +518,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         initialMessage: initialMessage
       });
     } catch (error) {
-        console.error("MyRoutine: Error creating or navigating to routine chat:", error);
-        Alert.alert("Error", "Sorry, couldn't start the routine chat. Please try again.");
+      console.error("MyRoutine: Error creating or navigating to routine chat:", error);
+      Alert.alert("Error", "Sorry, couldn't start the routine chat. Please try again.");
     }
   };
 
@@ -538,8 +538,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     // Check if current type is a treatment type
     const isTreatmentType = (): boolean => {
       return !!(newItemType && (
-        newItemType === 'Treatment / Facial' || 
-        newItemType === 'Treatment / Injection' || 
+        newItemType === 'Treatment / Facial' ||
+        newItemType === 'Treatment / Injection' ||
         newItemType === 'Treatment / Other'
       ));
     };
@@ -550,13 +550,13 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         Alert.alert('Error', 'Please select the treatment date.');
         return;
       }
-      
+
       // Validate treatment date is not in the future
       const today = new Date();
       today.setHours(0, 0, 0, 0);
       const selectedTreatmentDate = new Date(newItemTreatmentDate);
       selectedTreatmentDate.setHours(0, 0, 0, 0);
-      
+
       if (selectedTreatmentDate > today) {
         Alert.alert('Invalid Date', 'Cannot select future date for treatment date.');
         return;
@@ -573,7 +573,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       today.setHours(0, 0, 0, 0);
       const selectedStartDate = new Date(newItemDateStarted);
       selectedStartDate.setHours(0, 0, 0, 0);
-      
+
       if (selectedStartDate > today) {
         Alert.alert('Invalid Date', 'Cannot select future date for start date.');
         return;
@@ -583,7 +583,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       if (newItemDateStopped) {
         const selectedStopDate = new Date(newItemDateStopped);
         selectedStopDate.setHours(0, 0, 0, 0);
-        
+
         if (selectedStopDate > today) {
           Alert.alert('Invalid Date', 'Cannot select future date for stop date.');
           return;
@@ -657,7 +657,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         // Update existing item
         const response = await updateRoutineItem(editingItem.id, apiItemData) as ApiResponse;
         console.log('🟡 MyRoutine: Update response:', response);
-        
+
         if (response.success) {
           // Refetch all routine items to ensure consistency
           await fetchRoutineItems();
@@ -667,7 +667,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         // Create new item
         const response = await createRoutineItem(apiItemData) as ApiResponse;
         console.log('🟡 MyRoutine: Create response:', response);
-        
+
         if (response.success) {
           // Refetch all routine items to ensure consistency
           await fetchRoutineItems();
@@ -688,11 +688,11 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     console.log("🔵 renderRoutineItem - item:", item);
     const isNotUsing = item.dateStopped && new Date(item.dateStopped) <= new Date();
     const usageDuration = calculateUsageDuration(item.dateStarted);
-    
+
     // Determine display usage
     let displayUsage = item.usage;
     if (item.usage === 'Both') displayUsage = 'AM/PM';
-    
+
     // Create chips array
     const chips: { label: string; type: string }[] = [];
     if (item.usage && !isNotUsing) {
@@ -707,14 +707,14 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
     // Format date info
     let dateInfo: string | null = null;
-    
+
     // Check if this is a treatment type
     const isTreatment = item.type && (
-      item.type === 'Treatment / Facial' || 
-      item.type === 'Treatment / Injection' || 
+      item.type === 'Treatment / Facial' ||
+      item.type === 'Treatment / Injection' ||
       item.type === 'Treatment / Other'
     );
-    
+
     if (isTreatment && item.treatmentDate) {
       // For treatment types, show treatment date
       const treatmentDate = new Date(item.treatmentDate);
@@ -732,13 +732,13 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         day: 'numeric',
         year: 'numeric'
       });
-      if( item.type === 'Product' || item.type === 'Nutrition') {
+      if (item.type === 'Product' || item.type === 'Nutrition') {
         dateInfo = `You started using this product on ${formattedDate}`;
-      } else if( item.type === 'Activity') {
+      } else if (item.type === 'Activity') {
         dateInfo = `You started this activity on ${formattedDate}`;
-      } 
+      }
     }
-    
+
     if (item.dateStopped) {
       const stopDate = new Date(item.dateStopped);
       const startDate = new Date(item.dateStarted!);
@@ -752,21 +752,21 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         day: 'numeric',
         year: 'numeric'
       });
-      if( item.type === 'Product' || item.type === 'Nutrition') {
+      if (item.type === 'Product' || item.type === 'Nutrition') {
         dateInfo = `You started using this product on ${formattedStartDate} and stopped on ${formattedStopDate}`;
-      } else if( item.type === 'Activity') {
+      } else if (item.type === 'Activity') {
         dateInfo = `You started this activity on ${formattedStartDate} and stopped on ${formattedStopDate}`;
-      } 
+      }
     }
 
     console.log('item', item);
-    
+
     // Determine tracking text for Product type only
     let trackingText: string | null = null;
     if (item.type === 'Product') {
       const hasTracking = item.concern_tracking && item.concern_tracking.length > 0;
       const isTrackingPaused = item.is_tracking_paused;
-      
+
       if (!hasTracking || isTrackingPaused) {
         // Tracking not started or paused
         trackingText = 'Start effectiveness tracking';
@@ -780,73 +780,46 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         }
       }
     }
-    
-    // Determine icon based on item type
-    const getItemIcon = (): string => {
-      if (item.type === 'Product') {
-        return 'bottle-tonic-outline'; // MaterialCommunityIcons
-      } else if (item.type === 'Activity') {
-        return 'yoga'; // MaterialCommunityIcons
-      } else if (item.type === 'Nutrition') {
-        return 'food-apple-outline'; // MaterialCommunityIcons
-      } else if (item.type && (
-        item.type === 'Treatment / Facial' ||
-        item.type === 'Treatment / Injection' ||
-        item.type === 'Treatment / Other'
-      )) {
-        return 'bottle-tonic-outline'; // MaterialCommunityIcons
-      }
-      return 'bottle-tonic-outline'; // Default MaterialCommunityIcons
-    };
-
-    const getItemIconColor = (): string => {
-      if (item.type === 'Product') {
-        return colors.primary;
-      } else if (item.type === 'Activity') {
-        return '#009688';
-      } else if (item.type === 'Nutrition') {
-        return '#FF6B35';
-      } else if (item.type && (
-        item.type === 'Treatment / Facial' || 
-        item.type === 'Treatment / Injection' || 
-        item.type === 'Treatment / Other'
-      )) {
-        return '#8B5CF6'; // Purple color for treatments
-      }
-      return colors.primary;
-    };
-
-    // Determine icon library based on item type
-    const getItemIconLibrary = (): 'MaterialCommunityIcons' | 'Lucide' => {
-      return 'MaterialCommunityIcons';
-    };
 
     // Get brand name if available
-    const brandName = item.extra?.brand || null;
+    const brandName = item.extra?.brand || 'CERAVE';
+
+    const renderItemImage = () => (
+      <Image
+        source={{ uri: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80' }}
+        style={styles.itemImage}
+      />
+    );
 
     return (
-        <ListItem
-          title={item.name}
-          subtitle={usageDuration || 'Recently added'}
-          description={item.type}
-          icon={getItemIcon()}
-          iconColor={getItemIconColor()}
-          iconLibrary={getItemIconLibrary()}
-          chips={chips as any}
-          showChevron={false}
-          onPress={() => handleNavigateToProductDetail(item)}
-          dateInfo={dateInfo as any}
-          bottomText={trackingText as any}
-          brand={brandName}
-          rightElement={
-            // item.upc ? (
-            <ChevronRight 
-              size={20} 
-              color={colors.textSecondary}
-            />
-          // ) : undefined
-          }
-        />
+      <TouchableOpacity
+        style={styles.routineItemCard}
+        onPress={() => item && handleNavigateToProductDetail(item)}
+        activeOpacity={0.9}
+      >
+        {/* <View style={styles.itemImageContainer}>
+          {renderItemImage()}
+        </View> */}
+
+        <View style={styles.itemContentContainer}>
+          <Text style={styles.brandText}>{brandName}</Text>
+          <Text style={styles.itemNameText}>{item.name}</Text>
+
+          <Text style={styles.usageText}>
+            Using <Text style={styles.usageBoldText}>{item.frequency} / {displayUsage}</Text> since <Text style={styles.usageBoldText}>{item.dateStarted ? new Date(item.dateStarted).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jan 1, 2024'}</Text>
+          </Text>
+
+          <TouchableOpacity style={styles.effectivenessContainer}>
+            <Text style={styles.effectivenessText}>
+              EFFECTIVENESS <Text style={styles.effectivenessStatus}>Review in 3 weeks</Text>
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.chevronContainer}>
+          <ChevronRight size={20} color="#D6D3D1" />
+        </View>
+      </TouchableOpacity>
     );
   };
 
@@ -868,7 +841,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
             setIsDeleting(true);
             try {
               const response = await deleteRoutineItem(itemToDelete.id) as ApiResponse;
-              
+
               if (response.success) {
                 // Refetch all routine items to ensure consistency
                 await fetchRoutineItems();
@@ -898,31 +871,33 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     const activeItems = routineItems.filter(item => !item.dateStopped || new Date(item.dateStopped) > new Date());
 
     // Define desired order
-    const sectionOrder = ['Daily', 'Weekly', 'As needed'];
+    const sectionOrder = ['Daily', 'Weekly', 'Treatments'];
     const grouped: { [key: string]: RoutineItem[] } = {
       'Daily': [],
       'Weekly': [],
-      'As needed': [],
+      'Treatments': [],
     };
 
     activeItems.forEach(item => {
       // Check if this is a treatment type
       const isTreatment = item.type && (
-        item.type === 'Treatment / Facial' || 
-        item.type === 'Treatment / Injection' || 
+        item.type === 'Treatment / Facial' ||
+        item.type === 'Treatment / Injection' ||
         item.type === 'Treatment / Other'
       );
-      
+
       if (isTreatment) {
-        // All treatments go to "As needed" section
-        grouped['As needed'].push(item);
+        grouped['Treatments'].push(item);
       } else {
         // Non-treatments use their frequency
-        const freq = item.frequency || 'As needed';
-        if (grouped[freq]) {
-          grouped[freq].push(item);
+        const freq = item.frequency || 'Daily';
+        if (freq === 'Daily') {
+          grouped['Daily'].push(item);
+        } else if (freq === 'Weekly') {
+          grouped['Weekly'].push(item);
         } else {
-          grouped['As needed'].push(item);
+          // Fallback for 'As needed' or others -> grouping with Weekly for now or create another
+          grouped['Weekly'].push(item);
         }
       }
     });
@@ -935,18 +910,28 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         const usageOrder: { [key: string]: number } = { 'AM': 1, 'Both': 2, 'PM': 3 };
 
         items.sort((a, b) => {
-          const usageA = a.usage || 'Both'; 
+          const usageA = a.usage || 'Both';
           const usageB = b.usage || 'Both';
-          const orderA = usageOrder[usageA] || 2; 
+          const orderA = usageOrder[usageA] || 2;
           const orderB = usageOrder[usageB] || 2;
           if (orderA === orderB) {
-             // Sort by creation date descending (newest first) if usage is same
-             const dateA = a.dateCreated?.getTime?.() || 0;
-             const dateB = b.dateCreated?.getTime?.() || 0;
-             return dateB - dateA; 
+            // Sort by creation date descending (newest first) if usage is same
+            const dateA = a.dateCreated?.getTime?.() || 0;
+            const dateB = b.dateCreated?.getTime?.() || 0;
+            return dateB - dateA;
           }
           return orderA - orderB;
         });
+
+        // Map section title for display
+        let displayTitle = title;
+        if (title === 'As needed') {
+          // Determine if these are treatments or actual 'As needed' products
+          // simple heuristic: if mostly treatments, call it treatments, else weekly/as needed
+          // For now, based on requirement, let's look at grouping logic again.
+          // We put treatments in 'As needed' bucket in the loop above.
+          // Let's refine the bucket name in the loop.
+        }
 
         return {
           title: title.toUpperCase(),
@@ -954,6 +939,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         };
       })
       .filter(section => section.data.length > 0);
+
+    return sections;
 
     return sections;
 
@@ -982,7 +969,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         dateStopped: item.dateStopped,
         stopReason: item.stopReason,
         extra: item.extra || {},
-        is_tracking_paused: item.is_tracking_paused 
+        is_tracking_paused: item.is_tracking_paused
       },
       upc: item.upc || undefined
     });
@@ -991,7 +978,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
   // Function to navigate to update screen - always go to edit routine screen
   const openEditModal = (item: RoutineItem): void => {
     console.log('🟡 openEditModal - item:', item);
-    
+
     // Always navigate to update routine screen, but pass UPC data if available
     const itemData = {
       name: item.name || '',
@@ -1028,8 +1015,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     setNewItemType('Product'); // Set default type to avoid validation error
     setNewItemUsage(['AM']);
     setNewItemFrequency('Daily');
-    setNewItemDateStarted(null); 
-    setNewItemDateStopped(null); 
+    setNewItemDateStarted(null);
+    setNewItemDateStopped(null);
     setNewItemConcerns([]);
     setIsStopped(false);
     setStopReason('');
@@ -1076,15 +1063,15 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           <Text style={styles.sectionHeaderText}>{title}</Text>
           <View style={styles.sectionHeaderLine} />
         </View>
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.sectionAddButton}
           onPress={() => openAddModalWithFrequency(title)}
         >
-          <Plus 
-            size={16} 
-            color={"#fff"} 
+          <Plus
+            size={16}
+            color={"#fff"}
           />
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
     </View>
   );
@@ -1100,7 +1087,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       return staticAiMessages.find(m => m.numItems === 1)?.msg || "Add another item!";
     }
     // Use threshold for 2 or 3 items
-    if (count <= 3) { 
+    if (count <= 3) {
       return staticAiMessages.find(m => m.numItems === 3)?.msg || "Keep building your routine!";
     }
     // Handle > 3 items ("full" routine)
@@ -1108,9 +1095,9 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     if (fullMessages && fullMessages.length > 0) {
       // Return a random message from the list
       return fullMessages[Math.floor(Math.random() * fullMessages.length)];
-    } 
+    }
     // Default fallback if structure is wrong or no messages defined
-    return "You've built a great routine!"; 
+    return "You've built a great routine!";
   };
 
   // Calculate the message based on current routineItems length
@@ -1121,7 +1108,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     const { height } = event.nativeEvent.layout;
     // Update state only if height is positive and different from current
     // Add a small buffer (e.g., 50 pixels) to prevent content potentially clipping
-    const newHeight = height + 50; 
+    const newHeight = height + 50;
     if (height > 0 && newHeight !== fixedCardHeight) {
       setFixedCardHeight(newHeight);
     }
@@ -1132,99 +1119,93 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     openEditModal(item);
   };
 
-  if (loading) {
-    return <ActivityIndicator size="large" color={colors.primary} style={styles.centered} />;
-  }
+  // --- List Header Component ---
+  const RoutineListHeader = (): React.JSX.Element => {
+    const totalProducts = routineItems.filter(item =>
+      !item.dateStopped && item.type.toLowerCase() === 'product'
+    ).length;
+    const totalTreatments = routineItems.filter(item =>
+      !item.dateStopped && item.type.toLowerCase().includes('treatment')
+    ).length;
 
-  if (error) {
-    return <Text style={styles.errorText}>{error}</Text>;
-  }
+    return (
+      <View style={styles.listHeaderContainer}>
+        <View style={styles.summaryContainer}>
+          <Text style={styles.summaryText}>
+            {totalProducts} Total Products, {totalTreatments} Treatment
+          </Text>
+          <TouchableOpacity onPress={openAddModal}>
+            <Text style={styles.addLinkText}>+ Add to routine</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Archived Section Link */}
+        {routineItems.some(item => item.dateStopped && new Date(item.dateStopped) <= new Date()) && (
+          <TouchableOpacity
+            style={styles.archivedLink}
+            onPress={() => (navigation as any).navigate('ArchivedRoutines')}
+          >
+            <View style={styles.archivedContent}>
+              <Archive size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
+              <Text style={styles.archivedText}>Previously used products</Text>
+            </View>
+            <ChevronRight size={16} color={colors.textSecondary} />
+          </TouchableOpacity>
+        )}
+      </View>
+    );
+  };
+
+  // --- List Footer Component ---
+  const RoutineListFooter = (): React.JSX.Element => (
+    <View style={styles.listFooterContainer}>
+      <TouchableOpacity
+        style={styles.letsGetStartedCard}
+        activeOpacity={0.85}
+        onPress={handleNavigateToChat}
+      >
+        <View style={styles.avatarContainer}>
+          <Image
+            source={require('../../assets/images/amber-avatar-new.png')}
+            style={styles.avatarImageLarge}
+            resizeMode="contain"
+          />
+        </View>
+        <View style={styles.letsGetStartedContent}>
+          <Text style={styles.letsGetStartedTitle}>Let’s get started!</Text>
+          <Text style={styles.letsGetStartedText}>
+            Chat with me here to add your current skincare routine — or fill it in manually by tapping the add button.
+          </Text>
+        </View>
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={styles.mainAddButton}
+        onPress={openAddModal}
+        activeOpacity={0.8}
+      >
+        <Text style={styles.mainAddButtonText}>Add to routine</Text>
+      </TouchableOpacity>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-      {routineSections.length === 0 ? (
-      <View style={styles.emptyListTopContainer}>
-        <TouchableOpacity
-            style={styles.motivationalCard}
-          activeOpacity={0.85}
-          onPress={handleNavigateToChat}
-        >
-            <Image 
-              source={require('../../assets/images/amber-avatar.png')}
-              style={styles.avatarImage}
-              resizeMode="contain"
-            />
-            <Text style={styles.motivationalText}>
-              {"Let’s get started! You can chat with me here and we will input your current skin care routine. But if you prefer to fill out a form, click on the + below."}
-            </Text>
-            {/* <Plus
-              size={24}
-              color={colors.primary}
-              style={styles.arrowIcon}
-            /> */}
-          </TouchableOpacity>
-          <TouchableOpacity onPress={openAddModal} style={{  padding: 16, alignItems: 'center', justifyContent: 'center' }}>
-            <Text style={{color: colors.primary, fontSize: 16, fontWeight: '500'}}>+ Input your current routine with a form</Text>
-          </TouchableOpacity>
-        </View>
-      ) : (
-        <>
-        <SectionList
-          style={styles.sectionsList}
-          sections={routineSections}
-          renderItem={renderRoutineItem}
-          renderSectionHeader={renderSectionHeader}
-          keyExtractor={(item) => item.id}
-          contentContainerStyle={[
-            styles.listContentContainerBase,
-            { paddingBottom: insets.bottom + fixedCardHeight }
-          ]}
-          stickySectionHeadersEnabled={false}
-          ListHeaderComponent={() => (
-            <>
-              {/* Archived Section */}
-              {routineItems.some(item => item.dateStopped && new Date(item.dateStopped) <= new Date()) && (
-                <TouchableOpacity
-                  style={styles.archivedSection}
-                  onPress={() => (navigation as any).navigate('ArchivedRoutines')}
-                >
-                  <View style={styles.archivedContent}>
-                    <Archive 
-                      size={20} 
-                      color={colors.textSecondary} 
-                    />
-                    <Text style={styles.archivedText}>Previously used products</Text>
-                    <ChevronRight 
-                      size={20} 
-                      color={colors.textSecondary} 
-                    />
-                  </View>
-                </TouchableOpacity>
-              )}
-            </>
-          )}
-        />
-  {/* 
-          {routineItems.length > 0 && ( */}
-          <TouchableOpacity style={{padding: 16, alignItems: 'center', justifyContent: 'center', backgroundColor: 'red', borderRadius: 16, borderWidth: 1, borderColor: colors.primary, }} onPress={openAddModal}>
-            <Text style={{color: colors.primary, fontSize: 16, fontWeight: '500'}}>Add to your routine</Text>
-          </TouchableOpacity>
-        {/* )} */}
-        
-        {/* Fixed AI Message Card */}
-        <View style={styles.fixedCardWrapper} onLayout={handleCardLayout}>
-          <AiMessageCard
-            overrideText={routineMessage}
-            actions={[
-              { label: "Add to your Routine", onPress: handleNavigateToChat },
-            ] as any}
-            disableNavigation={true}
-            fixedToBottom={true}
-          />
-        </View>
-        </>
-      )}
-
+      <SectionList
+        style={styles.sectionsList}
+        sections={routineSections}
+        renderItem={renderRoutineItem}
+        renderSectionHeader={renderSectionHeader}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={[
+          styles.listContentContainerBase,
+          { paddingBottom: insets.bottom + 100 }
+        ]}
+        stickySectionHeadersEnabled={false}
+        ListHeaderComponent={RoutineListHeader}
+        ListFooterComponent={RoutineListFooter}
+        showsVerticalScrollIndicator={false}
+      />
     </View>
   );
 });
@@ -1234,117 +1215,18 @@ export default MyRoutine;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAF9',
   },
   sectionsList: {
     flex: 1,
-    
   },
   listContentContainerBase: {
-    paddingTop: spacing.lg,
-    paddingBottom: 200,
-    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
-  emptyListTopContainer: {
-    paddingTop: 24,
-    alignItems: 'stretch',
-    paddingHorizontal: 0,
-  },
-  emptyListText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: colors.textMicrocopy,
-    textAlign: 'center',
-  },
-  emptyListSubText: {
-    ...typography.caption,
-    color: colors.textMicrocopy,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-  },
-  sectionHeader: {
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    paddingHorizontal: spacing.xs,
-    backgroundColor: '#FFF',
-  },
-  sectionHeaderContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  sectionHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-  },
-  sectionHeaderText: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: colors.textPrimary,
-    marginRight: spacing.sm,
-  },
-  sectionHeaderLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#E2E8F0',
-    marginLeft: spacing.sm,
-  },
-  sectionAddButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  routineItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.white,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    marginBottom: spacing.xs,
-    borderRadius: 8,
-    borderTopWidth: 1,
-    borderColor: palette.gray4,
-  },
-  itemIconContainer: {
-    width: 40,
-    height: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: spacing.md,
-  },
-  itemTextContainer: {
+  centered: {
     flex: 1,
     justifyContent: 'center',
-  },
-  itemName: {
-    ...typography.body,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 2,
-  },
-  itemMicrocopyText: {
-    ...typography.caption,
-    color: colors.textSecondary,
-  },
-  concernChipsContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginTop: spacing.xs,
-  },
-  itemChipContainer: {
-    marginLeft: spacing.sm,
-    alignItems: 'flex-end',
-    justifyContent: 'flex-start',
-    paddingTop: 2,
+    alignItems: 'center',
   },
   errorText: {
     ...typography.body,
@@ -1353,12 +1235,210 @@ const styles = StyleSheet.create({
     marginTop: spacing.xl,
     paddingHorizontal: spacing.md,
   },
-  centered: {
+
+  // --- List Header ---
+  listHeaderContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+  summaryContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    //marginBottom: spacing.md,
+  },
+  summaryText: {
+    fontSize: 13,
+    color: '#717680', // Stone 500
+    fontWeight: '500',
+  },
+  addLinkText: {
+    fontSize: 15,
+    color: '#00839B', // Teal 600
+    fontWeight: '600',
+  },
+  archivedLink: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  archivedContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  archivedText: {
+    fontSize: 14,
+    color: '#78716C',
+    marginLeft: 6,
+  },
+
+  // --- Section Header ---
+  sectionHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.lg,
+    paddingBottom: spacing.md,
+    backgroundColor: '#FAFAF9', // Match background
+  },
+  sectionHeaderContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  sectionHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  sectionHeaderText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#79716B',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  sectionHeaderLine: {
+    display: 'none',
+  },
+  sectionAddButton: {
+    display: 'none',
+  },
+
+  // --- Routine Item Card ---
+  routineItemCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start', // Align top
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  itemImageContainer: {
+    marginRight: 16,
+  },
+  itemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F4',
+  },
+  itemContentContainer: { // Renamed from itemIconContainer/itemTextContainer
     flex: 1,
     justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: spacing.lg,
   },
+  brandText: {
+    fontSize: 10,
+    fontWeight: '600',
+    color: '#57534E',
+    textTransform: 'uppercase',
+    marginBottom: 4,
+  },
+  itemNameText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1C1917',
+    marginBottom: 4,
+    lineHeight: 22,
+  },
+  usageText: {
+    fontSize: 13, // Smaller text
+    color: '#78716C',
+    marginBottom: 12,
+  },
+  usageBoldText: {
+    fontWeight: '700',
+    color: '#78716C',
+  },
+  effectivenessContainer: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E7E5E4',
+    borderRadius: 6,
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  effectivenessText: {
+    fontSize: 11,
+    color: '#78716C',
+    fontWeight: '500',
+    textTransform: 'uppercase',
+  },
+  effectivenessStatus: {
+    color: '#57534E',
+    fontWeight: '600',
+  },
+  chevronContainer: {
+    justifyContent: 'flex-start',
+    paddingLeft: 8,
+    paddingTop: 0, // Align with top content
+  },
+
+  // --- List Footer (Let's get started) ---
+  listFooterContainer: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: 10,
+    paddingBottom: spacing.xl,
+  },
+  letsGetStartedCard: {
+    backgroundColor: '#EBE9FE', // Indigo 50
+    borderRadius: 18,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: spacing.xl,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  avatarContainer: {
+    marginRight: 12,
+  },
+  avatarImageLarge: {
+    width: 40,
+    height: 40,
+  },
+  letsGetStartedContent: {
+    flex: 1,
+  },
+  letsGetStartedTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#404968', // Indigo 950
+    marginBottom: 4,
+  },
+  letsGetStartedText: {
+    fontSize: 14,
+    color: '#5D6B98', // Indigo 700
+    lineHeight: 20,
+  },
+  mainAddButton: {
+    backgroundColor: '#E9EAEB', // Neutral 200/300ish
+    borderRadius: 18, // Pill shape
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  mainAddButtonText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#57534E',
+  },
+
+  // --- Modal Styles (Preserved) ---
   modalInputContainer: {
     paddingHorizontal: 20,
     paddingBottom: 20,
@@ -1438,13 +1518,9 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: '#E5E7EB',
     backgroundColor: '#FFFFFF',
-    //minHeight: 52,
     gap: 10,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.08,
     shadowRadius: 4,
     elevation: 2,
@@ -1453,10 +1529,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#8B7355',
     borderColor: '#8B7355',
     shadowColor: '#8B7355',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 4,
     elevation: 3,
@@ -1482,135 +1555,6 @@ const styles = StyleSheet.create({
   },
   dateTextPlaceholder: {
     color: '#9CA3AF',
-  },
-  routineItemContainer: {
-    marginBottom: 12, 
-    marginHorizontal: 16,
-    borderRadius: 12,
-    backgroundColor: colors.white,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-
-  fixedCardWrapper: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    minHeight: 150,
-    backgroundColor: 'transparent',
-  },
-
-  motivationalCard: {
-    backgroundColor: colors.white,
-    marginHorizontal: 16,
-    marginBottom: 10,
-    marginTop: 5,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    minHeight: 60,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 3,
-  },
-  avatarCircle: {
-    backgroundColor: colors.primary,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  avatarText: {
-    color: 'white',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  avatarImage: {
-    width: 28,
-    height: 28,
-    marginRight: 10,
-  },
-  motivationalText: {
-    fontSize: 13,
-    flex: 1,
-    color: colors.textPrimary,
-  },
-  arrowIcon: {
-    fontSize: 16,
-    marginLeft: 8,
-  },
-  checkboxContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  //  marginBottom: 16,
-  },
-  checkbox: {
-    width: 20,
-    height: 20,
-    borderWidth: 2,
-    borderColor: '#8B7355',
-    borderRadius: 4,
-    marginRight: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: '#8B7355',
-  },
-  checkmark: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  checkboxLabel: {
-    fontSize: 16,
-    color: '#1F2937',
-    fontWeight: '500',
-  },
-  archivedSection: {
-    backgroundColor: colors.white,
-    marginHorizontal: 16,
-    marginBottom: 20,
-    marginTop: 0,
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 16,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  archivedContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  archivedText: {
-    flex: 1,
-    fontSize: 16,
-    color: colors.textSecondary,
-    fontWeight: '500',
-    marginLeft: 12,
   },
   stepIndicator: {
     flexDirection: 'row',
@@ -1655,7 +1599,6 @@ const styles = StyleSheet.create({
     backgroundColor: colors.primary,
   },
   stepContent: {
-    //minHeight: 300,
   },
   stepTitle: {
     fontSize: 24,

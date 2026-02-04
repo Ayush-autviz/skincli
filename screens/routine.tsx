@@ -20,7 +20,8 @@ import {
 import { useFocusEffect } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
 
-import TabHeader from '../components/ui/TabHeader';
+
+import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 
 import MyRoutine from '../components/routine/MyRoutine';
@@ -56,51 +57,45 @@ export default function RoutineTab(): React.JSX.Element {
 
   return (
     <View style={styles.outerContainer}>
-      <TabHeader 
-        title="My Routine"
-        onMenuPress={handleMenuPress}
-        showBack={true}
-      />
+      {/* Custom Magic Mirror Header */}
+      {/* Custom Magic Mirror Header */}
+      <HomeHeader onMenuPress={handleMenuPress} />
+
       <View style={styles.contentContainer}>
         {/* Tab Navigation */}
-        <ScrollView 
-          horizontal={true} 
-          showsHorizontalScrollIndicator={false}
-          style={styles.tabScrollView}
-          contentContainerStyle={styles.tabContainer}
-        >
-          <TouchableOpacity 
+        <View style={styles.tabContainer}>
+          <TouchableOpacity
             style={styles.tabButton}
             onPress={() => setActiveTab('myRoutine')}
           >
-            <Text style={[styles.tabText, activeTab === 'myRoutine' && styles.activeTabText]}>My Routine</Text>
+            <Text style={[styles.tabText, activeTab === 'myRoutine' && styles.activeTabText]}>Routine</Text>
             {activeTab === 'myRoutine' && <View style={styles.activeTabIndicator} />}
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.tabButton}
             onPress={() => setActiveTab('recommendations')}
           >
             <Text style={[styles.tabText, activeTab === 'recommendations' && styles.activeTabText]}>Ingredients</Text>
             {activeTab === 'recommendations' && <View style={styles.activeTabIndicator} />}
           </TouchableOpacity>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.tabButton}
             onPress={() => setActiveTab('activity')}
           >
             <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>Journal</Text>
             {activeTab === 'activity' && <View style={styles.activeTabIndicator} />}
           </TouchableOpacity>
-        </ScrollView>
+        </View>
 
         {/* Tab Content */}
         <View style={styles.tabContentContainer}>
           {activeTab === 'myRoutine' && <MyRoutine ref={myRoutineRef} />}
-          {activeTab === 'recommendations' && <RecommendationsList recommendations={[]} onRecommendationPress={() => {}} />}
+          {activeTab === 'recommendations' && <RecommendationsList recommendations={[]} onRecommendationPress={() => { }} />}
           {activeTab === 'activity' && <ActivityList />}
         </View>
       </View>
 
-      <SettingsDrawer 
+      <SettingsDrawer
         isVisible={isSettingsVisible}
         onClose={() => setIsSettingsVisible(false)}
       />
@@ -111,52 +106,65 @@ export default function RoutineTab(): React.JSX.Element {
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#fff', // White background
   },
   contentContainer: {
     flex: 1,
-    marginTop: 120, // Space for new header
-    marginBottom: 100, // Space for bottom nav
+    marginTop: 100,
   },
+  // Custom Header "Magic Mirror"
+  // screenHeader: {
+  //   paddingTop: 60, // Top spacing for status bar
+  //   paddingBottom: 16,
+  //   alignItems: 'center',
+  //   backgroundColor: '#fff',
+  //   borderBottomWidth: 1,
+  //   borderBottomColor: '#F5F5F4',
+  // },
+  // screenTitle: {
+  //   fontSize: 17,
+  //   fontWeight: '500', // Medium weight like iOS titles
+  //   color: '#000',
+  //   letterSpacing: -0.4,
+  // },
+
+  // Tab Bar Styles
   tabScrollView: {
     flexGrow: 0,
-    borderBottomColor: colors.border,
-    marginTop: spacing.sm,
+    backgroundColor: '#fff',
   },
   tabContainer: {
     flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    marginBottom: 0,
+    justifyContent: 'space-between',
+    paddingHorizontal: 0,
     borderBottomWidth: 1,
-    borderBottomColor: colors.border,
+    borderBottomColor: '#E3E8EF',
   },
   tabButton: {
-    paddingVertical: 0,
-    paddingHorizontal: spacing.lg,
+    flex: 1, // Distribute space equally
+    paddingVertical: 12,
     alignItems: 'center',
+    minWidth: 100, // Ensure minimum width for touch target
   },
   tabText: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    marginBottom: spacing.xs,
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#414651', // Muted text for inactive
   },
   activeTabText: {
-    color: colors.textPrimary,
-    fontWeight: 'bold',
+    color: '#414651', // Teal color for active
+    fontWeight: '600',
   },
   activeTabIndicator: {
+    position: 'absolute',
+    bottom: 0,
     height: 3,
-    width: '100%',
-    backgroundColor: colors.primary,
+    width: '65%', // Width relative to tab button
+    backgroundColor: '#00839B', // Teal indicator
+    borderRadius: 1,
   },
   tabContentContainer: {
     flex: 1,
-  },
-  text: {
-    fontSize: 16,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    marginTop: spacing.xl,
+    backgroundColor: '#FAFAF9', // Slightly off-white background for list area
   },
 });

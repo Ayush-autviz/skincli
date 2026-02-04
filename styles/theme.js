@@ -20,12 +20,17 @@ const colors = {
   primary: '#8B7355', // Brownish/gold color from auth screens
   secondary: '#8B7355',
   white: '#FFFFFF',
-  
+
+  // Tab Colors - New redesign colors
+  tabSelected: '#00839B', // Teal for selected tab
+  tabUnselected: '#79716B', // Gray-brown for unselected tab
+
   // UI Colors
-  background: '#FFFFFF', // Pure white to match auth screens
+  background: '#FAFAF9', // Updated off-white background
   surface: '#FFFFFF',
   surfaceHover: palette.gray3,
-  
+  imageSliderBackground: '#D7D3D0', // Image slider background
+
   // Text Colors - Updated to match auth screens
   textPrimary: '#1F2937', // Dark gray from auth screens
   textSecondary: '#6B7280', // Medium gray from auth screens
@@ -33,22 +38,23 @@ const colors = {
   textOnPrimary: '#FFFFFF', // White text on primary color
   textMicrocopy: '#9CA3AF',
   text: '#1F2937', // Alias for textPrimary
-  
+
   // Status Colors
   error: '#FF6B6B', // Red color from auth screens
   success: palette.green,
   warning: palette.yellow,
   info: palette.blue,
-  
+
   // Border Colors - Updated to match auth theme
   border: '#8B7355', // Use primary color for borders
   borderFocus: '#8B7355',
-  
+
   // Utility Colors
   divider: palette.gray3,
   overlay: 'rgba(0, 0, 0, 0.4)',
   shadow: palette.gray8,
 };
+
 
 const spacing = {
   xs: 4,

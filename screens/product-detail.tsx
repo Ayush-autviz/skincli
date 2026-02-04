@@ -35,7 +35,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as ProductDetailParams || {};
-  
+
   const [productData, setProductData] = useState<any>(params.productData || {});
   const [routineData, setRoutineData] = useState<any>({
     ...(params.routineData || {}),
@@ -54,16 +54,16 @@ const ProductDetailScreen = (): React.JSX.Element => {
     try {
       setIsFetchingRoutine(true);
       console.log('🔍 Fetching fresh routine data for itemId:', params.itemId);
-      
+
       const response = await getRoutineItems() as ApiResponse;
-      
+
       if (response.success && response.data) {
         // Find the specific item by itemId
         const item = response.data.find((item: any) => item.id === params.itemId);
-        
+
         if (item) {
           console.log('✅ Fresh routine data fetched:', item);
-          
+
           // Transform the API item to match routineData format
           const transformedData = {
             name: item.name,
@@ -78,7 +78,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
             extra: item.extra || {},
             is_tracking_paused: item.is_tracking_paused
           };
-          
+
           setRoutineData(transformedData);
         } else {
           console.log('⚠️ Item not found in routine data');
@@ -100,9 +100,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
         try {
           setIsFetchingProduct(true);
           console.log('🔍 Fetching fresh product data for UPC:', params.upc);
-          
+
           const response = await searchProductByUPC(params.upc) as ApiResponse;
-          
+
           if (response.success && response.data) {
             console.log('✅ Fresh product data fetched:', response.data);
             setProductData(response.data);
@@ -146,14 +146,14 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const getUsageDateInfo = () => {
     console.log('🔍 Routine data:', routineData);
     if (!routineData.dateStarted) return '';
-    
+
     const startDate = new Date(routineData.dateStarted);
     const formattedDate = startDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric'
     });
-    
+
     if (routineData.dateStopped) {
       const stopDate = new Date(routineData.dateStopped);
       const formattedStopDate = stopDate.toLocaleDateString('en-US', {
@@ -163,7 +163,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
       });
       return `You started using this product on ${formattedDate} and stopped on ${formattedStopDate}`;
     }
-    
+
     return `You started using this product on ${formattedDate}`;
   };
 
@@ -171,7 +171,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const getUsagePills = () => {
     const usage = routineData.usage || '';
     const pills: string[] = [];
-    
+
     if (usage === 'am') {
       pills.push('AM');
     } else if (usage === 'pm') {
@@ -183,7 +183,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
     } else if (usage) {
       pills.push(usage);
     }
-    
+
     return pills;
   };
 
@@ -191,7 +191,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const getFrequencyPills = () => {
     const frequency = routineData.frequency || '';
     const pills: string[] = [];
-    
+
     if (frequency === 'daily') {
       pills.push('Daily');
     } else if (frequency === 'weekly') {
@@ -201,7 +201,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
     } else if (frequency) {
       pills.push(frequency);
     }
-    
+
     return pills;
   };
 
@@ -254,7 +254,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
     try {
       await toggleTracking(params.itemId, 'resume');
-      
+
       Alert.alert(
         'Tracking Started',
         'Product tracking has been started.',
@@ -283,7 +283,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
     const usage = routineData.usage || '';
     const frequency = routineData.frequency || '';
     const concerns = routineData.concerns || [];
-    
+
     // Format usage
     let usageText = '';
     if (usage === 'am') usageText = 'AM';
@@ -291,19 +291,19 @@ const ProductDetailScreen = (): React.JSX.Element => {
     else if (usage === 'both') usageText = 'AM / PM';
     else if (usage === 'as_needed') usageText = 'As needed';
     else usageText = usage;
-    
+
     // Format frequency
     let frequencyText = '';
     if (frequency === 'daily') frequencyText = 'Daily';
     else if (frequency === 'weekly') frequencyText = 'Weekly';
     else if (frequency === 'monthly') frequencyText = 'Monthly';
     else frequencyText = frequency;
-    
+
     // Format concerns
-    const concernsText = concerns.length > 0 
+    const concernsText = concerns.length > 0
       ? concerns.map((c: string) => c.toLowerCase()).join(', ')
       : '';
-    
+
     if (usage === 'as_needed') {
       return `Using ${usageText} / ${frequencyText}${concernsText ? ` for ${concernsText}` : ''}`;
     }
@@ -428,12 +428,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
       'sodium hyaluronate': 'Sodium Hyaluronate',
       'petrolatum': 'Petrolatum',
     };
-    
+
     const lowerIngredient = ingredient.toLowerCase();
     if (specialCases[lowerIngredient]) {
       return specialCases[lowerIngredient];
     }
-    
+
     return ingredient
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -452,12 +452,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
       'fine_lines': 'Fine Lines',
       'anti_aging': 'Anti-Aging',
     };
-    
+
     const lowerItem = item.toLowerCase();
     if (specialCases[lowerItem]) {
       return specialCases[lowerItem];
     }
-    
+
     return item
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -497,12 +497,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
       'paraben free': 'Paraben Free',
       'sulfate free': 'Sulfate Free',
     };
-    
+
     const lowerItem = item.toLowerCase();
     if (specialCases[lowerItem]) {
       return specialCases[lowerItem];
     }
-    
+
     return item
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -663,12 +663,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
               <ArrowLeft size={22} color={colors.primary} />
             </View>
           </TouchableOpacity>
-          
+
           <View style={styles.titleContainer}>
             <Text style={styles.headerTitle}>Product Detail</Text>
             <View style={styles.titleUnderline} />
           </View>
-          
+
           <View style={styles.rightContainer} />
         </View>
         <View style={styles.shadowContainer} />
@@ -803,9 +803,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
                   const progressPercentage = totalWeeks > 0 ? (weeksCompleted / totalWeeks) * 100 : 0;
                   const canOpen = canOpenModal(tracking);
                   const statusText = getTrackingStatusText(tracking);
-                  
+
                   const ConcernItem = canOpen ? TouchableOpacity : View;
-                  
+
                   return (
                     <ConcernItem
                       key={index}
@@ -825,11 +825,11 @@ const ProductDetailScreen = (): React.JSX.Element => {
                           {!tracking.is_completed && (
                             <View style={styles.concernTrackingProgressBarContainer}>
                               <View style={styles.concernTrackingProgressBar}>
-                                <View 
+                                <View
                                   style={[
                                     styles.concernTrackingProgressFill,
                                     { width: `${progressPercentage}%` }
-                                  ]} 
+                                  ]}
                                 />
                               </View>
                             </View>
@@ -912,7 +912,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
                       .flatMap((ingredient: any) => ingredient.free_of || [])
                       .filter(Boolean)
                   ));
-                  
+
                   return freeOfItems.map((freeOfItem: any, index: number) => (
                     <View key={index} style={styles.chipButton}>
                       <Text style={styles.chipButtonText}>
@@ -1022,7 +1022,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     flex: 1,
-   // paddingHorizontal: spacing.lg,
+    // paddingHorizontal: spacing.lg,
     marginTop: 120,
   },
   loadingContainer: {
@@ -1403,7 +1403,7 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
-    paddingTop:55,
+    paddingTop: 55,
     padding: 25,
     width: '100%',
     maxWidth: 400,
@@ -1593,7 +1593,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingVertical: spacing.md,
-   // paddingHorizontal: spacing.md,
+    // paddingHorizontal: spacing.md,
     backgroundColor: colors.background,
     borderRadius: borderRadius.md,
     marginBottom: spacing.sm,

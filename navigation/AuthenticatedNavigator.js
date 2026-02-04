@@ -76,7 +76,7 @@ function AuthenticatedNavigator() {
                 headerShown: false,
               }}
             />
-        
+
             {/* New screens - only available for users with complete profiles */}
             <Stack.Screen
               name="ArchivedRoutines"

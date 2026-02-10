@@ -10,7 +10,6 @@ import {
   TouchableOpacity,
   SafeAreaView,
   Alert,
-  ActivityIndicator,
   Modal,
   Image,
 } from 'react-native';
@@ -19,6 +18,7 @@ import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/nativ
 import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle, Check, ChevronRight, Calendar, Package, ChevronLeft } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows, fontFamily } from '../styles';
 import { searchProductByUPC, deleteRoutineItem, toggleTracking, getRoutineItems } from '../utils/newApiService';
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 
 interface ProductDetailParams {
   itemId?: string;
@@ -33,6 +33,33 @@ interface ApiResponse {
   success: boolean;
   data: any;
 }
+
+const ProductDetailSkeleton = () => (
+  <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    {/* Product Card Skeleton */}
+    <SkeletonPlaceholder borderRadius={4}>
+      <SkeletonPlaceholder.Item padding={20} alignItems="center" marginTop={20}>
+        <SkeletonPlaceholder.Item width={150} height={150} borderRadius={10} marginBottom={20} />
+        <SkeletonPlaceholder.Item width={120} height={16} marginBottom={8} />
+        <SkeletonPlaceholder.Item width={200} height={24} marginBottom={20} />
+        <SkeletonPlaceholder.Item width="100%" height={48} borderRadius={24} />
+      </SkeletonPlaceholder.Item>
+    </SkeletonPlaceholder>
+
+    {/* Effectiveness Section Skeleton */}
+    <SkeletonPlaceholder borderRadius={4}>
+      <SkeletonPlaceholder.Item paddingHorizontal={20} marginTop={30}>
+        <SkeletonPlaceholder.Item width={100} height={18} marginBottom={16} />
+        {[1, 2, 3].map(i => (
+          <SkeletonPlaceholder.Item key={i} flexDirection="row" justifyContent="space-between" marginBottom={16}>
+            <SkeletonPlaceholder.Item width={100} height={14} />
+            <SkeletonPlaceholder.Item width={80} height={14} />
+          </SkeletonPlaceholder.Item>
+        ))}
+      </SkeletonPlaceholder.Item>
+    </SkeletonPlaceholder>
+  </View>
+);
 
 const ProductDetailScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -683,7 +710,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
             onPress={handleBack}
           >
             <View style={styles.iconContainer}>
-              <ChevronLeft size={26} color={"#44403C"} />
+              <ChevronLeft size={30} color={"#44403C"} />
             </View>
           </TouchableOpacity>
 
@@ -697,13 +724,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
       </View>
 
       {isFetchingProduct ? (
-        <View style={styles.loadingContainer}>
-          <View style={styles.loadingContent}>
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text style={styles.loadingText}>Loading product details...</Text>
-            <Text style={styles.loadingSubtext}>This may take a moment</Text>
-          </View>
-        </View>
+        <ProductDetailSkeleton />
       ) : (
         <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
           {/* 1. Product Card: Image, Brand Name, Product Name, Add to Routine */}
@@ -925,15 +946,17 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    height: 120,
+    height: 105,
     backgroundColor: colors.white,
+    borderBottomWidth: 0.4,
+    borderBottomColor: "#E5E5E5",
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 60,
-    paddingBottom: 15,
+    paddingTop: 55,
+    paddingBottom: 10,
     paddingHorizontal: spacing.lg,
   },
   backButton: {
@@ -959,9 +982,9 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 20,
     fontWeight: '500', // Handled by fontFamily
-    fontFamily: fontFamily.medium,
+    // fontFamily: "InterRegular",
     color: colors.textPrimary,
-    letterSpacing: 0.5,
+    // letterSpacing: 0.5,
     // marginBottom: 4,
   },
   titleUnderline: {
@@ -997,7 +1020,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
     // paddingHorizontal: spacing.lg,
-    marginTop: 120,
+    marginTop: 105,
   },
   loadingContainer: {
     flex: 1,

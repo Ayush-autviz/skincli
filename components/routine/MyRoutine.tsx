@@ -2,7 +2,7 @@
 // Component to display and manage the user's routine items
 
 import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, SectionList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image, Modal } from 'react-native';
+import { View, Text, SectionList, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image, Modal } from 'react-native';
 import { colors, spacing, typography, palette } from '../../styles';
 import { useNavigation } from '@react-navigation/native';
 import { ClipboardPlus, Pill } from 'lucide-react-native';
@@ -13,6 +13,7 @@ import AiMessageCard from '../chat/AiMessageCard';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import ListItem from '../ui/ListItem';
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import {
   FlaskConical,
   Dumbbell,
@@ -155,6 +156,44 @@ const calculateUsageDuration = (dateStarted: any): string | null => {
     return `Using for ${diffDays} day${diffDays !== 1 ? 's' : ''}`;
   }
 };
+
+// Skeleton Component
+const RoutineSkeleton = () => (
+  <View style={{ paddingHorizontal: 16 }}>
+    {/* Header Skeleton */}
+    <SkeletonPlaceholder borderRadius={4}>
+      <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="center" marginTop={20} marginBottom={40}>
+        <SkeletonPlaceholder.Item width={120} height={14} />
+        <SkeletonPlaceholder.Item width={80} height={14} />
+      </SkeletonPlaceholder.Item>
+    </SkeletonPlaceholder>
+
+    {/* Section Header Skeleton */}
+    {/* <SkeletonPlaceholder borderRadius={4}>
+      <SkeletonPlaceholder.Item width={60} height={12} marginBottom={10} />
+    </SkeletonPlaceholder> */}
+
+    {/* Items Skeleton */}
+    {[1, 2, 3].map((item) => (
+      <SkeletonPlaceholder key={item} borderRadius={4}>
+        <SkeletonPlaceholder.Item
+          flexDirection="row"
+          alignItems="center"
+          marginTop={10}
+          marginBottom={12}
+          borderRadius={12}
+        >
+          {/* <SkeletonPlaceholder.Item width={40} height={40} borderRadius={8} marginRight={12} /> */}
+          <SkeletonPlaceholder.Item flex={1}>
+            <SkeletonPlaceholder.Item width={100} height={14} marginBottom={6} />
+            <SkeletonPlaceholder.Item width={"100%"} height={102} />
+          </SkeletonPlaceholder.Item>
+          {/* <SkeletonPlaceholder.Item width={20} height={20} borderRadius={10} /> */}
+        </SkeletonPlaceholder.Item>
+      </SkeletonPlaceholder>
+    ))}
+  </View>
+);
 
 const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.JSX.Element => {
   const navigation = useNavigation();
@@ -1211,21 +1250,25 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   return (
     <View style={styles.container}>
-      <SectionList
-        style={styles.sectionsList}
-        sections={routineSections}
-        renderItem={renderRoutineItem}
-        renderSectionHeader={renderSectionHeader}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={[
-          styles.listContentContainerBase,
-          { paddingBottom: insets.bottom + 100 }
-        ]}
-        stickySectionHeadersEnabled={false}
-        ListHeaderComponent={RoutineListHeader}
-        ListFooterComponent={RoutineListFooter}
-        showsVerticalScrollIndicator={false}
-      />
+      {loading && routineItems.length === 0 ? (
+        <RoutineSkeleton />
+      ) : (
+        <SectionList
+          style={styles.sectionsList}
+          sections={routineSections}
+          renderItem={renderRoutineItem}
+          renderSectionHeader={renderSectionHeader}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={[
+            styles.listContentContainerBase,
+            { paddingBottom: insets.bottom + 100 }
+          ]}
+          stickySectionHeadersEnabled={false}
+          ListHeaderComponent={RoutineListHeader}
+          ListFooterComponent={RoutineListFooter}
+          showsVerticalScrollIndicator={false}
+        />
+      )}
 
       {/* Add to Routine Bottom Sheet */}
       <Modal

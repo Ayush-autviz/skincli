@@ -683,12 +683,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
             onPress={handleBack}
           >
             <View style={styles.iconContainer}>
-              <ChevronLeft size={24} color={"#44403C"} />
+              <ChevronLeft size={26} color={"#44403C"} />
             </View>
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>Magic Mirror</Text>
+            <Text style={styles.headerTitle}>Product Detail</Text>
           </View>
 
           <View style={styles.rightContainer} />
@@ -926,7 +926,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 1000,
     height: 120,
-    backgroundColor: colors.background,
+    backgroundColor: colors.white,
   },
   header: {
     flexDirection: 'row',
@@ -946,7 +946,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E7E5E4',
+    // backgroundColor: '#E7E5E4',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -958,11 +958,11 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    // fontWeight: '400', // Handled by fontFamily
-    fontFamily: fontFamily.regular,
+    fontWeight: '500', // Handled by fontFamily
+    fontFamily: fontFamily.medium,
     color: colors.textPrimary,
     letterSpacing: 0.5,
-    marginBottom: 4,
+    // marginBottom: 4,
   },
   titleUnderline: {
     width: 40,

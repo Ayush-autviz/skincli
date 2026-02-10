@@ -610,10 +610,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
               </View>
             </TouchableOpacity>
 
-            {/* Title with underline */}
+            {/* Title */}
             <View style={styles.modalTitleContainer}>
               <Text style={styles.modalTitle}>Review Effectiveness</Text>
-              <View style={styles.modalTitleUnderline} />
             </View>
 
             {/* Brand Name */}
@@ -667,6 +666,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
             <Text style={styles.modalQuestion}>
               Have you been using this product as needed?
             </Text>
+
 
             {/* Response Options */}
             <View style={styles.modalOptionsContainer}>
@@ -1470,12 +1470,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.xs,
     textAlign: 'center',
   },
-  modalTitleUnderline: {
-    width: 60,
-    height: 3,
-    backgroundColor: colors.primary,
-    borderRadius: 2,
-  },
   modalProductInfo: {
     // marginBottom: spacing.sm,
   },
@@ -1494,6 +1488,14 @@ const styles = StyleSheet.create({
     letterSpacing: 1.5,
     marginBottom: spacing.xs,
   },
+  modalQuestion: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginTop: 10,
+    color: colors.textPrimary,
+    marginBottom: 10,
+  },
+
   modalSectionHeading: {
     fontSize: 18,
     fontWeight: '600',
@@ -1510,19 +1512,18 @@ const styles = StyleSheet.create({
   modalChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: '#D7D3D0',
+    backgroundColor: '#F5F5F4',
     gap: spacing.xs,
-    minHeight: 40,
   },
   modalChipText: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    fontWeight: '500',
+    color: '#57534E',
+    fontFamily: fontFamily.medium,
   },
   modalUsageInfo: {
     fontSize: fontSize.sm,
@@ -1568,13 +1569,7 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.primary,
   },
-  modalQuestion: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginTop: 10,
-    color: colors.textPrimary,
-    marginBottom: 10,
-  },
+
   modalOptionsContainer: {
     gap: spacing.sm,
   },

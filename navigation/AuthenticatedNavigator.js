@@ -23,6 +23,8 @@ import NameScreen from '../screens/name';
 //import BarcodeScannerScreen from '../screens/barcode-scanner';
 import ProductDetailScreen from '../screens/product-detail';
 import TrackingReviewScreen from '../screens/tracking-review';
+import FindProductScreen from '../screens/find-product';
+import AddProductFormScreen from '../screens/add-product-form';
 
 // Import auth store
 
@@ -179,6 +181,24 @@ function AuthenticatedNavigator() {
             <Stack.Screen
               name="TrackingReview"
               component={TrackingReviewScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="AddProductForm"
+              component={AddProductFormScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="FindProduct"
+              component={FindProductScreen}
               options={{
                 animation: 'slide_from_right',
                 headerShown: false,

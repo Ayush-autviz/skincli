@@ -2,7 +2,7 @@
 // Component to display and manage the user's routine items
 
 import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, SectionList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image } from 'react-native';
+import { View, Text, SectionList, ActivityIndicator, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image, Modal } from 'react-native';
 import { colors, spacing, typography, palette } from '../../styles';
 import { useNavigation } from '@react-navigation/native';
 import { ClipboardPlus, Pill } from 'lucide-react-native';
@@ -180,6 +180,9 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
   // State for Date Pickers
   const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
   const [showStopDatePicker, setShowStopDatePicker] = useState<boolean>(false);
+
+  // State for Add Routine Sheet
+  const [showAddRoutineSheet, setShowAddRoutineSheet] = useState<boolean>(false);
 
   const insets = useSafeAreaInsets();
   const [fixedCardHeight, setFixedCardHeight] = useState<number>(150);
@@ -1049,10 +1052,21 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     });
   };
 
-  // Also update the regular openAddModal function to navigate to new screen
+  // Open the add routine sheet
   const openAddModal = (): void => {
-    // Navigate to create routine screen
-    (navigation as any).navigate('CreateRoutine');
+    setShowAddRoutineSheet(true);
+  };
+
+  // Handle add product from sheet
+  const handleAddProduct = (): void => {
+    setShowAddRoutineSheet(false);
+    (navigation as any).navigate('FindProduct');
+  };
+
+  // Handle add treatment from sheet
+  const handleAddTreatment = (): void => {
+    setShowAddRoutineSheet(false);
+    (navigation as any).navigate('CreateRoutine', { type: 'Treatment' });
   };
 
   // Update the renderSectionHeader function
@@ -1139,17 +1153,23 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           </TouchableOpacity>
         </View>
 
-        {/* Archived Section Link */}
+        {/* Archived Section Card */}
         {routineItems.some(item => item.dateStopped && new Date(item.dateStopped) <= new Date()) && (
           <TouchableOpacity
-            style={styles.archivedLink}
+            style={styles.archivedCard}
             onPress={() => (navigation as any).navigate('ArchivedRoutines')}
+            activeOpacity={0.9}
           >
-            <View style={styles.archivedContent}>
-              <Archive size={16} color={colors.textSecondary} style={{ marginRight: 6 }} />
-              <Text style={styles.archivedText}>Previously used products</Text>
+            <View style={styles.archivedIconContainer}>
+              <Archive size={26} color="#717680" />
             </View>
-            <ChevronRight size={16} color={colors.textSecondary} />
+            <View style={styles.archivedCardContent}>
+              <Text style={styles.archivedCardTitle}>Previously used products</Text>
+              <Text style={styles.archivedCardSubtitle}>
+                {routineItems.filter(item => item.dateStopped && new Date(item.dateStopped) <= new Date()).length} archived items
+              </Text>
+            </View>
+            <ChevronRight size={20} color="#D6D3D1" />
           </TouchableOpacity>
         )}
       </View>
@@ -1206,6 +1226,48 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         ListFooterComponent={RoutineListFooter}
         showsVerticalScrollIndicator={false}
       />
+
+      {/* Add to Routine Bottom Sheet */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={showAddRoutineSheet}
+        onRequestClose={() => setShowAddRoutineSheet(false)}
+      >
+        <TouchableOpacity
+          style={styles.sheetOverlay}
+          activeOpacity={1}
+          onPress={() => setShowAddRoutineSheet(false)}
+        >
+          <View style={styles.sheetContainer}>
+            <View style={styles.sheetHandle} />
+
+            <TouchableOpacity
+              style={styles.sheetOption}
+              onPress={handleAddProduct}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sheetOptionText}>Add a Product</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sheetOption}
+              onPress={handleAddTreatment}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sheetOptionText}>Add a Treatment</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sheetCancelButton}
+              onPress={() => setShowAddRoutineSheet(false)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.sheetCancelText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 });
@@ -1240,7 +1302,7 @@ const styles = StyleSheet.create({
   listHeaderContainer: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.sm,
+    // paddingBottom: spacing.sm,
   },
   summaryContainer: {
     flexDirection: 'row',
@@ -1258,6 +1320,44 @@ const styles = StyleSheet.create({
     color: '#00839B', // Teal 600
     fontWeight: '600',
   },
+  archivedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E9EAEB',
+    borderRadius: 16,
+    padding: 8,
+    marginVertical: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E7E5E4',
+  },
+  archivedIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    // backgroundColor: '#F5F5F4',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  archivedCardContent: {
+    flex: 1,
+  },
+  archivedCardTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1917',
+    marginBottom: 2,
+  },
+  archivedCardSubtitle: {
+    fontSize: 13,
+    color: '#78716C',
+  },
+  // Keep old styles for backward compatibility
   archivedLink: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -1277,7 +1377,7 @@ const styles = StyleSheet.create({
   // --- Section Header ---
   sectionHeader: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
     backgroundColor: '#FAFAF9', // Match background
   },
@@ -1613,5 +1713,51 @@ const styles = StyleSheet.create({
     marginBottom: 32,
     textAlign: 'center',
     lineHeight: 22,
+  },
+
+  // Add Routine Sheet Styles
+  sheetOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  sheetContainer: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 34,
+  },
+  sheetHandle: {
+    width: 60,
+    height: 4,
+    backgroundColor: '#D9D9D9',
+    borderRadius: 2,
+    alignSelf: 'center',
+    marginBottom: 20,
+  },
+  sheetOption: {
+    backgroundColor: '#E9EAEB',
+    borderRadius: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    marginBottom: 12,
+    alignItems: 'center',
+  },
+  sheetOptionText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#535862',
+  },
+  sheetCancelButton: {
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  sheetCancelText: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#535862',
   },
 });

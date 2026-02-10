@@ -15,7 +15,7 @@ DEV PRINCIPLES
 
 import palette from './palette';
 import { colors, spacing, borderRadius, shadows } from './theme';
-import { typography, fontSize } from './typography';
+import { typography, fontSize, fontFamily } from './typography';
 import forms from './forms';
 
 // Export everything at root level
@@ -23,16 +23,17 @@ export {
   // Colors
   palette,
   colors,
-  
+
   // Layout
   spacing,
   borderRadius,
   shadows,
-  
+
   // Typography
   typography,
   fontSize,
-  
+  fontFamily,
+
   // Form Elements
   forms,
 };

@@ -17,6 +17,7 @@ import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { User, PencilLine } from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { colors, spacing } from '../styles';
+import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 import useAuthStore from '../stores/authStore';
 import { getProfile } from '../utils/newApiService';
@@ -126,10 +127,9 @@ export default function AboutMeScreen(): React.JSX.Element {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
-            {/* <View style={styles.header}>
-                <Text style={styles.headerTitle}>About Me</Text>
-            </View> */}
+            <HomeHeader onMenuPress={() => setIsSettingsVisible(true)} />
+
+            <View style={styles.headerSpacer} />
 
             {/* Profile Card Section */}
             <View style={styles.profileCard}>
@@ -273,35 +273,40 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
 
-    // Header
-    header: {
-        backgroundColor: '#FFFFFF',
-        paddingTop: 60,
-        paddingBottom: 16,
-        alignItems: 'center',
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5E5',
+    // Header - Removed in favor of HomeHeader
+    headerSpacer: {
+        height: 40, // Match HomeHeader height
     },
-    headerTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#1C1917',
-    },
+    // header: {
+    //     backgroundColor: '#FFFFFF',
+    //     paddingTop: 60,
+    //     paddingBottom: 16,
+    //     alignItems: 'center',
+    //     borderBottomWidth: 1,
+    //     borderBottomColor: '#E5E5E5',
+    // },
+    // headerTitle: {
+    //     fontSize: 17,
+    //     fontWeight: '600',
+    //     color: '#1C1917',
+    // },
 
     // Profile Card
     profileCard: {
         backgroundColor: '#FFFFFF',
         marginHorizontal: spacing.md,
         marginTop: spacing.md,
-        marginBottom: spacing.sm,
+        marginBottom: spacing.md,
         paddingVertical: 20,
         paddingHorizontal: spacing.lg,
-        borderRadius: 16,
+        borderRadius: 12,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.08,
+        shadowOpacity: 0.09,
         shadowRadius: 8,
-        elevation: 3,
+        elevation: 2,
+        borderWidth: 1,
+        borderColor: '#E9EAEB',
     },
     profileHeader: {
         flexDirection: 'row',
@@ -357,8 +362,8 @@ const styles = StyleSheet.create({
     },
     tab: {
         paddingVertical: 10,
-        paddingHorizontal: 14,
-        marginLeft: spacing.md,
+        paddingHorizontal: 16,
+        // marginLeft: spacing.md,
     },
     activeTab: {
         borderBottomWidth: 3,

@@ -14,9 +14,11 @@ DEV PRINCIPLES
 ------------------------------------------------------*/
 
 export const fontFamily = {
-  regular: 'Inter',
-  medium: 'Inter-Medium',
-  bold: 'Inter-Bold'
+  regular: 'Inter_18pt-Regular',
+  medium: 'Inter_18pt-Medium',
+  bold: 'Inter_18pt-Bold',
+  light: 'Inter_18pt-Light',
+  semiBold: 'Inter_18pt-SemiBold',
 };
 
 export const fontSize = {

@@ -12,18 +12,21 @@ import {
   Alert,
   ActivityIndicator,
   Modal,
+  Image,
 } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle, Check, ChevronRight, Calendar } from 'lucide-react-native';
-import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
+import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle, Check, ChevronRight, Calendar, Package, ChevronLeft } from 'lucide-react-native';
+import { colors, fontSize, spacing, typography, borderRadius, shadows, fontFamily } from '../styles';
 import { searchProductByUPC, deleteRoutineItem, toggleTracking, getRoutineItems } from '../utils/newApiService';
 
 interface ProductDetailParams {
-  itemId: string;
+  itemId?: string;
   productData: any;
-  routineData: any;
+  routineData?: any;
   upc?: string;
   refresh?: boolean;
+  mode?: 'view' | 'add';
 }
 
 interface ApiResponse {
@@ -36,6 +39,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const route = useRoute();
   const params = route.params as ProductDetailParams || {};
 
+  // Determine mode: 'add' for adding new products, 'view' for viewing existing routine items
+  const isAddMode = params.mode === 'add';
+
   const [productData, setProductData] = useState<any>(params.productData || {});
   const [routineData, setRoutineData] = useState<any>({
     ...(params.routineData || {}),
@@ -46,6 +52,8 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const [isFetchingRoutine, setIsFetchingRoutine] = useState<boolean>(false);
   const [showUsageModal, setShowUsageModal] = useState<boolean>(false);
   const [usageResponse, setUsageResponse] = useState<string | null>(null);
+  const [showAllIngredients, setShowAllIngredients] = useState<boolean>(false);
+  const INITIAL_INGREDIENTS_COUNT = 5;
 
   // Fetch fresh routine data from API
   const fetchRoutineData = useCallback(async () => {
@@ -370,6 +378,11 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle remove button press
   const handleRemove = () => {
+    if (!params.itemId) {
+      console.error('Cannot remove: No itemId provided');
+      return;
+    }
+
     Alert.alert(
       'Remove Product',
       'Are you sure you want to remove this product from your routine?',
@@ -384,7 +397,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
           onPress: async () => {
             try {
               setIsDeleting(true);
-              await deleteRoutineItem(params.itemId);
+              await deleteRoutineItem(params.itemId!);
               Alert.alert(
                 'Product Removed',
                 'The product has been removed from your routine.',
@@ -414,6 +427,16 @@ const ProductDetailScreen = (): React.JSX.Element => {
   // Handle back button press
   const handleBack = () => {
     navigation.goBack();
+  };
+
+  // Handle Add to Routine button in add mode
+  const handleAddToRoutine = () => {
+    // Navigate to AddProductForm with product data pre-filled
+    (navigation as any).navigate('AddProductForm', {
+      productData: productData,
+      upc: params.upc || productData.upc,
+      prefilledName: productData.product_name,
+    });
   };
 
   // Format ingredient name for display
@@ -660,13 +683,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
             onPress={handleBack}
           >
             <View style={styles.iconContainer}>
-              <ArrowLeft size={22} color={colors.primary} />
+              <ChevronLeft size={24} color={"#44403C"} />
             </View>
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>Product Detail</Text>
-            <View style={styles.titleUnderline} />
+            <Text style={styles.headerTitle}>Magic Mirror</Text>
           </View>
 
           <View style={styles.rightContainer} />
@@ -684,197 +706,138 @@ const ProductDetailScreen = (): React.JSX.Element => {
         </View>
       ) : (
         <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* 1. First Card: Brand Name, Product Name, and Usage Date */}
-          <View style={styles.section}>
-            {!isManuallyAdded && productData.brand && (
-              <Text style={styles.brandName}>
-                {productData.brand?.toUpperCase()}
-              </Text>
-            )}
-            <Text style={styles.productName}>
-              {productData.product_name || routineData.name || 'Unknown Product'}
-            </Text>
-            {getUsageDateInfo() !== '' && (
-              <Text style={styles.usageText}>
-                {getUsageDateInfo()}
-              </Text>
-            )}
-          </View>
-
-          {/* 2. Combined Card: Usage (AM/PM and Daily/Weekly), Your Concerns, and Edit */}
-          <View style={styles.section}>
-            {/* Usage Pills (AM/PM and Frequency) */}
-            {(getUsagePills().length > 0 || getFrequencyPills().length > 0) && (
-              <View style={styles.usageSection}>
-                <Text style={styles.sectionTitle}>Usage</Text>
-                <View style={styles.chipSelectorContainer}>
-                  {/* AM/PM Pills */}
-                  {getUsagePills().map((pill: string, index: number) => (
-                    <View key={`usage-${index}`} style={styles.chipButton}>
-                      <Text style={styles.chipButtonText}>
-                        {pill}
-                      </Text>
-                    </View>
-                  ))}
-                  {/* Frequency Pills */}
-                  {getFrequencyPills().map((pill: string, index: number) => (
-                    <View key={`frequency-${index}`} style={styles.chipButton}>
-                      <Text style={styles.chipButtonText}>
-                        {pill}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+          {/* 1. Product Card: Image, Brand Name, Product Name, Add to Routine */}
+          <View style={styles.productCard}>
+            <View style={styles.productCardContainer}>
+              {/* Product Image Placeholder */}
+              <View style={styles.productImageContainer}>
+                {productData.image_url ? (
+                  <Image
+                    source={{ uri: productData.image_url }}
+                    style={styles.productImage}
+                    resizeMode="contain"
+                  />
+                ) : (
+                  <View style={styles.productImagePlaceholder}>
+                    <Icon name="bottle-tonic-outline" size={40} color={colors.textSecondary} />
+                  </View>
+                )}
               </View>
-            )}
 
-            {/* Your Concerns */}
-            {routineData.concerns && routineData.concerns.length > 0 && (
-              <View style={styles.concernsSection}>
-                <Text style={styles.sectionTitle}>Your Concerns</Text>
-                <View style={styles.chipSelectorContainer}>
-                  {routineData.concerns.map((concern: string, index: number) => (
-                    <View key={index} style={styles.chipButton}>
-                      <Text style={styles.chipButtonText}>
-                        {formatConcernName(concern)}
-                      </Text>
-                    </View>
-                  ))}
-                </View>
+              {/* Product Info */}
+              <View style={styles.productInfoContainer}>
+                {!isManuallyAdded && productData.brand && (
+                  <Text style={styles.brandNameNew}>
+                    {productData.brand?.toUpperCase()}
+                  </Text>
+                )}
+                <Text style={styles.productNameNew}>
+                  {productData.product_name || routineData.name || 'Unknown Product'}
+                </Text>
               </View>
-            )}
 
-            {/* Edit Button */}
-            <View style={styles.editSection}>
-              <View style={styles.actionRow}>
-                <TouchableOpacity onPress={handleEdit} style={styles.actionButton}>
-                  <Edit size={16} color={colors.primary} />
-                  <Text style={styles.actionText}>Edit/Delete</Text>
+              {/* Add to Your Routine Button - Only in add mode */}
+              {isAddMode && (
+                <TouchableOpacity
+                  style={styles.addToRoutineButton}
+                  onPress={handleAddToRoutine}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.addToRoutineText}>Add to Your Routine</Text>
                 </TouchableOpacity>
-              </View>
+              )}
             </View>
           </View>
 
-          {/* 6. Effectiveness Tracking Status */}
-          {/* <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Effectiveness Tracking Status</Text>
-            {(!routineData.concern_tracking || routineData.concern_tracking.length === 0 || routineData.is_tracking_paused) ? (
-              <TouchableOpacity
-                style={styles.startTrackingButton}
-                onPress={handleStartTracking}
-                activeOpacity={0.8}
-              >
-                <View style={styles.startTrackingContent}>
-                  <TrendingUp size={18} color={colors.white} style={styles.startTrackingIcon} />
-                  <Text style={styles.startTrackingText}>Start Tracking</Text>
-                  <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
-                </View>
-              </TouchableOpacity>
-            ) : (
-              <Text style={styles.trackingStatusText}>
-                Tracking in progress
-              </Text>
-            )}
-          </View> */}
-
-          {/* 7. Effectiveness Tracking Status */}
-          {(!routineData.concern_tracking || routineData.concern_tracking.length === 0 || routineData.is_tracking_paused) ? (
+          {/* 2. Effectiveness Section - Hidden in add mode */}
+          {!isAddMode && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Effectiveness Tracking Status</Text>
-              <TouchableOpacity
-                style={styles.startTrackingButton}
-                onPress={handleStartTracking}
-                activeOpacity={0.8}
-              >
-                <View style={styles.startTrackingContent}>
-                  <TrendingUp size={18} color={colors.white} style={styles.startTrackingIcon} />
-                  <Text style={styles.startTrackingText}>Start Tracking</Text>
-                  <ArrowRight size={16} color={colors.white} style={styles.startTrackingArrow} />
-                </View>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Effectiveness Tracking Status</Text>
-              <View style={styles.concernTrackingContainer}>
-                {routineData.concern_tracking.map((tracking: any, index: number) => {
-                  const weeksCompleted = tracking.weeks_completed || 0;
-                  const totalWeeks = tracking.total_weeks || 0;
-                  const progressPercentage = totalWeeks > 0 ? (weeksCompleted / totalWeeks) * 100 : 0;
-                  const canOpen = canOpenModal(tracking);
-                  const statusText = getTrackingStatusText(tracking);
+              <Text style={styles.sectionTitle}>Effectiveness</Text>
+              {routineData.concern_tracking && routineData.concern_tracking.length > 0 ? (
+                <View style={styles.effectivenessListContainer}>
+                  {routineData.concern_tracking.map((tracking: any, index: number) => {
+                    const weeksCompleted = tracking.weeks_completed || 0;
+                    const totalWeeks = tracking.total_weeks || 0;
+                    const weeksRemaining = Math.max(0, totalWeeks - weeksCompleted);
+                    const isCompleted = tracking.is_completed;
+                    const isEffective = tracking.is_effective;
+                    const canReview = isCompleted && isEffective === null;
 
-                  const ConcernItem = canOpen ? TouchableOpacity : View;
-
-                  return (
-                    <ConcernItem
-                      key={index}
-                      style={styles.concernTrackingItem}
-                      onPress={() => handleConcernClick(tracking)}
-                      activeOpacity={0.7}
-                      disabled={!canOpen}
-                    >
-                      <View style={styles.concernTrackingLeft}>
-                        <View style={styles.concernTrackingIconContainer}>
-                          <Calendar size={18} color={colors.primary} />
-                        </View>
-                        <View style={styles.concernTrackingContent}>
-                          <Text style={styles.concernTrackingName}>
+                    return (
+                      <View key={index}>
+                        {/* Divider at the top of each row */}
+                        <View style={styles.effectivenessDivider} />
+                        <View style={styles.effectivenessRow}>
+                          <Text style={styles.effectivenessName}>
                             {formatConcernName(tracking.concern_name || 'Unknown Concern')}
                           </Text>
-                          {!tracking.is_completed && (
-                            <View style={styles.concernTrackingProgressBarContainer}>
-                              <View style={styles.concernTrackingProgressBar}>
-                                <View
-                                  style={[
-                                    styles.concernTrackingProgressFill,
-                                    { width: `${progressPercentage}%` }
-                                  ]}
-                                />
+                          <View style={styles.effectivenessStatusContainer}>
+                            {/* Ready to Review - Clickable Link */}
+                            {canReview ? (
+                              <TouchableOpacity onPress={() => handleConcernClick(tracking)} activeOpacity={0.7}>
+                                <Text style={styles.reviewEffectivenessLink}>
+                                  Review Effectiveness →
+                                </Text>
+                              </TouchableOpacity>
+                            ) : !isCompleted ? (
+                              /* In Progress - Show weeks remaining */
+                              <View style={styles.reviewWeeksBadge}>
+                                <Text style={styles.reviewWeeksText}>
+                                  Review in <Text style={styles.reviewWeeksBold}>{weeksRemaining} weeks</Text>
+                                </Text>
                               </View>
-                            </View>
-                          )}
-                          {statusText && (
-                            <Text style={[
-                              styles.trackingStatusBadge,
-                              tracking.is_effective === true && styles.trackingStatusProven,
-                              tracking.is_effective === false && styles.trackingStatusUnproven,
-                              tracking.is_effective === null && styles.trackingStatusReady
-                            ]}>
-                              {statusText}
-                            </Text>
-                          )}
+                            ) : isEffective === true ? (
+                              /* Proven Effective */
+                              <View style={styles.effectiveIndicator}>
+                                <View style={styles.effectiveDot} />
+                                <Text style={styles.effectiveText}>Effective</Text>
+                              </View>
+                            ) : (
+                              /* Not Effective */
+                              <View style={styles.notEffectiveIndicator}>
+                                <View style={styles.notEffectiveDot} />
+                                <Text style={styles.notEffectiveText}>Not Effective</Text>
+                              </View>
+                            )}
+                          </View>
                         </View>
                       </View>
-                      <View style={styles.concernTrackingRight}>
-                        {!tracking.is_completed ? (
-                          <View style={styles.concernTrackingWeeksContainer}>
-                            <Text style={styles.concernTrackingWeeks}>
-                              {weeksCompleted}/{totalWeeks}
+                    );
+                  })}
+                </View>
+              ) : routineData.concerns && routineData.concerns.length > 0 ? (
+                /* Show concerns that haven't started tracking yet */
+                <View style={styles.effectivenessListContainer}>
+                  {routineData.concerns.map((concern: string, index: number) => (
+                    <View key={index}>
+                      <View style={styles.effectivenessRow}>
+                        <Text style={styles.effectivenessName}>
+                          {formatConcernName(concern)}
+                        </Text>
+                        <View style={styles.effectivenessStatusContainer}>
+                          <TouchableOpacity onPress={handleStartTracking} activeOpacity={0.7}>
+                            <Text style={styles.reviewEffectivenessLink}>
+                              Start Tracking →
                             </Text>
-                            <Text style={styles.concernTrackingWeeksLabel}>weeks</Text>
-                          </View>
-                        ) : (
-                          <View style={styles.concernTrackingWeeksContainer}>
-                            <Text style={styles.concernTrackingWeeks}>
-                              {totalWeeks}/{totalWeeks}
-                            </Text>
-                            <Text style={styles.concernTrackingWeeksLabel}>weeks</Text>
-                          </View>
-                        )}
-                        {canOpen && <ChevronRight size={20} color={colors.textSecondary} />}
+                          </TouchableOpacity>
+                        </View>
                       </View>
-                    </ConcernItem>
-                  );
-                })}
-              </View>
+                      {index < routineData.concerns.length - 1 && (
+                        <View style={styles.effectivenessDivider} />
+                      )}
+                    </View>
+                  ))}
+                </View>
+              ) : (
+                <Text style={styles.noDataText}>No concerns tracked yet</Text>
+              )}
             </View>
           )}
 
-          {/* 8. Good For (only if not manually added) */}
+          {/* 3. Product is good for */}
           {!isManuallyAdded && productData.good_for && productData.good_for.length > 0 && (
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Good For</Text>
+              <Text style={styles.sectionTitle}>Product is good for</Text>
               <View style={styles.chipSelectorContainer}>
                 {productData.good_for.map((item: string, index: number) => (
                   <View key={index} style={styles.chipButton}>
@@ -885,43 +848,61 @@ const ProductDetailScreen = (): React.JSX.Element => {
             </View>
           )}
 
-          {/* 9. Key Ingredients (only if not manually added) */}
+          {/* 4. Ingredients - List Format with Show More */}
           {!isManuallyAdded && productData.ingredients && productData.ingredients.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Ingredients</Text>
-              <View style={styles.chipSelectorContainer}>
-                {productData.ingredients.map((ingredient: any, index: number) => (
-                  <View key={index} style={styles.chipButton}>
-                    <Text style={styles.chipButtonText}>
-                      {formatIngredientName(ingredient.ingredient_name)}
-                    </Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* 10. Free Of (only if not manually added) */}
-          {!isManuallyAdded && productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Free Of</Text>
-              <View style={styles.chipSelectorContainer}>
-                {(() => {
-                  const freeOfItems = Array.from(new Set(
-                    productData.ingredients
-                      .flatMap((ingredient: any) => ingredient.free_of || [])
-                      .filter(Boolean)
-                  ));
-
-                  return freeOfItems.map((freeOfItem: any, index: number) => (
-                    <View key={index} style={styles.chipButton}>
-                      <Text style={styles.chipButtonText}>
-                        {formatFreeOfItem(freeOfItem)}
+              <View style={styles.ingredientsListContainer}>
+                {productData.ingredients
+                  .slice(0, showAllIngredients ? productData.ingredients.length : INITIAL_INGREDIENTS_COUNT)
+                  .map((ingredient: any, index: number, arr: any[]) => (
+                    <View key={index}>
+                      {index < arr.length && (
+                        <View style={styles.ingredientDivider} />
+                      )}
+                      <Text style={styles.ingredientListItem}>
+                        {formatIngredientName(ingredient.ingredient_name)}
                       </Text>
                     </View>
-                  ));
-                })()}
+                  ))}
               </View>
+              {productData.ingredients.length > INITIAL_INGREDIENTS_COUNT && (
+                <TouchableOpacity
+                  style={styles.showMoreButton}
+                  onPress={() => setShowAllIngredients(!showAllIngredients)}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.showMoreText}>
+                    {showAllIngredients
+                      ? 'Show Less'
+                      : `Show ${productData.ingredients.length - INITIAL_INGREDIENTS_COUNT} More Ingredients`}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* 5. Free of - Inline in Ingredients section */}
+              {productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
+                <View style={styles.freeOfSection}>
+                  <Text style={styles.freeOfTitle}>Free of</Text>
+                  <View style={styles.chipSelectorContainer}>
+                    {(() => {
+                      const freeOfItems = Array.from(new Set(
+                        productData.ingredients
+                          .flatMap((ingredient: any) => ingredient.free_of || [])
+                          .filter(Boolean)
+                      ));
+
+                      return freeOfItems.map((freeOfItem: any, index: number) => (
+                        <View key={index} style={styles.chipButton}>
+                          <Text style={styles.chipButtonText}>
+                            {formatFreeOfItem(freeOfItem)}
+                          </Text>
+                        </View>
+                      ));
+                    })()}
+                  </View>
+                </View>
+              )}
             </View>
           )}
 
@@ -945,7 +926,7 @@ const styles = StyleSheet.create({
     right: 0,
     zIndex: 1000,
     height: 120,
-    backgroundColor: colors.white,
+    backgroundColor: colors.background,
   },
   header: {
     flexDirection: 'row',
@@ -965,17 +946,9 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(139, 115, 85, 0.1)',
+    backgroundColor: '#E7E5E4',
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: colors.primary,
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   titleContainer: {
     flex: 1,
@@ -985,7 +958,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 20,
-    fontWeight: '700',
+    // fontWeight: '400', // Handled by fontFamily
+    fontFamily: fontFamily.regular,
     color: colors.textPrimary,
     letterSpacing: 0.5,
     marginBottom: 4,
@@ -1042,7 +1016,8 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
     marginTop: spacing.lg,
     textAlign: 'center',
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.medium,
     flexWrap: 'wrap',
     maxWidth: '100%',
   },
@@ -1062,14 +1037,16 @@ const styles = StyleSheet.create({
   },
   productName: {
     fontSize: fontSize.lg,
-    fontWeight: '700',
+    // fontWeight: '700',
+    fontFamily: fontFamily.bold,
     color: colors.textPrimary,
     textAlign: 'center',
     marginBottom: spacing.md,
   },
   brandName: {
     fontSize: fontSize.sm,
-    fontWeight: '700',
+    // fontWeight: '700',
+    fontFamily: fontFamily.bold,
     color: colors.textSecondary,
     letterSpacing: 1.5,
     textAlign: 'center',
@@ -1077,11 +1054,18 @@ const styles = StyleSheet.create({
   },
   section: {
     marginHorizontal: spacing.lg,
-    marginVertical: spacing.md,
-    padding: spacing.lg,
-    backgroundColor: colors.surface,
-    borderRadius: borderRadius.lg,
-    ...shadows.sm,
+    marginVertical: 10,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.09,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E9EAEB',
   },
   usageSection: {
     marginBottom: spacing.sm,
@@ -1165,9 +1149,10 @@ const styles = StyleSheet.create({
     marginLeft: 2,
   },
   sectionTitle: {
-    fontSize: fontSize.lg,
-    fontWeight: '600',
-    color: colors.textPrimary,
+    fontSize: 16,
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
+    color: '#57534E',
     marginBottom: spacing.md,
   },
   chipSelectorContainer: {
@@ -1178,19 +1163,20 @@ const styles = StyleSheet.create({
   chipButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: borderRadius.pill,
+    paddingHorizontal: 12,
+    paddingVertical: 7,
+    borderRadius: 10,
     borderWidth: 1,
-    borderColor: colors.border,
-    backgroundColor: colors.background,
+    borderColor: '#D7D3D0',
+    backgroundColor: '#F5F5F4',
     gap: spacing.xs,
-    minHeight: 40,
+    //minHeight: 40,
   },
   chipButtonText: {
     fontSize: fontSize.sm,
-    color: colors.textSecondary,
-    fontWeight: '500',
+    color: '#57534E',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
   },
   bottomSpacing: {
     height: 40,
@@ -1683,6 +1669,209 @@ const styles = StyleSheet.create({
   trackingStatusReady: {
     backgroundColor: `${colors.primary}15`,
     color: colors.primary,
+  },
+  // New Product Card Styles
+  productCardContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
+  productImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: borderRadius.md,
+    overflow: 'hidden',
+  },
+  productImage: {
+    width: '100%',
+    height: '100%',
+  },
+  productImagePlaceholder: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: "#E9EAEB",
+    backgroundColor: "#fff",
+    borderRadius: borderRadius.md,
+  },
+  productInfoContainer: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  brandNameNew: {
+    fontSize: fontSize.sm,
+    fontWeight: '700',
+    color: colors.textSecondary,
+    letterSpacing: 1,
+    marginBottom: 4,
+  },
+  productNameNew: {
+    fontSize: fontSize.lg,
+    fontWeight: '700',
+    color: colors.textPrimary,
+    lineHeight: 22,
+  },
+  addToRoutineButton: {
+    marginTop: spacing.md,
+    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: '#E5E7EB',
+    borderRadius: borderRadius.pill || 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  addToRoutineText: {
+    fontSize: fontSize.md,
+    color: colors.textPrimary,
+    fontWeight: '600',
+  },
+  // Effectiveness Section Styles
+  effectivenessListContainer: {
+    // No top margin needed
+  },
+  effectivenessRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  effectivenessName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1C1917',
+    flex: 1,
+  },
+  effectivenessStatusContainer: {
+    alignItems: 'flex-end',
+  },
+  reviewEffectivenessLink: {
+    fontSize: 13,
+    color: '#00839B',
+    fontWeight: '600',
+    backgroundColor: '#E7FBFF',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: 8,
+    overflow: 'hidden',
+  },
+  reviewWeeksBadge: {
+    backgroundColor: '#E9EAEB',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  reviewWeeksText: {
+    fontSize: 14,
+    color: '#717680',
+    fontWeight: '400',
+  },
+  reviewWeeksBold: {
+    fontWeight: '700',
+    color: '#717680',
+  },
+  effectiveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#E9EAEB',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  effectiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#10B981',
+  },
+  effectiveText: {
+    fontSize: 14,
+    color: '#717680',
+    fontWeight: '500',
+  },
+  notEffectiveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#E9EAEB',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
+  notEffectiveDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#EF4444',
+  },
+  notEffectiveText: {
+    fontSize: 14,
+    color: '#717680',
+    fontWeight: '500',
+  },
+  effectivenessDivider: {
+    height: 1,
+    backgroundColor: '#E9EAEB',
+  },
+  noDataText: {
+    fontSize: fontSize.md,
+    color: colors.textSecondary,
+    textAlign: 'center',
+    paddingVertical: spacing.md,
+  },
+  // Ingredients List Styles
+  ingredientsListContainer: {
+    // marginTop: spacing.sm,
+  },
+  ingredientListItem: {
+    fontSize: 14,
+    color: '#57534E',
+    paddingVertical: spacing.md,
+  },
+  ingredientDivider: {
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+  showMoreButton: {
+    marginTop: spacing.md,
+    backgroundColor: '#E9EAEB',
+    borderRadius: 16,
+    paddingVertical: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  showMoreText: {
+    fontSize: fontSize.md,
+    color: '#717680',
+    fontWeight: '500',
+  },
+  // Free Of Section Styles  
+  freeOfSection: {
+    marginTop: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  freeOfTitle: {
+    fontSize: fontSize.lg,
+    fontWeight: '600',
+    color: colors.textPrimary,
+    marginBottom: spacing.md,
+  },
+  productCard: {
+
+    marginBottom: 10,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    backgroundColor: '#FFFFFF',
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
 });
 

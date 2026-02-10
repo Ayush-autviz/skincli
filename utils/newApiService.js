@@ -4,7 +4,7 @@
 import axios from "axios";
 import useAuthStore from "../stores/authStore";
 
-const BASE_URL = "http://44.198.183.94:8000/api/v1";
+const BASE_URL = "http://44.198.183.94:9000/api/v1";
 
 // Create axios instance with enhanced configuration
 const apiClient = axios.create({
@@ -55,7 +55,7 @@ const createRequestKey = (method, url, data) => {
   const safeMethod = method || 'GET';
   const safeUrl = url || '';
   const safeData = data || {};
-  
+
   return `${safeMethod.toUpperCase()}:${safeUrl}:${JSON.stringify(safeData)}`;
 };
 
@@ -67,41 +67,41 @@ apiClient.interceptors.request.use(
       console.error("🔴 Request interceptor: config is undefined");
       return Promise.reject(new Error('Invalid request configuration'));
     }
-    
+
     const { accessToken } = useAuthStore.getState();
     if (accessToken) {
       config.headers.Authorization = `Bearer ${accessToken}`;
     }
-    
+
     // // Create unique key for this request
     // const requestKey = createRequestKey(config.method, config.url, config.data);
-    
+
     // // Check if there's already a pending request for this operation
     // if (pendingRequests.has(requestKey)) {
     //   const pending = pendingRequests.get(requestKey);
     //   const timeSinceRequest = Date.now() - pending.timestamp;
-      
+
     //   // If the request is very recent (less than 100ms), reject as duplicate
     //   if (timeSinceRequest < 100) {
     //     console.log("🔄 Request deduplication: rejecting very recent duplicate request for", requestKey);
     //     return Promise.reject(new Error('DUPLICATE_REQUEST'));
     //   }
-      
+
     //   // If the request is older, allow it (might be a legitimate retry)
     //   console.log("🔄 Request deduplication: allowing older request for", requestKey, "after", timeSinceRequest, "ms");
     //   // Remove the old pending request and continue with this one
     //   pendingRequests.delete(requestKey);
     // }
-    
+
     // // Store this request as pending with timestamp
     // pendingRequests.set(requestKey, {
     //   timestamp: Date.now(),
     //   config: config
     // });
-    
+
     // // Add cleanup function to remove from pending requests
     // config.metadata = { requestKey };
-    
+
     // // Set a timeout to clean up stale pending requests (5 seconds)
     // setTimeout(() => {
     //   if (pendingRequests.has(requestKey)) {
@@ -112,7 +112,7 @@ apiClient.interceptors.request.use(
     //     }
     //   }
     // }, 5000);
-    
+
     // // Also set a shorter timeout for the request itself (30 seconds)
     // setTimeout(() => {
     //   if (pendingRequests.has(requestKey)) {
@@ -120,7 +120,7 @@ apiClient.interceptors.request.use(
     //     pendingRequests.delete(requestKey);
     //   }
     // }, 30000);
-    
+
     console.log("🔵 API Request:", config.method?.toUpperCase(), config.url);
     return config;
   },
@@ -138,12 +138,12 @@ apiClient.interceptors.response.use(
       console.error("🔴 Response interceptor: response or config is undefined");
       return response;
     }
-    
+
     // Clean up pending request
     if (response.config.metadata?.requestKey) {
       pendingRequests.delete(response.config.metadata.requestKey);
     }
-    
+
     console.log("✅ API Response:", response.status, response.config.url);
     return response;
   },
@@ -157,43 +157,43 @@ apiClient.interceptors.response.use(
       hasResponse: !!error?.response,
       hasRequest: !!error?.request
     });
-    
+
     // Clean up pending request on error (with safety check)
     if (error?.config?.metadata?.requestKey) {
       pendingRequests.delete(error.config.metadata.requestKey);
     }
-    
+
     // Handle duplicate request errors - instead of rejecting, wait for the existing request
     if (error.message === 'DUPLICATE_REQUEST') {
       console.log("🔄 Duplicate request detected - waiting for existing request to complete");
-      
+
       // Only proceed if we have config data
       if (error?.config) {
         // Try to get the existing request result
         const requestKey = createRequestKey(error.config.method, error.config.url, error.config.data);
         const pending = pendingRequests.get(requestKey);
-        
+
         if (pending) {
           // Wait a bit for the existing request to complete
           await new Promise(resolve => setTimeout(resolve, 100));
-          
+
           // If it's still pending, wait a bit more and then reject
           if (pendingRequests.has(requestKey)) {
             await new Promise(resolve => setTimeout(resolve, 500));
-            
+
             // If still pending after additional wait, reject
             if (pendingRequests.has(requestKey)) {
               console.log("⏰ Request still pending after wait, rejecting with REQUEST_IN_PROGRESS");
               return Promise.reject(new Error('REQUEST_IN_PROGRESS'));
             }
           }
-          
+
           // If we get here, the request completed, so we should retry the original request
           console.log("✅ Original request completed, retrying...");
           return apiClient(error.config);
         }
       }
-      
+
       // If no pending request found, reject with a generic error
       return Promise.reject(new Error('REQUEST_IN_PROGRESS'));
     }
@@ -225,7 +225,7 @@ apiClient.interceptors.response.use(
       errorKeys: error ? Object.keys(error) : 'no error object',
       responseKeys: error?.response ? Object.keys(error.response) : 'no response object'
     });
-    
+
     if (error?.response?.status === 401 && originalRequest && !originalRequest._retry) {
       console.log("🔄 401 Unauthorized detected - starting token refresh process...");
       console.log("🔍 Original request details:", {
@@ -234,7 +234,7 @@ apiClient.interceptors.response.use(
         hasHeaders: !!originalRequest.headers,
         hasRetry: !!originalRequest._retry
       });
-      
+
       originalRequest._retry = true;
 
       try {
@@ -245,30 +245,30 @@ apiClient.interceptors.response.use(
           hasRefreshToken: !!authState.refreshToken,
           storeKeys: authState ? Object.keys(authState) : 'no store state'
         });
-        
+
         const { refreshToken } = authState;
         console.log("🔍 Refresh token available:", !!refreshToken);
-        
+
         if (refreshToken) {
           console.log("🔄 Attempting token refresh...");
           const newTokens = await refreshAccessToken(refreshToken);
           console.log("✅ Token refresh successful, updating store...");
-          
+
           useAuthStore
             .getState()
             .setTokens(newTokens.access_token, newTokens.refresh_token);
 
           // Retry original request with new token
           console.log("🔄 Retrying original request with new token...");
-          
+
           // Ensure headers exist
           if (!originalRequest.headers) {
             originalRequest.headers = {};
           }
-          
+
           originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
           console.log("🔍 Retry request headers:", originalRequest.headers);
-          
+
           const retryResponse = await apiClient(originalRequest);
           console.log("✅ Retry successful:", retryResponse.status);
           return retryResponse;
@@ -283,7 +283,7 @@ apiClient.interceptors.response.use(
           response: refreshError.response?.status,
           data: refreshError.response?.data
         });
-        
+
         // Logout user if refresh fails
         useAuthStore.getState().logout();
       }
@@ -311,7 +311,7 @@ apiClient.interceptors.response.use(
         hasRequest: !!error?.request
       }
     );
-    
+
     return Promise.reject(error);
   }
 );
@@ -359,7 +359,7 @@ export const signUp = async (userData) => {
       // User already exists
       throw new Error(
         error.response.data.message ||
-          "User already exists. Please try to login."
+        "User already exists. Please try to login."
       );
     }
 
@@ -406,8 +406,8 @@ export const verifyOtp = async (otpData) => {
 
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "OTP verification failed"
+      error.message ||
+      "OTP verification failed"
     );
   }
 };
@@ -438,8 +438,8 @@ export const forgotPassword = async (email) => {
     console.error("🔴 Forgot password error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to send reset OTP"
+      error.message ||
+      "Failed to send reset OTP"
     );
   }
 };
@@ -475,8 +475,8 @@ export const newPassword = async (passwordData) => {
     console.error("🔴 New password error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to change password"
+      error.message ||
+      "Failed to change password"
     );
   }
 };
@@ -558,7 +558,7 @@ export const signIn = async (credentials) => {
     formData.append("username", credentials.email); // API uses username field for email
     formData.append("password", credentials.password);
 
-    const response = await apiClient.post("/user/login", formData.toString(),{
+    const response = await apiClient.post("/user/login", formData.toString(), {
       headers: {
         "Content-Type": "application/x-www-form-urlencoded",
       },
@@ -684,8 +684,8 @@ export const createProfile = async (profileData) => {
     console.error("🔴 Profile creation error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Profile creation failed"
+      error.message ||
+      "Profile creation failed"
     );
   }
 };
@@ -763,8 +763,8 @@ export const getProfile = async () => {
     console.error("🔴 Profile fetch error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch profile"
+      error.message ||
+      "Failed to fetch profile"
     );
   }
 };
@@ -817,8 +817,8 @@ export const processHautImage = async (imageUri, imageType = "front_image") => {
 
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Image processing failed"
+      error.message ||
+      "Image processing failed"
     );
   }
 };
@@ -850,8 +850,8 @@ export const getHautAnalysisResults = async (imageId) => {
 
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch analysis results"
+      error.message ||
+      "Failed to fetch analysis results"
     );
   }
 };
@@ -884,8 +884,8 @@ export const getHautMaskResults = async (imageId) => {
     console.error("🔴 [Haut.ai] getHautMaskResults error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch mask results"
+      error.message ||
+      "Failed to fetch mask results"
     );
   }
 };
@@ -906,8 +906,8 @@ export const getHautMaskImages = async (imageId) => {
     console.error("🔴 [Haut.ai] getHautMaskImages error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch mask images"
+      error.message ||
+      "Failed to fetch mask images"
     );
   }
 };
@@ -988,17 +988,17 @@ export const transformHautResults = (hautResults) => {
  */
 export const getUserPhotos = async (page = 1, limit = 10, retryCount = 0) => {
   const MAX_RETRIES = 3;
-  
+
   try {
     // Check if user is authenticated before making API call
     const authStore = require('../stores/authStore').default;
     const { user, isAuthenticated } = authStore.getState();
-    
+
     if (!isAuthenticated || !user?.user_id) {
       console.log("🔴 getUserPhotos: User not authenticated, skipping API call");
       throw new Error('User not authenticated');
     }
-    
+
     console.log("🔵 Fetching user photos - page:", page, "limit:", limit, "retry:", retryCount, "user:", user.user_id);
     const response = await apiClient.get(`/haut_process/?page=${page}&limit=${limit}`);
 
@@ -1050,34 +1050,34 @@ export const getUserPhotos = async (page = 1, limit = 10, retryCount = 0) => {
     throw new Error(response.data.message || "Failed to fetch photos");
   } catch (error) {
     console.error("🔴 getUserPhotos error:", error);
-    
+
     // Handle specific error types with retry limit
     if ((error.message === 'DUPLICATE_REQUEST' || error.message === 'REQUEST_IN_PROGRESS') && retryCount < MAX_RETRIES) {
       console.log(`🔄 getUserPhotos: Request in progress, retrying after delay... (${retryCount + 1}/${MAX_RETRIES})`);
-      
+
       // Wait a bit and retry
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Clear any stuck pending requests
       clearPendingRequests();
-      
+
       // Retry the request with incremented retry count
       return getUserPhotos(page, limit, retryCount + 1);
     }
-    
+
     // Handle network errors
     if (error.code === 'ECONNABORTED') {
       throw new Error('Request timeout - please check your connection');
     }
-    
+
     if (error.message === 'Network Error') {
       throw new Error('Network error - please check your internet connection');
     }
-    
+
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch photos"
+      error.message ||
+      "Failed to fetch photos"
     );
   }
 };
@@ -1149,8 +1149,8 @@ export const getComparison = async (dateFilter = "older_than_6_months") => {
     console.error("🔴 getComparison error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch comparison data"
+      error.message ||
+      "Failed to fetch comparison data"
     );
   }
 };
@@ -1195,8 +1195,8 @@ export const transformComparisonData = (comparisonData) => {
           skin_type: "skinType",
         };
 
-        console.log(conditions,'conditions from transformComparisonData');
-        console.log(photoData,'photoData from transformComparisonData');
+        console.log(conditions, 'conditions from transformComparisonData');
+        console.log(photoData, 'photoData from transformComparisonData');
 
         // Convert conditions array to metrics object
         conditions.forEach((condition) => {
@@ -1212,11 +1212,11 @@ export const transformComparisonData = (comparisonData) => {
           }
         });
 
-        console.log(metrics,'metrics from transformComparisonData');
+        console.log(metrics, 'metrics from transformComparisonData');
 
         // Use the actual created_at field from the API response
         const createdDate = new Date(image.created_at);
-        
+
         // Create photo object in expected format
         return {
           id: photoId,
@@ -1253,21 +1253,21 @@ export const transformComparisonData = (comparisonData) => {
  */
 export const getSkinTrendScores = async ({ skin_condition_name, sort_order = 'desc' }) => {
   const allowedConditions = [
-    'hydration', 'uniformness', 'redness', 'translucency', 'lines', 
-    'eye_bags', 'pores', 'skin_tone', 'pigmentation', 'acne', 
+    'hydration', 'uniformness', 'redness', 'translucency', 'lines',
+    'eye_bags', 'pores', 'skin_tone', 'pigmentation', 'acne',
     'eyes_age', 'age', 'skin_type'
   ];
-  
+
   if (!allowedConditions.includes(skin_condition_name)) {
     throw new Error(
       `Invalid skin_condition_name: ${skin_condition_name}. Must be one of ${allowedConditions.join(", ")}`
     );
   }
-  
+
   if (!['asc', 'desc'].includes(sort_order)) {
     throw new Error("sort_order must be 'asc' or 'desc'");
   }
-  
+
   try {
     console.log("🔵 Fetching skin trend scores:", { skin_condition_name, sort_order });
     const response = await apiClient.get("/haut_mask/skin-trend-scores", {
@@ -1275,7 +1275,7 @@ export const getSkinTrendScores = async ({ skin_condition_name, sort_order = 'de
     });
 
     console.log('🔵 response of getSkinTrendScores: in apiService', response.status);
-    
+
     if (response.status === 200) {
       console.log("✅ Skin trend scores fetched successfully");
       return {
@@ -1284,15 +1284,15 @@ export const getSkinTrendScores = async ({ skin_condition_name, sort_order = 'de
       };
     } else {
       console.log("in else block of getSkinTrendScores");
-      
+
       throw new Error(response.data.message || "Failed to fetch skin trend scores");
     }
   } catch (error) {
     console.error("🔴 getSkinTrendScores error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch skin trend scores"
+      error.message ||
+      "Failed to fetch skin trend scores"
     );
   }
 };
@@ -1333,8 +1333,8 @@ export const getChatHistory = async ({ type, image_id }) => {
     console.error("🔴 getChatHistory error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch chat history"
+      error.message ||
+      "Failed to fetch chat history"
     );
   }
 };
@@ -1378,8 +1378,8 @@ export const postChatMessage = async (body) => {
     console.error("🔴 postChatMessage error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to post chat message"
+      error.message ||
+      "Failed to post chat message"
     );
   }
 };
@@ -1395,20 +1395,20 @@ export const postChatMessage = async (body) => {
 export const createThread = async (messageData, retryCount = 0) => {
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000; // 1 second
-  
+
   try {
     console.log("🔵 Creating new thread:", messageData, `(attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
-    
+
     // For snapshot_feedback type, include image_id if provided
     const requestData = { ...messageData };
     if (messageData.thread_type === 'snapshot_feedback' && messageData.image_id) {
       requestData.image_id = messageData.image_id;
     }
 
-    console.log(requestData,'rqust dtat')
-    
+    console.log(requestData, 'rqust dtat')
+
     const response = await apiClient.post("/thread/message", requestData);
-    
+
     if (response.data.status === 200) {
       console.log("✅ Thread created successfully");
       return {
@@ -1420,7 +1420,7 @@ export const createThread = async (messageData, retryCount = 0) => {
     }
   } catch (error) {
     console.error("🔴 createThread error:", error);
-    
+
     // Enhanced error logging
     if (error.code === 'ECONNABORTED') {
       console.error("🔴 Request timeout - server took too long to respond");
@@ -1431,22 +1431,22 @@ export const createThread = async (messageData, retryCount = 0) => {
     } else if (error.request) {
       console.error("🔴 No response received - server might be down");
     }
-    
+
     // Retry logic for network-related errors
     if (retryCount < MAX_RETRIES && shouldRetry(error)) {
       console.log(`🔄 Retrying createThread in ${RETRY_DELAY}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-      
+
       // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-      
+
       // Exponential backoff for subsequent retries
       const nextRetryDelay = RETRY_DELAY * Math.pow(2, retryCount);
       await new Promise(resolve => setTimeout(resolve, nextRetryDelay));
-      
+
       // Recursive retry
       return createThread(messageData, retryCount + 1);
     }
-    
+
     // If we've exhausted retries or it's not a retryable error, throw a user-friendly error
     const userFriendlyMessage = getUserFriendlyErrorMessage(error);
     throw new Error(userFriendlyMessage);
@@ -1490,21 +1490,21 @@ const getUserFriendlyErrorMessage = (error) => {
 export const sendThreadMessage = async (threadId, messageData, retryCount = 0) => {
   const MAX_RETRIES = 3;
   const RETRY_DELAY = 1000; // 1 second
-  
+
   try {
     console.log("🔵 Sending thread message:", { threadId, messageData }, `(attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
     console.log("🔵 threadId:", threadId);
     console.log("🔵 messageData:", messageData);
-    
+
     // For snapshot_feedback type, include image_id if provided
     const requestData = { ...messageData };
     if (messageData.thread_type === 'snapshot_feedback' && messageData.image_id) {
       requestData.image_id = messageData.image_id;
     }
-    
+
     const response = await apiClient.post(`/thread/message/${threadId}`, requestData);
     console.log("🔵 response of sendThreadMessage: in apiService", response);
-    
+
     if (response.data.status === 200) {
       console.log("✅ Thread message sent successfully");
       console.log("🔵 response of sendThreadMessage: in apiService", response.data);
@@ -1517,7 +1517,7 @@ export const sendThreadMessage = async (threadId, messageData, retryCount = 0) =
     }
   } catch (error) {
     console.error("🔴 sendThreadMessage error:", error);
-    
+
     // Enhanced error logging
     if (error.code === 'ECONNABORTED') {
       console.error("🔴 Request timeout - server took too long to respond");
@@ -1528,22 +1528,22 @@ export const sendThreadMessage = async (threadId, messageData, retryCount = 0) =
     } else if (error.request) {
       console.error("🔴 No response received - server might be down");
     }
-    
+
     // Retry logic for network-related errors
     if (retryCount < MAX_RETRIES && shouldRetry(error)) {
       console.log(`🔄 Retrying sendThreadMessage in ${RETRY_DELAY}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-      
+
       // Wait before retrying
       await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-      
+
       // Exponential backoff for subsequent retries
       const nextRetryDelay = RETRY_DELAY * Math.pow(2, retryCount);
       await new Promise(resolve => setTimeout(resolve, nextRetryDelay));
-      
+
       // Recursive retry
       return sendThreadMessage(threadId, messageData, retryCount + 1);
     }
-    
+
     // If we've exhausted retries or it's not a retryable error, throw a user-friendly error
     const userFriendlyMessage = getUserFriendlyErrorMessage(error);
     throw new Error(userFriendlyMessage);
@@ -1559,11 +1559,11 @@ export const sendThreadMessage = async (threadId, messageData, retryCount = 0) =
 export const confirmThreadItem = async (threadId, item, bool) => {
   try {
     console.log("🔵 Confirming thread item:", { threadId, item });
-    
+
     const response = await apiClient.post(`/thread/thread/${threadId}/confirm-item?user_decline=${bool}`, {
       item
     });
-    
+
     if (response.data.status === 200) {
       console.log("✅ Thread item confirmed successfully");
       return {
@@ -1577,8 +1577,8 @@ export const confirmThreadItem = async (threadId, item, bool) => {
     console.error("🔴 confirmThreadItem error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to confirm thread item"
+      error.message ||
+      "Failed to confirm thread item"
     );
   }
 };
@@ -1591,9 +1591,9 @@ export const confirmThreadItem = async (threadId, item, bool) => {
 export const getChatHistoryByImageId = async (imageId) => {
   try {
     console.log("🔵 Fetching chat history for image_id:", imageId);
-    
+
     const response = await apiClient.get(`/thread/get-latest-chat?image_id=${imageId}`);
-    
+
     if (response.data.status === 200) {
       console.log("🔵 response of getChatHistoryByImageId: in apiService", response.data);
       console.log("✅ Chat history fetched successfully");
@@ -1608,8 +1608,8 @@ export const getChatHistoryByImageId = async (imageId) => {
     console.error("🔴 getChatHistoryByImageId error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch chat history"
+      error.message ||
+      "Failed to fetch chat history"
     );
   }
 };
@@ -1629,7 +1629,7 @@ export const getChatHistoryByImageId = async (imageId) => {
 export const sendSnapshotFirstChat = async (chatData) => {
   try {
     console.log("🔵 Sending snapshot first chat:", chatData);
-    
+
     const response = await apiClient.post("/thread/snapshot-first-chat", {
       imageId: chatData.imageId,
       firstName: chatData.firstName,
@@ -1639,7 +1639,7 @@ export const sendSnapshotFirstChat = async (chatData) => {
       excludedMetrics: chatData.excludedMetrics || [],
       metrics: chatData.metrics || {},
     });
-    
+
     if (response.data.status === 200) {
       console.log("✅ Snapshot first chat sent successfully");
       return {
@@ -1653,8 +1653,8 @@ export const sendSnapshotFirstChat = async (chatData) => {
     console.error("🔴 sendSnapshotFirstChat error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to send snapshot first chat"
+      error.message ||
+      "Failed to send snapshot first chat"
     );
   }
 };
@@ -1669,7 +1669,7 @@ export const sendSnapshotFirstChat = async (chatData) => {
  */
 export const getRoutineItems = async (retryCount = 0) => {
   const MAX_RETRIES = 3;
-  
+
   try {
     console.log("🔵 Fetching routine items... (retry:", retryCount, ")");
 
@@ -1686,34 +1686,34 @@ export const getRoutineItems = async (retryCount = 0) => {
     }
   } catch (error) {
     console.error("🔴 getRoutineItems error:", error);
-    
+
     // Handle specific error types with retry limit
     if ((error.message === 'DUPLICATE_REQUEST' || error.message === 'REQUEST_IN_PROGRESS') && retryCount < MAX_RETRIES) {
       console.log(`🔄 getRoutineItems: Request in progress, retrying after delay... (${retryCount + 1}/${MAX_RETRIES})`);
-      
+
       // Wait a bit and retry
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // Clear any stuck pending requests
       clearPendingRequests();
-      
+
       // Retry the request with incremented retry count
       return getRoutineItems(retryCount + 1);
     }
-    
+
     // Handle network errors
     if (error.code === 'ECONNABORTED') {
       throw new Error('Request timeout - please check your connection');
     }
-    
+
     if (error.message === 'Network Error') {
       throw new Error('Network error - please check your internet connection');
     }
-    
+
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to fetch routine items"
+      error.message ||
+      "Failed to fetch routine items"
     );
   }
 };
@@ -1737,7 +1737,7 @@ export const createRoutineItem = async (itemData) => {
     const formData = new URLSearchParams();
     formData.append("name", itemData.name);
     formData.append("type", itemData.type?.toLowerCase() || '');
-    
+
     // Only add usage and frequency for non-treatment types
     if (itemData.usage) {
       formData.append("usage", itemData.usage.toLowerCase());
@@ -1745,24 +1745,24 @@ export const createRoutineItem = async (itemData) => {
     if (itemData.frequency) {
       formData.append("frequency", itemData.frequency.toLowerCase().replace(" ", "_"));
     }
-    
+
     // Add UPC code if provided (for scanned products)
     if (itemData.upc) {
       formData.append("upc", itemData.upc);
     }
-    
+
     // Add new fields for updated API
     if (itemData.concern && Array.isArray(itemData.concern)) {
       formData.append("concern", JSON.stringify(itemData.concern));
     }
-    
+
     // Handle treatment types differently - use treatment_date instead of start_date/end_date
     const isTreatmentType = itemData.type && (
-      itemData.type.includes('treatment_facial') || 
-      itemData.type.includes('treatment_injection') || 
+      itemData.type.includes('treatment_facial') ||
+      itemData.type.includes('treatment_injection') ||
       itemData.type.includes('treatment_other')
     );
-    
+
     if (isTreatmentType) {
       if (itemData.treatment_date) {
         formData.append("treatment_date", itemData.treatment_date);
@@ -1775,7 +1775,7 @@ export const createRoutineItem = async (itemData) => {
         formData.append("end_date", itemData.end_date);
       }
     }
-    
+
     formData.append("extra", JSON.stringify(itemData.extra || {}));
 
     const response = await apiClient.post("/routine/", formData.toString(), {
@@ -1797,8 +1797,8 @@ export const createRoutineItem = async (itemData) => {
     console.error("🔴 createRoutineItem error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to create routine item"
+      error.message ||
+      "Failed to create routine item"
     );
   }
 };
@@ -1831,19 +1831,19 @@ export const updateRoutineItem = async (itemId, itemData) => {
     if (itemData.frequency) {
       formData.append("frequency", itemData.frequency.toLowerCase().replace(" ", "_"));
     }
-    
+
     // Add new fields for updated API
     if (itemData.concern && Array.isArray(itemData.concern)) {
       formData.append("concern", JSON.stringify(itemData.concern));
     }
-    
+
     // Handle treatment types differently - use treatment_date instead of start_date/end_date
     const isTreatmentType = itemData.type && (
-      itemData.type.includes('treatment_facial') || 
-      itemData.type.includes('treatment_injection') || 
+      itemData.type.includes('treatment_facial') ||
+      itemData.type.includes('treatment_injection') ||
       itemData.type.includes('treatment_other')
     );
-    
+
     if (isTreatmentType) {
       if (itemData.treatment_date) {
         formData.append("treatment_date", itemData.treatment_date);
@@ -1856,7 +1856,7 @@ export const updateRoutineItem = async (itemId, itemData) => {
         formData.append("end_date", itemData.end_date);
       }
     }
-    
+
     formData.append("extra", JSON.stringify(itemData.extra || {}));
 
     const response = await apiClient.patch(`/routine/${itemId}`, formData.toString(), {
@@ -1878,8 +1878,8 @@ export const updateRoutineItem = async (itemId, itemData) => {
     console.error("🔴 updateRoutineItem error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to update routine item"
+      error.message ||
+      "Failed to update routine item"
     );
   }
 };
@@ -1919,8 +1919,8 @@ export const rateEffectiveness = async (routineItemId, ratings) => {
     console.error("🔴 rateEffectiveness error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to rate effectiveness"
+      error.message ||
+      "Failed to rate effectiveness"
     );
   }
 };
@@ -1960,8 +1960,8 @@ export const toggleTracking = async (routineItemId, action) => {
     console.error("🔴 toggleTracking error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to toggle tracking"
+      error.message ||
+      "Failed to toggle tracking"
     );
   }
 };
@@ -1990,8 +1990,8 @@ export const deleteRoutineItem = async (itemId) => {
     console.error("🔴 deleteRoutineItem error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to delete routine item"
+      error.message ||
+      "Failed to delete routine item"
     );
   }
 };
@@ -2048,8 +2048,8 @@ export const getComparisonSummaries = async () => {
     console.error('🔴 getComparisonSummaries error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch comparison summaries'
+      error.message ||
+      'Failed to fetch comparison summaries'
     );
   }
 };
@@ -2089,8 +2089,8 @@ export const generateConcernMessage = async (concernName) => {
     console.error('🔴 generateConcernMessage error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to generate concern message'
+      error.message ||
+      'Failed to generate concern message'
     );
   }
 };
@@ -2123,8 +2123,8 @@ export const registerFCMToken = async (fcmToken) => {
     console.error('🔴 FCM token registration error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to register FCM token'
+      error.message ||
+      'Failed to register FCM token'
     );
   }
 };
@@ -2158,8 +2158,8 @@ export const searchProducts = async (query, limit = 20) => {
     console.error("🔴 searchProducts error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to search products"
+      error.message ||
+      "Failed to search products"
     );
   }
 };
@@ -2188,8 +2188,8 @@ export const searchProductByUPC = async (upc) => {
     console.error("🔴 searchProductByUPC error:", error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        "Failed to search product"
+      error.message ||
+      "Failed to search product"
     );
   }
 };
@@ -2205,11 +2205,11 @@ export const extractProductFromImage = async (imageUri) => {
 
     // Create form data for multipart upload
     const formData = new FormData();
-    
+
     // Get the file extension from URI
     const uriParts = imageUri.split('.');
     const fileExtension = uriParts[uriParts.length - 1].toLowerCase();
-    
+
     // Determine MIME type
     let mimeType = 'image/jpeg';
     if (fileExtension === 'png') {
@@ -2217,7 +2217,7 @@ export const extractProductFromImage = async (imageUri) => {
     } else if (fileExtension === 'webp') {
       mimeType = 'image/webp';
     }
-    
+
     // Append the image file
     formData.append('image', {
       uri: imageUri,
@@ -2229,14 +2229,14 @@ export const extractProductFromImage = async (imageUri) => {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
-     // timeout: 60000, // 60 second timeout for image processing
+      // timeout: 60000, // 60 second timeout for image processing
     });
 
     console.log("🔵 Response of extractProductFromImage:", response);
 
     if (response.data.status === 200) {
       console.log("✅ Product extracted successfully:", response.data.data);
-      
+
       // Transform response to match expected format
       const productData = response.data.data;
       return {

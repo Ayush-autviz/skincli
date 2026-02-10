@@ -16,7 +16,7 @@ import {
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { User, PencilLine } from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
-import { colors, spacing } from '../styles';
+import { colors, spacing, fontFamily } from '../styles';
 import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 import useAuthStore from '../stores/authStore';
@@ -41,7 +41,7 @@ export default function AboutMeScreen(): React.JSX.Element {
     const [isProfileLoading, setIsProfileLoading] = useState<boolean>(false);
     const [activeTab, setActiveTab] = useState<TabType>('photos');
 
-    console.log('profile', profile);
+    // console.log('profile', profile);
 
     // Fetch profile on mount
     useEffect(() => {
@@ -63,7 +63,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                 setProfile(res.profile);
             }
         } catch (err: any) {
-            console.error('🔴 Profile fetch error:', err);
+            // console.error('🔴 Profile fetch error:', err);
         } finally {
             setIsProfileLoading(false);
         }
@@ -287,7 +287,8 @@ const styles = StyleSheet.create({
     // },
     // headerTitle: {
     //     fontSize: 17,
-    //     fontWeight: '600',
+    //     // fontWeight: '600',
+    //     fontFamily: fontFamily.semiBold,
     //     color: '#1C1917',
     // },
 
@@ -333,7 +334,8 @@ const styles = StyleSheet.create({
     },
     profileName: {
         fontSize: 20,
-        fontWeight: '600',
+        // fontWeight: '600',
+        fontFamily: fontFamily.semiBold,
         color: '#1C1917',
         marginBottom: 4,
     },
@@ -372,6 +374,7 @@ const styles = StyleSheet.create({
     tabText: {
         fontSize: 15,
         fontWeight: '500',
+        fontFamily: fontFamily.medium,
         color: '#78716C',
     },
     activeTabText: {

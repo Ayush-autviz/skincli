@@ -27,7 +27,7 @@ import SettingsDrawer from '../components/layout/SettingsDrawer';
 import MyRoutine from '../components/routine/MyRoutine';
 import RecommendationsList from '../components/routine/RecommendationsList';
 import ActivityList from '../components/routine/ActivityList';
-import { colors, spacing, typography } from '../styles';
+import { colors, spacing, typography, fontFamily } from '../styles';
 
 export default function RoutineTab(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<string>('myRoutine');
@@ -36,13 +36,13 @@ export default function RoutineTab(): React.JSX.Element {
   const navigation = useNavigation();
 
   useEffect(() => {
-    console.log('🧴 Routine tab loaded');
+    // console.log('🧴 Routine tab loaded');
   }, []);
 
   // Refetch routines when screen comes into focus (e.g., returning from thread chat)
   useFocusEffect(
     React.useCallback(() => {
-      console.log('🧴 Routine tab focused - refetching routines');
+      // console.log('🧴 Routine tab focused - refetching routines');
       // Trigger refetch in MyRoutine component
       if (myRoutineRef.current && myRoutineRef.current.refetchRoutines) {
         myRoutineRef.current.refetchRoutines();
@@ -149,11 +149,13 @@ const styles = StyleSheet.create({
   tabText: {
     fontSize: 15,
     fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
     color: '#414651', // Muted text for inactive
   },
   activeTabText: {
     color: '#414651', // Teal color for active
     fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
   },
   activeTabIndicator: {
     position: 'absolute',

@@ -309,7 +309,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     debounceTimeoutRef.current = setTimeout(async () => {
       // Prevent multiple simultaneous fetch calls
       if (fetchInProgressRef.current) {
-        console.log('🔄 MyRoutine: Fetch already in progress, skipping...');
+        // console.log('🔄 MyRoutine: Fetch already in progress, skipping...');
         return;
       }
 
@@ -322,7 +322,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         const response = await getRoutineItems() as ApiResponse;
 
         if (response.success && response.data) {
-          console.log('🔄 MyRoutine: Routine items fetchedHHHHHHHHH:', response.data);
+          // console.log('🔄 MyRoutine: Routine items fetchedHHHHHHHHH:', response.data);
           const transformedItems = response.data.map(transformApiItem);
           setRoutineItems(transformedItems);
           shouldRefetchOnFocusRef.current = false; // No need to refetch if we have data
@@ -338,11 +338,11 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
         setLoading(false);
       } catch (err: any) {
-        console.error('🔴 MyRoutine: Error fetching routine items:', err);
+        // console.error('🔴 MyRoutine: Error fetching routine items:', err);
 
         // Handle specific error types
         if (err.message === 'DUPLICATE_REQUEST' || err.message === 'REQUEST_IN_PROGRESS') {
-          console.log('🔄 MyRoutine: Request in progress, will retry shortly...');
+          // console.log('🔄 MyRoutine: Request in progress, will retry shortly...');
           // Clear any stuck pending requests
           clearPendingRequests();
           // Wait a bit and retry
@@ -367,7 +367,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
   // Expose refetchRoutines method to parent component
   useImperativeHandle(ref, () => ({
     refetchRoutines: () => {
-      console.log('🔄 MyRoutine: Refetching routines from parent');
+      // console.log('🔄 MyRoutine: Refetching routines from parent');
       fetchRoutineItems();
     }
   }));
@@ -430,20 +430,20 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           (shouldRefetchOnFocusRef.current && !loading && !fetchInProgressRef.current && routineItems.length === 0);
 
         if (shouldRefetch) {
-          console.log('🔄 MyRoutine: Screen focused, refetching routines...', {
-            hasAttempted: hasAttemptedFetchRef.current,
-            shouldRefetchOnFocus: shouldRefetchOnFocusRef.current,
-            hasData: routineItems.length > 0,
-            isLoading: loading
-          });
+          // console.log('🔄 MyRoutine: Screen focused, refetching routines...', {
+          //   hasAttempted: hasAttemptedFetchRef.current,
+          //   shouldRefetchOnFocus: shouldRefetchOnFocusRef.current,
+          //   hasData: routineItems.length > 0,
+          //   isLoading: loading
+          // });
           fetchRoutineItems();
         } else {
-          console.log('🔄 MyRoutine: Screen focused, no need to refetch', {
-            hasAttempted: hasAttemptedFetchRef.current,
-            shouldRefetchOnFocus: shouldRefetchOnFocusRef.current,
-            hasData: routineItems.length > 0,
-            isLoading: loading
-          });
+          // console.log('🔄 MyRoutine: Screen focused, no need to refetch', {
+          //   hasAttempted: hasAttemptedFetchRef.current,
+          //   shouldRefetchOnFocus: shouldRefetchOnFocusRef.current,
+          //   hasData: routineItems.length > 0,
+          //   isLoading: loading
+          // });
         }
       }, 300); // 300ms debounce delay for focus effect
     }, [routineItems.length, loading])
@@ -560,7 +560,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         initialMessage: initialMessage
       });
     } catch (error) {
-      console.error("MyRoutine: Error creating or navigating to routine chat:", error);
+      // console.error("MyRoutine: Error creating or navigating to routine chat:", error);
       Alert.alert("Error", "Sorry, couldn't start the routine chat. Please try again.");
     }
   };
@@ -698,7 +698,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       if (editingItem) {
         // Update existing item
         const response = await updateRoutineItem(editingItem.id, apiItemData) as ApiResponse;
-        console.log('🟡 MyRoutine: Update response:', response);
+        // console.log('🟡 MyRoutine: Update response:', response);
 
         if (response.success) {
           // Refetch all routine items to ensure consistency
@@ -708,7 +708,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       } else {
         // Create new item
         const response = await createRoutineItem(apiItemData) as ApiResponse;
-        console.log('🟡 MyRoutine: Create response:', response);
+        // console.log('🟡 MyRoutine: Create response:', response);
 
         if (response.success) {
           // Refetch all routine items to ensure consistency
@@ -718,7 +718,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       }
       closeModal();
     } catch (err: any) {
-      console.error('🔴 MyRoutine: Error saving item:', err);
+      // console.error('🔴 MyRoutine: Error saving item:', err);
       Alert.alert('Error', err.message || 'Failed to save item. Please try again.');
     } finally {
       setIsSaving(false);
@@ -727,7 +727,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   // Render individual routine item
   const renderRoutineItem = ({ item }: { item: RoutineItem }): React.JSX.Element => {
-    console.log("🔵 renderRoutineItem - item:", item);
+    // console.log("🔵 renderRoutineItem - item:", item);
     const isNotUsing = item.dateStopped && new Date(item.dateStopped) <= new Date();
     const usageDuration = calculateUsageDuration(item.dateStarted);
 
@@ -801,7 +801,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       }
     }
 
-    console.log('item', item);
+    // console.log('item', item);
 
     // Determine tracking text for Product type only
     let trackingText: string | null = null;
@@ -814,7 +814,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         trackingText = 'Start effectiveness tracking';
       } else {
         // Check if all concerns tracking is completed
-        const allCompleted = item.concern_tracking.some((tracking: any) => tracking.is_completed === true);
+        const allCompleted = item.concern_tracking?.some((tracking: any) => tracking.is_completed === true);
         if (allCompleted) {
           trackingText = 'Review effectiveness tracking';
         } else {

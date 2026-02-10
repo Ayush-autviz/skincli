@@ -26,7 +26,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, StyleProp, ViewStyle } from 'react-native';
 import { ClipboardPlus, Pill, ChevronRight, ArrowRight } from 'lucide-react-native';
 import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
-import { colors, spacing, typography } from '../../styles';
+import { colors, spacing, typography, fontFamily } from '../../styles';
 import Chip from './Chip';
 
 interface ChipData {
@@ -241,7 +241,7 @@ export default function ListItem({
           {bottomText && (
             <>
               <View style={{ height: 1, backgroundColor: '#E0E0E0', marginVertical: 8 }}></View>
-              <View style={{ flexDirection: 'row', alignItems: 'center',}}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', }}>
                 <Text style={bottomText === 'Start Effective Tracking' ? styles.bottomTextStartTracking : styles.bottomText}>
                   {bottomText}
                 </Text>
@@ -372,7 +372,8 @@ const styles = StyleSheet.create({
     fontSize: 16,
     lineHeight: 22,
     color: colors.textPrimary,
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
     flex: 1,
   },
   titleSmall: {
@@ -382,7 +383,8 @@ const styles = StyleSheet.create({
   titleLarge: {
     fontSize: 18,
     lineHeight: 24,
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
   },
   titleHigh: {
     color: colors.primary,
@@ -390,7 +392,8 @@ const styles = StyleSheet.create({
   brandName: {
     fontSize: 11,
     color: colors.textTertiary,
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
     marginBottom: 2,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -398,14 +401,16 @@ const styles = StyleSheet.create({
   brandValue: {
     fontSize: 12,
     color: colors.textSecondary,
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 13,
     color: colors.textSecondary,
     marginBottom: 4,
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
   },
   description: {
     fontSize: 13,
@@ -429,13 +434,15 @@ const styles = StyleSheet.create({
     fontSize: 11,
     color: '#770737',
     // marginTop: 2,
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
   },
   bottomText: {
     fontSize: 11,
     color: colors.primary,
     // marginTop: 2,
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
   },
   newBadge: {
     backgroundColor: colors.success,
@@ -446,7 +453,8 @@ const styles = StyleSheet.create({
   },
   newBadgeText: {
     fontSize: 10,
-    fontWeight: '700',
+    // fontWeight: '700',
+    fontFamily: fontFamily.bold,
     color: colors.white,
     letterSpacing: 0.5,
   },

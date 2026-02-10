@@ -116,7 +116,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                 ]
               );
             } catch (error: any) {
-              console.error('Error stopping tracking:', error);
+              // console.error('Error stopping tracking:', error);
               Alert.alert(
                 'Error',
                 error.message || 'Failed to stop tracking. Please try again.',
@@ -259,7 +259,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                     // Show success modal
                     setShowSuccessModal(true);
                   } catch (error: any) {
-                    console.error('Error rating effectiveness:', error);
+                    // console.error('Error rating effectiveness:', error);
                     Alert.alert(
                       'Error',
                       'Failed to rate effectiveness. Please try again.',
@@ -291,7 +291,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                     // Show success modal
                     setShowSuccessModal(true);
                   } catch (error: any) {
-                    console.error('Error rating effectiveness:', error);
+                    // console.error('Error rating effectiveness:', error);
                     Alert.alert(
                       'Error',
                       'Failed to rate effectiveness. Please try again.',
@@ -302,7 +302,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
 
                 const handleContinueTracking = () => {
                   // TODO: Implement continue tracking
-                  console.log('Continue tracking:', tracking.concern_name);
+                  // console.log('Continue tracking:', tracking.concern_name);
                 };
 
                 // Calculate score difference
@@ -623,16 +623,16 @@ const styles = StyleSheet.create({
   },
   brandNameNew: {
     fontSize: fontSize.sm,
-    fontWeight: '700',
-    // fontFamily: fontFamily.bold,
+    // fontWeight: '700',
+    fontFamily: fontFamily.bold,
     color: colors.textSecondary,
     letterSpacing: 1,
     marginBottom: 4,
   },
   productNameNew: {
     fontSize: fontSize.lg,
-    fontWeight: '700',
-    // fontFamily: fontFamily.bold,
+    // fontWeight: '700',
+    fontFamily: fontFamily.bold,
     color: colors.textPrimary,
     lineHeight: 22,
   },
@@ -645,12 +645,14 @@ const styles = StyleSheet.create({
   usageResponseText: {
     fontSize: fontSize.sm,
     color: '#364152',
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
     lineHeight: 20,
   },
   stopTrackingLink: {
     color: colors.primary,
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
     textDecorationLine: 'underline',
     marginTop: spacing.xs,
     fontSize: fontSize.sm,
@@ -707,7 +709,8 @@ const styles = StyleSheet.create({
   },
   changeValue: {
     fontSize: 14,
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
     color: '#44403C',
   },
   noChangeText: {
@@ -730,7 +733,8 @@ const styles = StyleSheet.create({
   },
   concernValue: {
     fontSize: 14,
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
     color: colors.textPrimary,
   },
   reviewStatusContainer: {
@@ -873,7 +877,8 @@ const styles = StyleSheet.create({
   },
   continueTrackingText: {
     fontSize: fontSize.sm,
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
     color: colors.textSecondary,
   },
   emptyState: {
@@ -884,7 +889,8 @@ const styles = StyleSheet.create({
   emptyStateText: {
     fontSize: fontSize.md,
     color: colors.textSecondary,
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
   },
   bottomSpacing: {
     height: 40,
@@ -912,7 +918,8 @@ const styles = StyleSheet.create({
   },
   stopTrackingButtonText: {
     fontSize: fontSize.md,
-    fontWeight: '700',
+    // fontWeight: '700',
+    fontFamily: fontFamily.bold,
     color: colors.white,
     letterSpacing: 0.3,
   },
@@ -948,10 +955,11 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: fontSize.xl,
-    fontWeight: '700',
+    // fontWeight: '700',
+    fontFamily: fontFamily.bold,
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.lg,
+    marginBottom: spacing.xs,
   },
   modalButton: {
     backgroundColor: colors.primary,
@@ -965,7 +973,8 @@ const styles = StyleSheet.create({
   },
   modalButtonText: {
     fontSize: fontSize.md,
-    fontWeight: '700',
+    // fontWeight: '700',
+    fontFamily: fontFamily.bold,
     color: colors.white,
     letterSpacing: 0.3,
   },

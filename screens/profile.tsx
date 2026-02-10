@@ -19,7 +19,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { launchImageLibrary, ImagePickerResponse, MediaType } from 'react-native-image-picker';
 import { useNavigation } from '@react-navigation/native';
-import { colors, spacing } from '../styles';
+import { colors, spacing, fontFamily } from '../styles';
 import { Image as ImageIcon, ChevronLeft, User, Mail, Calendar } from 'lucide-react-native';
 import { getProfile, updateProfile } from '../utils/newApiService';
 import useAuthStore from '../stores/authStore';
@@ -63,7 +63,7 @@ export default function Profile(): React.JSX.Element {
         setProfile(res.profile!);
       }
     } catch (err: any) {
-      console.error('🔴 Profile fetch error:', err);
+      // console.error('🔴 Profile fetch error:', err);
       setError(err?.message || 'Failed to load profile');
     } finally {
       setIsProfileLoading(false);
@@ -85,7 +85,7 @@ export default function Profile(): React.JSX.Element {
         navigation.goBack();
       }, 1500);
     } catch (err: any) {
-      console.error('🔴 Profile update error:', err);
+      // console.error('🔴 Profile update error:', err);
       setError(err?.message || 'Failed to update profile');
     } finally {
       setIsUpdating(false);
@@ -139,7 +139,7 @@ export default function Profile(): React.JSX.Element {
         }
       });
     } catch (err: any) {
-      console.error('🔴 Image picker error:', err);
+      // console.error('🔴 Image picker error:', err);
     }
   };
 
@@ -394,7 +394,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 18,
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
     color: '#1C1917',
   },
   headerRight: {
@@ -422,7 +423,8 @@ const styles = StyleSheet.create({
   successText: {
     color: '#059669',
     fontSize: 14,
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
   },
   errorContainer: {
     backgroundColor: '#FEF2F2',
@@ -435,7 +437,8 @@ const styles = StyleSheet.create({
   errorText: {
     color: '#DC2626',
     fontSize: 14,
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
   },
 
   // Photo Upload
@@ -463,7 +466,8 @@ const styles = StyleSheet.create({
   photoUploadText: {
     fontSize: 16,
     color: '#00839B',
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
   },
 
   // Input Fields
@@ -475,7 +479,8 @@ const styles = StyleSheet.create({
   },
   label: {
     fontSize: 14,
-    fontWeight: '500',
+    // fontWeight: '500',
+    fontFamily: fontFamily.medium,
     color: '#6B7280',
     marginBottom: 8,
   },
@@ -533,7 +538,8 @@ const styles = StyleSheet.create({
   },
   saveButtonText: {
     fontSize: 16,
-    fontWeight: '600',
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
     color: '#1C1917',
   },
 });

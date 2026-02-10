@@ -16,7 +16,7 @@ import { ChevronLeft, ChevronRight, Star, Plus, ArrowUp, ArrowDown } from 'lucid
 import { SvgXml } from 'react-native-svg';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import Carousel, { ICarouselInstance } from 'react-native-reanimated-carousel';
-import { colors, spacing, typography } from '../styles';
+import { colors, spacing, typography, fontFamily } from '../styles';
 import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 import { usePhotoContext } from '../contexts/PhotoContext';
@@ -186,8 +186,8 @@ export default function HomeScreen(): React.JSX.Element {
     const currentPhoto = currentDateGroup?.photos[currentPhotoInDate];
     const hasPhotosForCurrentDate = currentDateGroup?.photos.length > 0;
 
-    console.log("currentPhoto", currentPhoto);
-    console.log("currentDateGroup", currentDateGroup);
+    // console.log("currentPhoto", currentPhoto);
+    // console.log("currentDateGroup", currentDateGroup);
 
     // Refresh photos on focus
     useFocusEffect(
@@ -226,10 +226,10 @@ export default function HomeScreen(): React.JSX.Element {
                 try {
                     const prevResults = await getHautAnalysisResults(prevImageId);
                     if (prevResults && prevResults.length > 0) {
-                        previousMetrics = transformHautResults(prevResults);
+                        previousMetrics = transformHautResults(prevResults) as any;
                     }
                 } catch (e) {
-                    console.log('Could not load previous photo metrics');
+                    // console.log('Could not load previous photo metrics');
                 }
             }
             // If no previous in same date, look in previous date group
@@ -241,10 +241,10 @@ export default function HomeScreen(): React.JSX.Element {
                     try {
                         const prevResults = await getHautAnalysisResults(prevImageId);
                         if (prevResults && prevResults.length > 0) {
-                            previousMetrics = transformHautResults(prevResults);
+                            previousMetrics = transformHautResults(prevResults) as any;
                         }
                     } catch (e) {
-                        console.log('Could not load previous photo metrics');
+                        // console.log('Could not load previous photo metrics');
                     }
                 }
             }
@@ -312,7 +312,7 @@ export default function HomeScreen(): React.JSX.Element {
                 setTopConcerns(concerns);
             }
         } catch (error) {
-            console.log('Error loading concerns:', error);
+            // console.log('Error loading concerns:', error);
         } finally {
             setIsLoadingConcerns(false);
         }
@@ -329,7 +329,7 @@ export default function HomeScreen(): React.JSX.Element {
 
             // Trigger loading more photos when approaching the end (within 3 date groups)
             if (pagination.has_next && !isLoadingMore && newIndex >= dateGroups.length - 3) {
-                console.log('🔵 HOME: Loading more photos - approaching end of date groups');
+                // console.log('🔵 HOME: Loading more photos - approaching end of date groups');
                 loadMorePhotos();
             }
         }
@@ -702,7 +702,8 @@ const styles = StyleSheet.create({
     },
     dateBadgeText: {
         fontSize: 13,
-        fontWeight: '600',
+        // fontWeight: '600',
+        fontFamily: fontFamily.semiBold,
         color: '#666666',
         letterSpacing: 0.5,
     },
@@ -728,7 +729,8 @@ const styles = StyleSheet.create({
     },
     placeholderText: {
         fontSize: 16,
-        fontWeight: '600',
+        // fontWeight: '600',
+        fontFamily: fontFamily.semiBold,
         color: '#666666',
     },
     placeholderSubtext: {
@@ -763,7 +765,8 @@ const styles = StyleSheet.create({
     },
     newScanButtonText: {
         fontSize: 12,
-        fontWeight: '700',
+        // fontWeight: '700',
+        fontFamily: fontFamily.bold,
         color: '#FFFFFF',
     },
 

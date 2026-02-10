@@ -127,6 +127,7 @@
 		<string>Inter_24pt-Bold.ttf</string>
 		<string>Inter_18pt-Italic.ttf</string>
 		<string>Inter_28pt-Black.ttf</string>
+		<string>InterRegular.ttf</string>
 	</array>
 	<key>UIBackgroundModes</key>
 	<array>

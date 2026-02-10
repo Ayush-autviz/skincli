@@ -35,29 +35,56 @@ interface ApiResponse {
 }
 
 const ProductDetailSkeleton = () => (
-  <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+  <View style={{ flex: 1, backgroundColor: colors.background }}>
     {/* Product Card Skeleton */}
-    <SkeletonPlaceholder borderRadius={4}>
-      <SkeletonPlaceholder.Item padding={20} alignItems="center" marginTop={20}>
-        <SkeletonPlaceholder.Item width={150} height={150} borderRadius={10} marginBottom={20} />
-        <SkeletonPlaceholder.Item width={120} height={16} marginBottom={8} />
-        <SkeletonPlaceholder.Item width={200} height={24} marginBottom={20} />
-        <SkeletonPlaceholder.Item width="100%" height={48} borderRadius={24} />
-      </SkeletonPlaceholder.Item>
-    </SkeletonPlaceholder>
+    <View style={[styles.productCard, { marginTop: 105 }]}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item flexDirection="row" alignItems="center">
+          <SkeletonPlaceholder.Item width={80} height={80} borderRadius={10} marginRight={16} />
+          <SkeletonPlaceholder.Item flex={1}>
+            <SkeletonPlaceholder.Item width={100} height={14} marginBottom={8} />
+            <SkeletonPlaceholder.Item width={180} height={20} />
+          </SkeletonPlaceholder.Item>
+        </SkeletonPlaceholder.Item>
+      </SkeletonPlaceholder>
+    </View>
 
     {/* Effectiveness Section Skeleton */}
-    <SkeletonPlaceholder borderRadius={4}>
-      <SkeletonPlaceholder.Item paddingHorizontal={20} marginTop={30}>
-        <SkeletonPlaceholder.Item width={100} height={18} marginBottom={16} />
-        {[1, 2, 3].map(i => (
-          <SkeletonPlaceholder.Item key={i} flexDirection="row" justifyContent="space-between" marginBottom={16}>
-            <SkeletonPlaceholder.Item width={100} height={14} />
-            <SkeletonPlaceholder.Item width={80} height={14} />
-          </SkeletonPlaceholder.Item>
-        ))}
-      </SkeletonPlaceholder.Item>
-    </SkeletonPlaceholder>
+    <View style={styles.section}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item width={120} height={18} marginBottom={16} />
+        <SkeletonPlaceholder.Item>
+          {[1, 2, 3].map(i => (
+            <SkeletonPlaceholder.Item key={i} marginBottom={16}>
+              <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" marginBottom={8}>
+                <SkeletonPlaceholder.Item width={140} height={14} />
+                <SkeletonPlaceholder.Item width={80} height={14} />
+              </SkeletonPlaceholder.Item>
+              {i < 3 && <SkeletonPlaceholder.Item width="100%" height={1} marginTop={4} opacity={0.5} />}
+            </SkeletonPlaceholder.Item>
+          ))}
+        </SkeletonPlaceholder.Item>
+      </SkeletonPlaceholder>
+    </View>
+
+    {/* Ingredients/Good For Section Skeleton */}
+    <View style={styles.section}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item width={150} height={18} marginBottom={16} />
+        <SkeletonPlaceholder.Item flexDirection="row" flexWrap="wrap">
+          {[1, 2, 3, 4].map(i => (
+            <SkeletonPlaceholder.Item
+              key={i}
+              width={80 + (i * 10)}
+              height={32}
+              borderRadius={10}
+              marginRight={8}
+              marginBottom={8}
+            />
+          ))}
+        </SkeletonPlaceholder.Item>
+      </SkeletonPlaceholder>
+    </View>
   </View>
 );
 

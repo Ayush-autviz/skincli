@@ -1763,6 +1763,10 @@ export default function MetricDetailScreen(): React.JSX.Element {
             }
           }
 
+          console.log('🔵 maskImageData:', maskImageData);
+          console.log('🔵 conditionName:', conditionName);
+          console.log("trendScores:", trendScores);
+
           // If no mask data, show the original photo instead
           if (conditionName && (maskImageData?.mask_img_url || parsedPhotoData?.storageUrl)) {
             const latestScore = Number(metricValue);
@@ -1770,12 +1774,19 @@ export default function MetricDetailScreen(): React.JSX.Element {
             let changeArrow = '→';
             let changeAbs = 0;
             if (Array.isArray(trendScores) && trendScores.length >= 2) {
-              const s0 = Number(trendScores[0]?.skin_condition_score ?? trendScores[0]?.score ?? latestScore);
-              const s1 = Number(trendScores[1]?.skin_condition_score ?? trendScores[1]?.score ?? latestScore);
+              const lastIdx = trendScores.length - 1;
+              const s0 = Number(trendScores[lastIdx]?.skin_condition_score ?? trendScores[lastIdx]?.score ?? latestScore);
+              const s1 = Number(trendScores[lastIdx - 1]?.skin_condition_score ?? trendScores[lastIdx - 1]?.score ?? latestScore);
+              console.log('🔵 s0:', s0);
+              console.log('🔵 s1:', s1);
               const diff = s0 - s1;
               changeAbs = Math.abs(Math.round(diff));
               changeArrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
             }
+
+            console.log('🔵 latestScore:', latestScore);
+            console.log('🔵 changeAbs:', changeAbs);
+            console.log('🔵 changeArrow:', changeArrow);
 
             return (
               <View style={{ marginHorizontal: 16 }}>

@@ -129,7 +129,7 @@ export default function AboutMeScreen(): React.JSX.Element {
         <SafeAreaView style={styles.container}>
             <HomeHeader onMenuPress={() => setIsSettingsVisible(true)} />
 
-            <View style={styles.headerSpacer} />
+
 
             {/* Profile Card Section */}
             <View style={styles.profileCard}>
@@ -296,7 +296,7 @@ const styles = StyleSheet.create({
     profileCard: {
         backgroundColor: '#FFFFFF',
         marginHorizontal: spacing.md,
-        marginTop: spacing.md,
+        marginTop: spacing.md + 40,
         marginBottom: spacing.md,
         paddingVertical: 20,
         paddingHorizontal: spacing.lg,

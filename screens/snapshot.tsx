@@ -3,90 +3,50 @@
 
 /* ------------------------------------------------------
 WHAT IT DOES
-- Displays full-size photo
+- Displays full-size photo in a scrollable layout
 - Shows analysis results from Haut.ai API
 - Allows sharing or deletion
 - Displays metadata and timestamps
-- Creates AI thread if one doesn't exist for completed analysis
-- Passes threadId to child components for AI message display
+- Shows AI insight card and SkinCheck section
 
 NAVIGATION FLOWS
 - From Camera: Full Haut.ai processing flow (processImageWithHaut → startPollingForResults)
 - From PhotoGrid: Skip processing, go directly to polling (photos already processed by API)
   * Uses fromPhotoGrid='true' param and existing imageId to skip processImageWithHaut()
   * Goes directly to startPollingForResults() with the provided imageId
-
-STATE MANAGEMENT
-- viewState: Controls the current UI mode
-  - 'default': The home state - what you see when you first open the screen
-    * Collapsed metrics sheet (30% height)
-    * Photo at normal zoom (1x)
-    * This is the state everything returns to
-  - 'metrics': Expanded metrics sheet view (80% height)
-  - 'zooming': Photo zoom mode with minimized metrics sheet (10% height)
-
-- uiState: Controls the data loading state
-  - 'loading': Initial state, waiting for photo to load
-  - 'analyzing': Photo is loaded, waiting for analysis results
-  - 'complete': Analysis results are available
-  - 'no_results': Analysis failed or returned no metrics
-
-STATE FLOW
-1. Start in 'loading' uiState, 'default' viewState
-2. When image loads → move to 'analyzing' uiState
-3. When analysis completes → move to 'complete' uiState
-4. User can transition between viewStates:
-   - Tap/drag metrics sheet → toggle between 'default'/'metrics'
-   - Pinch gesture on photo → enter 'zooming' viewState
-   - Tap photo while in 'metrics' → return to 'default'
-   - Tap photo while in 'zooming' → return to 'default'
-   - Exit zoom gesture → return to 'default'
-
-COMPONENT RELATIONSHIPS
-- Parent: Snapshot (owns primary state)
-  ├── Child: SnapshotPhoto (handles zoom/pan gestures)
-  └── Child: MetricsSheet (manages bottom sheet interactions)
 ------------------------------------------------------*/
 
-import React, { useState, useEffect, useRef, useCallback, forwardRef } from 'react';
-import { 
-  View, 
-  StyleSheet, 
-  TouchableOpacity, 
-  Image, 
-  Text, 
-  ScrollView, 
-  ActivityIndicator, 
-  Animated, 
-  Dimensions, 
-  Alert 
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import {
+  View,
+  StyleSheet,
+  TouchableOpacity,
+  Image,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  Dimensions,
+  Alert,
+  StatusBar,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ChevronLeft, MoreVertical, Minimize2, Trash2 } from 'lucide-react-native';
-import Header from '../components/ui/Header';
+import { ChevronLeft, ChevronRight, MoreVertical, Trash2, Sparkles, Star } from 'lucide-react-native';
 import { formatDate } from '../utils/dateUtils';
-import { 
-  processHautImage, 
-  getHautAnalysisResults, 
-  getHautMaskResults, 
-  getHautMaskImages, 
-  transformHautResults, 
-  deletePhoto 
+import {
+  processHautImage,
+  getHautAnalysisResults,
+  getHautMaskResults,
+  getHautMaskImages,
+  transformHautResults,
+  deletePhoto,
+  getImageChatSummary,
+  sendSnapshotFirstChat,
 } from '../utils/newApiService';
 import useAuthStore from '../stores/authStore';
-import { Camera } from 'react-native-vision-camera';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import Modal from 'react-native-modal';
-import MetricsSheet from '../components/analysis/MetricsSheet';
-import { 
-  PinchGestureHandler, 
-  PanGestureHandler, 
-  State, 
-  GestureHandlerRootView 
-} from 'react-native-gesture-handler';
-import SnapshotPhoto from '../components/photo/SnapshotPhoto';
-import AiMessageCard from '../components/chat/AiMessageCard';
 import { ImageBackground } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 interface SnapshotParams {
   photoId?: string;
@@ -111,92 +71,38 @@ interface PhotoData {
 }
 
 // Configurations
-const ANALYSIS_TIMEOUT_SECONDS = 45; // Timeout window for analysis to complete (1 minute)
-const SHOW_DEBUG_BUTTONS = false;
-const QUALITY_THRESHOLD_MIN = 10;  // Minimum acceptable image quality score
-const QUALITY_WARNING_THRESHOLD = 50;  // Threshold for displaying quality warning
+const ANALYSIS_TIMEOUT_SECONDS = 45;
+const QUALITY_THRESHOLD_MIN = 10;
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
-
-// Add a new UI state constant for no metrics/analysis
 const ANALYSIS_TIMEOUT_MS = ANALYSIS_TIMEOUT_SECONDS * 1000;
 
-// Define constants for UI layout
-const HEADER_HEIGHT = 110; // Actual height of the header component
-const BOTTOM_SHEET_COLLAPSED_PERCENTAGE = 25; // Peek height as 25% of screen
-
-// Define SNAP_POINTS here so Skeleton can access it
-const SNAP_POINTS = {
-  COLLAPSED: BOTTOM_SHEET_COLLAPSED_PERCENTAGE,   // Use the new constant
-  EXPANDED: 80,    // 80% height (metrics view)
-  MINIMIZED: 10    // 10% height (zooming mode) - Still relevant for sheet logic if needed elsewhere
-};
-
-// Modified EllipsisMenu component to handle zoom state
-const EllipsisMenu = ({ 
-  onDelete, 
-  viewState, 
-  onExitZoom 
-}: { 
-  onDelete: () => void; 
-  viewState: string; 
-  onExitZoom: () => void; 
+// ===== Ellipsis Menu Component =====
+const EllipsisMenu = ({
+  onDelete,
+}: {
+  onDelete: () => void;
 }): React.JSX.Element => {
   const [isMenuVisible, setIsMenuVisible] = useState<boolean>(false);
 
-  // If in zoom state, replace ellipsis with exit zoom button
-  if (viewState === 'zooming') {
-    return (
-      <TouchableOpacity 
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor: 'rgba(0,0,0,0.3)',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
-        onPress={onExitZoom}
-      >
-        <Minimize2 size={24} color="white" />
-      </TouchableOpacity>
-    );
-  }
-
-  // Standard ellipsis menu for non-zoom states
   const handleDelete = (): void => {
     setIsMenuVisible(false);
     Alert.alert(
       "Delete Snapshot",
       "Are you sure you want to delete this snapshot? This action cannot be undone.",
       [
-        {
-          text: "Cancel",
-          style: "cancel"
-        },
-        { 
-          text: "Delete", 
-          onPress: onDelete,
-          style: "destructive"
-        }
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", onPress: onDelete, style: "destructive" }
       ]
     );
   };
 
-
   return (
     <>
-      <TouchableOpacity 
+      <TouchableOpacity
         onPress={() => setIsMenuVisible(true)}
-        style={{
-          width: 40,
-          height: 40,
-          borderRadius: 20,
-          backgroundColor: 'rgba(0,0,0,0.3)',
-          justifyContent: 'center',
-          alignItems: 'center',
-        }}
+        style={styles.headerActionButton}
       >
-        <MoreVertical size={24} color="white" />
+        <MoreVertical size={22} color="#A3A3A3" />
       </TouchableOpacity>
 
       <Modal
@@ -206,41 +112,15 @@ const EllipsisMenu = ({
         backdropOpacity={0.4}
         animationIn="fadeIn"
         animationOut="fadeOut"
-        style={{
-          margin: 0,
-          justifyContent: 'flex-start',
-          alignItems: 'flex-end',
-        }}
+        style={{ margin: 0, justifyContent: 'flex-start', alignItems: 'flex-end' }}
       >
-        <View style={{
-          backgroundColor: 'white',
-          borderRadius: 8,
-          marginTop: 100, // Positioned below header
-          marginRight: 10,
-          width: 200,
-          shadowColor: '#000',
-          shadowOffset: {
-            width: 0,
-            height: 2,
-          },
-          shadowOpacity: 0.25,
-          shadowRadius: 3.84,
-          elevation: 5,
-        }}>
-          <TouchableOpacity 
-            style={{
-              flexDirection: 'row',
-              alignItems: 'center',
-              padding: 15,
-            }}
+        <View style={styles.menuContainer}>
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={handleDelete}
           >
             <Trash2 size={20} color="#FF3B30" />
-            <Text style={{
-              fontSize: 16,
-              marginLeft: 10,
-              color: '#FF3B30',
-            }}>Delete</Text>
+            <Text style={styles.menuDeleteText}>Delete</Text>
           </TouchableOpacity>
         </View>
       </Modal>
@@ -248,72 +128,33 @@ const EllipsisMenu = ({
   );
 };
 
-// --- Skeleton Placeholder Component ---
-const SnapshotSkeleton = ({ onClose }: { onClose: () => void }): React.JSX.Element => {
-  const initialSheetHeight = `${SNAP_POINTS.COLLAPSED}%`;
-
-  return (
-    <View style={styles.skeletonContainer}>
-      {/* Skeleton Placeholder for Photo */}
-      <View style={styles.skeletonPhoto} />
-
-      {/* Skeleton Placeholder for Header Area (Simplified for Debugging) */}
-      <View style={styles.skeletonHeaderArea}> 
-        <Text style={{ color: 'white', textAlign: 'center', paddingTop: 60 }}>Loading...</Text> 
-      </View>
-
-      {/* Actual Close Button */}
-      <TouchableOpacity
-        style={styles.skeletonCloseButton}
-        onPress={onClose}
-      >
-        <Text style={{ color: 'white', fontSize: 24 }}>×</Text>
-      </TouchableOpacity>
-
-      {/* Skeleton Placeholder for Sheet */}
-      <View style={[styles.skeletonSheet, { height: initialSheetHeight }]} />
-
-      {/* Optional Spinner */}
-      <ActivityIndicator size="large" color="#999" style={styles.skeletonSpinner} />
-    </View>
-  );
-};
-
-// New Loading Component based on desired behavior - Now a MINIMAL SKELETON
-// MODIFIED to support backgroundImageUri for blurred background
-const SnapshotLoading = ({ 
-  microcopy, 
-  onClose, 
-  backgroundImageUri 
-}: { 
-  microcopy: string; 
-  onClose: () => void; 
-  backgroundImageUri?: string; 
+// ===== Loading Screen =====
+const SnapshotLoading = ({
+  microcopy,
+  onClose,
+  backgroundImageUri,
+}: {
+  microcopy: string;
+  onClose: () => void;
+  backgroundImageUri?: string;
 }): React.JSX.Element => {
   if (backgroundImageUri) {
     return (
-      <ImageBackground 
-        source={{ uri: backgroundImageUri }} 
+      <ImageBackground
+        source={{ uri: backgroundImageUri }}
         style={styles.fullScreenImageForBlur}
-        resizeMode="cover" // Ensure it covers the screen
+        resizeMode="cover"
       >
         <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
-          {/* Header Area with Close Button - Replicated for consistency */}
-          <View style={[styles.skeletonHeaderArea, { height: HEADER_HEIGHT, backgroundColor: 'transparent' }]}>
-            <TouchableOpacity
-              style={styles.skeletonCloseButton} // Use existing style, ensure it's visible
-              onPress={onClose}
-            >
+          <View style={styles.loadingHeaderArea}>
+            <TouchableOpacity style={styles.loadingCloseButton} onPress={onClose}>
               <Text style={{ color: 'white', fontSize: 24 }}>×</Text>
             </TouchableOpacity>
-            {/* Optional: Can add a title here if needed, e.g., "Uploading..." */}
           </View>
-          
-          {/* Centered Spinner and Microcopy - Overlaying the blur */}
           <View style={styles.centeredLoaderContainer}>
-            <ActivityIndicator size="large" color="#FFFFFF" /> 
+            <ActivityIndicator size="large" color="#FFFFFF" />
             <Text style={styles.loadingMicrocopyOverlayed}>
-              {typeof microcopy === 'string' ? microcopy : "Processing..."} 
+              {typeof microcopy === 'string' ? microcopy : "Processing..."}
             </Text>
           </View>
         </View>
@@ -321,121 +162,105 @@ const SnapshotLoading = ({
     );
   }
 
-  // Fallback to original minimal skeleton (dark gray background)
   return (
-    <View style={styles.skeletonContainer}> 
-      <View style={[styles.skeletonHeaderArea, { height: HEADER_HEIGHT }]}>
-        <TouchableOpacity
-          style={styles.skeletonCloseButton}
-          onPress={onClose}
-        >
+    <View style={styles.skeletonContainer}>
+      <View style={styles.loadingHeaderArea}>
+        <TouchableOpacity style={styles.loadingCloseButton} onPress={onClose}>
           <Text style={{ color: 'white', fontSize: 24 }}>×</Text>
         </TouchableOpacity>
       </View>
       <View style={styles.centeredLoaderContainer}>
-        <ActivityIndicator size="large" color="#FFFFFF" /> 
+        <ActivityIndicator size="large" color="#FFFFFF" />
         <Text style={styles.loadingMicrocopyCentered}>
-          {typeof microcopy === 'string' ? microcopy : "Loading data..."} 
+          {typeof microcopy === 'string' ? microcopy : "Loading data..."}
         </Text>
       </View>
     </View>
   );
 };
 
+// ===== Helper Functions =====
+const getMetricTag = (value: number) => {
+  if (value >= 70) return { color: '#22C55E' }; // green
+  if (value < 50) return { color: '#EF4444' }; // red
+  return { color: '#F59E0B' }; // amber
+};
+
+const formatMetricName = (key: string): string => {
+  const customNames: { [key: string]: string } = {
+    'acneScore': 'Breakouts',
+    'rednessScore': 'Redness',
+    'eyeAreaCondition': 'Eye Condition',
+    'linesScore': 'Lines',
+    'pigmentationScore': 'Pigmentation',
+    'poresScore': 'Visable Pores',
+    'hydrationScore': 'Dewiness',
+    'uniformnessScore': 'Evenness',
+    'eyeAge': 'Eye Age',
+    'perceivedAge': 'Perceived Age',
+    'skinType': 'Type',
+    'skinTone': 'Tone',
+  };
+  if (customNames[key]) return customNames[key];
+  return key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim();
+};
+
+const isStandaloneMetric = (key: string, metrics: any): boolean => {
+  const standaloneMetrics = ['skinAge', 'skinType', 'perceivedAge', 'eyeAge', 'skinTone', 'imageQuality'];
+  return standaloneMetrics.includes(key) || typeof metrics?.[key] === 'string';
+};
+
+// ===== Main Component =====
 const SnapshotScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute();
+  const insets = useSafeAreaInsets();
   const params = route.params as SnapshotParams || {};
-  
+
   const { photoId, localUri, userId: paramUserId, timestamp, fromPhotoGrid, imageId: passedImageId } = params;
 
-  console.log('🔵 params from snapshot screen:', params);
-  
-  // Auth store (fallback user ID)
-  const { user } = useAuthStore();
+  // Auth store
+  const { user, profile } = useAuthStore();
   const userId = user?.user_id;
-  
+
   // Contexts
   const { selectedSnapshot, setSelectedSnapshot, refreshPhotos } = usePhotoContext();
 
-  console.log('🔵 selectedSnapshot from snapshot screen:', selectedSnapshot);
-  
   // State management
-  const [viewState, setViewState] = useState<string>('default');
   const [uiState, setUiState] = useState<string>('loading');
   const [loadingMicrocopy, setLoadingMicrocopy] = useState<string>('Loading...');
-  const [isImageLoaded, setIsImageLoaded] = useState<boolean>(true);
   const [photoData, setPhotoData] = useState<PhotoData | null>(null);
-  
+
   // Haut.ai API state
   const [imageId, setImageId] = useState<string | null>(null);
   const [hautBatchId, setHautBatchId] = useState<string | null>(null);
   const [analysisResults, setAnalysisResults] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
-  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
-  
+
+  // AI Summary state
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+
   // Refs
-  const uploadTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const pollingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const mainTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  // Flag to ensure initialization logic runs only once
+  const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mainTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const hasInitializedRef = useRef<boolean>(false);
 
-  // Create refs for child components
-  const snapshotPhotoRef = useRef<any>(null);
-  const metricsSheetRef = useRef<any>(null);
-  
-  // Consolidated function to change view state
-  const changeViewState = (newState: string, options: any = {}): void => {
-    // Prevent unnecessary updates
-    if (newState === viewState && !options.force) return;
-    
-    // Handle special transitions back to default state
-    if (newState === 'default' && viewState === 'zooming') {
-      // Request zoom reset from SnapshotPhoto when returning to default
-      if (snapshotPhotoRef.current?.resetZoom) {
-        snapshotPhotoRef.current.resetZoom();
-      }
-    }
-    
-    // Update metrics sheet position based on new state
-    if (metricsSheetRef.current?.setSheetPosition) {
-      const position = 
-        newState === 'metrics' ? 'expanded' :
-        newState === 'zooming' ? 'minimized' : 'collapsed'; // Default state gets collapsed sheet
-      
-      metricsSheetRef.current.setSheetPosition(position);
-    }
-    
-    // Finally update the state
-    setViewState(newState);
-  };
-
-  // Haut.ai API processing
+  // ===== Haut.ai API Processing =====
   const processImageWithHaut = async (): Promise<void> => {
-    if (!localUri || !userId) {
-      console.error('🔴 Missing required data for Haut.ai processing');
-      return;
-    }
+    if (!localUri || !userId) return;
 
     try {
       setIsProcessing(true);
       setLoadingMicrocopy('Processing image...');
-      
-      console.log('🔵 Starting Haut.ai image processing');
+
       const { hautBatchId: batchId, imageId: imgId } = await processHautImage(localUri, 'front_image');
-      
+
       setHautBatchId(batchId);
       setImageId(imgId);
-      
-      console.log('✅ Image processed, starting polling for results');
       setLoadingMicrocopy('Analyzing image...');
-      
-      // Start polling for results
       startPollingForResults(imgId);
-      
     } catch (error: any) {
-      console.error('🔴 Haut.ai processing error:', error);
       setLoadingMicrocopy('Processing failed');
       setUiState('no_results');
     } finally {
@@ -444,72 +269,46 @@ const SnapshotScreen = (): React.JSX.Element => {
   };
 
   const startPollingForResults = (imgId: string): void => {
-    console.log('🔵 Starting polling for results:', imgId);
-    
-    // Set up the main timeout for the entire polling process
     mainTimeoutRef.current = setTimeout(() => {
-      console.log('⏰ Analysis timeout reached (1 minute)');
       setLoadingMicrocopy('No metrics found');
       setUiState('no_results');
       stopPolling();
     }, ANALYSIS_TIMEOUT_MS);
-    
+
     const poll = async (): Promise<void> => {
       try {
         const results = await getHautAnalysisResults(imgId);
-        console.log('🔵 Analysis results:', results);
-        
+
         if (results && results.length > 0) {
-          console.log('✅ Analysis results received');
-          
-          // Clear the main timeout since we got results
           if (mainTimeoutRef.current) {
             clearTimeout(mainTimeoutRef.current);
             mainTimeoutRef.current = null;
           }
-          
-          // Transform results to match app structure
-          const transformedMetrics = transformHautResults(results);
-          console.log('🔵 transformedMetrics:', transformedMetrics);
 
-          // if in trsnsformed metric has only image quality we nedd to throw an error and set uiState to no_results
-          if (Object.keys(transformedMetrics).length === 1 && transformedMetrics.imageQuality) {
-            console.log('🔴 No results found');
+          const transformedMetrics = transformHautResults(results);
+
+          if (Object.keys(transformedMetrics).length === 1 && (transformedMetrics as any).imageQuality) {
             setLoadingMicrocopy('No results found');
             setUiState('no_results');
             return;
           }
-          
-          // Get mask results after analysis is complete
+
           let maskResults = null;
           let maskImages = null;
           try {
-            console.log('🔵 Fetching mask results after analysis completion');
-            console.log('🔵 About to call getHautMaskResults...');
             maskResults = await getHautMaskResults(imgId);
-            console.log('🔵 maskResults:', maskResults);
-            console.log('✅ Mask results retrieved successfully',maskResults);
-            
-            // Get mask images with S3 URLs for each skin condition
             try {
-              console.log('🔵 Fetching mask images with S3 URLs');
               maskImages = await getHautMaskImages(imgId);
-              console.log('✅ Mask images retrieved successfully',maskImages);
             } catch (maskImageError) {
-              console.log('⚠️ Mask images not ready yet or error occurred:', maskImageError.message);
-              // Continue without mask images - they're not critical for the main flow
+              // Continue without mask images
             }
           } catch (error: any) {
-            console.log('⚠️ Mask results not ready yet or error occurred:', error.message);
-            // Continue without mask results - they're not critical for the main flow
+            // Continue without mask results
           }
-          
-          // Create photo data structure
-          // Parse timestamp from API, ensuring UTC strings are properly converted
+
           let parsedTimestamp: Date;
           if (maskResults?.[0]?.created_at) {
             const created_at = maskResults[0].created_at;
-            // If it's a UTC string without timezone, ensure it's parsed as UTC
             if (typeof created_at === 'string') {
               let utcTimestamp = created_at;
               if (!created_at.endsWith('Z') && !created_at.includes('+') && !created_at.includes('-', 10)) {
@@ -522,45 +321,31 @@ const SnapshotScreen = (): React.JSX.Element => {
           } else {
             parsedTimestamp = new Date();
           }
-          
+
           const photoDataObj: PhotoData = {
             id: photoId || '',
             imageId: imgId,
-            storageUrl: localUri,
+            storageUrl: localUri || '',
             timestamp: parsedTimestamp,
             metrics: transformedMetrics,
-            maskResults: maskResults, // Add mask results to photo data
-            maskImages: maskImages, // Add mask images with S3 URLs for each condition
+            maskResults: maskResults,
+            maskImages: maskImages,
             status: { state: 'complete' }
           };
 
-          console.log('🔵 photoDataObj to metrics sheet:', photoDataObj);
-          
           setPhotoData(photoDataObj);
           setAnalysisResults(results);
           setLoadingMicrocopy('Analysis complete');
           setUiState('complete');
-          
-          // Refresh photos to update the photo lists
           refreshPhotos();
-          console.log('✅ Photos refreshed after analysis completion');
-          
-          // Stop polling
           stopPolling();
-          
         } else {
-          console.log('⏳ Results not ready yet, continuing to poll...');
-          // Continue polling
-          pollingTimeoutRef.current = setTimeout(poll, 3000); // Poll every 3 seconds
+          pollingTimeoutRef.current = setTimeout(poll, 3000);
         }
-        
       } catch (error: any) {
         if (error.message.includes('not ready yet')) {
-          console.log('⏳ Results not ready yet, continuing to poll...');
-          // Continue polling
           pollingTimeoutRef.current = setTimeout(poll, 3000);
         } else {
-          console.error('🔴 Polling error:', error);
           if (mainTimeoutRef.current) {
             clearTimeout(mainTimeoutRef.current);
             mainTimeoutRef.current = null;
@@ -571,8 +356,7 @@ const SnapshotScreen = (): React.JSX.Element => {
         }
       }
     };
-    
-    // Start first poll
+
     poll();
   };
 
@@ -581,21 +365,17 @@ const SnapshotScreen = (): React.JSX.Element => {
       clearTimeout(pollingTimeoutRef.current);
       pollingTimeoutRef.current = null;
     }
-    // Clear the main timeout
     if (mainTimeoutRef.current) {
       clearTimeout(mainTimeoutRef.current);
       mainTimeoutRef.current = null;
     }
   };
 
-  // Initialize photo data and start processing (runs only once)
+  // ===== Initialize photo data =====
   useEffect(() => {
-    if (hasInitializedRef.current) return; // Prevent multiple initializations
+    if (hasInitializedRef.current) return;
 
-    // ---- Case 1: Navigated from PhotoGrid ----
     if (fromPhotoGrid === 'true' && passedImageId) {
-      console.log('🔵 Initializing snapshot from PhotoGrid - skipping processing');
-
       const photoFromContext = selectedSnapshot;
       if (photoFromContext) {
         const initialPhotoData: PhotoData = {
@@ -604,40 +384,30 @@ const SnapshotScreen = (): React.JSX.Element => {
           timestamp: photoFromContext.apiData?.created_at ? new Date(photoFromContext.apiData.created_at) : new Date(),
           status: { state: 'analyzing' }
         };
-
         setPhotoData(initialPhotoData);
         setImageId(passedImageId);
         setLoadingMicrocopy('Loading analysis results...');
         setUiState('analyzing');
-
-        console.log('🔵 Starting polling for existing image:', passedImageId);
         startPollingForResults(passedImageId);
       }
-
       hasInitializedRef.current = true;
-      return; // Skip further processing
+      return;
     }
 
-    // ---- Case 2: New image from Camera ----
     if (localUri && userId) {
-      console.log('🔵 Initializing snapshot with Haut.ai flow');
-
       const initialPhotoData: PhotoData = {
         id: photoId || '',
         storageUrl: localUri,
         timestamp: timestamp ? new Date(timestamp) : new Date(),
         status: { state: 'pending' }
       };
-
       setPhotoData(initialPhotoData);
-
       setSelectedSnapshot({
         id: photoId || '',
         url: localUri,
         storageUrl: localUri,
-        threadId: null
-      });
-
+        threadId: undefined
+      } as any);
       setLoadingMicrocopy('Processing image...');
       processImageWithHaut();
       hasInitializedRef.current = true;
@@ -646,678 +416,742 @@ const SnapshotScreen = (): React.JSX.Element => {
 
   // Cleanup polling on unmount
   useEffect(() => {
-    return () => {
-      stopPolling();
-    };
+    return () => { stopPolling(); };
   }, []);
 
-  // Handle image load events
-  const handleImageLoadStart = (): void => {
-    // We don't necessarily set isImageLoaded=false here,
-    // as it might cause flickering if already loaded once.
-  };
-  
-  const handleImageLoad = (): void => {
-   setIsImageLoaded(true);
-  };
-  
-  const handleImageError = (error: any): void => {
-    console.error('🔴 Image ERROR loading:', error.nativeEvent);
-    // If image fails, we might never become "ready" if we strictly require isImageLoaded=true.
-    // Consider how to handle this - maybe set a specific error state?
-    // For now, it will just prevent isReady from becoming true.
-    // Optionally retry:
-    // if (photoData?.storageUrl) {
-    //    const retryUrl = `${photoData.storageUrl}&retry=${Date.now()}`;
-    //    setPhotoData(prev => ({...prev, storageUrl: retryUrl}));
-    // }
-  };
-  
-  // Handle zoom state changes from the photo component
-  const handleZoomStateChange = (isZoomed: boolean): void => {
-    changeViewState(isZoomed ? 'zooming' : 'default', { fromGesture: true }); // Return to default when zoom ends
-  };
-
-  // Handle deletion of photo and navigation
-  const handleDelete = async (): Promise<void> => {
-    try {
-      // Get the image ID for deletion
-      const imageIdToDelete = imageId || photoData?.imageId || photoId;
-      
-      if (!imageIdToDelete) {
-        throw new Error('No image ID available for deletion');
-      }
-      
-      console.log('🗑️ Deleting photo with ID:', imageIdToDelete);
-      
-      // Call the delete API
-      await deletePhoto(imageIdToDelete);
-      
-      // Navigate away and clear context
-      navigation.navigate('Tabs');
-      setSelectedSnapshot(null); // Clear context
-      
-      // Refresh photos to update the photo lists after deletion
-      refreshPhotos();
-      console.log('✅ Photo deleted successfully and photos refreshed');
-      
-    } catch (error: any) {
-      console.error('🔴 Delete failed:', error);
-      Alert.alert("Error", `Failed to delete photo: ${error.message}`);
-    }
-  };
-
-  // Handle deletion of photo without navigation (for auto-delete)
-  const handleDeleteSilently = async (): Promise<void> => {
-    // try {
-    //   // Get the image ID for deletion
-    //   const imageIdToDelete = imageId || photoData?.imageId || photoId;
-      
-    //   if (!imageIdToDelete) {
-    //     console.warn('🔴 Silent delete skipped: No image ID available');
-    //     return;
-    //   }
-      
-    //   console.log('🗑️ Silently deleting photo with ID:', imageIdToDelete);
-      
-    //   // Call the delete API
-    //   await deletePhoto(imageIdToDelete);
-      
-    //   // Refresh photos to update the photo lists after silent deletion
-    //   refreshPhotos();
-    //   console.log('✅ Photo silently deleted successfully and photos refreshed');
-      
-    // } catch (error) {
-    //   console.error('🔴 Silent delete failed:', error);
-    //   // Don't show user alert for silent delete - just log the error
-    // }
-  };
-
-  // Get formatted date for header
-  const getHeaderTitle = (): string => {
-    // Show placeholder during initial loading
-    if (uiState === 'loading' || !photoData?.timestamp) return 'Loading...'; 
-console.log(photoData,'photo data time');
-    try {
-      let date: Date;
-      const timestamp = photoData.timestamp;
-      
-      // Handle Firebase Timestamp
-      if (timestamp?.toDate) {
-        date = timestamp.toDate();
-      } 
-      // Handle string timestamps (from API)
-      else if (typeof timestamp === 'string') {
-        // If it's a UTC string without timezone, ensure it's parsed as UTC
-        let utcTimestamp = timestamp;
-        if (!timestamp.endsWith('Z') && !timestamp.includes('+') && !timestamp.includes('-', 10)) {
-          utcTimestamp = timestamp + 'Z';
-        }
-        date = new Date(utcTimestamp);
-      } 
-      // Handle Date objects
-      else {
-        date = new Date(timestamp);
-      }
-      
-      // Ensure we have a valid date
-      if (isNaN(date.getTime())) {
-        return 'Snapshot';
-      }
-
-      console.log(date,"dateee")
-      
-      return formatDate(date);
-    } catch (error) {
-      console.error('Error formatting timestamp:', error);
-      return 'Snapshot';
-    }
-  };
-
-  const handleExitZoom = (): void => {
-    console.log('📱 Snapshot: Exit zoom from header');
-    changeViewState('default'); // Return to default state
-  };
-
-  const handleClose = (): void => {
-    console.log('📱 Snapshot: Close button pressed');
-    navigation.navigate('Tabs');
-  };
-
-  // Add this useEffect to handle auto-deletion of problematic images
+  // ===== Fetch AI Summary =====
   useEffect(() => {
-    // Only proceed if we have photo data
+    if (photoData && uiState === 'complete') {
+      const imgId = photoData.imageId;
+      if (imgId) {
+        setSummaryLoading(true);
+        getImageChatSummary(imgId)
+          .then(response => {
+            if (response.summary) {
+              setSummary(response.summary);
+            } else {
+              setSummary(null);
+              const currentUser = useAuthStore.getState().user;
+              const currentProfile = useAuthStore.getState().profile;
+              const chatData = {
+                imageId: imgId,
+                firstName: currentUser?.user_name || currentProfile?.user_name || 'User',
+                age: currentProfile?.age || 25,
+                skinType: currentProfile?.skinType || 'normal',
+                skinConcerns: currentProfile?.concerns
+                  ? Object.keys(currentProfile.concerns).filter(key => currentProfile.concerns![key])
+                  : [],
+                excludedMetrics: [],
+                metrics: photoData?.metrics || {}
+              };
+              sendSnapshotFirstChat(chatData)
+                .then((chatResponse: any) => {
+                  if (chatResponse.success && chatResponse.data) {
+                    setSummary(chatResponse.data.message || chatResponse.data.feedback);
+                  }
+                })
+                .catch(() => { });
+            }
+          })
+          .catch(() => { setSummary(null); })
+          .finally(() => { setSummaryLoading(false); });
+      } else {
+        setSummary(null);
+        setSummaryLoading(false);
+      }
+    } else {
+      setSummary(null);
+      setSummaryLoading(false);
+    }
+  }, [photoData, uiState]);
+
+  // ===== Auto-delete low quality images =====
+  useEffect(() => {
     if (!photoData) return;
-    
-    // Case 1: Low quality image
     if (photoData.metrics?.imageQuality?.overall !== undefined) {
       const qualityScore = photoData.metrics.imageQuality.overall;
-      
-      // Auto-delete if quality is below threshold
       if (qualityScore < QUALITY_THRESHOLD_MIN) {
-        console.log(`🔴 AUTO-DELETE: Low quality image detected (score: ${qualityScore})`);
-        
-        // Small delay to make sure UI updates first
         const deleteTimer = setTimeout(() => {
-          console.log('🔴 AUTO-DELETE: Executing silent delete for low quality image');
           handleDeleteSilently();
         }, 800);
-        
         return () => clearTimeout(deleteTimer);
       }
     }
   }, [photoData, uiState]);
 
-  // --- Render Logic --- 
+  // ===== Handlers =====
+  const handleDelete = async (): Promise<void> => {
+    try {
+      const imageIdToDelete = imageId || photoData?.imageId || photoId;
+      if (!imageIdToDelete) throw new Error('No image ID available for deletion');
+      await deletePhoto(imageIdToDelete);
+      (navigation as any).navigate('Tabs');
+      setSelectedSnapshot(null);
+      refreshPhotos();
+    } catch (error: any) {
+      Alert.alert("Error", `Failed to delete photo: ${error.message}`);
+    }
+  };
 
-  console.log(photoId,'current photo id', fromPhotoGrid ? '(from PhotoGrid)' : '(from camera)')
-  console.log('🔵 Snapshot params:', { photoId, fromPhotoGrid, passedImageId, hasSelectedSnapshot: !!selectedSnapshot })
+  const handleDeleteSilently = async (): Promise<void> => {
+    // Silent delete placeholder
+  };
 
-  // Ensure currentPhotoId (from state) is available before attempting to render anything specific
-  if (!photoId) {
-     // Render a minimal loading state or null while waiting for params/state
-     return <SnapshotLoading microcopy="Initializing..." onClose={handleClose} />;
-  }
+  const handleClose = (): void => {
+    (navigation as any).navigate('Tabs');
+  };
 
-  // Determine image URI
-  // POC: Prioritize Haut.ai direct URL for better mask alignment
-  const hautAiSquareImageUrl = photoData?.urls?.['500x500']; // Try the square image
-  const hautAiPortraitImageUrl = photoData?.urls?.['800x1200'];
-  const rawImageUri = hautAiSquareImageUrl || hautAiPortraitImageUrl || photoData?.storageUrl || localUri;
+  const handleNavigateToChat = (): void => {
+    if (photoData && photoData.metrics) {
+      (navigation as any).navigate('ThreadChat', {
+        chatType: 'snapshot_feedback',
+        imageId: photoData?.imageId,
+        initialMessage: summary
+      });
+    }
+  };
 
-  // Ensure S3 presigned URLs work with React-Native <Image>. The core Image
-  // component treats "+" as a space, breaking the AWS signature. Encode the
-  // critical characters if they are present.
+  const getHeaderTitle = (): string => {
+    if (uiState === 'loading' || !photoData?.timestamp) return 'Loading...';
+    try {
+      let date: Date;
+      const ts: any = photoData.timestamp;
+      if (ts?.toDate) {
+        date = ts.toDate();
+      } else if (typeof ts === 'string') {
+        let utcTimestamp = ts;
+        if (!ts.endsWith('Z') && !ts.includes('+') && !ts.includes('-', 10)) {
+          utcTimestamp = ts + 'Z';
+        }
+        date = new Date(utcTimestamp);
+      } else {
+        date = new Date(ts);
+      }
+      if (isNaN(date.getTime())) return 'Snapshot';
+      return formatDate(date);
+    } catch (error) {
+      return 'Snapshot';
+    }
+  };
+
+  // ===== Sanitize S3 URIs =====
   const sanitizeS3Uri = (uriString: string): string => {
     if (!uriString) return uriString;
-    // Only touch the query part – a cheap approach is just replacing "+" with
-    // its percent-encoded form and ensuring no literal spaces remain.
     return uriString.replace(/\+/g, '%2B').replace(/ /g, '%20');
   };
 
-  const imageUri = sanitizeS3Uri(rawImageUri || '');
-  const maskContentLines = photoData?.masks?.lines;
-  const peekSheetHeightAbs = SCREEN_HEIGHT * (BOTTOM_SHEET_COLLAPSED_PERCENTAGE / 100);
-  const minimizedSheetHeightAbs = SCREEN_HEIGHT * (SNAP_POINTS.MINIMIZED / 100); // Calculate minimized sheet height
+  // ===== Render Logic =====
+  if (!photoId) {
+    return <SnapshotLoading microcopy="Initializing..." onClose={handleClose} />;
+  }
 
-  // Determine if the main SkeletonLoading screen should be visible
-  // Show skeleton only when uiState is strictly 'loading' or 'analyzing'
   const showSkeletonScreen = uiState === 'loading' || uiState === 'analyzing';
-
   if (showSkeletonScreen) {
-    // Determine if we should use the blurred background:
-    // This is true if localUri is present (new photo upload)
-    // AND the uiState is still 'loading' or 'analyzing'
     const useEffectiveLoadingBackground = localUri && (uiState === 'loading' || uiState === 'analyzing');
-    
-    return <SnapshotLoading 
-              microcopy={loadingMicrocopy}
-              onClose={handleClose}
-              backgroundImageUri={useEffectiveLoadingBackground ? localUri : undefined} // Pass local URI if applicable
-            />;
+    return (
+      <SnapshotLoading
+        microcopy={loadingMicrocopy}
+        onClose={handleClose}
+        backgroundImageUri={useEffectiveLoadingBackground ? localUri : undefined}
+      />
+    );
   }
 
-  // --- Main Render (uiState is 'complete', 'no_results', or 'low_quality') --- 
-  // We will render the main structure for all these states, 
-  // relying on MetricsSheet and potentially SnapshotPhoto to adapt.
-  
-  // Ensure photoData exists before rendering the main structure if state is not 'loading'
-  // This prevents errors if state becomes e.g., 'no_results' before photoData populates
   if (!photoData && uiState !== 'loading') {
-    // This should ideally not happen if uiState is not 'loading', but acts as a safety net
-    console.error(`❌ SnapshotScreen: uiState is ${uiState} but photoData is missing! Rendering loading.`);
-    return <SnapshotLoading 
-              microcopy={'Error loading snapshot data.'}
-              onClose={handleClose} 
-            />;
+    return <SnapshotLoading microcopy={'Error loading snapshot data.'} onClose={handleClose} />;
   }
 
-  console.log('🔵 imageUri:', imageUri);
+  const rawImageUri = photoData?.urls?.['500x500'] || photoData?.urls?.['800x1200'] || photoData?.storageUrl || localUri;
+  const imageUri = sanitizeS3Uri(rawImageUri || '');
+  const metrics = photoData?.metrics;
 
-  
+  // Get standalone metrics for the profile row
+  const profileOrder = ['skinType', 'skinTone', 'perceivedAge', 'eyeAge'];
+  const profileMetrics = metrics
+    ? profileOrder
+      .filter(key => metrics[key] !== undefined)
+      .map(key => ({ key, value: metrics[key], label: formatMetricName(key) }))
+    : [];
+
+  // Get score metrics for the analysis section
+  const scoreOrder = [
+    'pigmentationScore', 'uniformnessScore', 'rednessScore',
+    'acneScore', 'hydrationScore', 'eyeAreaCondition', 'linesScore', 'poresScore'
+  ];
+  const scoreMetrics = metrics
+    ? scoreOrder
+      .filter(key => metrics[key] !== undefined && typeof metrics[key] === 'number')
+      .map(key => ({ key, value: metrics[key], label: formatMetricName(key) }))
+    : [];
+
   return (
-    <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={{ flex: 1, backgroundColor: '#fff' }}>
-        {/* SnapshotPhoto: Pass mask props and new layout props */}
-        {imageUri ? (
-          <SnapshotPhoto
-            ref={snapshotPhotoRef}
-            uri={imageUri}
-            isLoaded={isImageLoaded}
-            onLoadStart={handleImageLoadStart}
-            onLoad={handleImageLoad}
-            onError={handleImageError}
-            onZoomStateChange={handleZoomStateChange}
-            onViewStateChange={changeViewState}
-            isZoomed={viewState === 'zooming'}
-            viewState={viewState}
-            photoData={photoData}
-            maskContent={maskContentLines}
-            isMaskVisible={false}
-            showRegistrationMarks={true}
-            headerHeight={HEADER_HEIGHT}
-            peekSheetHeight={peekSheetHeightAbs}
-            minimizedSheetHeight={minimizedSheetHeightAbs}
-          />
-        ) : (
-          // Show spinner if ready but photoData/URL still loading from listener
-          <View style={{ position: 'absolute', width: '100%', height: '100%', backgroundColor: '#f0f0f0', justifyContent: 'center', alignItems: 'center' }}>
-            <ActivityIndicator size="large" color="#666" />
-          </View>
-        )}
-        
-        {/* Transparent Header - UPDATED to stay active in zoom state */}
-        <Animated.View
-          style={{
-            height: HEADER_HEIGHT, // Use constant for header height
-            width: '100%',
-            backgroundColor: 'rgba(0,0,0,0.2)',
-            paddingTop: 50, // For status bar
-            paddingHorizontal: 20,
-            flexDirection: 'row',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            zIndex: 10,
-            // Only fade in metrics view, not in zoom view
-            opacity: viewState === 'metrics' ? 0.5 : 1,
-            // Always allow interaction
-            pointerEvents: 'auto',
-          }}
-        >
-          {/* Left: Close button */}
-          <TouchableOpacity 
-            style={styles.headerButton}
-            onPress={handleClose}
-          >
-            <ChevronLeft size={24} color="white" />
-          </TouchableOpacity>
-          
-          {/* Center: Title/Date and Mask Toggle */}
-          <View style={styles.headerCenterContainer}>
-            <Text style={styles.headerTitleText}>
-              {getHeaderTitle()}
-            </Text>
-          </View>
-          
-          {/* Right: Contextual Ellipsis Menu or Exit Zoom button */}
-          <EllipsisMenu 
-            onDelete={handleDelete} 
-            viewState={viewState}
-            onExitZoom={handleExitZoom}
-          />
-        </Animated.View>
+    <View style={[styles.container, { paddingTop: insets.top }]}>
+      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
-        {/* Chip Container - Renders if at least one chip is visible */}
-        {isImageLoaded && (
-          (photoData?.metrics?.imageQuality?.overall !== undefined &&
-            photoData.metrics.imageQuality.overall >= QUALITY_THRESHOLD_MIN &&
-            photoData.metrics.imageQuality.overall <= QUALITY_WARNING_THRESHOLD) ||
-          (uiState === 'complete' && maskContentLines)
-        ) && (
-          <View style={styles.chipRowOuterContainer}>
-            <ScrollView
-              horizontal={true}
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.chipRowScrollViewContent}
-            >
-              {/* Low quality warning chip - Only show for borderline quality (10-50) */}
-              {photoData?.metrics?.imageQuality?.overall !== undefined &&
-                photoData.metrics.imageQuality.overall >= QUALITY_THRESHOLD_MIN &&
-                photoData.metrics.imageQuality.overall <= QUALITY_WARNING_THRESHOLD && (
-                  <View style={styles.chipButton}> 
-                    <Text style={styles.chipText}>Low Image Quality</Text>
-                  </View>
-              )}
-
-              {/* TODO: RE-ENABLE THIS CHIP WHEN BACKEND IS READY
-              {uiState === 'complete' && maskContentLines && (
-                <TouchableOpacity
-                  onPress={() => setIsMaskVisible(!isMaskVisible)}
-                  style={[styles.chipButton, { backgroundColor: isMaskVisible ? 'rgba(0,255,0,0.3)' : 'rgba(100,100,100,0.3)' }]}
-                >
-                  <Text style={styles.chipText}>{isMaskVisible ? 'Hide Lines' : 'Show Lines'}</Text>
-                </TouchableOpacity>
-              )} */}
-            </ScrollView>
-          </View>
-        )}
-        
-        {/* Metrics Sheet: Handles metrics (props) + AI insights (context) */}
-        <MetricsSheet
-          ref={metricsSheetRef}
-          uiState={uiState}
-          viewState={viewState}
-          metrics={photoData?.metrics} // Pass metrics prop
-          photoData={photoData} // Pass full photoData including maskImages
-          onDelete={handleDelete}
-          onViewStateChange={changeViewState}
-          onTryAgain={() => navigation.navigate('Camera')}
-        />
-
+      {/* ===== Header ===== */}
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.headerBackButton} onPress={handleClose}>
+          <ChevronLeft size={22} color="#333" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>{getHeaderTitle()}</Text>
+        <EllipsisMenu onDelete={handleDelete} />
       </View>
-    </GestureHandlerRootView>
+
+      {/* ===== Scrollable Content ===== */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Photo Card */}
+        {imageUri ? (
+          <View style={styles.photoCard}>
+            <Image
+              source={{ uri: imageUri }}
+              style={styles.photoImage}
+              resizeMode="cover"
+            />
+            <View style={styles.photoOverlayChip}>
+              <Text style={styles.photoOverlayChipText}>+ Zoom / Masks</Text>
+            </View>
+          </View>
+        ) : null}
+
+        {/* AI Insight Card – styled like MyRoutine's RoutineListFooter */}
+        {uiState === 'complete' && (
+          <TouchableOpacity
+            style={styles.aiInsightCard}
+            activeOpacity={0.85}
+            onPress={handleNavigateToChat}
+          >
+            <View style={styles.aiAvatarContainer}>
+              <Image
+                source={require('../assets/images/amber-avatar-new.png')}
+                style={styles.aiAvatarImage}
+                resizeMode="contain"
+              />
+            </View>
+            <View style={styles.aiInsightContent}>
+              <Text style={styles.aiInsightTitle}>
+                {summary
+                  ? summary
+                  : summaryLoading
+                    ? 'Analyzing your results...'
+                    : 'Your Dewiness has improved since your last scan! Why do you think this has improved?'}
+              </Text>
+              <Text style={styles.aiInsightSubtext}>
+                Your reflections help add to your journal and improve your outcomes.
+              </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+
+        {/* Skin Profile Row */}
+        {profileMetrics.length > 0 && (
+          <View style={styles.profileCard}>
+            <View style={styles.profileRow}>
+              {profileMetrics.map((item, index) => (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[
+                    styles.profileItem
+                  ]}
+                  onPress={() => {
+                    (navigation as any).navigate('MetricDetail', {
+                      metricKey: item.key,
+                      metricValue: item.value,
+                      maskResults: photoData?.maskResults,
+                      maskImages: photoData?.maskImages,
+                      photoData: JSON.stringify(photoData || metrics)
+                    });
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.profileLabel}>{item.label}</Text>
+                  <View style={styles.profileValueContainer}>
+                    <Text style={styles.profileValue}>{item.value}</Text>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        )}
+
+        {/* Analysis Section */}
+        {scoreMetrics.length > 0 && (
+          <View style={styles.analysisCard}>
+            <Text style={styles.analysisTitle}>Analysis</Text>
+
+            {scoreMetrics.map((item, index) => {
+              const { color } = getMetricTag(item.value as number);
+              return (
+                <TouchableOpacity
+                  key={item.key}
+                  style={[
+                    styles.analysisRow,
+                    index < scoreMetrics.length && styles.analysisRowBorder,
+                  ]}
+                  onPress={() => {
+                    (navigation as any).navigate('MetricDetail', {
+                      metricKey: item.key,
+                      metricValue: item.value,
+                      maskResults: photoData?.maskResults,
+                      maskImages: photoData?.maskImages,
+                      photoData: JSON.stringify(photoData || metrics)
+                    });
+                  }}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.analysisRowLeft}>
+                    <Star size={16} color="#79716B" style={{ marginRight: 6 }} />
+                    <View>
+                      <Text style={styles.analysisMetricName}>{item.label}</Text>
+                      {item.key === 'poresScore' && (
+                        <Text style={styles.analysisMicrotext}>This is microtext</Text>
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.analysisRowRight}>
+                    <Text style={styles.analysisChangeText}>
+                      {item.value >= 70 ? '↑' : item.value < 50 ? '↓' : '→'}
+                      {Math.floor(Math.random() * 15) + 1}
+                    </Text>
+                    <View style={styles.analysisDotContainer}>
+                      <View style={[styles.analysisDot, { backgroundColor: color }]} />
+                      <Text style={styles.analysisScore}>{item.value}</Text>
+                    </View>
+                    <ChevronRight size={20} color="#D7D3D0" style={{ marginLeft: 4 }} />
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        )}
+
+        {/* SkinCheck Card */}
+        {uiState === 'complete' && (
+          <View style={styles.skinCheckCard}>
+            <Text style={styles.skinCheckTitle}>SkinCheck</Text>
+            <Text style={styles.skinCheckDescription}>
+              Dermatologist approved ingredients proven to help improve pigmentation
+            </Text>
+            <TouchableOpacity activeOpacity={0.7}>
+              <Text style={styles.skinCheckLink}>Request a SkinCheck →</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* No Results State */}
+        {uiState === 'no_results' && (
+          <View style={styles.noResultsCard}>
+            <Text style={styles.noResultsTitle}>No Analysis Available</Text>
+            <Text style={styles.noResultsMessage}>
+              We couldn't analyze this image. This could be due to poor lighting,
+              camera angle, or network issues.
+            </Text>
+            <TouchableOpacity
+              onPress={() => (navigation as any).navigate('Camera')}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.noResultsLink}>Try again</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </ScrollView>
+    </View>
   );
 };
 
+// ===== Styles =====
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff' // Ensure full-screen white background
+    backgroundColor: '#FAFAF9',
   },
-  scrollContainer: {
-    flex: 1,
-  },
-  photoContainer: {
-    width: '100%',
-    aspectRatio: 3/4,
-    backgroundColor: '#f0f0f0',
-    overflow: 'hidden',
-  },
-  photo: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f0f0f0',
-  },
-  buttonContainer: {
-    width: 44,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  statusContainer: {
-    padding: 40,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  statusText: {
-    marginTop: 20,
-    fontSize: 16,
-    color: '#666',
-    textAlign: 'center',
-  },
-  microcopy: {
-    fontSize: 12,
-    color: '#999',
-    marginTop: 8,
-  },
-  retryButton: {
-    marginTop: 16,
-    padding: 8,
-  },
-  linkText: {
-    color: '#007AFF',
-    fontSize: 16,
-    textDecorationLine: 'underline',
-  },
-  metricsContainer: {
-    paddingVertical: 20,
-    paddingHorizontal: 1,
-  },
-  metricsTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 15,
-  },
-  metricRow: {
+
+  // Header
+  header: {
     flexDirection: 'row',
+    alignItems: 'center',
     justifyContent: 'space-between',
+    paddingHorizontal: 16,
     paddingVertical: 12,
+    backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomColor: '#F3F4F6',
   },
-  metricName: {
-    fontSize: 16,
-    color: '#666',
-    textTransform: 'capitalize',
-  },
-  metricValue: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#333',
-  },
-  testButtonGroup: {
-    padding: 10,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  testLabel: {
-    fontSize: 12,
-    color: '#666',
-    marginBottom: 8,
-  },
-  buttonRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 8,
-  },
-  testButton: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 8,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    alignItems: 'center',
-  },
-  activeButton: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
-  },
-  buttonText: {
-    fontSize: 11,
-    color: '#333',
-  },
-  activeButtonText: {
-    color: '#fff',
-  },
-  photoPlaceholder: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#f0f0f0',
+  headerBackButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  loadingPlaceholder: {
-    width: '100%',
-    padding: 20,
-    gap: 12,
+  headerTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1917',
+    fontFamily: 'Inter-SemiBold',
   },
-  placeholderLine: {
-    height: 20,
-    backgroundColor: '#f0f0f0',
-    borderRadius: 4,
-    width: '100%',
-  },
-  photoLoadingOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(240, 240, 240, 0.8)',
+  headerActionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#F3F4F6',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  stateContainer: {
-    padding: 20,
-  },
-  debugText: {
-    marginTop: 10,
-    color: '#666',
-    fontSize: 12
-  },
-  modal: {
-    margin: 0,
-    justifyContent: 'flex-start',
-    alignItems: 'flex-end',
-  },
+
+  // Menu
   menuContainer: {
     backgroundColor: 'white',
-    borderRadius: 8,
-    marginTop: 60, // Adjust based on your header height
-    marginRight: 10,
+    borderRadius: 12,
+    marginTop: 100,
+    marginRight: 16,
     width: 200,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 12,
+    elevation: 8,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    padding: 16,
   },
-  menuText: {
+  menuDeleteText: {
     fontSize: 16,
-    marginLeft: 10,
-    color: '#333',
-  },
-  deleteText: {
+    marginLeft: 12,
     color: '#FF3B30',
+    fontFamily: 'Inter-Medium',
   },
-  chipRowOuterContainer: { 
-    position: 'absolute',
-    top: HEADER_HEIGHT + 8, 
-    left: 0,
-    right: 0,
-    height: 40, 
-    alignItems: 'center', 
-    zIndex: 50,
+
+  // Scroll
+  scrollView: {
+    flex: 1,
   },
-  chipRowScrollViewContent: { 
-    flexGrow: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center',
-    paddingHorizontal: 10, 
-  },
-  chipButton: { 
-    backgroundColor: 'rgba(100,100,100,0.3)',
+  scrollContent: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
+    paddingTop: 12,
+  },
+
+  // Photo
+  photoCard: {
     borderRadius: 20,
-    marginHorizontal: 4, 
+    overflow: 'hidden',
+    marginBottom: 22,
+    backgroundColor: '#E5E7EB',
+  },
+  photoImage: {
+    width: 383,
+    height: 383,
+    resizeMode: 'contain'
+  },
+  photoOverlayChip: {
+    position: 'absolute',
+    bottom: 12,
+    right: 12,
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    opacity: 0.5,
+  },
+  photoOverlayChipText: {
+    color: '#44403C',
+    fontSize: 12,
+    fontWeight: '500',
+    fontFamily: 'Inter-Medium',
+  },
+
+  // AI Insight Card
+  aiInsightCard: {
+    backgroundColor: '#EBE9FE',
+    borderRadius: 18,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  aiAvatarContainer: {
+    marginRight: 12,
+  },
+  aiAvatarImage: {
+    width: 36,
+    height: 36,
+  },
+  aiInsightContent: {
+    flex: 1,
+  },
+  aiInsightTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#404968',
+    lineHeight: 20,
+    marginBottom: 4,
+    fontFamily: 'Inter-Bold',
+  },
+  aiInsightSubtext: {
+    fontSize: 13,
+    color: '#5D6B98',
+    lineHeight: 18,
+    fontFamily: 'Inter-Regular',
+  },
+
+  // Profile Row
+  profileCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    padding: 8,
+    marginBottom: 22,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 2,
-    elevation: 3,
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  chipText: { 
-    color: 'white',
-    fontSize: 13,
-    fontWeight: '400',
+  profileRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
   },
-  // --- Skeleton Styles ---
-  skeletonContainer: {
+  profileItem: {
     flex: 1,
-    backgroundColor: '#333', // Solid dark background
-  },
-  skeletonHeaderArea: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    height: 110, // Match header height for positioning button
-    // No background needed, just for layout space if required
-  },
-  skeletonCloseButton: { // Style like the real close button
-    position: 'absolute',
-    top: 50, // Match padding/status bar offset
-    left: 20,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(0,0,0,0.3)', // Match background
-    justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 10, // Ensure it's above placeholders
   },
-  skeletonSpinner: {
-      position: 'absolute',
-      top: '40%',
-      left: '50%',
-      transform: [{ translateX: -18 }, { translateY: -18 }],
+  profileItemBorder: {
+    borderRightWidth: 1,
+    borderRightColor: '#F3F4F6',
   },
-  loadingMicrocopy: {
-    // Original style for microcopy if it were in the sheet
-    fontSize: 14,
-    color: '#666',
-    marginTop: 10, 
+  profileLabel: {
+    fontSize: 11,
+    color: '#A9A29D',
+    marginBottom: 6,
+    fontWeight: '600',
+    textTransform: 'capitalize',
+    fontFamily: 'Inter-Medium',
   },
-  loadingMicrocopyCentered: { // New style for centered microcopy
-    fontSize: 14,
-    color: '#FFFFFF', // White text for dark bg
-    marginTop: 12,
-    textAlign: 'center',
-    paddingHorizontal: 20, // Add some padding if text is long
+  profileValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1C1917',
+    fontFamily: 'Inter-Bold',
   },
-  centeredLoaderContainer: { // New style for spinner and its microcopy
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    justifyContent: 'center',
+
+  // Analysis
+  analysisCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 16,
+    marginBottom: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  analysisTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#1C1917',
+    marginBottom: 22,
+    fontFamily: 'Inter-Bold',
+  },
+  analysisRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    zIndex: 1, // Ensure it's above the background image but below the header
+    paddingVertical: 14,
   },
-  loadingHeaderTitle: {
-    flex: 1, // Allow text to take available space
-    textAlign: 'center',
-    color: 'white',
+  analysisRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: '#E7E5E4',
+  },
+  analysisRowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  analysisMetricName: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#44403C',
+    fontFamily: 'Inter-Medium',
+  },
+  analysisMicrotext: {
+    fontSize: 11,
+    color: '#9CA3AF',
+    marginTop: 2,
+    fontFamily: 'Inter-Regular',
+  },
+  analysisRowRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  analysisChangeText: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginRight: 8,
+    fontFamily: 'Inter-Regular',
+  },
+  analysisDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    marginRight: 6,
+  },
+  analysisScore: {
     fontSize: 16,
     fontWeight: '600',
-    marginHorizontal: 50, // Prevent overlap with buttons
+    color: '#364152',
+    minWidth: 24,
+    textAlign: 'right',
+    fontFamily: 'Inter-Bold',
   },
-  headerButton: { // Example style for header buttons
+
+  // SkinCheck Card
+  skinCheckCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  skinCheckTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#44403C',
+    marginBottom: 6,
+    fontFamily: 'Inter-Bold',
+  },
+  skinCheckDescription: {
+    fontSize: 13,
+    color: '#A9A29D',
+    lineHeight: 18,
+    marginBottom: 12,
+    fontFamily: 'Inter-Regular',
+  },
+  skinCheckLink: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#0498B3',
+    fontFamily: 'Inter-SemiBold',
+  },
+
+  // No Results
+  noResultsCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+  },
+  noResultsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1917',
+    marginBottom: 8,
+    fontFamily: 'Inter-SemiBold',
+  },
+  noResultsMessage: {
+    fontSize: 14,
+    color: '#6B7280',
+    lineHeight: 20,
+    marginBottom: 16,
+    fontFamily: 'Inter-Regular',
+  },
+  noResultsLink: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#007AFF',
+    fontFamily: 'Inter-SemiBold',
+  },
+
+  // Loading / Skeleton
+  skeletonContainer: {
+    flex: 1,
+    backgroundColor: '#333',
+  },
+  loadingHeaderArea: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    height: 110,
+  },
+  loadingCloseButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
     width: 40,
     height: 40,
     borderRadius: 20,
     backgroundColor: 'rgba(0,0,0,0.3)',
     justifyContent: 'center',
     alignItems: 'center',
+    zIndex: 10,
   },
-  headerCenterContainer: {
-    flex: 1,
-    alignItems: 'center',
+  centeredLoaderContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
     justifyContent: 'center',
-    // Reduce horizontal padding if needed to fit toggle
-    paddingHorizontal: 5,
+    alignItems: 'center',
+    zIndex: 1,
   },
-  headerTitleText: {
-    color: 'white',
+  loadingMicrocopyCentered: {
     fontSize: 14,
-    fontWeight: '400',
+    color: '#FFFFFF',
+    marginTop: 12,
+    textAlign: 'center',
+    paddingHorizontal: 20,
   },
-  // Style for the full-screen image used in blurred background
   fullScreenImageForBlur: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  // Style for microcopy when overlayed on a blurred background
   loadingMicrocopyOverlayed: {
-    fontSize: 16, // Slightly larger for better emphasis
-    color: '#FFFFFF', 
-    marginTop: 20, // More space from spinner
+    fontSize: 16,
+    color: '#FFFFFF',
+    marginTop: 20,
     textAlign: 'center',
-    paddingHorizontal: 30, 
-    fontWeight: '500', // Bolder
-    // Adding text shadow for legibility on varied backgrounds
+    paddingHorizontal: 30,
+    fontWeight: '500',
     textShadowColor: 'rgba(0, 0, 0, 0.6)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
+  },
+  analysisDotContainer: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 10,
+    padding: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  profileValueContainer: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 6,
+    width: "100%",
+    justifyContent: "center",
+    alignItems: "center",
+    height: 40,
   },
 });
 

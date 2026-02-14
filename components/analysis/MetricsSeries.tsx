@@ -308,7 +308,7 @@ const PhotoThumbCard = ({
           />
 
           {/* Maximize button - only show when selected */}
-          {/* {isSelected && (
+          {isSelected && (
             <TouchableOpacity
               style={styles.thumbMaximizeButton}
               onPress={(e) => {
@@ -319,7 +319,7 @@ const PhotoThumbCard = ({
             >
               <Expand size={13} color={colors.white} />
             </TouchableOpacity>
-          )} */}
+          )}
         </View>
       </TouchableOpacity>
 

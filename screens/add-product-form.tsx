@@ -8,7 +8,6 @@ import {
     StyleSheet,
     ScrollView,
     TouchableOpacity,
-    SafeAreaView,
     Alert,
     Platform,
 } from 'react-native';
@@ -17,6 +16,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { ArrowLeft, Calendar } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import { createRoutineItem } from '../utils/newApiService';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface AddProductFormParams {
     productData: any;
@@ -174,7 +174,7 @@ const AddProductFormScreen = (): React.JSX.Element => {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView edges={['top']} style={styles.container}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
@@ -281,11 +281,6 @@ const AddProductFormScreen = (): React.JSX.Element => {
                         maximumDate={new Date()}
                     />
                 )}
-
-                <View style={{ height: 100 }} />
-            </ScrollView>
-
-            <View style={styles.footer}>
                 <TouchableOpacity
                     style={[styles.saveButton, isSaving && styles.disabledButton]}
                     onPress={handleSave}
@@ -295,7 +290,11 @@ const AddProductFormScreen = (): React.JSX.Element => {
                         {isSaving ? 'Saving...' : 'Save'}
                     </Text>
                 </TouchableOpacity>
-            </View>
+            </ScrollView>
+
+
+
+
         </SafeAreaView>
     );
 };
@@ -384,11 +383,14 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
     },
     saveButton: {
-        backgroundColor: '#00839B',
-        paddingVertical: 16,
-        borderRadius: 12,
+        backgroundColor: '#0498B3',
+        paddingVertical: 12,
+        paddingHorizontal: spacing.lg,
+        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+        marginTop: 20,
+        marginBottom: 50
     },
     disabledButton: {
         backgroundColor: '#A8A29E',

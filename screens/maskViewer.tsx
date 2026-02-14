@@ -2,11 +2,11 @@
 // Mask viewer screen with enhanced zoom and pan functionality
 
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
   StatusBar,
   Image,
   Dimensions,
@@ -82,11 +82,11 @@ const sanitizeS3Uri = (uriString: string): string => {
 // Helper function to format mask condition names for display
 const formatConditionName = (conditionName: string): string => {
   if (!conditionName) return 'Original';
-  
+
   const nameMap: { [key: string]: string } = {
     'none': 'Original',
     'redness': 'Redness',
-    'hydration': 'Dewiness', 
+    'hydration': 'Dewiness',
     'eye_bags': 'Eye Area Condition',
     'pores': 'Visible Pores',
     'acne': 'Breakouts',
@@ -95,21 +95,21 @@ const formatConditionName = (conditionName: string): string => {
     'pigmentation': 'Pigmentation',
     'uniformness': 'Evenness'
   };
-  
+
   return nameMap[conditionName] || conditionName.charAt(0).toUpperCase() + conditionName.slice(1);
 };
 
 // Enhanced zoomable mask image component
-const ZoomableMaskImage = ({ 
-  photoUri, 
-  maskUri, 
-  conditionName, 
-  isActive 
-}: { 
-  photoUri: string; 
-  maskUri: string; 
-  conditionName: string; 
-  isActive: boolean; 
+const ZoomableMaskImage = ({
+  photoUri,
+  maskUri,
+  conditionName,
+  isActive
+}: {
+  photoUri: string;
+  maskUri: string;
+  conditionName: string;
+  isActive: boolean;
 }): React.JSX.Element => {
   const scale = useSharedValue(1);
   const translateX = useSharedValue(0);
@@ -169,7 +169,7 @@ const ZoomableMaskImage = ({
         const scaledSize = IMAGE_SIZE * scale.value;
         const maxTranslateX = (scaledSize - IMAGE_SIZE) / 2;
         const maxTranslateY = (scaledSize - IMAGE_SIZE) / 2;
-        
+
         translateX.value = Math.max(-maxTranslateX, Math.min(maxTranslateX, savedTranslateX.value + e.translationX));
         translateY.value = Math.max(-maxTranslateY, Math.min(maxTranslateY, savedTranslateY.value + e.translationY));
       }
@@ -234,63 +234,63 @@ const ZoomableMaskImage = ({
           <Text style={styles.loadingText}>Loading...</Text>
         </View>
       )}
-      
+
       <GestureHandlerRootView style={styles.gestureContainer}>
         <GestureDetector gesture={composedGesture}>
           <Animated.View style={[styles.imageWrapper, animatedStyle]}>
-                    {/* Check if maskUri is SVG or regular image */}
-                    {maskUri && maskUri.toLowerCase().includes('.svg') ? (
-                      // For SVG masks, show background image with mask overlay
-                      <>
-                        <Image
-                          source={{ uri: sanitizeS3Uri(photoUri) }}
-                          style={styles.backgroundImage}
-                          resizeMode="cover"
-                          onError={(error) => {
-                            console.log('🔴 Error loading background image:', error.nativeEvent.error);
-                          }}
-                          onLoad={() => {
-                            console.log('✅ Background image loaded successfully');
-                            setImageLoaded(true)
-                          }}
-                        />
-                        
-                        <ConditionalImage
-                          source={{ uri: sanitizeS3Uri(maskUri) }}
-                          style={styles.maskOverlay}
-                          resizeMode="cover"
-                          onLoad={() => setMaskLoaded(true)}
-                        />
-                      </>
-                    ) : maskUri ? (
-                      // For non-SVG masks, show only the mask image
-                      <Image
-                        source={{ uri: sanitizeS3Uri(maskUri) }}
-                        style={styles.backgroundImage}
-                        resizeMode="cover"
-                        onError={(error) => {
-                          console.log('🔴 Error loading mask image:', error.nativeEvent.error);
-                        }}
-                        onLoad={() => {
-                          console.log('✅ Mask image loaded successfully');
-                          setImageLoaded(true)
-                        }}
-                      />
-                    ) : (
-                      // For original (no mask), show background image
-                      <Image
-                        source={{ uri: sanitizeS3Uri(photoUri) }}
-                        style={styles.backgroundImage}
-                        resizeMode="cover"
-                        onError={(error) => {
-                          console.log('🔴 Error loading background image:', error.nativeEvent.error);
-                        }}
-                        onLoad={() => {
-                          console.log('✅ Background image loaded successfully');
-                          setImageLoaded(true)
-                        }}
-                      />
-                    )}
+            {/* Check if maskUri is SVG or regular image */}
+            {maskUri && maskUri.toLowerCase().includes('.svg') ? (
+              // For SVG masks, show background image with mask overlay
+              <>
+                <Image
+                  source={{ uri: sanitizeS3Uri(photoUri) }}
+                  style={styles.backgroundImage}
+                  resizeMode="cover"
+                  onError={(error) => {
+                    console.log('🔴 Error loading background image:', error.nativeEvent.error);
+                  }}
+                  onLoad={() => {
+                    console.log('✅ Background image loaded successfully');
+                    setImageLoaded(true)
+                  }}
+                />
+
+                <ConditionalImage
+                  source={{ uri: sanitizeS3Uri(maskUri) }}
+                  style={styles.maskOverlay}
+                  resizeMode="cover"
+                  onLoad={() => setMaskLoaded(true)}
+                />
+              </>
+            ) : maskUri ? (
+              // For non-SVG masks, show only the mask image
+              <Image
+                source={{ uri: sanitizeS3Uri(maskUri) }}
+                style={styles.backgroundImage}
+                resizeMode="cover"
+                onError={(error) => {
+                  console.log('🔴 Error loading mask image:', error.nativeEvent.error);
+                }}
+                onLoad={() => {
+                  console.log('✅ Mask image loaded successfully');
+                  setImageLoaded(true)
+                }}
+              />
+            ) : (
+              // For original (no mask), show background image
+              <Image
+                source={{ uri: sanitizeS3Uri(photoUri) }}
+                style={styles.backgroundImage}
+                resizeMode="cover"
+                onError={(error) => {
+                  console.log('🔴 Error loading background image:', error.nativeEvent.error);
+                }}
+                onLoad={() => {
+                  console.log('✅ Background image loaded successfully');
+                  setImageLoaded(true)
+                }}
+              />
+            )}
           </Animated.View>
         </GestureDetector>
       </GestureHandlerRootView>
@@ -304,9 +304,9 @@ const MaskViewerScreen = (): React.JSX.Element => {
   const params = route.params as MaskViewerParams || {};
 
   console.log('🔵 params:', params);
-  
-  const parsedPhotoData = typeof params.photoData === 'string' 
-    ? JSON.parse(params.photoData) 
+
+  const parsedPhotoData = typeof params.photoData === 'string'
+    ? JSON.parse(params.photoData)
     : params.photoData;
 
   console.log('🔵 parsedPhotoData:', parsedPhotoData);
@@ -321,11 +321,11 @@ const MaskViewerScreen = (): React.JSX.Element => {
 
   // Prepare mask data - filter out options with "Unknown" mask_img_url and sort by desired order
   const maskOptions: MaskOption[] = [
-    { 
-      skin_condition_name: 'none', 
-      mask_img_url: parsedPhotoData?.storageUrl, 
-      displayName: 'Original', 
-      image_url: parsedPhotoData?.maskImages[0]?.image_url 
+    {
+      skin_condition_name: 'none',
+      mask_img_url: parsedPhotoData?.storageUrl,
+      displayName: 'Original',
+      image_url: parsedPhotoData?.maskImages[0]?.image_url
     },
     ...(parsedPhotoData?.maskImages || [])
       .filter((mask: any) => mask.mask_img_url !== "Unknown")
@@ -342,10 +342,10 @@ const MaskViewerScreen = (): React.JSX.Element => {
           'pigmentation': 'pigmentationScore',
           'uniformness': 'uniformnessScore'
         };
-        
+
         const concernKey = conditionToConcernKey[mask.skin_condition_name];
         const concernDetails = concernsData?.skinConcerns?.[concernKey];
-        
+
         // Only include if maskVerbiage exists
         return concernDetails?.maskVerbiage;
       })
@@ -358,7 +358,7 @@ const MaskViewerScreen = (): React.JSX.Element => {
         const order = [
           'none',
           'uniformness',
-          'pigmentation', 
+          'pigmentation',
           'redness',
           'pores',
           'acne',
@@ -366,19 +366,19 @@ const MaskViewerScreen = (): React.JSX.Element => {
           'hydration',
           'eye_bags'
         ];
-        
+
         const indexA = order.indexOf(a.skin_condition_name);
         const indexB = order.indexOf(b.skin_condition_name);
-        
+
         // If both are in the order array, sort by their position
         if (indexA !== -1 && indexB !== -1) {
           return indexA - indexB;
         }
-        
+
         // If only one is in the order array, prioritize it
         if (indexA !== -1) return -1;
         if (indexB !== -1) return 1;
-        
+
         // If neither is in the order array, sort alphabetically
         return a.skin_condition_name.localeCompare(b.skin_condition_name);
       })
@@ -410,137 +410,137 @@ const MaskViewerScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.container}>
       {/* <GestureHandlerRootView style={styles.container}> */}
-        <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
-        
-        {/* Header */}
-        <SafeAreaView style={styles.headerContainer}>
-          <View style={styles.header}>
-            <View style={styles.headerContent}>
-              <Text style={styles.headerTitle}>Face Mask</Text>
-              <TouchableOpacity 
-                style={styles.closeButton}
-                onPress={() => (navigation as any).goBack()}
-              >
-                <X size={24} color="white" />
-              </TouchableOpacity>
-            </View>
+      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+
+      {/* Header */}
+      <SafeAreaView style={styles.headerContainer}>
+        <View style={styles.header}>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Face Mask</Text>
+            <TouchableOpacity
+              style={styles.closeButton}
+              onPress={() => (navigation as any).goBack()}
+            >
+              <X size={24} color="white" />
+            </TouchableOpacity>
           </View>
-        </SafeAreaView>
+        </View>
+      </SafeAreaView>
 
-        {/* Main content */}
-        <View style={styles.mainContent}>
-          <Animated.ScrollView
-            ref={scrollRef}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={scrollHandler}
-            scrollEventThrottle={16}
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            decelerationRate="fast"
-            snapToInterval={SCREEN_WIDTH}
-            snapToAlignment="center"
-          >
-            {maskOptions.map((maskOption, index) => (
-              <View key={index} style={styles.maskPage}>
-                <ZoomableMaskImage
-                  photoUri={maskOption?.image_url || ''}
-                  maskUri={maskOption.mask_img_url}
-                  conditionName={maskOption.skin_condition_name}
-                  isActive={index === activeIndex}
-                />
-              </View>
-            ))}
-          </Animated.ScrollView>
-
-          {/* Current mask label */}
-          <View style={styles.currentLabelContainer}>
-            <View style={styles.currentLabel}>
-              <Text style={styles.currentLabelText}>
-                {maskOptions[activeIndex]?.displayName}
-              </Text>
-              <View style={styles.currentLabelIndicator} />
+      {/* Main content */}
+      <View style={styles.mainContent}>
+        <Animated.ScrollView
+          ref={scrollRef}
+          horizontal
+          pagingEnabled
+          showsHorizontalScrollIndicator={false}
+          onScroll={scrollHandler}
+          scrollEventThrottle={16}
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          decelerationRate="fast"
+          snapToInterval={SCREEN_WIDTH}
+          snapToAlignment="center"
+        >
+          {maskOptions.map((maskOption, index) => (
+            <View key={index} style={styles.maskPage}>
+              <ZoomableMaskImage
+                photoUri={maskOption?.image_url || ''}
+                maskUri={maskOption.mask_img_url}
+                conditionName={maskOption.skin_condition_name}
+                isActive={index === activeIndex}
+              />
             </View>
-            
-            {/* Mask Verbiage from concerns.json */}
-            {(() => {
-              const currentCondition = maskOptions[activeIndex]?.skin_condition_name;
-              if (currentCondition && currentCondition !== 'none') {
-                // Map condition names to concern keys
-                const conditionToConcernKey: { [key: string]: string } = {
-                  'redness': 'rednessScore',
-                  'hydration': 'hydrationScore',
-                  'eye_bags': 'eyeAreaCondition',
-                  'pores': 'poresScore',
-                  'acne': 'acneScore',
-                  'lines': 'linesScore',
-                  'pigmentation': 'pigmentationScore',
-                  'uniformness': 'uniformnessScore'
-                };
-                
-                const concernKey = conditionToConcernKey[currentCondition];
-                const concernDetails = concernsData?.skinConcerns?.[concernKey];
-                
-                if (concernDetails?.maskVerbiage) {
-                  return (
-                    <View style={styles.maskVerbiageContainer}>
-                      {Array.isArray(concernDetails.maskVerbiage) ? (
-                        concernDetails.maskVerbiage.map((verbiage: string, index: number) => (
-                          <View key={index} style={styles.maskVerbiageItem}>
-                            <View style={styles.maskVerbiageBullet} />
-                            <Text style={styles.maskVerbiageText}>
-                              {verbiage}
-                            </Text>
-                          </View>
-                        ))
-                      ) : (
-                        <Text style={styles.maskVerbiageText}>
-                          {concernDetails.maskVerbiage}
-                        </Text>
+          ))}
+        </Animated.ScrollView>
+
+        {/* Current mask label */}
+        <View style={styles.currentLabelContainer}>
+          <View style={styles.currentLabel}>
+            <Text style={styles.currentLabelText}>
+              {maskOptions[activeIndex]?.displayName}
+            </Text>
+            <View style={styles.currentLabelIndicator} />
+          </View>
+
+          {/* Mask Verbiage from concerns.json */}
+          {(() => {
+            const currentCondition = maskOptions[activeIndex]?.skin_condition_name;
+            if (currentCondition && currentCondition !== 'none') {
+              // Map condition names to concern keys
+              const conditionToConcernKey: { [key: string]: string } = {
+                'redness': 'rednessScore',
+                'hydration': 'hydrationScore',
+                'eye_bags': 'eyeAreaCondition',
+                'pores': 'poresScore',
+                'acne': 'acneScore',
+                'lines': 'linesScore',
+                'pigmentation': 'pigmentationScore',
+                'uniformness': 'uniformnessScore'
+              };
+
+              const concernKey = conditionToConcernKey[currentCondition];
+              const concernDetails = concernsData?.skinConcerns?.[concernKey];
+
+              if (concernDetails?.maskVerbiage) {
+                return (
+                  <View style={styles.maskVerbiageContainer}>
+                    {Array.isArray(concernDetails.maskVerbiage) ? (
+                      concernDetails.maskVerbiage.map((verbiage: string, index: number) => (
+                        <View key={index} style={styles.maskVerbiageItem}>
+                          <View style={styles.maskVerbiageBullet} />
+                          <Text style={styles.maskVerbiageText}>
+                            {verbiage}
+                          </Text>
+                        </View>
+                      ))
+                    ) : (
+                      <Text style={styles.maskVerbiageText}>
+                        {concernDetails.maskVerbiage}
+                      </Text>
+                    )}
+                  </View>
+                );
+              }
+            }
+            return null;
+          })()}
+        </View>
+      </View>
+
+      {/* Bottom navigation */}
+      <View style={styles.bottomContainer}>
+        <View style={styles.bottomGradient}>
+          <View style={styles.bottomNavigation}>
+            <Animated.ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.navigationContent}
+              style={styles.navigationScroll}
+              ref={navigationScrollRef}
+            >
+              {maskOptions.map((maskOption, index) => {
+                return (
+                  <TouchableOpacity
+                    key={index}
+                    onPress={() => scrollToIndex(index)}
+                    activeOpacity={0.7}
+                  >
+                    <View style={[styles.navigationTab]}>
+                      <Animated.Text style={[styles.navigationTabText, { color: '#FFF' }]}>
+                        {maskOption.displayName}
+                      </Animated.Text>
+                      {index === activeIndex && (
+                        <View style={styles.activeTabIndicator} />
                       )}
                     </View>
-                  );
-                }
-              }
-              return null;
-            })()}
+                  </TouchableOpacity>
+                );
+              })}
+            </Animated.ScrollView>
           </View>
         </View>
-
-        {/* Bottom navigation */}
-        <View style={styles.bottomContainer}>
-          <View style={styles.bottomGradient}>
-            <View style={styles.bottomNavigation}>
-              <Animated.ScrollView 
-                horizontal 
-                showsHorizontalScrollIndicator={false}
-                contentContainerStyle={styles.navigationContent}
-                style={styles.navigationScroll}
-                ref={navigationScrollRef}
-              > 
-                {maskOptions.map((maskOption, index) => {
-                  return (
-                    <TouchableOpacity
-                      key={index}
-                      onPress={() => scrollToIndex(index)}
-                      activeOpacity={0.7}
-                    >
-                      <View style={[styles.navigationTab]}>
-                        <Animated.Text style={[styles.navigationTabText, {color: '#FFF'}]}>
-                          {maskOption.displayName}
-                        </Animated.Text>
-                        {index === activeIndex && (
-                          <View style={styles.activeTabIndicator} />
-                        )}
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-              </Animated.ScrollView>
-            </View>
-          </View>
-        </View>
+      </View>
       {/* </GestureHandlerRootView> */}
     </SafeAreaView>
   );

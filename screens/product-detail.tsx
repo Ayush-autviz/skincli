@@ -758,32 +758,33 @@ const ProductDetailScreen = (): React.JSX.Element => {
           <View style={styles.productCard}>
             <View style={styles.productCardContainer}>
               {/* Product Image Placeholder */}
-              <View style={styles.productImageContainer}>
-                {productData.image_url ? (
-                  <Image
-                    source={{ uri: productData.image_url }}
-                    style={styles.productImage}
-                    resizeMode="contain"
-                  />
-                ) : (
-                  <View style={styles.productImagePlaceholder}>
-                    <Icon name="bottle-tonic-outline" size={40} color={colors.textSecondary} />
-                  </View>
-                )}
-              </View>
+              <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
+                <View style={styles.productImageContainer}>
+                  {productData.image_url ? (
+                    <Image
+                      source={{ uri: productData.image_url }}
+                      style={styles.productImage}
+                      resizeMode="contain"
+                    />
+                  ) : (
+                    <View style={styles.productImagePlaceholder}>
+                      <Icon name="bottle-tonic-outline" size={40} color={colors.textSecondary} />
+                    </View>
+                  )}
+                </View>
 
-              {/* Product Info */}
-              <View style={styles.productInfoContainer}>
-                {!isManuallyAdded && productData.brand && (
-                  <Text style={styles.brandNameNew}>
-                    {productData.brand?.toUpperCase()}
+                {/* Product Info */}
+                <View style={styles.productInfoContainer}>
+                  {!isManuallyAdded && productData.brand && (
+                    <Text style={styles.brandNameNew}>
+                      {productData.brand?.toUpperCase()}
+                    </Text>
+                  )}
+                  <Text style={styles.productNameNew}>
+                    {productData.product_name || routineData.name || 'Unknown Product'}
                   </Text>
-                )}
-                <Text style={styles.productNameNew}>
-                  {productData.product_name || routineData.name || 'Unknown Product'}
-                </Text>
+                </View>
               </View>
-
               {/* Add to Your Routine Button - Only in add mode */}
               {isAddMode && (
                 <TouchableOpacity
@@ -1717,8 +1718,7 @@ const styles = StyleSheet.create({
   },
   // New Product Card Styles
   productCardContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'column',
     gap: spacing.md,
   },
   productImageContainer: {
@@ -1763,7 +1763,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: spacing.lg,
     backgroundColor: '#E5E7EB',
-    borderRadius: borderRadius.pill || 24,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
   },

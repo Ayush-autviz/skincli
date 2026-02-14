@@ -1277,7 +1277,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
           showsHorizontalScrollIndicator={false}
           style={styles.barScrollView}
           contentContainerStyle={{
-            paddingTop: 28,
+            paddingTop: 40,
             paddingRight: 16 // Add right padding so selected items can be properly visible
           }}
         >
@@ -1744,9 +1744,11 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   dataSection: {
-    height: 60,  // Adjusted for better proportions
+    height: 60,
     marginVertical: 4,
     position: 'relative',
+    backgroundColor: '#F5F5F4',
+    borderRadius: 8,
   },
   gridContainer: {
     position: 'absolute',
@@ -1760,7 +1762,7 @@ const styles = StyleSheet.create({
   gridLine: {
     width: '100%',
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'transparent',
   },
   dotContainer: {
     position: 'absolute',
@@ -2030,7 +2032,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'transparent',
   },
   nullBarContainer: {
     position: 'absolute',
@@ -2071,7 +2073,7 @@ const styles = StyleSheet.create({
     elevation: 6,
   },
   barScrollView: {
-    height: 48,
+    // height: 48, // Let it fill parent
   },
   plotArea: {
     flexDirection: 'row',

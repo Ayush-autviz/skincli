@@ -20,7 +20,7 @@ import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { useNavigation } from '@react-navigation/native';
 
 import SettingsDrawer from '../components/layout/SettingsDrawer';
-import TabHeader from '../components/ui/TabHeader';
+import HomeHeader from '../components/ui/HomeHeader';
 import { colors, spacing, typography, shadows } from '../styles';
 import MetricsSeries from '../components/analysis/MetricsSeries';
 import { getComparison, transformComparisonData } from '../utils/newApiService';
@@ -172,10 +172,8 @@ export default function ProgressTab(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <TabHeader
-        title="Progress"
+      <HomeHeader
         onMenuPress={handleMenuPress}
-        showBack={true}
       />
 
       <View style={styles.content}>
@@ -218,7 +216,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginTop: 120, // Space for new header
+    marginTop: 100, // Space for new header
     marginBottom: 100, // Space for bottom nav
   },
   scrollContainer: {

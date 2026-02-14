@@ -1765,93 +1765,94 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
           // If no mask data, show the original photo instead
           if (conditionName && (maskImageData?.mask_img_url || parsedPhotoData?.storageUrl)) {
+            const latestScore = Number(metricValue);
+            const tagColor = latestScore >= 70 ? '#22C55E' : latestScore < 50 ? '#EF4444' : '#F59E0B';
+            let changeArrow = '→';
+            let changeAbs = 0;
+            if (Array.isArray(trendScores) && trendScores.length >= 2) {
+              const s0 = Number(trendScores[0]?.skin_condition_score ?? trendScores[0]?.score ?? latestScore);
+              const s1 = Number(trendScores[1]?.skin_condition_score ?? trendScores[1]?.score ?? latestScore);
+              const diff = s0 - s1;
+              changeAbs = Math.abs(Math.round(diff));
+              changeArrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+            }
+
             return (
               <View style={{ marginHorizontal: 16 }}>
                 <Text style={styles.sectionTitle}>Face Mask</Text>
-                <View style={styles.metricCard}>
-                  {/* <Text style={styles.maskImageDescription}>
-                    This mask shows the analyzed areas for {formatMetricName(metricKey).toLowerCase()} on your face.
-                  </Text> */}
-
-                  {/* Show loading indicator while fetching mask images */}
-                  {maskImagesLoading && (
-                    <View style={styles.maskImagesLoadingContainer}>
-                      <ActivityIndicator size="small" color={colors.primary} />
-                      <Text style={styles.maskImagesLoadingText}>Loading analysis data...</Text>
-                    </View>
-                  )}
-
+                <View style={styles.metricCardRow}>
                   <View style={styles.maskImageContainer}>
-                    {/* Background Image - Use storageUrl if mask data not available */}
                     <Image
                       source={{ uri: sanitizeS3Uri(maskImageData?.image_url || parsedPhotoData?.storageUrl) as string }}
                       style={styles.backgroundImage as any}
                       resizeMode="cover"
                       onError={(error: any) => {
-                        console.log('🔴 Error loading background image:', error.nativeEvent.error);
                         setMaskImagesLoading(false);
                         setBackgroundImageLoading(false);
                       }}
                       onLoad={() => {
-                        console.log('✅ Background image loaded successfully');
                         setMaskImagesLoading(false);
                         setBackgroundImageLoading(false);
                       }}
                     />
-
-                    {/* Loading indicator for background image */}
                     {backgroundImageLoading && (
                       <View style={styles.imageLoadingContainer}>
                         <ActivityIndicator size="large" color={colors.primary} />
                         <Text style={styles.loadingText}>Loading image...</Text>
                       </View>
                     )}
-
-                    {/* Conditional Image Overlay (SVG or regular image) - Only show if mask data exists */}
                     {maskImageData?.mask_img_url && (
                       <View style={styles.svgOverlay}>
                         <ConditionalImage
-                          source={{ uri: sanitizeS3Uri(maskImageData.mask_img_url) }}
+                          source={sanitizeS3Uri(maskImageData.mask_img_url) as string}
                           style={styles.svgOverlay as any}
+                          resizeMode="contain"
                           width="100%"
                           height="100%"
-                          onError={(error: any) => {
-                            console.log('🔴 Error loading mask image:', error);
+                          onError={() => {
                             setMaskImagesLoading(false);
                           }}
                           onLoad={() => {
-                            console.log('✅ Mask image loaded successfully for:', conditionName);
                             setMaskImagesLoading(false);
                           }}
                         />
                       </View>
                     )}
+                    <TouchableOpacity
+                      style={styles.photoOverlayChip}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        (navigation as any).navigate('MaskViewer', {
+                          photoData: JSON.stringify(parsedPhotoData)
+                        });
+                      }}
+                    >
+                      <Text style={styles.photoOverlayChipText}>+ Zoom / Masks</Text>
+                    </TouchableOpacity>
                   </View>
-                  {/* <Text style={styles.maskImageNote}>
-                    {maskImageData?.mask_img_url 
-                      ? `Highlighted areas indicate regions where ${formatMetricName(metricKey).toLowerCase()} was detected and analyzed.`
-                      : `Analysis visualization for ${formatMetricName(metricKey).toLowerCase()}.`
-                    }
-                  </Text> */}
-                  {/* <Text style={styles.maskImageNote}> */}
-                  {currentConcernDetails?.maskVerbiage && Array.isArray(currentConcernDetails.maskVerbiage) ? (
-                    <View style={styles.maskVerbiageContainer}>
-                      {currentConcernDetails.maskVerbiage.map((verbiage: string, index: number) => (
-                        <View key={index} style={styles.maskVerbiageItem}>
-                          <View style={styles.maskVerbiageBullet} />
-                          <Text style={styles.maskVerbiageText}>
-                            {verbiage}
-                          </Text>
-                        </View>
-                      ))}
-                    </View>
-                  ) : (
-                    <Text style={styles.maskVerbiageText}>
-                      {currentConcernDetails?.maskVerbiage || `Analysis visualization for ${formatMetricName(metricKey).toLowerCase()}.`}
+                  <View style={styles.maskContentRight}>
+                    <Text style={styles.smartContextText}>
+                      {getSmartContextText(metricValue, metricKey, currentConcernDetails)}
                     </Text>
-                  )}
-                  {/* </Text> */}
+                    <View style={styles.scoreRowContainer}>
+                      <View style={styles.combinedScoreChip}>
+                        <View style={styles.changeInfo}>
+                          <Text style={styles.changeText}>{changeArrow}{changeAbs} Today</Text>
+                        </View>
+                        <View style={styles.scoreInfo}>
+                          <View style={[styles.analysisDot, { backgroundColor: tagColor }]} />
+                          <Text style={styles.scoreText}>{Number.isFinite(Number(metricValue)) ? Number(metricValue) : '--'}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
                 </View>
+                {maskImagesLoading && (
+                  <View style={styles.maskImagesLoadingContainer}>
+                    <ActivityIndicator size="small" color={colors.primary} />
+                    <Text style={styles.maskImagesLoadingText}>Loading analysis data...</Text>
+                  </View>
+                )}
               </View>
             );
           }
@@ -2616,13 +2617,76 @@ const styles = StyleSheet.create({
     color: '#555',
     textAlign: 'center',
   },
+  metricCardRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    marginVertical: 16,
+    padding: 12,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+    gap: 12,
+  },
+  maskContentRight: {
+    flex: 1,
+    justifyContent: 'center',
+    backgroundColor: '#F9F9F9',
+    borderRadius: 12,
+    padding: 12,
+  },
+  smartContextText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#444',
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  scoreRowContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  combinedScoreChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EEE',
+    borderRadius: 20,
+    paddingHorizontal: 4,
+    paddingVertical: 4,
+  },
+  changeInfo: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+  },
+  changeText: {
+    fontSize: 13,
+    color: '#666',
+    fontWeight: '500',
+  },
+  scoreInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginLeft: 4,
+  },
+  scoreText: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#364152',
+    marginLeft: 6,
+  },
   // Mask image styles
   maskImageContainer: {
     alignItems: 'center',
-    marginVertical: 12,
     position: 'relative',
-    width: 350,
-    height: 350,
+    width: 140,
+    height: 140,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -2659,6 +2723,60 @@ const styles = StyleSheet.create({
     marginTop: 8,
     textAlign: 'center',
     fontStyle: 'italic',
+  },
+  photoOverlayChip: {
+    position: 'absolute',
+    bottom: 8,
+    left: '50%',
+    transform: [{ translateX: -60 }],
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    zIndex: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  photoOverlayChipText: {
+    color: '#44403C',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  changeChip: {
+    backgroundColor: '#F3F4F6',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginRight: 8,
+  },
+  changeChipText: {
+    fontSize: 12,
+    color: '#6B7280',
+    fontWeight: '500',
+  },
+  scoreChip: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  analysisDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  scoreChipText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#364152',
+    minWidth: 24,
+    textAlign: 'right',
   },
   // Trend scores styles
   trendScoresContainer: {

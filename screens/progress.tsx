@@ -14,9 +14,9 @@ DEV PRINCIPLES
 ------------------------------------------------------*/
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
-import { LinearGradient } from 'react-native-linear-gradient';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { AlertCircle, RefreshCw, TrendingUp } from 'lucide-react-native';
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { useNavigation } from '@react-navigation/native';
 
 import SettingsDrawer from '../components/layout/SettingsDrawer';
@@ -90,20 +90,48 @@ export default function ProgressTab(): React.JSX.Element {
   // All photos from comparison API already have metrics
   const analyzedPhotos = photos;
 
-  // Enhanced Loading Component
+  // Skeleton Loading Component
   const LoadingState = (): React.JSX.Element => (
-    <View style={styles.loadingContainer}>
-      {/* <LinearGradient
-        colors={[colors.primary + '20', colors.primary + '10']}
-        style={styles.loadingGradient}
-      > */}
-        <View style={styles.loadingContent}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Analyzing progress...</Text>
-          <Text style={styles.loadingSubtext}>This may take a moment</Text>
+    <ScrollView style={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      {/* Photo Slider Skeleton */}
+      <View style={styles.skeletonPhotoSlider}>
+        <SkeletonPlaceholder borderRadius={4}>
+          <SkeletonPlaceholder.Item flexDirection="row" justifyContent="center" alignItems="center" gap={8}>
+            <SkeletonPlaceholder.Item width={100} height={150} borderRadius={16} />
+            <SkeletonPlaceholder.Item width={115} height={170} borderRadius={16} />
+            <SkeletonPlaceholder.Item width={100} height={150} borderRadius={16} />
+          </SkeletonPlaceholder.Item>
+        </SkeletonPlaceholder>
+      </View>
+
+      {/* Metric Card Skeletons */}
+      {[1, 2, 3, 4, 5].map((item) => (
+        <View key={item} style={styles.skeletonCard}>
+          <SkeletonPlaceholder borderRadius={4}>
+            {/* Header: Star + name + chevron */}
+            <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="center" marginBottom={12}>
+              <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" gap={8}>
+                <SkeletonPlaceholder.Item width={16} height={16} borderRadius={8} />
+                <SkeletonPlaceholder.Item width={120} height={14} />
+              </SkeletonPlaceholder.Item>
+              <SkeletonPlaceholder.Item width={18} height={18} borderRadius={9} />
+            </SkeletonPlaceholder.Item>
+
+            {/* Score row: Large score + average */}
+            <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="flex-end" marginBottom={12}>
+              <SkeletonPlaceholder.Item width={60} height={36} />
+              <SkeletonPlaceholder.Item flexDirection="row" alignItems="flex-end" gap={4}>
+                <SkeletonPlaceholder.Item width={30} height={18} />
+                <SkeletonPlaceholder.Item width={55} height={14} />
+              </SkeletonPlaceholder.Item>
+            </SkeletonPlaceholder.Item>
+
+            {/* Bar chart placeholder */}
+            <SkeletonPlaceholder.Item width={"100%"} height={48} borderRadius={4} />
+          </SkeletonPlaceholder>
         </View>
-      {/* </LinearGradient> */}
-    </View>
+      ))}
+    </ScrollView>
   );
 
   // Enhanced Error Component
@@ -129,15 +157,12 @@ export default function ProgressTab(): React.JSX.Element {
   const EmptyState = (): React.JSX.Element => (
     <View style={styles.noDataContainer}>
       <View style={styles.emptyContent}>
-        <LinearGradient
-          colors={[colors.primary + '15', colors.primary + '05']}
-          style={styles.emptyIconContainer}
-        >
+        <View style={styles.emptyIconContainer}>
           <TrendingUp size={48} color={colors.primary} />
-        </LinearGradient>
+        </View>
         <Text style={styles.noDataText}>Track your skin health and the efficacy of your skin care</Text>
         <Text style={styles.noDataSubtext}>
-        On your first visit, take 2 photos to activate the tracker, then as often as you want!
+          On your first visit, take 2 photos to activate the tracker, then as often as you want!
         </Text>
       </View>
     </View>
@@ -148,7 +173,7 @@ export default function ProgressTab(): React.JSX.Element {
   return (
     <View style={styles.container}>
       <TabHeader
-        title="Progress Charts"
+        title="Progress"
         onMenuPress={handleMenuPress}
         showBack={true}
       />
@@ -205,20 +230,11 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Enhanced Loading Styles
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: spacing.xl,
-  },
-  loadingGradient: {
-    borderRadius: 20,
-    padding: spacing.xl,
-    minWidth: 280,
-    maxWidth: 350,
-    alignItems: 'center',
-    ...shadows.md,
   },
   loadingContent: {
     alignItems: 'center',
@@ -241,6 +257,23 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     flexWrap: 'wrap',
     maxWidth: '100%',
+  },
+  skeletonPhotoSlider: {
+    paddingVertical: 20,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
+  skeletonCard: {
+    backgroundColor: 'white',
+    marginHorizontal: 16,
+    marginVertical: 6,
+    padding: 16,
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   // Enhanced Error Styles
@@ -311,6 +344,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: spacing.xl,
+    backgroundColor: colors.primary + '15',
   },
   noDataText: {
     ...typography.h2,

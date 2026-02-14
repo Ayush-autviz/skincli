@@ -114,17 +114,16 @@ import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, FlatL
 import Popover from 'react-native-popover-view';
 import { usePhotoContext } from '../../contexts/PhotoContext'; // Import photo context
 import { useNavigation } from '@react-navigation/native'; // Import navigation
-import { colors, shadows } from '../../styles';
-import { Expand, Flag, BookOpen, Book, FlagIcon } from 'lucide-react-native';
+import { colors, shadows, fontFamily } from '../../styles';
+import { Expand, Flag, NotebookPen, Book, FlagIcon, Star, ChevronRight as ChevronRightIcon } from 'lucide-react-native';
 import useAuthStore from '../../stores/authStore';
-import { ChevronRightIcon } from 'lucide-react-native';
 import { LineChart } from 'react-native-chart-kit';
 import { Svg, Line as SvgLine, Circle as SvgCircle } from 'react-native-svg';
 
 const { width } = Dimensions.get('window');
-const DATE_CARD_WIDTH = 115;  // 100 * 1.15 = 115 (15% increase)
-const DATE_CARD_HEIGHT = 173; // 150 * 1.15 ≈ 173 (15% increase)
-const DATE_CARD_MARGIN = 3;  // 8 / 2 = 4 
+const DATE_CARD_WIDTH = 158;
+const DATE_CARD_HEIGHT = 158; // Square photos
+const DATE_CARD_MARGIN = 3;
 
 const METRIC_KEYS = [
   'acneScore',
@@ -156,7 +155,7 @@ export const METRIC_LABELS = {
 
 const IMAGE_QUALITY_KEYS = [
   'focus',
-  'lighting', 
+  'lighting',
   'overall'
 ];
 
@@ -166,7 +165,7 @@ export const processPhotoMetrics = (photos) => {
   // Refined timestamp extraction - prioritize created_at field from API
   const timestamps = photos.map(photo => {
     let dateValue;
-    
+
     // Prioritize created_at field from API response
     if (photo.created_at) {
       dateValue = new Date(photo.created_at);
@@ -174,11 +173,11 @@ export const processPhotoMetrics = (photos) => {
       // Fallback to timestamp for backward compatibility
       const ts = photo.timestamp;
       if (ts?.seconds && typeof ts.seconds === 'number') { // Firestore Timestamp
-          dateValue = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
+        dateValue = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
       } else if (ts instanceof Date) { // Already a JS Date
-          dateValue = ts;
+        dateValue = ts;
       } else { // Attempt conversion from string/number
-          dateValue = new Date(ts);
+        dateValue = new Date(ts);
       }
     }
     return dateValue; // Return the Date object (or Invalid Date)
@@ -190,7 +189,7 @@ export const processPhotoMetrics = (photos) => {
     scores: photos.map(photo => {
       // Use the same robust conversion for score timestamp - prioritize created_at
       let timestamp;
-      
+
       // Prioritize created_at field from API response
       if (photo.created_at) {
         timestamp = new Date(photo.created_at);
@@ -198,28 +197,28 @@ export const processPhotoMetrics = (photos) => {
         // Fallback to timestamp for backward compatibility
         const ts = photo.timestamp;
         if (ts?.seconds && typeof ts.seconds === 'number') {
-            timestamp = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
+          timestamp = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
         } else if (ts instanceof Date) {
-            timestamp = ts;
+          timestamp = ts;
         } else {
-            timestamp = new Date(ts);
+          timestamp = new Date(ts);
         }
       }
 
       // Format the date only if it's valid
-      const formattedDate = timestamp instanceof Date && !isNaN(timestamp.getTime()) 
+      const formattedDate = timestamp instanceof Date && !isNaN(timestamp.getTime())
         ? timestamp.toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true
-          })
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true
+        })
         : 'Invalid Date';
 
       // For skin_type, store the string value instead of numeric score
-      const value = metricKey === 'skinType' 
+      const value = metricKey === 'skinType'
         ? photo.metrics?.[metricKey] ?? null
         : photo.metrics?.[metricKey] ?? null;
 
@@ -276,101 +275,97 @@ const PhotoThumbCard = ({
   } else {
     // Fallback to timestamp for backward compatibility
     const ts = photo.timestamp;
-    if (ts?.seconds && typeof ts.seconds === 'number') { 
-      date = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0)); 
-    } else if (ts instanceof Date) { 
-      date = ts; 
-    } else { 
-      date = new Date(ts); 
+    if (ts?.seconds && typeof ts.seconds === 'number') {
+      date = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
+    } else if (ts instanceof Date) {
+      date = ts;
+    } else {
+      date = new Date(ts);
     }
   }
-  
+
   // Verify we have a valid date before rendering
   if (!(date instanceof Date && !isNaN(date.getTime()))) {
     console.warn(`[PhotoThumbCard] Invalid date for photo ${photo.id}`);
     return null;
   }
-  
+
   return (
     <View style={styles.photoCardContainer}>
-        <TouchableOpacity
-          onPress={onPress}
-          // Apply conditional styles: base + selected (shadows, border, zIndex)
-          style={[ 
-            styles.photoThumbCard, 
-            isSelected && styles.selectedPhotoThumbCard 
-          ]}
-          activeOpacity={0.8} // Can adjust opacity on press
-        >
-          <View style={styles.thumbContainer}>
-            <Image 
-              // Reverted to using the original storageUrl
-              source={{ uri: photo.storageUrl }} 
-              style={styles.thumbImage}
-              resizeMode="cover"
-            />
-            
-            {/* Maximize button - only show when selected */}
-            {isSelected && (
-              <TouchableOpacity
-                style={styles.thumbMaximizeButton}
-                onPress={(e) => {
-                  e.stopPropagation(); // Prevent triggering the parent onPress
-                  onMaximize?.(photo, index);
-                }}
-                activeOpacity={0.7}
-              >
-                <Expand size={13} color={colors.white} />
-              </TouchableOpacity>
-            )}
-          </View>
-          <View style={styles.thumbDateContainer}> 
-            <Text style={[styles.thumbDateText, isSelected && styles.selectedThumbDateText]}>
-              {date.toLocaleString('default', { month: 'short', day: 'numeric' })}
-            </Text>
-          </View>
-        </TouchableOpacity>
-        
-        {/* Icons container with ref */}
-        <View ref={iconsRef} style={styles.iconsContainer}>
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleIconPress}
-            activeOpacity={0.7}
-          >
-            <Flag
-              size={18}
-              color={
-                routineFlagLoading
-                  ? '#D3D3D3' // Disabled during loading
-                  : photo.apiData.image.routine_flag
-                  ? '#8B7355' // Active color when data is available
-                  : '#D3D3D3' // No data color
-              }
-              strokeWidth={2.5}
-            />
-          </TouchableOpacity>
+      <TouchableOpacity
+        onPress={onPress}
+        style={[
+          styles.photoThumbCard,
+          isSelected && styles.selectedPhotoThumbCard
+        ]}
+        activeOpacity={0.8}
+      >
+        <View style={styles.thumbContainer}>
+          <Image
+            source={{ uri: photo.storageUrl }}
+            style={styles.thumbImage}
+            resizeMode="cover"
+          />
 
-          <TouchableOpacity
-            style={styles.iconButton}
-            onPress={handleIconPress}
-            activeOpacity={0.7}
-          >
-            <BookOpen
-              size={18}
-              color={
-                summaryLoading
-                  ? '#D3D3D3' // Disabled during loading
-                  : photo.apiData.image.summary
-                  ? '#8B7355' // Active color when data is available
-                  : '#D3D3D3' // No data color
-              }
-              strokeWidth={2.5}
-            />
-          </TouchableOpacity>
+          {/* Maximize button - only show when selected */}
+          {/* {isSelected && (
+            <TouchableOpacity
+              style={styles.thumbMaximizeButton}
+              onPress={(e) => {
+                e.stopPropagation();
+                onMaximize?.(photo, index);
+              }}
+              activeOpacity={0.7}
+            >
+              <Expand size={13} color={colors.white} />
+            </TouchableOpacity>
+          )} */}
         </View>
+      </TouchableOpacity>
 
+      {/* Date pill + icons row below the photo */}
+      <View ref={iconsRef} style={styles.dateIconsRow}>
+        <View style={[styles.datePill, isSelected && styles.selectedDatePill]}>
+          <Text style={[styles.datePillText, isSelected && styles.selectedDatePillText]}>
+            {date.toLocaleString('default', { month: 'short', day: 'numeric' })}
+          </Text>
+        </View>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={handleIconPress}
+          activeOpacity={0.7}
+        >
+          <Flag
+            size={18}
+            color={
+              routineFlagLoading
+                ? '#A9A29D'
+                : photo.apiData.image.routine_flag
+                  ? '#79716B'
+                  : '#A9A29D'
+            }
+            strokeWidth={2.5}
+          />
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.iconButton}
+          onPress={handleIconPress}
+          activeOpacity={0.7}
+        >
+          <NotebookPen
+            size={18}
+            color={
+              summaryLoading
+                ? '#A9A29D'
+                : photo.apiData.image.summary
+                  ? '#79716B'
+                  : '#A9A29D'
+            }
+            strokeWidth={2.5}
+          />
+        </TouchableOpacity>
       </View>
+    </View>
   );
 };
 
@@ -390,219 +385,219 @@ const TimeSelector = forwardRef(
     const [iconsContainerRef, setIconsContainerRef] = useState(null);
     const [isTooltipOpen, setIsTooltipOpen] = useState(false);
 
-  // Debug photos array changes
-  // useEffect(() => {
-  //   console.log(`[TimeSelector] Photos updated:`, {
-  //     photosLength: photos?.length,
-  //     selectedIndex,
-  //     firstPhotoId: photos?.[0]?.id,
-  //     hasPhotos: !!photos?.length
-  //   });
-  // }, [photos, selectedIndex]);
+    // Debug photos array changes
+    // useEffect(() => {
+    //   console.log(`[TimeSelector] Photos updated:`, {
+    //     photosLength: photos?.length,
+    //     selectedIndex,
+    //     firstPhotoId: photos?.[0]?.id,
+    //     hasPhotos: !!photos?.length
+    //   });
+    // }, [photos, selectedIndex]);
 
-  // Expose scrollToIndex via ref
-  useImperativeHandle(ref, () => ({
-    scrollToIndex: (index) => {
-      // Validate index against the photos array length
-      if (flatListRef.current && photos && index >= 0 && index < photos.length) { 
-        console.log(`[TimeSelector] Scrolling to center index ${index} (List length: ${photos.length})`);
-        flatListRef.current.scrollToIndex({
-          index,
-          animated: true,
-          viewPosition: 0.45 // Center the item in the viewport
-        });
-      } else {
-         console.warn(`[TimeSelector] scrollToIndex failed: Invalid index ${index}. List length: ${photos?.length}. SelectedIndex prop: ${selectedIndex}.`);
-      }
-    },
-  }), [photos, selectedIndex]); // Depend on photos, selectedIndex
-
-  const renderPhotoThumb = ({ item, index }) => {
-    // Log the item being rendered by FlatList
-    // console.log(`[TimeSelector FlatList Render] Index: ${index}, Photo ID: ${item?.id}, Timestamp: ${item?.timestamp}`);
-
-    // Directly use the item from FlatList data (which is now a photo object)
-    if (!item) return null;
-
-    // Note logic removed from here, passed via prop
-    
-    return (
-      <PhotoThumbCard
-        photo={item} // Use item directly
-        index={index}
-        selectedIndex={selectedIndex}
-        onPress={() => {
-          onSelectDate(index);
-        }}
-        onMaximize={onMaximize}
-        summaryLoading={summaryLoading}
-        routineFlagLoading={routineFlagLoading}
-        setIsTooltipOpen={setIsTooltipOpen}
-        setIconsContainerRef={setIconsContainerRef}
-      />
-    );
-  };
-
-  // Effect to scroll when selectedIndex prop changes from outside
-  useEffect(() => {
-    // Check if selectedIndex is a valid number and within bounds
-    if (selectedIndex !== null && typeof selectedIndex === 'number' && selectedIndex >= 0 && photos && selectedIndex < photos.length) {
-      // Add a small delay to allow FlatList to potentially render before scrolling
-      const timer = setTimeout(() => {
-          if (flatListRef.current) {
-              console.log(`[TimeSelector useEffect] Scrolling to center selectedIndex: ${selectedIndex}`);
-              flatListRef.current.scrollToIndex({
-                  index: selectedIndex,
-                  animated: true,
-                  viewPosition: 0.45, // Center the item in the viewport
-              });
-          }
-      }, 50); // 50ms delay
-      return () => clearTimeout(timer); // Cleanup timer
-    } else if (selectedIndex !== null) {
-        console.warn(`[TimeSelector useEffect] Invalid selectedIndex for scroll: ${selectedIndex}. List length: ${photos?.length}`);
-    }
-  }, [selectedIndex, photos]); // Depend on selectedIndex and photos
-
-  // Find the currently selected photo data for tooltip
-  const selectedPhoto = selectedIndex !== null ? photos[selectedIndex] : null;
-
-  const TooltipContent = ({
-    selectedPhoto,
-    routineFlagLoading,
-    summaryLoading,
-  }) => {
-    const summary = selectedPhoto?.apiData?.image?.summary || null;
-    const routineFlag = selectedPhoto?.apiData?.image?.routine_flag || null;
-
-    const formatDisplayText = (value: any) => {
-      if (!value) return null;
-      if (typeof value === 'string') return value;
-      if (typeof value === 'object') {
-        if (typeof value.summary === 'string') return value.summary;
-        if (typeof value.text === 'string') return value.text;
-        // Fallback to JSON string to avoid rendering plain objects
-        try {
-          return JSON.stringify(value);
-        } catch {
-          return String(value);
+    // Expose scrollToIndex via ref
+    useImperativeHandle(ref, () => ({
+      scrollToIndex: (index) => {
+        // Validate index against the photos array length
+        if (flatListRef.current && photos && index >= 0 && index < photos.length) {
+          console.log(`[TimeSelector] Scrolling to center index ${index} (List length: ${photos.length})`);
+          flatListRef.current.scrollToIndex({
+            index,
+            animated: true,
+            viewPosition: 0.45 // Center the item in the viewport
+          });
+        } else {
+          console.warn(`[TimeSelector] scrollToIndex failed: Invalid index ${index}. List length: ${photos?.length}. SelectedIndex prop: ${selectedIndex}.`);
         }
-      }
-      return String(value);
+      },
+    }), [photos, selectedIndex]); // Depend on photos, selectedIndex
+
+    const renderPhotoThumb = ({ item, index }) => {
+      // Log the item being rendered by FlatList
+      // console.log(`[TimeSelector FlatList Render] Index: ${index}, Photo ID: ${item?.id}, Timestamp: ${item?.timestamp}`);
+
+      // Directly use the item from FlatList data (which is now a photo object)
+      if (!item) return null;
+
+      // Note logic removed from here, passed via prop
+
+      return (
+        <PhotoThumbCard
+          photo={item} // Use item directly
+          index={index}
+          selectedIndex={selectedIndex}
+          onPress={() => {
+            onSelectDate(index);
+          }}
+          onMaximize={onMaximize}
+          summaryLoading={summaryLoading}
+          routineFlagLoading={routineFlagLoading}
+          setIsTooltipOpen={setIsTooltipOpen}
+          setIconsContainerRef={setIconsContainerRef}
+        />
+      );
     };
 
-    const routineFlagText = formatDisplayText(routineFlag);
-    const summaryText = formatDisplayText(summary);
+    // Effect to scroll when selectedIndex prop changes from outside
+    useEffect(() => {
+      // Check if selectedIndex is a valid number and within bounds
+      if (selectedIndex !== null && typeof selectedIndex === 'number' && selectedIndex >= 0 && photos && selectedIndex < photos.length) {
+        // Add a small delay to allow FlatList to potentially render before scrolling
+        const timer = setTimeout(() => {
+          if (flatListRef.current) {
+            console.log(`[TimeSelector useEffect] Scrolling to center selectedIndex: ${selectedIndex}`);
+            flatListRef.current.scrollToIndex({
+              index: selectedIndex,
+              animated: true,
+              viewPosition: 0.45, // Center the item in the viewport
+            });
+          }
+        }, 50); // 50ms delay
+        return () => clearTimeout(timer); // Cleanup timer
+      } else if (selectedIndex !== null) {
+        console.warn(`[TimeSelector useEffect] Invalid selectedIndex for scroll: ${selectedIndex}. List length: ${photos?.length}`);
+      }
+    }, [selectedIndex, photos]); // Depend on selectedIndex and photos
 
-    let routineFlagUpdatedAt = null;
-    if (routineFlag && typeof routineFlag === 'object' && routineFlag?.updated_at) {
-      const parsed = new Date(routineFlag.updated_at);
-      routineFlagUpdatedAt = isNaN(parsed.getTime())
-        ? routineFlag.updated_at
-        : parsed.toLocaleString();
-    }
+    // Find the currently selected photo data for tooltip
+    const selectedPhoto = selectedIndex !== null ? photos[selectedIndex] : null;
 
-    return (
-      <View style={{ alignItems: "center" }}>
-        {/* Arrow pointing up */}
-        <View
-          style={{
-            width: 0,
-            height: 0,
-            borderLeftWidth: 12,
-            borderRightWidth: 12,
-            borderBottomWidth: 12,
-            borderLeftColor: "transparent",
-            borderRightColor: "transparent",
-            borderBottomColor: "white",
-            marginBottom: -1,
-            shadowColor: "#000",
-            shadowOpacity: 0.1,
-            shadowRadius: 2,
-            shadowOffset: { width: 0, height: 1 },
-            elevation: 8,
-          }}
-        />
-        <View
-          style={{
-            backgroundColor: "white",
-            borderRadius: 12,
-            padding: 16,
-            shadowColor: "#000",
-            shadowOpacity: 0.15,
-            shadowRadius: 8,
-            shadowOffset: { width: 0, height: 4 },
-            elevation: 8,
-            borderWidth: 1,
-            borderColor: "#E8E8E8",
-            maxWidth: 340,
-            minWidth: 300,
-          }}
-        >
-          {(routineFlagLoading || summaryLoading) && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                justifyContent: "center",
-                paddingVertical: 8,
-              }}
-            >
-              <ActivityIndicator size="small" color="#8B7355" />
-              <Text style={{ color: "#666", marginLeft: 8, fontSize: 14 }}>
-                Loading...
-              </Text>
-            </View>
-          )}
-          {!routineFlagLoading && routineFlagText && (
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "flex-start",
-                marginBottom: 8,
-              }}
-            >
-              <Flag size={16} color="#8B7355" style={{ marginRight: 6 }} />
-              <View style={{ flex: 1 }}>
-                <Text style={{ color: "#333" }}>{routineFlagText}</Text>
-                {routineFlagUpdatedAt && (
-                  <Text style={{ color: "#777", fontSize: 12, marginTop: 2 }}>
-                    Updated: {routineFlagUpdatedAt}
-                  </Text>
-                )}
-              </View>
-            </View>
-          )}
-          {!summaryLoading && summaryText && (
-            <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-              <BookOpen size={16} color="#8B7355" style={{ marginRight: 6 }} />
-              <Text style={{ color: "#333", flex: 1 }}>{summaryText}</Text>
-            </View>
-          )}
-          {!routineFlagLoading &&
-            !summaryLoading &&
-            !routineFlagText &&
-            !summaryText && (
-              <View style={{ alignItems: "center", paddingVertical: 8 }}>
-                <Text
-                  style={{
-                    color: "#999",
-                    fontSize: 14,
-                    fontStyle: "italic",
-                  }}
-                >
-                  No data available
+    const TooltipContent = ({
+      selectedPhoto,
+      routineFlagLoading,
+      summaryLoading,
+    }) => {
+      const summary = selectedPhoto?.apiData?.image?.summary || null;
+      const routineFlag = selectedPhoto?.apiData?.image?.routine_flag || null;
+
+      const formatDisplayText = (value: any) => {
+        if (!value) return null;
+        if (typeof value === 'string') return value;
+        if (typeof value === 'object') {
+          if (typeof value.summary === 'string') return value.summary;
+          if (typeof value.text === 'string') return value.text;
+          // Fallback to JSON string to avoid rendering plain objects
+          try {
+            return JSON.stringify(value);
+          } catch {
+            return String(value);
+          }
+        }
+        return String(value);
+      };
+
+      const routineFlagText = formatDisplayText(routineFlag);
+      const summaryText = formatDisplayText(summary);
+
+      let routineFlagUpdatedAt = null;
+      if (routineFlag && typeof routineFlag === 'object' && routineFlag?.updated_at) {
+        const parsed = new Date(routineFlag.updated_at);
+        routineFlagUpdatedAt = isNaN(parsed.getTime())
+          ? routineFlag.updated_at
+          : parsed.toLocaleString();
+      }
+
+      return (
+        <View style={{ alignItems: "center" }}>
+          {/* Arrow pointing up */}
+          <View
+            style={{
+              width: 0,
+              height: 0,
+              borderLeftWidth: 12,
+              borderRightWidth: 12,
+              borderBottomWidth: 12,
+              borderLeftColor: "transparent",
+              borderRightColor: "transparent",
+              borderBottomColor: "white",
+              marginBottom: -1,
+              shadowColor: "#000",
+              shadowOpacity: 0.1,
+              shadowRadius: 2,
+              shadowOffset: { width: 0, height: 1 },
+              elevation: 8,
+            }}
+          />
+          <View
+            style={{
+              backgroundColor: "white",
+              borderRadius: 12,
+              padding: 16,
+              shadowColor: "#000",
+              shadowOpacity: 0.15,
+              shadowRadius: 8,
+              shadowOffset: { width: 0, height: 4 },
+              elevation: 8,
+              borderWidth: 1,
+              borderColor: "#E8E8E8",
+              maxWidth: 340,
+              minWidth: 300,
+            }}
+          >
+            {(routineFlagLoading || summaryLoading) && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  paddingVertical: 8,
+                }}
+              >
+                <ActivityIndicator size="small" color="#8B7355" />
+                <Text style={{ color: "#666", marginLeft: 8, fontSize: 14 }}>
+                  Loading...
                 </Text>
               </View>
             )}
+            {!routineFlagLoading && routineFlagText && (
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "flex-start",
+                  marginBottom: 8,
+                }}
+              >
+                <Flag size={16} color="#8B7355" style={{ marginRight: 6 }} />
+                <View style={{ flex: 1 }}>
+                  <Text style={{ color: "#333" }}>{routineFlagText}</Text>
+                  {routineFlagUpdatedAt && (
+                    <Text style={{ color: "#777", fontSize: 12, marginTop: 2 }}>
+                      Updated: {routineFlagUpdatedAt}
+                    </Text>
+                  )}
+                </View>
+              </View>
+            )}
+            {!summaryLoading && summaryText && (
+              <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
+                <NotebookPen size={16} color="#8B7355" style={{ marginRight: 6 }} />
+                <Text style={{ color: "#333", flex: 1 }}>{summaryText}</Text>
+              </View>
+            )}
+            {!routineFlagLoading &&
+              !summaryLoading &&
+              !routineFlagText &&
+              !summaryText && (
+                <View style={{ alignItems: "center", paddingVertical: 8 }}>
+                  <Text
+                    style={{
+                      color: "#999",
+                      fontSize: 14,
+                      fontStyle: "italic",
+                    }}
+                  >
+                    No data available
+                  </Text>
+                </View>
+              )}
+          </View>
         </View>
-      </View>
-    );
-  };
+      );
+    };
 
-  return (
-    <View style={styles.timeSelectorContainer}>
-      <FlatList
+    return (
+      <View style={styles.timeSelectorContainer}>
+        <FlatList
           ref={flatListRef}
           data={photos} // Use photos array directly as data
           renderItem={(props) => (
@@ -622,7 +617,7 @@ const TimeSelector = forwardRef(
             index,
           })}
           onScrollToIndexFailed={(info) => {
-              console.error("[TimeSelector] onScrollToIndexFailed:", info);
+            console.error("[TimeSelector] onScrollToIndexFailed:", info);
           }}
           centerContent={false} // Disable centerContent to allow proper centering with viewPosition
         />
@@ -652,13 +647,16 @@ const TimeSelector = forwardRef(
           />
         </Popover>
       </View>
-  );
-});
+    );
+  });
 
 const getColorForScore = (score) => {
-  if (score <= 30) return '#FF3B30'; // Saturated red
-  if (score <= 70) return '#FFB340'; // Rich gold
-  return '#34C759'; // Vibrant green
+  if (score <= 20) return '#E53935'; // Deep red
+  if (score <= 35) return '#FF6D3A'; // Orange
+  if (score <= 50) return '#FFA726'; // Amber/Gold
+  if (score <= 65) return '#FFD54F'; // Yellow
+  if (score <= 80) return '#66BB6A'; // Medium green
+  return '#2E9E5A'; // Rich green
 };
 
 // Helper to normalize metric values and handle null/zero cases
@@ -705,16 +703,16 @@ const normalizeMetricValue = (value, metricName = null, profile = null) => {
 // Helper to calculate percentage change from first to most recent measurement
 const calculatePercentageChange = (scores) => {
   if (!scores || scores.length < 2) return null;
-  
+
   // Find first and last valid scores
   const validScores = scores.filter(s => s.score !== null && s.score !== undefined && !isNaN(s.score) && s.score !== 0);
   if (validScores.length < 2) return null;
-  
+
   const firstScore = validScores[0].score;
   const lastScore = validScores[validScores.length - 1].score;
-  
+
   if (firstScore === 0) return null; // Avoid division by zero
-  
+
   const percentChange = ((lastScore - firstScore) / firstScore) * 100;
   return Math.round(percentChange * 10) / 10; // Round to 1 decimal place
 };
@@ -723,11 +721,18 @@ const calculatePercentageChange = (scores) => {
 const getLightColor = (hexColor) => {
   // Convert hex to RGB, then create a light version
   if (!hexColor || hexColor === '#999999') return '#f0f0f0'; // Grey for null values
-  
+
   switch (hexColor) {
-    case '#FF3B30': return '#FFEBEA'; // Light red
-    case '#FFB340': return '#FFF4E6'; // Light amber  
-    case '#34C759': return '#E8F5E8'; // Light green
+    case '#E53935': return '#FFEBEA'; // Light red
+    case '#FF6D3A': return '#FFF0E8'; // Light orange
+    case '#FFA726': return '#FFF4E6'; // Light amber
+    case '#FFD54F': return '#FFF9E0'; // Light yellow
+    case '#66BB6A': return '#E8F5E8'; // Light medium green
+    case '#2E9E5A': return '#E0F2E4'; // Light rich green
+    // Legacy colors (for age metrics)
+    case '#FF3B30': return '#FFEBEA';
+    case '#FFB340': return '#FFF4E6';
+    case '#34C759': return '#E8F5E8';
     default: return '#f0f0f0';
   }
 };
@@ -748,9 +753,9 @@ const calculateActualAge = (birthDate) => {
 // Get age comparison color for perceived age metric
 const getAgeComparisonColor = (perceivedAge, actualAge) => {
   if (!actualAge || !perceivedAge) return '#222'; // Default color if no data
-  
+
   const ageDifference = perceivedAge - actualAge;
-  
+
   if (ageDifference > 5) {
     return '#FF3B30'; // Red - perceived age is more than 5 years greater than actual age
   } else if (ageDifference > 0) {
@@ -763,9 +768,9 @@ const getAgeComparisonColor = (perceivedAge, actualAge) => {
 // Get age comparison color for eye age metric
 const getEyeAgeComparisonColor = (eyeAge, actualAge) => {
   if (!actualAge || !eyeAge) return '#222'; // Default color if no data
-  
+
   const ageDifference = eyeAge - actualAge;
-  
+
   if (ageDifference <= 0) {
     return '#34C759'; // Green - eye age is equal to or less than actual age (good)
   } else if (ageDifference < 5) {
@@ -797,7 +802,7 @@ const SkinTypeTrendChart = ({
         if (ts?.seconds && typeof ts.seconds === "number") {
           dateValue = new Date(
             ts.seconds * 1000 +
-              (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0)
+            (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0)
           );
         } else if (ts instanceof Date) {
           dateValue = ts;
@@ -985,7 +990,7 @@ const SkinTypeTrendChart = ({
   );
 
   return (
-    <View style={{  }}>
+    <View style={{}}>
       {/* Selected indicator */}
       {/* {selectedIndex !== null && processedData[selectedIndex] && (
         <View
@@ -1007,7 +1012,7 @@ const SkinTypeTrendChart = ({
         ref={scrollViewRef}
         horizontal
         showsHorizontalScrollIndicator={false}
-       // contentContainerStyle={{ minWidth: screenWidth }}
+        // contentContainerStyle={{ minWidth: screenWidth }}
         style={{ height: CHART_HEIGHT, marginRight: 10 }}
       >
         <LineChart
@@ -1017,7 +1022,7 @@ const SkinTypeTrendChart = ({
           chartConfig={{
             backgroundColor: "#fff",
             backgroundGradientFrom: "#fff",
-             backgroundGradientTo: "#fff",
+            backgroundGradientTo: "#fff",
             decimalPlaces: 0,
             color: (opacity = 1) => `rgba(110, 70, 255, ${opacity})`,
             labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
@@ -1070,60 +1075,46 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
     console.log('inside of skin typemetric from MetricRow');
     return (
       <View style={styles.card2}>
-        {/* Title Section */}
-        <View style={styles.titleRow}>
-          {hideNavigation ? (
+        {/* Header Row: Star + Name + Chevron */}
+        <TouchableOpacity
+          style={styles.cardHeaderRow}
+          onPress={() => {
+            if (hideNavigation) return;
+            if (selectedIndex !== null && photos[selectedIndex]) {
+              const selectedPhoto = photos[selectedIndex];
+              navigateToMetricDetail({
+                maskResults: selectedPhoto?.maskResults,
+                maskImages: selectedPhoto?.maskImages,
+                metricKey: metric.metricName,
+                metricValue: metric.scores[selectedIndex]?.score,
+                photoData: JSON.stringify(selectedPhoto)
+              });
+            } else {
+              const firstPhoto = photos[0];
+              if (firstPhoto) {
+                navigateToMetricDetail({
+                  maskResults: firstPhoto?.maskResults,
+                  maskImages: firstPhoto?.maskImages,
+                  metricKey: metric.metricName,
+                  metricValue: metric.scores[0]?.score,
+                  photoData: JSON.stringify(firstPhoto)
+                });
+              }
+            }
+          }}
+          activeOpacity={hideNavigation ? 1 : 0.7}
+          disabled={hideNavigation}
+        >
+          <View style={styles.cardHeaderLeft}>
+            <Star size={16} color="#A9A29D" />
             <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
-          ) : (
-            <TouchableOpacity
-              style={{flexDirection: 'row', alignItems: 'center'}}
-              onPress={() => {
-                // Navigate to metric detail with proper parameters
-                if (selectedIndex !== null && photos[selectedIndex]) {
-                  const selectedPhoto = photos[selectedIndex];
-                  console.log('Navigating to metric detail from MetricsSeries (skin type):', {
-                    metricKey: metric.metricName,
-                    metricValue: metric.scores[selectedIndex]?.score,
-                    photoId: selectedPhoto.id
-                  });
-                  
-                  navigateToMetricDetail({
-                    maskResults: selectedPhoto?.maskResults,
-                    maskImages: selectedPhoto?.maskImages,
-                    metricKey: metric.metricName,
-                    metricValue: metric.scores[selectedIndex]?.score,
-                    photoData: JSON.stringify(selectedPhoto)
-                  });
-                } else {
-                  // Fallback if no photo is selected - use the first photo
-                  const firstPhoto = photos[0];
-                  if (firstPhoto) {
-                    console.log('Navigating to metric detail from MetricsSeries (skin type fallback):', {
-                      metricKey: metric.metricName,
-                      metricValue: metric.scores[0]?.score,
-                      photoId: firstPhoto.id
-                    });
-                    
-                    navigateToMetricDetail({
-                      maskResults: firstPhoto?.maskResults,
-                      maskImages: firstPhoto?.maskImages,
-                      metricKey: metric.metricName,
-                      metricValue: metric.scores[0]?.score,
-                      photoData: JSON.stringify(firstPhoto)
-                    });
-                  }
-                }
-              }}
-            >
-              <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
-              {/* <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3}/> */}
-            </TouchableOpacity>
-          )}
-        </View>
-        
+          </View>
+          {!hideNavigation && <ChevronRightIcon size={18} color="#D6D3D1" />}
+        </TouchableOpacity>
+
         {/* Skin Type Chart */}
         <View style={styles.dataSection}>
-          <SkinTypeTrendChart 
+          <SkinTypeTrendChart
             photos={photos}
             selectedIndex={selectedIndex}
             onDataPointClick={onDotPress}
@@ -1144,15 +1135,15 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
       const totalContentWidth = plotAreaWidth + rightPadding;
       const maxScrollPosition = Math.max(0, totalContentWidth - width);
       const boundedScrollPosition = Math.min(scrollPosition, maxScrollPosition);
-      
+
       // Check if this is a forced sync (initial load) or normal interaction
       const isForced = forceScrollSyncRef?.current;
       const shouldAnimate = !isForced; // Don't animate on forced initial sync for speed
-      
+
       // Add tiny stagger based on metric index to reduce simultaneous animation load
       const metricIndex = METRIC_KEYS.indexOf(metric.metricName);
       const staggerDelay = shouldAnimate ? metricIndex * 10 : 0; // No stagger on forced sync
-      
+
       // console.log(`[MetricRow] ${metric.metricName} scroll debug:`, {
       //   requestedScrollPos: scrollPosition,
       //   boundedScrollPos: boundedScrollPosition,
@@ -1164,11 +1155,11 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
       //   isForced,
       //   shouldAnimate
       // });
-      
+
       setTimeout(() => {
         if (scrollViewRef.current) {
-          scrollViewRef.current.scrollTo({ 
-            x: boundedScrollPosition, 
+          scrollViewRef.current.scrollTo({
+            x: boundedScrollPosition,
             animated: shouldAnimate,
             duration: shouldAnimate ? 200 : 0
           });
@@ -1187,115 +1178,105 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
           forceScrollSyncRef.current = false;
         }
       }, 500); // Give enough time for all metrics to complete their scroll
-      
+
       return () => clearTimeout(timer);
     }
   }, [forceScrollSyncRef?.current]); // Only run when force flag changes to true
 
   const percentChange = calculatePercentageChange(metric.scores);
-  
-  // Mock average calculation (we'll fix this later)
+
+  // Average calculation
   const validScores = metric.scores.filter(s => s.score !== null && s.score !== undefined && !isNaN(s.score) && s.score !== 0);
-  const mockAverage = validScores.length > 0 
+  const mockAverage = validScores.length > 0
     ? Math.round(validScores.reduce((sum, s) => sum + s.score, 0) / validScores.length)
     : null;
-  
+
+  // Current score (selected photo or latest)
+  const currentScore = selectedIndex !== null && metric.scores[selectedIndex]
+    ? metric.scores[selectedIndex].score
+    : metric.scores[metric.scores.length - 1]?.score;
+  const displayScore = currentScore !== null && currentScore !== undefined && !isNaN(currentScore) && currentScore !== 0
+    ? Math.round(currentScore)
+    : null;
+
   // Bar chart constants (from simple series)
   const barWidth = 10;
   const barRadius = 5;
   const barSlotWidth = 16;
   const plotAreaWidth = metric.scores.length * barSlotWidth;
-  const chartHeight = 48; // Reduced by 25% from 64px for more compact design
+  const chartHeight = 48;
+
+  const handleCardPress = () => {
+    if (hideNavigation) return;
+    if (selectedIndex !== null && photos[selectedIndex]) {
+      const selectedPhoto = photos[selectedIndex];
+      navigateToMetricDetail({
+        maskResults: selectedPhoto?.maskResults,
+        maskImages: selectedPhoto?.maskImages,
+        metricKey: metric.metricName,
+        metricValue: metric.scores[selectedIndex]?.score,
+        photoData: JSON.stringify(selectedPhoto)
+      });
+    } else {
+      const firstPhoto = photos[0];
+      if (firstPhoto) {
+        navigateToMetricDetail({
+          maskResults: firstPhoto?.maskResults,
+          maskImages: firstPhoto?.maskImages,
+          metricKey: metric.metricName,
+          metricValue: metric.scores[0]?.score,
+          photoData: JSON.stringify(firstPhoto)
+        });
+      }
+    }
+  };
 
   return (
     <View style={styles.card}>
-      {/* Title Section with average and percentage change */}
-      <View style={styles.titleRow}>
-        {hideNavigation ? (
-          <View style={{flexDirection: 'column', alignItems: 'flex-start'}}>
-            <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
-            {metric.metricName === 'poresScore' && (
-              <Text style={styles.disclaimerText}>
-                Face a light source for best results
-              </Text>
-            )}
-          </View>
-        ) : (
-          <TouchableOpacity
-            style={{flexDirection: 'column', alignItems: 'flex-start'}}
-            onPress={() => {
-              // Navigate to metric detail with proper parameters
-              if (selectedIndex !== null && photos[selectedIndex]) {
-                const selectedPhoto = photos[selectedIndex];
-                console.log('Navigating to metric detail from MetricsSeries:', {
-                  metricKey: metric.metricName,
-                  metricValue: metric.scores[selectedIndex]?.score,
-                  photoId: selectedPhoto.id
-                });
-                
-                navigateToMetricDetail({
-                  maskResults: selectedPhoto?.maskResults,
-                  maskImages: selectedPhoto?.maskImages,
-                  metricKey: metric.metricName,
-                  metricValue: metric.scores[selectedIndex]?.score,
-                  photoData: JSON.stringify(selectedPhoto)
-                });
-              } else {
-                // Fallback if no photo is selected - use the first photo
-                const firstPhoto = photos[0];
-                if (firstPhoto) {
-                  console.log('Navigating to metric detail from MetricsSeries (fallback):', {
-                    metricKey: metric.metricName,
-                    metricValue: metric.scores[0]?.score,
-                    photoId: firstPhoto.id
-                  });
-                  
-                  navigateToMetricDetail({
-                    maskResults: firstPhoto?.maskResults,
-                    maskImages: firstPhoto?.maskImages,
-                    metricKey: metric.metricName,
-                    metricValue: metric.scores[0]?.score,
-                    photoData: JSON.stringify(firstPhoto)
-                  });
-                }
-              }
-            }}
-          >
-            <View style={{flexDirection: 'row', alignItems: 'center', width: '100%'}}>
-              <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
-              <ChevronRightIcon size={16} color="#8B7355" strokeWidth={3} style={{ marginLeft: 8 }}/>
-            </View>
-              {metric.metricName === 'poresScore' && (
-                <Text style={styles.disclaimerText}>
-                Face a light source for best results
-                </Text>
-              )}
-          </TouchableOpacity>
-        )}
-        <View style={styles.metricStatsContainer}>
-          {mockAverage !== null && (
-            <Text style={styles.averageText}>Average Score:{mockAverage}</Text>
-          )}
-          {/* {percentChange !== null && (
-            <Text style={[
-              styles.percentChangeText,
-              percentChange >= 0 ? styles.positiveChange : styles.negativeChange
-            ]}>
-              {percentChange >= 0 ? '+' : ''}{percentChange}%
-            </Text>
-          )} */}
+      {/* Header Row: Star + Name + Chevron */}
+      <TouchableOpacity
+        style={styles.cardHeaderRow}
+        onPress={handleCardPress}
+        activeOpacity={hideNavigation ? 1 : 0.7}
+        disabled={hideNavigation}
+      >
+        <View style={styles.cardHeaderLeft}>
+          <Star size={16} color="#A9A29D" />
+          <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
         </View>
+        {!hideNavigation && <ChevronRightIcon size={18} color="#D6D3D1" />}
+      </TouchableOpacity>
+
+      {/* Score Row: Large score + Average */}
+      <View style={styles.scoreRow}>
+        {displayScore !== null ? (
+          <Text style={styles.largeScore}>{displayScore}</Text>
+        ) : (
+          <Text style={styles.largeScoreEmpty}>—</Text>
+        )}
+        {mockAverage !== null && (
+          <View style={styles.averageContainer}>
+            <Text style={styles.averageScore}>{mockAverage}</Text>
+            <Text style={styles.averageLabel}>  Average</Text>
+          </View>
+        )}
       </View>
-      
+
+      {metric.metricName === 'poresScore' && (
+        <Text style={styles.disclaimerText}>
+          Face a light source for best results
+        </Text>
+      )}
+
       {/* Data Section - Bar Chart */}
       <View style={[styles.dataSection, { height: chartHeight + 40 }]}>
         {/* Scrollable Bar Container */}
-        <ScrollView 
+        <ScrollView
           ref={scrollViewRef}
-          horizontal 
+          horizontal
           showsHorizontalScrollIndicator={false}
           style={styles.barScrollView}
-          contentContainerStyle={{ 
+          contentContainerStyle={{
             paddingTop: 28,
             paddingRight: 16 // Add right padding so selected items can be properly visible
           }}
@@ -1307,7 +1288,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
               <View style={[styles.yAxisGridLine, { bottom: chartHeight / 2 }]} />
               <View style={[styles.yAxisGridLine, { bottom: 0 }]} />
             </View>
-            
+
             {/* Selected Value Indicator */}
             {selectedIndex !== null && metric.scores[selectedIndex] && (
               <View style={[
@@ -1319,11 +1300,11 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                 </Text>
               </View>
             )}
-            
+
             {/* Bars */}
             {metric.scores.map((scoreData, index) => {
               const normalizedMetric = normalizeMetricValue(scoreData.score, metric.metricName, profile);
-              
+
               if (normalizedMetric.isNullValue) {
                 // Render null data indicator at center
                 const xPosition = index * barSlotWidth;
@@ -1343,23 +1324,23 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                   </TouchableOpacity>
                 );
               }
-              
+
               // Calculate bar height and position
               const barHeight = (normalizedMetric.value / 100) * chartHeight;
               const xPosition = index * barSlotWidth;
               const isSelected = selectedIndex === index;
               const isRecent = index >= metric.scores.length - 3;
-              
+
               // Get dark and light colors
               const darkColor = normalizedMetric.color;
               const lightColor = getLightColor(normalizedMetric.color);
-              
+
               return (
-                <View key={scoreData.photoId} style={{ 
-                  position: 'absolute', 
-                  left: xPosition, 
-                  bottom: 0, 
-                  width: barSlotWidth, 
+                <View key={scoreData.photoId} style={{
+                  position: 'absolute',
+                  left: xPosition,
+                  bottom: 0,
+                  width: barSlotWidth,
                   alignItems: 'center'
                 }}>
                   <TouchableOpacity
@@ -1385,7 +1366,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                         }
                       ]}
                     />
-                    
+
                     {/* Dark circle at top of bar */}
                     <View
                       style={[
@@ -1436,7 +1417,7 @@ const MetricsSeries = ({ photos }) => {
   const { setSelectedSnapshot } = usePhotoContext(); // Use photo context
   const { profile } = useAuthStore(); // Get user profile for age comparison
 
-  console.log(metrics,'metrics from MetricsSeries');
+  console.log(metrics, 'metrics from MetricsSeries');
 
   // Removed loading overlay timeout - loading is now handled by parent component
 
@@ -1457,21 +1438,21 @@ const MetricsSeries = ({ photos }) => {
   // Memoize scroll position calculation for performance
   const scrollPosition = useMemo(() => {
     if (selectedIndex === null || metrics.length === 0) return 0;
-    
+
     // Calculate position to center the selected bar in the viewport
     const selectedBarPosition = selectedIndex * barSlotWidth;
     const viewportWidth = width;
     const targetPosition = selectedBarPosition - (viewportWidth / 2) + (barSlotWidth / 2);
-    
+
     // Calculate max scroll position accounting for right padding
     const plotAreaWidth = metrics[0]?.scores?.length * barSlotWidth || 0;
     const rightPadding = 120; // From MetricRow contentContainerStyle paddingRight
     const totalContentWidth = plotAreaWidth + rightPadding;
     const maxScrollPosition = Math.max(0, totalContentWidth - viewportWidth);
-    
+
     // Clamp to valid scroll range: [0, maxScrollPosition]
     const boundedPosition = Math.max(0, Math.min(targetPosition, maxScrollPosition));
-    
+
     // console.log(`[MetricsSeries] Scroll calc: selectedIndex=${selectedIndex}, barPos=${selectedBarPosition}, centered=${targetPosition.toFixed(1)}, bounded=${boundedPosition.toFixed(1)}, max=${maxScrollPosition.toFixed(1)}, plotWidth=${plotAreaWidth}, totalWidth=${totalContentWidth}`);
     return boundedPosition;
   }, [selectedIndex, metrics.length, barSlotWidth, width]);
@@ -1499,13 +1480,13 @@ const MetricsSeries = ({ photos }) => {
     // Navigate to snapshot using same pattern as PhotoGrid
     // Don't remove .jpg - use the photo.id directly like PhotoGrid does
     const photoId = photo.id;
-    
+
     // Convert timestamp to the required format: 'Thu Jul 24 2025 12:01:59 GMT+0530'
     let timestampParam = null;
     if (photo.timestamp) {
       const ts = photo.timestamp;
       let dateObj;
-      
+
       if (ts?.seconds && typeof ts.seconds === 'number') {
         // Firestore Timestamp
         dateObj = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
@@ -1516,7 +1497,7 @@ const MetricsSeries = ({ photos }) => {
         // Attempt conversion from string/number
         dateObj = new Date(ts);
       }
-      
+
       // Format to the required format: 'Thu Jul 24 2025 12:01:59 GMT+0530'
       if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
         timestampParam = dateObj.toString();
@@ -1554,41 +1535,41 @@ const MetricsSeries = ({ photos }) => {
     if (!initialSelectionDoneRef.current && timestamps && timestamps.length > 0) {
       // Add small delay to ensure the component has fully rendered
       const timer = setTimeout(() => {
-          const lastIndex = timestamps.length - 1;
-          // Check index validity one last time before setting/scrolling
-          if (lastIndex >= 0) {
-              // console.log('[MetricsSeries useEffect] Auto-selecting initial photo (last index):', {
-              //   index: lastIndex,
-              //   total: timestamps.length,
-              //   photoId: photos[lastIndex]?.hautUploadData?.imageId
-              // });
-              setSelectedIndex(lastIndex);
-              
-              // Scroll the TimeSelector to the end
-              timeSelectorRef.current?.scrollToIndex(lastIndex);
-              
-              // Add additional delay for metrics scroll sync on initial load
-              // This ensures MetricRow ScrollViews are fully mounted before sync
-              setTimeout(() => {
-                // console.log('[MetricsSeries] Triggering initial metrics scroll sync');
-                // Set flag to force scroll sync in MetricRow components
-                forceScrollSyncRef.current = true;
-                // Don't trigger another setState - just let the existing scrollPosition logic handle it
-              }, 200); // Shorter delay since content is always rendered
-              
-              // Mark initial selection as done
-              initialSelectionDoneRef.current = true; 
-          } else {
-              console.warn('[MetricsSeries useEffect] Auto-selection skipped: lastIndex calculation invalid.');
-          }
+        const lastIndex = timestamps.length - 1;
+        // Check index validity one last time before setting/scrolling
+        if (lastIndex >= 0) {
+          // console.log('[MetricsSeries useEffect] Auto-selecting initial photo (last index):', {
+          //   index: lastIndex,
+          //   total: timestamps.length,
+          //   photoId: photos[lastIndex]?.hautUploadData?.imageId
+          // });
+          setSelectedIndex(lastIndex);
+
+          // Scroll the TimeSelector to the end
+          timeSelectorRef.current?.scrollToIndex(lastIndex);
+
+          // Add additional delay for metrics scroll sync on initial load
+          // This ensures MetricRow ScrollViews are fully mounted before sync
+          setTimeout(() => {
+            // console.log('[MetricsSeries] Triggering initial metrics scroll sync');
+            // Set flag to force scroll sync in MetricRow components
+            forceScrollSyncRef.current = true;
+            // Don't trigger another setState - just let the existing scrollPosition logic handle it
+          }, 200); // Shorter delay since content is always rendered
+
+          // Mark initial selection as done
+          initialSelectionDoneRef.current = true;
+        } else {
+          console.warn('[MetricsSeries useEffect] Auto-selection skipped: lastIndex calculation invalid.');
+        }
       }, 100); // Small delay to let TimeSelector render
 
       return () => clearTimeout(timer); // Cleanup timer
     }
     // If timestamps array becomes empty later, reset the ref so selection happens again if data returns
     else if (timestamps && timestamps.length === 0) {
-        initialSelectionDoneRef.current = false;
-        setSelectedIndex(null); // Clear selection if no data
+      initialSelectionDoneRef.current = false;
+      setSelectedIndex(null); // Clear selection if no data
     }
   }, [photos, timestamps]); // Removed showContent dependency since content always renders
 
@@ -1692,12 +1673,9 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F5F5F5',
-   //height: 300,
+    elevation: 2,
   },
   card2: {
     backgroundColor: 'white',
@@ -1707,18 +1685,57 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    elevation: 3,
-    borderWidth: 1,
-    borderColor: '#F5F5F5',
-   height: 227,
+    elevation: 2,
+    height: 227,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  cardHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   categoryText: {
     fontSize: 15,
-    fontWeight: '600',
-    color: '#2C2C2C',
+    fontFamily: fontFamily.semiBold,
+    color: '#1C1917',
     letterSpacing: 0.3,
+  },
+  scoreRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    justifyContent: 'space-between',
+    marginBottom: 4,
+  },
+  largeScore: {
+    fontSize: 36,
+    fontFamily: fontFamily.bold,
+    color: '#1C1917',
+  },
+  largeScoreEmpty: {
+    fontSize: 36,
+    fontFamily: fontFamily.bold,
+    color: '#D6D3D1',
+  },
+  averageContainer: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+  },
+  averageScore: {
+    fontSize: 16,
+    fontFamily: fontFamily.semiBold,
+    color: '#78716C',
+  },
+  averageLabel: {
+    fontSize: 14,
+    fontFamily: fontFamily.regular,
+    color: '#A8A29E',
   },
   disclaimerText: {
     fontSize: 10,
@@ -1799,18 +1816,16 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
   },
   timeSelectorContainer: {
-    backgroundColor: '#FAFAFA', // Clean white background
-   // borderBottomWidth: 1,
-   // borderBottomColor: '#E5E5E5',
+    backgroundColor: '#D7D3D0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
-    paddingVertical:10,
+    paddingVertical: 10,
     overflow: 'visible',
-    height: 245, // Fixed height for consistent layout
-    position: 'relative', // Ensure relative positioning for absolute tooltip
+    height: 240,
+    position: 'relative',
   },
   shadowLayer1: {
     position: 'absolute',
@@ -1882,11 +1897,11 @@ const styles = StyleSheet.create({
     color: 'white',
   },
   metricsContainer: {
-   // flex: 1,
+    // flex: 1,
     paddingTop: 16,
     paddingBottom: 20,
     backgroundColor: '#FAFAFA',
-    zIndex:5
+    zIndex: 5
   },
   noDataContainer: {
     flex: 1,
@@ -1917,7 +1932,7 @@ const styles = StyleSheet.create({
     height: DATE_CARD_HEIGHT,
     marginHorizontal: DATE_CARD_MARGIN,
     backgroundColor: '#f8f8f8',
-    borderRadius: 16,
+    borderRadius: 32,
     overflow: 'hidden',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 }, // Negative height for top shadow only
@@ -1928,16 +1943,12 @@ const styles = StyleSheet.create({
     borderColor: '#E8E8E8',
   },
   selectedPhotoThumbCard: {
-    shadowColor: '#8B7355',
-    shadowOffset: { width: 0, height: -4 }, // Negative height for top shadow only
+    shadowColor: '#79716B',
+    shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.2,
     shadowRadius: 8,
     elevation: 6,
     zIndex: 10,
-    borderWidth: 2,
-    borderColor: '#8B7355',
-    marginTop: -8, // Lift up by reducing top margin
-    height: DATE_CARD_HEIGHT + 8, // Increase height to maintain bottom alignment
   },
   thumbContainer: {
     flex: 1,
@@ -1950,17 +1961,14 @@ const styles = StyleSheet.create({
     height: '100%',
   },
   thumbDateContainer: {
-    height: 24, // Reverted height
+    height: 24,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.75)',
-    borderBottomLeftRadius: 12,
-    borderBottomRightRadius: 12,
   },
   thumbDateText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#444',
   },
   selectedThumbDateText: {
     color: '#ffffff',
@@ -1990,7 +1998,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '500',
     color: '#8B7355',
-   // marginRight: 12,
+    // marginRight: 12,
     backgroundColor: '#8B735510',
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -2066,16 +2074,16 @@ const styles = StyleSheet.create({
     height: 48,
   },
   plotArea: {
-        flexDirection: 'row',
+    flexDirection: 'row',
     alignItems: 'flex-end',
     marginLeft: 24,
   },
-  
+
   // Thumbnail Maximize Button Styles
   thumbMaximizeButton: {
     position: 'absolute',
-    top: 4,
-    right: 4,
+    top: 8,
+    right: 8,
     width: 24,
     height: 24,
     borderRadius: 14,
@@ -2085,12 +2093,37 @@ const styles = StyleSheet.create({
     zIndex: 10,
     ...shadows.sm,
   },
-  
+
   // New styles for the design
   photoCardContainer: {
     alignItems: 'center',
     zIndex: 100, // Ensure it’s above other elements
     overflow: 'visible', // Allow children to overflow
+  },
+  dateIconsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+    gap: 2,
+  },
+  datePill: {
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 12,
+  },
+  selectedDatePill: {
+    backgroundColor: '#79716B',
+  },
+  datePillText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#444',
+    fontFamily: fontFamily.semiBold,
+  },
+  selectedDatePillText: {
+    color: '#FFFFFF',
   },
   iconsContainer: {
     flexDirection: 'row',
@@ -2100,7 +2133,7 @@ const styles = StyleSheet.create({
     gap: 0,
   },
   iconButton: {
-    padding: 6,
+    padding: 4,
     borderRadius: 6,
     backgroundColor: 'transparent',
   },
@@ -2133,10 +2166,10 @@ const styles = StyleSheet.create({
   // Skin Type Chart Styles
   skinTypeChartContainer: {
     position: 'relative',
-   // height: 200,
-   // backgroundColor: '#F8F8F8',
+    // height: 200,
+    // backgroundColor: '#F8F8F8',
     borderRadius: 16,
-   // marginVertical: 8,
+    // marginVertical: 8,
   },
   skinTypeFloatingYAxis: {
     position: 'absolute',

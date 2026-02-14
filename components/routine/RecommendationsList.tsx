@@ -28,14 +28,13 @@ DEVELOPMENT HISTORY
 ------------------------------------------------------*/
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import ListItem from '../ui/ListItem';
-import { colors, spacing, typography } from '../../styles';
+import { colors, spacing, typography, fontFamily } from '../../styles';
 import useAuthStore from '../../stores/authStore';
-// import { useThreadContext } from '../../contexts/ThreadContext';
 import { getComparison, transformComparisonData, generateConcernMessage } from '../../utils/newApiService';
-import { Camera, CheckCircle, AlertCircle } from 'lucide-react-native';
+import { Camera, CircleCheck, Star, ChevronRight, SoapDispenserDroplet } from 'lucide-react-native';
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 
 // Import the concerns data
 
@@ -109,9 +108,9 @@ interface ConcernMessageData {
   found_ingredients?: Array<
     | string
     | {
-        ingredient: string;
-        products?: string[];
-      }
+      ingredient: string;
+      products?: string[];
+    }
   >;
   missing_ingredients?: string[];
   has_routine?: boolean;
@@ -133,13 +132,13 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
   const navigation = useNavigation();
   const { user, profile } = useAuthStore();
   // const { createThread } = useThreadContext();
-  
+
   // State to track which concerns are expanded
   const [expandedConcerns, setExpandedConcerns] = useState<Set<string>>(new Set());
-  
+
   // State to track automatically selected concerns based on user profile
   const [selectedConcerns, setSelectedConcerns] = useState<Set<string>>(new Set());
-  
+
   // State for comparison data and loading
   const [comparisonData, setComparisonData] = useState<Photo[] | null>(null);
   const [isLoadingComparison, setIsLoadingComparison] = useState<boolean>(true);
@@ -149,28 +148,28 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
 
   // Get all concerns from the data
   const allConcerns: Concern[] = Object.values(concernsData.skinConcerns);
-  
+
   // Function to get scores from the latest image (most recent photo)
   const getLatestImageScores = (photos: Photo[]): Record<string, number> => {
     if (!photos || photos.length === 0) return {};
-    
+
     // Sort photos by date to get the most recent one
     const sortedPhotos = [...photos].sort((a, b) => {
       const dateA = a.created_at ? new Date(a.created_at) : (a.timestamp ? new Date(a.timestamp) : new Date(0));
       const dateB = b.created_at ? new Date(b.created_at) : (b.timestamp ? new Date(b.timestamp) : new Date(0));
       return dateB.getTime() - dateA.getTime(); // Most recent first
     });
-    
+
     const latestPhoto = sortedPhotos[0];
     if (!latestPhoto || !latestPhoto.metrics) return {};
-    
+
     // Define concern keys (excluding age, eye age, and translucency)
     const concernKeys = [
-      'acneScore', 'poresScore', 'rednessScore', 'pigmentationScore', 
-      'linesScore', 'hydrationScore', 'uniformnessScore', 'eyeAreaCondition', 
+      'acneScore', 'poresScore', 'rednessScore', 'pigmentationScore',
+      'linesScore', 'hydrationScore', 'uniformnessScore', 'eyeAreaCondition',
       'saggingScore'
     ];
-    
+
     // Get scores from the latest photo
     const latestScores: Record<string, number> = {};
     concernKeys.forEach(key => {
@@ -181,10 +180,10 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
         latestScores[key] = 0; // No data available
       }
     });
-    
+
     console.log('🔵 Latest photo scores:', latestScores);
     console.log('🔵 Latest photo date:', latestPhoto.created_at || latestPhoto.timestamp);
-    
+
     return latestScores;
   };
 
@@ -221,37 +220,37 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
       .filter(([key, score]) => score > 0) // Only include concerns with data
       .sort(([, a], [, b]) => a - b) // Sort by score (ascending - lowest first)
       .slice(0, 3); // Take only the first 3 (lowest scores)
-    
+
     console.log('🔵 Lowest scoring concerns from latest image:', concernEntries);
     return concernEntries.map(([key]) => key);
   };
-  
+
   // Fetch comparison data and identify lowest scoring concerns
   useEffect(() => {
     const fetchComparisonData = async (): Promise<void> => {
       try {
         setIsLoadingComparison(true);
         console.log('🔵 Fetching comparison data for ingredients recommendations');
-        
+
         const response = await getComparison('older_than_6_month');
-        
+
         if ((response as any).success && (response as any).data) {
           const transformedPhotos = transformComparisonData((response as any).data);
           console.log(`✅ Loaded ${transformedPhotos.length} photos for concern analysis`);
-          
+
           setComparisonData(transformedPhotos);
-          
+
           // Get scores from the latest image
           const latestScoresData = getLatestImageScores(transformedPhotos);
           console.log('🔵 Latest image scores:', latestScoresData);
-          
+
           // Store latest scores for UI display
           setLatestScores(latestScoresData);
-          
+
           // Identify the 3 lowest scoring concerns from latest image
           const lowestConcerns = getLowestScoringConcerns(latestScoresData);
           console.log('🔵 Lowest scoring concerns from latest image:', lowestConcerns);
-          
+
           setLowestScoringConcerns(lowestConcerns);
         } else {
           console.log('⚠️ No comparison data available, falling back to profile concerns');
@@ -282,22 +281,22 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
         setIsLoadingComparison(false);
       }
     };
-    
+
     fetchComparisonData();
   }, [profile?.concerns]);
-  
+
   // Automatically determine which concerns to show based on user profile (fallback)
   useEffect(() => {
     if (profile?.concerns && lowestScoringConcerns.length === 0) {
       const userConcernKeys = new Set<string>();
-      
+
       // Convert profile concerns (boolean flags) to concern keys
       Object.entries(profile.concerns).forEach(([profileConcernName, isSelected]) => {
         if (isSelected && PROFILE_TO_CONCERN_MAPPING[profileConcernName]) {
           userConcernKeys.add(PROFILE_TO_CONCERN_MAPPING[profileConcernName]);
         }
       });
-      
+
       setSelectedConcerns(userConcernKeys);
     }
   }, [profile?.concerns, lowestScoringConcerns.length]);
@@ -311,20 +310,20 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
       allConcerns.forEach(concern => {
         concernMap[concern.keyForLookup] = concern;
       });
-      
+
       // Return concerns in the same order as lowestScoringConcerns
       return lowestScoringConcerns
         .map(concernKey => concernMap[concernKey])
         .filter(concern => concern && concern.advice);
     }
-    
+
     // Fallback to selected concerns from profile
     if (selectedConcerns.size > 0) {
-      return allConcerns.filter(concern => 
+      return allConcerns.filter(concern =>
         selectedConcerns.has(concern.keyForLookup) && concern.advice
       );
     }
-    
+
     // Final fallback - show all concerns with advice
     return allConcerns.filter(concern => concern.advice);
   })();
@@ -400,38 +399,7 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
     });
   };
 
-  // Render individual recommendation item
-  const renderRecommendationItem = (item: Recommendation, itemIndex: number, concernKey: string): React.JSX.Element => {
-    // Choose icon based on type to match routine
-    let iconName = 'bottle-tonic-outline';
-    let iconColor = '#666';
-    
-    if (item.type === 'product') {
-      iconName = 'bottle-tonic-outline';
-      iconColor = colors.primary;
-    } else if (item.type === 'activity') {
-      iconName = 'bottle-tonic-outline';
-      iconColor = '#009688';
-    } else if (item.type === 'nutrition') {
-      iconName = 'bottle-tonic-outline';
-      iconColor = '#FF9800';
-    }
-
-    return (
-      <View key={`${concernKey}-${itemIndex}`} style={{ marginBottom: 12 }}>
-        <ListItem
-          title={item.text}
-          icon={iconName}
-          iconColor={iconColor}
-          iconLibrary="MaterialCommunityIcons"
-          showChevron={true}
-          onPress={() => handleRecommendationPress(item)}
-        />
-      </View>
-    );
-  };
-
-  // Render ingredient item from advice
+  // Get ingredient presence status
   const getIngredientPresence = (ingredientName: string, concernKey: string): IngredientPresenceResult => {
     const concernData = concernMessages[concernKey];
     const normalizedName = ingredientName.toLowerCase().trim();
@@ -465,105 +433,100 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
     return { status: isMissing ? 'absent' : 'absent' };
   };
 
-  const renderIngredientItem = (ingredient: string, itemIndex: number, concernKey: string): React.JSX.Element => {
+  // Get score indicator color
+  const getScoreColor = (score: number): string => {
+    if (score >= 70) return '#22C55E'; // Green
+    if (score >= 50) return '#EAB308'; // Yellow
+    return '#EF4444'; // Red
+  };
+
+  // Render a single ingredient row
+  const renderIngredientRow = (ingredient: string, itemIndex: number, concernKey: string, isLast: boolean): React.JSX.Element => {
     const colonIndex = ingredient.indexOf(':');
     const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
     const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
     const presence = getIngredientPresence(ingredientName, concernKey);
-    const isUnknown = presence.status === 'unknown';
-    const chips = isUnknown
-      ? [
-          {
-            label: 'Checking routine',
-            type: 'default',
-            styleVariant: 'normal',
-          },
-        ]
-      : [
-          {
-            label: presence.status === 'present' ? 'Present in routine' : 'Not in routine',
-            type: presence.status === 'present' ? 'ingredient' : 'default',
-            styleVariant: presence.status === 'present' ? 'bold' : 'normal',
-          },
-        ];
-
-    const rightElement =
-      presence.status === 'present'
-        ? <CheckCircle size={20} color={colors.primary} />
-        : presence.status === 'absent'
-          ? <AlertCircle size={20} color={colors.primary} />
-          : <></>;
-
-    const bottomText =
-      presence.products && presence.products.length > 0
-        ? `Products: ${presence.products.join(', ')}`
-        : null;
+    const isPresent = presence.status === 'present';
+    const productText = presence.products && presence.products.length > 0
+      ? presence.products.join(', ')
+      : ingredientDesc || `For ${CONCERN_KEY_TO_DISPLAY_NAME[concernKey] || concernKey}`;
 
     return (
-      <View key={`${concernKey}-ingredient-${itemIndex}`} style={{ marginBottom: 0 }}>
-        <ListItem
-          title={ingredientName}
-          description={ingredientDesc || undefined}
-          icon="bottle-tonic-outline"
-          iconColor={colors.primary}
-          iconLibrary="MaterialCommunityIcons"
-          showChevron={false}
-          chips={chips}
-          //rightElement={rightElement}
-          bottomText={bottomText}
-        />
-      </View>
-    );
-  };
-
-  // Render stats for lowest scoring concerns
-  const renderLowestScoringStats = (): React.JSX.Element | null => {
-    if (lowestScoringConcerns.length === 0 || Object.keys(latestScores).length === 0) {
-      return null;
-    }
-
-    return (
-      <View style={styles.statsContainer}>
-        <Text style={styles.statsTitle}>Areas that may require attention</Text>
-        <View style={styles.statsGrid}>
-          {lowestScoringConcerns.map((concernKey, index) => {
-            const score = latestScores[concernKey] || 0;
-            const displayName = CONCERN_KEY_TO_DISPLAY_NAME[concernKey];
-            
-            return (
-              <View key={concernKey} style={styles.statItem}>
-                <View style={styles.statHeader}>
-                  <Text style={styles.statRank}>#{index + 1}</Text>
-                  <Text style={styles.statScore}>{Math.round(score)}/100</Text>
-                </View>
-                <Text style={styles.statName}>{displayName}</Text>
-                <View style={styles.statBar}>
-                  <View 
-                    style={[
-                      styles.statBarFill, 
-                      { 
-                        width: `${(score / 100) * 100}%`,
-                        backgroundColor: score <= 30 ? '#FF3B30' : score <= 70 ? '#FFB340' : '#34C759'
-                      }
-                    ]} 
-                  />
-                </View>
-              </View>
-            );
-          })}
+      <TouchableOpacity
+        key={`${concernKey}-ingredient-${itemIndex}`}
+        style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
+        activeOpacity={0.7}
+        onPress={() => {
+          const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
+          (navigation as any).navigate('ThreadChat', {
+            chatType: 'snapshot_feedback',
+            initialMessage: message
+          });
+        }}
+      >
+        <View style={styles.ingredientIconContainer}>
+          {isPresent ? (
+            <CircleCheck size={22} color="#079455" />
+          ) : (
+            <CircleCheck size={22} color="#E7E5E4" />
+          )}
         </View>
-      </View>
+        <View style={styles.ingredientContent}>
+          <Text style={styles.ingredientName}>{ingredientName}</Text>
+          {productText ? (
+            <Text style={styles.ingredientDesc} numberOfLines={1}>{productText}</Text>
+          ) : null}
+        </View>
+        <ChevronRight size={18} color="#D6D3D1" />
+      </TouchableOpacity>
     );
   };
 
   // Show loading state while fetching comparison data
   if (isLoadingComparison) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Analyzing your skin concerns...</Text>
-        <Text style={styles.loadingSubtext}>Finding ingredients for your areas of concern</Text>
-      </View>
+      <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+        <View style={styles.mainCard}>
+          {/* Header Skeleton */}
+          <SkeletonPlaceholder borderRadius={4}>
+            <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" gap={8} marginBottom={6}>
+              <SkeletonPlaceholder.Item width={20} height={20} borderRadius={10} />
+              <SkeletonPlaceholder.Item width={180} height={16} />
+            </SkeletonPlaceholder.Item>
+            <SkeletonPlaceholder.Item width={280} height={12} marginBottom={20} />
+          </SkeletonPlaceholder>
+
+          {/* Concern Sections Skeleton */}
+          {[1, 2, 3].map((section) => (
+            <View key={section} style={{ marginBottom: 16 }}>
+              {/* Concern Header */}
+              <SkeletonPlaceholder borderRadius={4}>
+                <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="center" paddingVertical={12}>
+                  <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" gap={8}>
+                    <SkeletonPlaceholder.Item width={16} height={16} borderRadius={8} />
+                    <SkeletonPlaceholder.Item width={120} height={14} />
+                  </SkeletonPlaceholder.Item>
+                  <SkeletonPlaceholder.Item width={50} height={24} borderRadius={8} />
+                </SkeletonPlaceholder.Item>
+              </SkeletonPlaceholder>
+
+              {/* Ingredient Rows */}
+              {[1, 2, 3].map((row) => (
+                <SkeletonPlaceholder key={row} borderRadius={4}>
+                  <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" paddingVertical={14}>
+                    <SkeletonPlaceholder.Item width={22} height={22} borderRadius={11} marginRight={12} />
+                    <SkeletonPlaceholder.Item flex={1}>
+                      <SkeletonPlaceholder.Item width={140} height={14} marginBottom={4} />
+                      <SkeletonPlaceholder.Item width={100} height={12} />
+                    </SkeletonPlaceholder.Item>
+                    <SkeletonPlaceholder.Item width={18} height={18} borderRadius={9} />
+                  </SkeletonPlaceholder.Item>
+                </SkeletonPlaceholder>
+              ))}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
     );
   }
 
@@ -573,65 +536,70 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
       <View style={styles.noDataContainer}>
         <View style={styles.noDataContent}>
           <View style={styles.noDataIconContainer}>
-          <Camera size={40} color={colors.primary} />
+            <Camera size={40} color={colors.primary} />
           </View>
           <Text style={styles.noDataText}>Upload your first photo to start receiving ingredient suggestions</Text>
-          {/* <Text style={styles.noDataSubtext}>
-            Take a selfie to get personalized ingredient recommendations based on your skin analysis
-          </Text> */}
         </View>
       </View>
     );
   }
 
   return (
-    <ScrollView style={styles.container}>
-      {/* TEMPORARILY COMMENTED OUT - Concerns filters confusing users */}
-      {/* <MyConcerns 
-        selectedConcerns={selectedConcerns}
-        onSelectionChange={setSelectedConcerns}
-      /> */}
-     
-      
-      <View style={styles.microcopyContainer}>
-        <Text style={styles.microcopyText}>
-          {lowestScoringConcerns.length > 0 
-            ? 'Based on your latest skin analysis'
-            : 'Based on your current skin analysis'
-          }
-        </Text>
-      </View>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      {/* Main Card */}
+      <View style={styles.mainCard}>
+        {/* Card Header */}
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderRow}>
+            <SoapDispenserDroplet size={20} color="#414651" />
+            <Text style={styles.cardHeaderTitle}>Recommended Ingredients</Text>
+          </View>
+          <Text style={styles.cardHeaderSubtitle}>Dermatologist approved ingredients for your top concerns</Text>
+        </View>
 
-      {/* Stats for lowest scoring concerns */}
-      {renderLowestScoringStats()}
+        {/* Concern Sections */}
+        {filteredConcerns.map((concern, concernIndex) => {
+          if (!concern.advice) return null;
 
-      {filteredConcerns.map((concern, concernIndex) => {
-        // Only show concerns that have advice object
-        if (!concern.advice) return null;
-        
-        // Use ingredients from advice if available, otherwise fall back to recommendations
-        const itemsToShow = concern.advice.ingredients || concern.whatYouCanDo || [];
-        const isExpanded = expandedConcerns.has(concern.keyForLookup);
-        const visibleItems = isExpanded ? itemsToShow : itemsToShow.slice(0, 3);
-        const hasMore = itemsToShow.length > 3;
+          const itemsToShow = concern.advice.ingredients || concern.whatYouCanDo || [];
+          const isExpanded = expandedConcerns.has(concern.keyForLookup);
+          const visibleItems = isExpanded ? itemsToShow : itemsToShow.slice(0, 3);
+          const hasMore = itemsToShow.length > 3;
+          const score = latestScores[concern.keyForLookup] || 0;
+          const displayName = CONCERN_KEY_TO_DISPLAY_NAME[concern.keyForLookup] || concern.displayName || concern.keyForLookup;
 
-        return (
-          <View key={concern.keyForLookup} style={styles.concernSection}>
-            <Text style={styles.concernTitle}>
-              {CONCERN_KEY_TO_DISPLAY_NAME[concern.keyForLookup] || concern.displayName || concern.keyForLookup}
-            </Text>
-            <View style={styles.itemsContainer}>
+          return (
+            <View key={concern.keyForLookup} style={styles.concernSection}>
+              {/* Concern Header */}
+              <View style={styles.concernHeader}>
+                <View style={styles.concernHeaderLeft}>
+                  <Star size={16} color="#A9A29D" />
+                  <Text style={styles.concernTitle}>{displayName}</Text>
+                </View>
+                {score > 0 && (
+                  <View style={styles.scoreBadge}>
+                    <View style={[styles.scoreIndicator, { backgroundColor: getScoreColor(score) }]} />
+                    <Text style={styles.scoreValue}>{Math.round(score)}</Text>
+                  </View>
+                )}
+              </View>
+
+              {/* Ingredient Items */}
               {visibleItems.map((item, itemIndex) => {
-                // If it's an ingredient string, render as ingredient item
                 if (typeof item === 'string') {
-                  return renderIngredientItem(item, itemIndex, concern.keyForLookup);
+                  return renderIngredientRow(
+                    item,
+                    itemIndex,
+                    concern.keyForLookup,
+                    itemIndex === visibleItems.length - 1 && !hasMore
+                  );
                 }
-                // Otherwise render as regular recommendation item
-               // return renderRecommendationItem(item as Recommendation, itemIndex, concern.keyForLookup);
+                return null;
               })}
-              
+
+              {/* Show More */}
               {hasMore && (
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.showMoreButton}
                   onPress={() => toggleExpanded(concern.keyForLookup)}
                 >
@@ -641,9 +609,12 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
                 </TouchableOpacity>
               )}
             </View>
-          </View>
-        );
-      })}
+          );
+        })}
+      </View>
+
+      {/* Bottom spacing for tab bar */}
+      <View style={{ height: 100 }} />
     </ScrollView>
   );
 };
@@ -653,123 +624,130 @@ export default RecommendationsList;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAF9',
   },
-  microcopyContainer: {
-    paddingBottom: spacing.md,
-  // paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-  },
-  microcopyText: {
-    fontSize: 11,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    opacity: 0.7,
-  },
-  concernSection: {
-    marginBottom: 32,
+
+  // Main Card
+  mainCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
     marginHorizontal: 16,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+
+  // Card Header
+  cardHeader: {
+    marginBottom: 20,
+  },
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
+  },
+  cardHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: fontFamily.bold,
+    color: '#1C1917',
+  },
+  cardHeaderSubtitle: {
+    fontSize: 13,
+    color: '#78716C',
+    marginTop: 2,
+  },
+
+  // Concern Section
+  concernSection: {
+    marginBottom: 8,
+  },
+  concernHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  concernHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
   },
   concernTitle: {
-    fontSize: 18,
+    fontSize: 15,
     fontWeight: '600',
-    color: '#222',
-    marginBottom: 16,
-    marginHorizontal: 16,
+    fontFamily: fontFamily.semiBold,
+    color: '#1C1917',
   },
-  itemsContainer: {
-  //  marginHorizontal: 16,
-  },
-  showMoreButton: {
-    paddingVertical: 12,
+
+  // Score Badge
+  scoreBadge: {
+    flexDirection: 'row',
     alignItems: 'center',
+    gap: 6,
+    padding: 6,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F5',
+  },
+  scoreIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  scoreValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
+    color: '#1C1917',
+  },
+
+  // Ingredient Row
+  ingredientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  ingredientRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  ingredientIconContainer: {
+    marginRight: 12,
+  },
+  ingredientContent: {
+    flex: 1,
+  },
+  ingredientName: {
+    fontSize: 15,
+    fontWeight: '500',
+    fontFamily: fontFamily.medium,
+    color: '#1C1917',
+    marginBottom: 2,
+  },
+  ingredientDesc: {
+    fontSize: 13,
+    color: '#A9A29D',
+  },
+
+  // Show More
+  showMoreButton: {
+    paddingVertical: 14,
+
   },
   showMoreText: {
     fontSize: 14,
-    color: colors.primary,
+    color: '#A9A29D',
     fontWeight: '500',
   },
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: spacing.xl,
-  },
-  loadingText: {
-    fontSize: 16,
-    color: colors.textPrimary,
-    fontWeight: '600',
-    marginTop: spacing.lg,
-    textAlign: 'center',
-  },
-  loadingSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    marginTop: spacing.sm,
-    textAlign: 'center',
-  },
-  statsContainer: {
-    backgroundColor: '#F8F9FA',
-    marginHorizontal: 16,
-    marginBottom: 20,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  statsTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: colors.textPrimary,
-    marginBottom: 12,
-    textAlign: 'center',
-  },
-  statsGrid: {
-    gap: 12,
-  },
-  statItem: {
-    backgroundColor: 'white',
-    padding: 12,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#E9ECEF',
-  },
-  statHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
-  },
-  statRank: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: colors.primary,
-    backgroundColor: colors.primary + '15',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 12,
-  },
-  statScore: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: colors.textPrimary,
-  },
-  statName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: colors.textPrimary,
-    marginBottom: 8,
-  },
-  statBar: {
-    height: 6,
-    backgroundColor: '#E9ECEF',
-    borderRadius: 3,
-    overflow: 'hidden',
-  },
-  statBarFill: {
-    height: '100%',
-    borderRadius: 3,
-  },
+
+  // No Data
   noDataContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -789,9 +767,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: spacing.xl,
   },
-  noDataIcon: {
-    fontSize: 48,
-  },
   noDataText: {
     fontSize: 18,
     fontWeight: '600',
@@ -799,11 +774,5 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     textAlign: 'center',
     lineHeight: 25,
-  },
-  noDataSubtext: {
-    fontSize: 14,
-    color: colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 20,
   },
 });

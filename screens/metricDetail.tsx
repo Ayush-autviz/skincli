@@ -1206,12 +1206,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
 
   useEffect(() => {
-    // console.log('MetricDetail received params:', {
-    //   metricKey,
-    //   metricValue,
-    //   photoDataExists: !!photoData,
-    //   parsedDataExists: !!parsedPhotoData,
-    // });
+
 
     // Load concern details from JSON
     if (metricKey && concernsData) {
@@ -1470,34 +1465,25 @@ export default function MetricDetailScreen(): React.JSX.Element {
           >
             <ChevronLeft size={24} color="#000" />
           </TouchableOpacity>
-          {/* <Text style={styles.headerTitle}>{formatMetricName(metricKey)}</Text> */}
+
           <Text style={styles.headerTitle}>{getHeaderNameForMetric(metricKey)}</Text>
         </View>
-        {/* <TouchableOpacity 
-          style={styles.trackButton}
-          onPress={() => setIsConcernTracked(!isConcernTracked)}
-        >
-          <Feather 
-            name={isConcernTracked ? "check-circle" : "plus-circle"} 
-            size={24} 
-            color={isConcernTracked ? "#4CAF50" : "#BDBDBD"}
-          />
-        </TouchableOpacity> */}
+
       </View>
 
       {/* Content */}
       <ScrollView style={styles.scrollContainer}>
-        {/* Main metric card */}
-        <View style={{ marginHorizontal: 16 }}>
-          {/* <Text style={styles.sectionTitle}>{getLatestPhotoDateString()}</Text> */}
+
+        {/* <View style={{ marginHorizontal: 16 }}>
+
           <View style={styles.metricCard}>
-            {/* Profile Metric Template (for skinType, perceivedAge, eyeAge, skinTone) */}
+
             {currentConcernDetails?._isProfileMetric ? (
               <View style={{ width: '100%', marginBottom: 8 }}>
-                {/* Profile Box - full width, light gray styling */}
+     
                 <View style={{
                   width: '100%',
-                  backgroundColor: '#f5f5f5', // Light gray background
+                  backgroundColor: '#f5f5f5',
                   borderRadius: 12,
                   justifyContent: 'center',
                   alignItems: 'center',
@@ -1514,7 +1500,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                     {metricValue}
                   </Text>
                 </View>
-                {/* Disclaimer for Visible Pores */}
+       
                 {metricKey === 'poresScore' && (
                   <Text style={{
                     fontSize: 10,
@@ -1527,44 +1513,9 @@ export default function MetricDetailScreen(): React.JSX.Element {
                     Face a light source for best results
                   </Text>
                 )}
-                {/* Context Text - below the box */}
-                {/* <Text style={{ fontSize: 14, lineHeight: 20, color: '#555' }}>
-                  {(() => {
-                    // First try to use scoreLevels if available for profile metrics
-                    if (currentConcernDetails.scoreLevels) {
-                      // For categorical metrics (like skin type), try direct lookup
-                      if (currentConcernDetails.metricType === 'category' && currentConcernDetails.scoreLevels[metricValue]) {
-                        // console.log('Profile metric - using categorical scoreLevels for:', metricValue);
-                        return currentConcernDetails.scoreLevels[metricValue].text;
-                      }
-                      
-                      // For numeric metrics (like age), use range lookup
-                      const numericValue = Number(metricValue);
-                      if (!isNaN(numericValue)) {
-                        // console.log('Profile metric - checking scoreLevels for value:', numericValue);
-                        const scoreLevel = metricHelpers.getScoreLevelForValue(currentConcernDetails.scoreLevels, numericValue);
-                        // console.log('Found scoreLevel:', scoreLevel);
-                        if (scoreLevel && scoreLevel.text) {
-                          return scoreLevel.text;
-                        }
-                      }
-                    }
-                    
-                    // Fallback to type-specific descriptions
-                    if (currentConcernDetails.metricType === 'category' && currentConcernDetails.typeDescriptions) {
-                      // For skinType and skinTone - use specific descriptions
-                      const typeDesc = currentConcernDetails.typeDescriptions[metricValue];
-                      return typeDesc ? typeDesc.description : currentConcernDetails.contextText;
-                    } else if (currentConcernDetails.metricType === 'age') {
-                      // For age metrics - use contextText as fallback
-                      return currentConcernDetails.contextText;
-                    }
-                    return currentConcernDetails.contextText;
-                  })()}
-                </Text> */}
                 <Text style={{ fontSize: 14, lineHeight: 20, color: '#555' }}>
                   {(() => {
-                    // Special handling for perceived age - use age guidance logic
+
                     if (metricKey === 'perceivedAge' && currentConcernDetails?.ageGuidance) {
                       const actualAge = calculateActualAge(profile?.birth_date);
                       const perceivedAge = Number(metricValue);
@@ -1585,7 +1536,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                       return guidanceText;
                     }
 
-                    // Special handling for eye age - use age guidance logic if available
+
                     if (metricKey === 'eyeAge' && currentConcernDetails?.ageGuidance) {
                       const actualAge = calculateActualAge(profile?.birth_date);
                       const perceivedAge = Number(metricValue);
@@ -1606,7 +1557,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                       return guidanceText;
                     }
 
-                    // Special handling for skin type - prioritize type descriptions
+
                     if (metricKey === 'skinType' && currentConcernDetails?.typeDescriptions) {
                       const typeDesc = currentConcernDetails.scoreLevels?.[metricValue];
                       if (typeDesc && typeDesc.text) {
@@ -1614,7 +1565,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                       }
                     }
 
-                    // Special handling for skin tone - prioritize type descriptions
+
                     if (metricKey === 'skinTone' && currentConcernDetails?.toneDescriptions) {
                       const toneDesc = currentConcernDetails.toneDescriptions[metricValue as string];
                       if (toneDesc && toneDesc.description) {
@@ -1622,14 +1573,14 @@ export default function MetricDetailScreen(): React.JSX.Element {
                       }
                     }
 
-                    // For other profile metrics, use existing logic
+                   
                     if (currentConcernDetails.scoreLevels) {
-                      // For categorical metrics (like skin type), try direct lookup
+
                       if (currentConcernDetails.metricType === 'category' && currentConcernDetails.scoreLevels[metricValue]) {
                         return currentConcernDetails.scoreLevels[metricValue].text;
                       }
 
-                      // For numeric metrics (like age), use range lookup
+
                       const numericValue = Number(metricValue);
                       if (!isNaN(numericValue)) {
                         const scoreLevel = metricHelpers.getScoreLevelForValue(currentConcernDetails.scoreLevels, numericValue);
@@ -1639,13 +1590,13 @@ export default function MetricDetailScreen(): React.JSX.Element {
                       }
                     }
 
-                    // Fallback to type-specific descriptions
+         
                     if (currentConcernDetails.metricType === 'category' && currentConcernDetails.typeDescriptions) {
-                      // For skinType and skinTone - use specific descriptions
+
                       const typeDesc = currentConcernDetails.typeDescriptions[metricValue as string];
                       return typeDesc ? typeDesc.description : currentConcernDetails.contextText;
                     } else if (currentConcernDetails.metricType === 'age') {
-                      // For age metrics - use contextText as fallback
+
                       return currentConcernDetails.contextText;
                     }
                     return currentConcernDetails.contextText;
@@ -1653,14 +1604,14 @@ export default function MetricDetailScreen(): React.JSX.Element {
                 </Text>
               </View>
             ) : (
-              /* Score Metric Template (existing logic for scored metrics) */
+
               <>
-                {/* Type 1: Score Display (0-100) */}
+
                 {metricDisplayInfo.displayType === 'score' && metricDisplayInfo.isScore && (
                   <>
-                    {/* New score/context row layout */}
+
                     <View style={{ flexDirection: 'row', alignItems: 'flex-start', width: '100%', marginBottom: 8 }}>
-                      {/* Score Box - 1/3 width, with score */}
+
                       <View style={{
                         width: '33%',
                         backgroundColor: metricBg,
@@ -1674,7 +1625,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                           {Number.isFinite(Number(metricValue)) ? Number(metricValue) : '--'}
                         </Text>
                       </View>
-                      {/* Context Text - 2/3 width */}
+           
                       <View style={{ width: '67%', justifyContent: 'flex-start', paddingTop: 4 }}>
                         <Text style={{ fontSize: 14, lineHeight: 20, color: '#555' }}>
                           {getSmartContextText(metricValue, metricKey, currentConcernDetails)}
@@ -1696,7 +1647,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
                   </>
                 )}
 
-                {/* Type 2: Category Display (e.g., Skin Type) & Type 3: Age Value Display */}
+
                 {(metricDisplayInfo.displayType === 'category' || metricDisplayInfo.displayType === 'age') && (
                   <View style={styles.iconTypeCardContent}>
                     <Text style={styles.iconTypeValueText}>
@@ -1709,13 +1660,13 @@ export default function MetricDetailScreen(): React.JSX.Element {
                   </View>
                 )}
 
-                {/* Fallback for non-score, non-category, non-age types if any (or other numeric that didn't fit above) */}
+
                 {metricDisplayInfo.displayType === 'score' && !metricDisplayInfo.isScore && (
                   <View style={styles.iconTypeCardContent}>
                     <Text style={styles.iconTypeValueText}>
                       {metricDisplayInfo.valueDisplay}
                     </Text>
-                    {/* Could also use a different icon or no icon for generic numeric */}
+
                     <Info size={48} color="gray" style={styles.placeholderIcon} />
                     <Text style={styles.metricDescription}>
                       {metricDisplayInfo.description}
@@ -1725,7 +1676,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
               </>
             )}
           </View>
-        </View>
+        </View> */}
 
         {/* Mask Image Section */}
         {(() => {
@@ -1790,7 +1741,6 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
             return (
               <View style={{ marginHorizontal: 16 }}>
-                <Text style={styles.sectionTitle}>Face Mask</Text>
                 <View style={styles.metricCardRow}>
                   <View style={styles.maskImageContainer}>
                     <Image
@@ -2632,9 +2582,10 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'stretch',
     marginVertical: 16,
+    marginHorizontal: 4,
     padding: 12,
     backgroundColor: '#fff',
-    borderRadius: 12,
+    borderRadius: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -2645,14 +2596,14 @@ const styles = StyleSheet.create({
   maskContentRight: {
     flex: 1,
     justifyContent: 'center',
-    backgroundColor: '#F9F9F9',
-    borderRadius: 12,
+    backgroundColor: '#F5F5F4',
+    borderRadius: 8,
     padding: 12,
   },
   smartContextText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#444',
+    color: '#57534E',
     lineHeight: 22,
     marginBottom: 12,
   },
@@ -2663,10 +2614,12 @@ const styles = StyleSheet.create({
   combinedScoreChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#EEE',
-    borderRadius: 20,
+    backgroundColor: '#E7E5E4',
+    borderRadius: 12,
     paddingHorizontal: 4,
     paddingVertical: 4,
+    width: "100%",
+    justifyContent: "space-between",
   },
   changeInfo: {
     paddingHorizontal: 10,
@@ -2674,21 +2627,21 @@ const styles = StyleSheet.create({
   },
   changeText: {
     fontSize: 13,
-    color: '#666',
+    color: '#57534E',
     fontWeight: '500',
   },
   scoreInfo: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#FFF',
-    borderRadius: 16,
-    paddingHorizontal: 10,
-    paddingVertical: 6,
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
     marginLeft: 4,
   },
   scoreText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '600',
     color: '#364152',
     marginLeft: 6,
   },
@@ -2696,8 +2649,8 @@ const styles = StyleSheet.create({
   maskImageContainer: {
     alignItems: 'center',
     position: 'relative',
-    width: 140,
-    height: 140,
+    minHeight: 150,
+    minWidth: 150,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -2740,11 +2693,12 @@ const styles = StyleSheet.create({
     bottom: 8,
     left: '50%',
     transform: [{ translateX: -60 }],
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    backgroundColor: '#fff',
     borderRadius: 20,
     paddingHorizontal: 12,
     paddingVertical: 6,
     zIndex: 20,
+    opacity: 0.5,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,

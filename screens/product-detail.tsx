@@ -101,6 +101,8 @@ const ProductDetailScreen = (): React.JSX.Element => {
     ...(params.routineData || {}),
     is_tracking_paused: params.routineData?.is_tracking_paused
   });
+
+  console.log('🔍 Product data:', productData);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
   const [isFetchingRoutine, setIsFetchingRoutine] = useState<boolean>(false);
@@ -760,9 +762,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
               {/* Product Image Placeholder */}
               <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
                 <View style={styles.productImageContainer}>
-                  {productData.image_url ? (
+                  {productData.product_image ? (
                     <Image
-                      source={{ uri: productData.image_url }}
+                      source={{ uri: productData.product_image }}
                       style={styles.productImage}
                       resizeMode="contain"
                     />

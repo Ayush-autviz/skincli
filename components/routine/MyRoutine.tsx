@@ -2,7 +2,7 @@
 // Component to display and manage the user's routine items
 
 import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, SectionList, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image, Modal } from 'react-native';
+import { View, Text, SectionList, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image, Modal, ScrollView } from 'react-native';
 import { colors, spacing, typography, palette } from '../../styles';
 import { useNavigation } from '@react-navigation/native';
 import { ClipboardPlus, Pill } from 'lucide-react-native';
@@ -157,42 +157,112 @@ const calculateUsageDuration = (dateStarted: any): string | null => {
   }
 };
 
-// Skeleton Component
+// Skeleton Component – mirrors routine screen: header, section headers, separate item cards
+const skeletonStyles = {
+  listHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
+  summaryRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+  },
+  sectionHeader: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
+    backgroundColor: '#FAFAF9',
+  },
+  routineItemCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    padding: 16,
+    flexDirection: 'row' as const,
+    alignItems: 'flex-start' as const,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+};
 const RoutineSkeleton = () => (
-  <View style={{ paddingHorizontal: 16 }}>
-    {/* Header Skeleton */}
-    <SkeletonPlaceholder borderRadius={4}>
-      <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="center" marginTop={20} marginBottom={40}>
-        <SkeletonPlaceholder.Item width={120} height={14} />
-        <SkeletonPlaceholder.Item width={80} height={14} />
-      </SkeletonPlaceholder.Item>
-    </SkeletonPlaceholder>
-
-    {/* Section Header Skeleton */}
-    {/* <SkeletonPlaceholder borderRadius={4}>
-      <SkeletonPlaceholder.Item width={60} height={12} marginBottom={10} />
-    </SkeletonPlaceholder> */}
-
-    {/* Items Skeleton */}
-    {[1, 2, 3].map((item) => (
-      <SkeletonPlaceholder key={item} borderRadius={4}>
-        <SkeletonPlaceholder.Item
-          flexDirection="row"
-          alignItems="center"
-          marginTop={10}
-          marginBottom={12}
-          borderRadius={12}
-        >
-          {/* <SkeletonPlaceholder.Item width={40} height={40} borderRadius={8} marginRight={12} /> */}
-          <SkeletonPlaceholder.Item flex={1}>
-            <SkeletonPlaceholder.Item width={100} height={14} marginBottom={6} />
-            <SkeletonPlaceholder.Item width={"100%"} height={102} />
-          </SkeletonPlaceholder.Item>
-          {/* <SkeletonPlaceholder.Item width={20} height={20} borderRadius={10} /> */}
+  <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    {/* List header – same as routine screen */}
+    <View style={skeletonStyles.listHeader}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="center">
+          <SkeletonPlaceholder.Item width={160} height={14} />
+          <SkeletonPlaceholder.Item width={110} height={14} />
         </SkeletonPlaceholder.Item>
       </SkeletonPlaceholder>
+    </View>
+
+    {/* Section: DAILY */}
+    <View style={skeletonStyles.sectionHeader}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item width={50} height={12} />
+      </SkeletonPlaceholder>
+    </View>
+    {[1, 2].map((i) => (
+      <View key={`daily-${i}`} style={skeletonStyles.routineItemCard}>
+        <SkeletonPlaceholder borderRadius={4}>
+          <SkeletonPlaceholder.Item flexDirection="row" alignItems="flex-start">
+            <SkeletonPlaceholder.Item width="100%">
+              <SkeletonPlaceholder.Item width={56} height={10} marginBottom={6} />
+              <SkeletonPlaceholder.Item width={140} height={16} marginBottom={6} />
+              <SkeletonPlaceholder.Item width="85%" height={12} marginBottom={10} />
+              <SkeletonPlaceholder.Item width={150} height={28} borderRadius={6} />
+            </SkeletonPlaceholder.Item>
+            <SkeletonPlaceholder.Item width={20} height={20} borderRadius={10} marginLeft={8} />
+          </SkeletonPlaceholder.Item>
+        </SkeletonPlaceholder>
+      </View>
     ))}
-  </View>
+
+    {/* Section: WEEKLY */}
+    <View style={skeletonStyles.sectionHeader}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item width={55} height={12} />
+      </SkeletonPlaceholder>
+    </View>
+    <View style={skeletonStyles.routineItemCard}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item flexDirection="row" alignItems="flex-start">
+          <SkeletonPlaceholder.Item width="100%">
+            <SkeletonPlaceholder.Item width={56} height={10} marginBottom={6} />
+            <SkeletonPlaceholder.Item width={120} height={16} marginBottom={6} />
+            <SkeletonPlaceholder.Item width="80%" height={12} marginBottom={10} />
+            <SkeletonPlaceholder.Item width={150} height={28} borderRadius={6} />
+          </SkeletonPlaceholder.Item>
+          <SkeletonPlaceholder.Item width={20} height={20} borderRadius={10} marginLeft={8} />
+        </SkeletonPlaceholder.Item>
+      </SkeletonPlaceholder>
+    </View>
+
+    {/* Section: TREATMENTS */}
+    <View style={skeletonStyles.sectionHeader}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item width={75} height={12} />
+      </SkeletonPlaceholder>
+    </View>
+    <View style={skeletonStyles.routineItemCard}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item flexDirection="row" alignItems="flex-start">
+          <SkeletonPlaceholder.Item width="100%">
+            <SkeletonPlaceholder.Item width={56} height={10} marginBottom={6} />
+            <SkeletonPlaceholder.Item width={160} height={16} marginBottom={6} />
+            <SkeletonPlaceholder.Item width="90%" height={12} marginBottom={10} />
+            <SkeletonPlaceholder.Item width={150} height={28} borderRadius={6} />
+          </SkeletonPlaceholder.Item>
+          <SkeletonPlaceholder.Item width={20} height={20} borderRadius={10} marginLeft={8} />
+        </SkeletonPlaceholder.Item>
+      </SkeletonPlaceholder>
+    </View>
+  </ScrollView>
 );
 
 const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.JSX.Element => {
@@ -1250,7 +1320,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   return (
     <View style={styles.container}>
-      {loading && routineItems.length === 0 ? (
+      {loading && routineItems.length !== 0 ? (
         <RoutineSkeleton />
       ) : (
         <SectionList

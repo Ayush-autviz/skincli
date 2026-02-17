@@ -39,6 +39,7 @@ import concernsData from '../data/concerns.json';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const IMAGE_SIZE = SCREEN_WIDTH - 40;
 const TAB_HEIGHT = 50;
+const NAV_TAB_WIDTH = 120; // Approximate width of each bottom nav tab (minWidth 80 + padding + gap)
 const MIN_SCALE = 1;
 const MAX_SCALE = 4;
 
@@ -64,6 +65,7 @@ const springConfig = {
 
 interface MaskViewerParams {
   photoData?: any;
+  initialConditionName?: string;
 }
 
 interface MaskOption {
@@ -315,17 +317,13 @@ const MaskViewerScreen = (): React.JSX.Element => {
   console.log('🔵 parsedPhotoData.maskImages length:', parsedPhotoData?.maskImages?.length);
   console.log('🔵 parsedPhotoData.storageUrl:', parsedPhotoData?.storageUrl);
 
-  const scrollX = useSharedValue(0);
-  const currentIndex = useSharedValue(0);
-  const [activeIndex, setActiveIndex] = useState<number>(0);
-
   // Prepare mask data - filter out options with "Unknown" mask_img_url and sort by desired order
   const maskOptions: MaskOption[] = [
     {
       skin_condition_name: 'none',
       mask_img_url: parsedPhotoData?.storageUrl,
       displayName: 'Original',
-      image_url: parsedPhotoData?.maskImages[0]?.image_url
+      image_url: parsedPhotoData?.maskImages?.[0]?.image_url
     },
     ...(parsedPhotoData?.maskImages || [])
       .filter((mask: any) => mask.mask_img_url !== "Unknown")
@@ -386,6 +384,28 @@ const MaskViewerScreen = (): React.JSX.Element => {
 
   console.log('🔵 maskOptions:', maskOptions);
 
+  // Compute initial index to show the metric's mask when navigating from metric detail
+  const initialIndex =
+    params.initialConditionName
+      ? Math.max(0, maskOptions.findIndex((m: any) => m.skin_condition_name === params.initialConditionName))
+      : 0;
+
+  const scrollX = useSharedValue(initialIndex * SCREEN_WIDTH);
+  const currentIndex = useSharedValue(initialIndex);
+  const [activeIndex, setActiveIndex] = useState<number>(initialIndex);
+
+  useEffect(() => {
+    if (initialIndex > 0) {
+      const timer = setTimeout(() => {
+        scrollRef.current?.scrollTo({ x: initialIndex * SCREEN_WIDTH, animated: false });
+        // Center the active tab in the bottom navigation scroll
+        const navScrollX = Math.max(0, initialIndex * NAV_TAB_WIDTH - SCREEN_WIDTH / 2 + NAV_TAB_WIDTH / 2);
+        navigationScrollRef.current?.scrollTo({ x: navScrollX, animated: false });
+      }, 50);
+      return () => clearTimeout(timer);
+    }
+  }, [initialIndex]);
+
   const scrollHandler = useAnimatedScrollHandler({
     onScroll: (event) => {
       scrollX.value = event.contentOffset.x;
@@ -438,6 +458,7 @@ const MaskViewerScreen = (): React.JSX.Element => {
           scrollEventThrottle={16}
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
+          contentOffset={{ x: initialIndex * SCREEN_WIDTH, y: 0 }}
           decelerationRate="fast"
           snapToInterval={SCREEN_WIDTH}
           snapToAlignment="center"

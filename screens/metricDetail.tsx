@@ -1220,10 +1220,8 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
       if (isProfileMetric && concernsData.skinProfiles) {
         // Look in skinProfiles for non-scored metrics
-        // console.log('Looking for profile metric in skinProfiles:', metricKey);
-        const details = (concernsData.skinProfiles as Record<string, any>)[metricKey] || (concernsData.skinConcerns as Record<string, any>)[metricKey];
+        details = (concernsData.skinProfiles as Record<string, any>)[metricKey] || (concernsData.skinConcerns as Record<string, any>)[metricKey];
         if (details) {
-          // console.log('Found profile details for:', metricKey);
           // Add a flag to indicate this is a profile metric
           details._isProfileMetric = true;
         }
@@ -1783,8 +1781,13 @@ export default function MetricDetailScreen(): React.JSX.Element {
                       style={styles.photoOverlayChip}
                       activeOpacity={0.7}
                       onPress={() => {
+                        const photoDataWithMasks = {
+                          ...parsedPhotoData,
+                          maskImages: maskImages ?? parsedPhotoData?.maskImages
+                        };
                         (navigation as any).navigate('MaskViewer', {
-                          photoData: JSON.stringify(parsedPhotoData)
+                          photoData: JSON.stringify(photoDataWithMasks),
+                          initialConditionName: conditionName
                         });
                       }}
                     >

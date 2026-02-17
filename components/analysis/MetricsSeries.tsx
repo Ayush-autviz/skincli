@@ -1090,7 +1090,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
         </TouchableOpacity>
 
         {/* Skin Type Chart */}
-        <View style={styles.dataSection}>
+        <View style={[styles.dataSection, { backgroundColor: 'transparent', height: 'auto' }]}>
           <SkinTypeTrendChart
             photos={photos}
             selectedIndex={selectedIndex}

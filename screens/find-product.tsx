@@ -18,13 +18,12 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import {
     Search,
-    ArrowLeft,
-    Star,
+    ChevronLeft,
 } from 'lucide-react-native';
 import { SvgXml } from 'react-native-svg';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
-import { searchProducts, searchProductByUPC } from '../utils/newApiService';
+import { searchProducts } from '../utils/newApiService';
 import ProductImageScannerModal from '../components/ProductImageScannerModal';
 
 // Custom barcode/scanner icon SVG
@@ -70,7 +69,6 @@ const FindProductScreen = (): React.JSX.Element => {
     const [isSearching, setIsSearching] = useState<boolean>(false);
     const [hasSearched, setHasSearched] = useState<boolean>(false);
     const [showScannerModal, setShowScannerModal] = useState<boolean>(false);
-    const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
     const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
     const inputRef = useRef<TextInput>(null);
 
@@ -123,37 +121,13 @@ const FindProductScreen = (): React.JSX.Element => {
         }
     };
 
-    const handleProductSelect = async (product: SearchResult) => {
-        try {
-            setIsFetchingProduct(true);
-
-            let fullProductData = product;
-
-            // Fetch full product details using UPC if available
-            if (product.upc) {
-                const response = await searchProductByUPC(product.upc);
-                if ((response as any).success && (response as any).data) {
-                    fullProductData = (response as any).data;
-                }
-            }
-
-            // Navigate to ProductDetail in "add" mode
-            (navigation as any).navigate('ProductDetail', {
-                productData: fullProductData,
-                upc: fullProductData.upc || product.upc,
-                mode: 'add',
-            });
-        } catch (error) {
-            console.error('🔴 Error fetching product details:', error);
-            // Navigate anyway with basic product data
-            (navigation as any).navigate('ProductDetail', {
-                productData: product,
-                upc: product.upc,
-                mode: 'add',
-            });
-        } finally {
-            setIsFetchingProduct(false);
-        }
+    const handleProductSelect = (product: SearchResult) => {
+        // Navigate immediately; Product Detail will fetch full data and show its own skeleton
+        (navigation as any).navigate('ProductDetail', {
+            productData: product,
+            upc: product.upc,
+            mode: 'add',
+        });
     };
 
     const handleProductScanned = async (productData: any) => {
@@ -176,7 +150,6 @@ const FindProductScreen = (): React.JSX.Element => {
             style={styles.productItem}
             onPress={() => handleProductSelect(item)}
             activeOpacity={0.7}
-            disabled={isFetchingProduct}
         >
             <View style={styles.productContent}>
                 <Text style={styles.productBrand}>
@@ -226,7 +199,7 @@ const FindProductScreen = (): React.JSX.Element => {
 
     return (
         <SafeAreaView style={styles.container}>
-            {/* Header */}
+            {/* Header - same as Product Detail */}
             <View style={styles.headerContainer}>
                 <View style={styles.header}>
                     <TouchableOpacity
@@ -234,26 +207,21 @@ const FindProductScreen = (): React.JSX.Element => {
                         onPress={handleBack}
                     >
                         <View style={styles.iconContainer}>
-                            <ArrowLeft size={22} color={colors.primary} />
+                            <ChevronLeft size={30} color={"#44403C"} />
                         </View>
                     </TouchableOpacity>
 
                     <View style={styles.titleContainer}>
                         <Text style={styles.headerTitle}>Find Product</Text>
-                        <View style={styles.titleUnderline} />
                     </View>
 
-                    <TouchableOpacity
-                        style={styles.favoriteButton}
-                        onPress={() => { }}
-                    >
-                        <Star size={22} color={colors.textSecondary} />
-                    </TouchableOpacity>
+                    <View style={styles.rightContainer} />
                 </View>
+                <View style={styles.shadowContainer} />
             </View>
 
-            {/* Search Input */}
-            <View style={styles.searchSection}>
+            {/* Search Input - below fixed header */}
+            <View style={[styles.searchSection, { marginTop: 40 }]}>
                 <View style={styles.searchContainer}>
                     <View style={styles.searchIconContainer}>
                         {isSearching ? (
@@ -282,14 +250,6 @@ const FindProductScreen = (): React.JSX.Element => {
                     <Image source={require('../assets/images/camera.png')} style={styles.cameraIcon} />
                 </TouchableOpacity>
             </View>
-
-            {/* Loading overlay */}
-            {isFetchingProduct && (
-                <View style={styles.loadingOverlay}>
-                    <ActivityIndicator size="large" color={colors.primary} />
-                    <Text style={styles.loadingText}>Loading product details...</Text>
-                </View>
-            )}
 
             {/* Content */}
             <KeyboardAvoidingView
@@ -330,46 +290,71 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFF',
     },
     headerContainer: {
-        backgroundColor: '#FFFFFF',
-        borderBottomWidth: 1,
-        borderBottomColor: '#F5F5F4',
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        height: 105,
+        backgroundColor: colors.white,
+        borderBottomWidth: 0.4,
+        justifyContent: 'flex-end',
+        borderBottomColor: '#E5E5E5',
     },
     header: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
+        alignItems: 'center',
+       // paddingTop: 55,
+        paddingBottom: 10,
+        paddingHorizontal: spacing.lg,
     },
     backButton: {
-        padding: 4,
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
     },
     iconContainer: {
         width: 40,
         height: 40,
         borderRadius: 20,
-        backgroundColor: 'rgba(0, 131, 155, 0.1)',
-        alignItems: 'center',
         justifyContent: 'center',
+        alignItems: 'center',
     },
     titleContainer: {
         flex: 1,
         alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: spacing.md,
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#1C1917',
+        fontSize: 20,
+        fontWeight: '500',
+        color: colors.textPrimary,
     },
-    titleUnderline: {
-        width: 40,
-        height: 2,
+    rightContainer: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    shadowContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 1,
         backgroundColor: colors.primary,
-        marginTop: 4,
-        borderRadius: 1,
-    },
-    favoriteButton: {
-        padding: 8,
+        opacity: 0.1,
+        shadowColor: '#000',
+        shadowOffset: {
+            width: 0,
+            height: 2,
+        },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
     },
     searchSection: {
         flexDirection: 'row',
@@ -461,23 +446,6 @@ const styles = StyleSheet.create({
         color: '#78716C',
         textAlign: 'center',
         lineHeight: 22,
-    },
-    loadingOverlay: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        alignItems: 'center',
-        justifyContent: 'center',
-        zIndex: 1000,
-    },
-    loadingText: {
-        fontSize: 16,
-        color: '#1C1917',
-        marginTop: 16,
-        fontWeight: '500',
     },
     cameraIcon: {
         width: 30,

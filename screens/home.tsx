@@ -495,7 +495,7 @@ export default function HomeScreen(): React.JSX.Element {
                     </View>
 
                     {/* Photo Container */}
-                    {isLoading ? (
+                    {isLoading && photos.length === 0 ? (
                         <View style={styles.photoWrapper}>
                             <PhotoSliderSkeleton />
                         </View>

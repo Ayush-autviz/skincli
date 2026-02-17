@@ -1,27 +1,25 @@
 // ActivityList.tsx
-// Component to display user activity timeline
+// Journal tab – displays user activity / snapshot summaries
+// Layout and theme aligned with Routine and Ingredients tabs
 
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  FlatList,
-  ActivityIndicator,
+  ScrollView,
   TouchableOpacity,
   ListRenderItem,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { getComparisonSummaries } from '../../utils/newApiService';
-import { colors, spacing, typography } from '../../styles';
-import { 
-  FlaskConical, 
-  Plane, 
-  CheckCircle, 
-  User, 
-  PlusCircle, 
-  ChevronRight, 
-  Clock 
+import { colors, spacing, fontFamily } from '../../styles';
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
+import {
+  BookOpen,
+  ChevronRight,
+  Clock,
+  NotebookPen,
 } from 'lucide-react-native';
 
 interface JournalSummaryItem {
@@ -32,41 +30,55 @@ interface JournalSummaryItem {
   summary: string;
 }
 
-// Helper function to format timestamps from UTC to local time
 const formatJournalTimestamp = (timestamp: string): string => {
   if (!timestamp) return '';
-  
   try {
-    // If it's a UTC string without timezone, ensure it's parsed as UTC
     let utcTimestamp = timestamp;
     if (!timestamp.endsWith('Z') && !timestamp.includes('+') && !timestamp.includes('-', 10)) {
       utcTimestamp = timestamp + 'Z';
     }
     const date = new Date(utcTimestamp);
-    
-    // Check if date is valid
-    if (isNaN(date.getTime())) {
-      console.warn('Invalid timestamp:', timestamp);
-      return '';
-    }
-    
-    // Convert to local time and format
+    if (isNaN(date.getTime())) return '';
     return date.toLocaleString('en-US', {
       month: 'short',
       day: 'numeric',
       year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      hour12: true
+      hour12: true,
     });
-  } catch (error) {
-    console.error('Error formatting timestamp:', error, timestamp);
+  } catch {
     return '';
   }
 };
 
-// Mock activity data - in a real app, this would come from an API
-// No mock data; we fetch real summaries from the API
+// Skeleton loading – same card layout as Ingredients tab
+const JournalSkeleton = (): React.JSX.Element => (
+  <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+    <View style={styles.mainCard}>
+      <SkeletonPlaceholder borderRadius={4}>
+        <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" gap={8} marginBottom={6}>
+          <SkeletonPlaceholder.Item width={20} height={20} borderRadius={10} />
+          <SkeletonPlaceholder.Item width={120} height={16} />
+        </SkeletonPlaceholder.Item>
+        <SkeletonPlaceholder.Item width={260} height={12} marginBottom={20} />
+      </SkeletonPlaceholder>
+      {[1, 2, 3, 4].map((row) => (
+        <SkeletonPlaceholder key={row} borderRadius={4}>
+          <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" paddingVertical={14}>
+            <SkeletonPlaceholder.Item width={48} height={48} borderRadius={24} marginRight={12} />
+            <SkeletonPlaceholder.Item flex={1}>
+              <SkeletonPlaceholder.Item width="90%" height={14} marginBottom={6} />
+              <SkeletonPlaceholder.Item width={140} height={12} />
+            </SkeletonPlaceholder.Item>
+            <SkeletonPlaceholder.Item width={18} height={18} borderRadius={9} />
+          </SkeletonPlaceholder.Item>
+        </SkeletonPlaceholder>
+      ))}
+    </View>
+    <View style={styles.bottomSpacer} />
+  </ScrollView>
+);
 
 const ActivityList: React.FC = (): React.JSX.Element => {
   const navigation = useNavigation();
@@ -80,7 +92,6 @@ const ActivityList: React.FC = (): React.JSX.Element => {
         setLoading(true);
         setError(null);
         const res = await getComparisonSummaries();
-        console.log(res.data,'data from journal');
         if (res.success) {
           setSummaries(res.data || []);
         } else {
@@ -93,13 +104,8 @@ const ActivityList: React.FC = (): React.JSX.Element => {
         setLoading(false);
       }
     };
-
     loadSummaries();
   }, []);
-
-  const getIconColor = (): string => colors.primary;
-
-  const getIconComponent = (): React.ComponentType<any> => FlaskConical;
 
   const handlePress = useCallback((item: JournalSummaryItem) => {
     (navigation as any).navigate('ThreadChat', {
@@ -111,164 +117,171 @@ const ActivityList: React.FC = (): React.JSX.Element => {
     });
   }, [navigation]);
 
-  const renderSummaryItem: ListRenderItem<JournalSummaryItem> = ({ item }): React.JSX.Element => {
-    const IconComponent = getIconComponent();
-    const dateLabel = formatJournalTimestamp(item.updated_at || item.created_at);
-    
+  if (loading) {
+    return <JournalSkeleton />;
+  }
+
+  // Empty state – same UX as Ingredients no-data (centered, icon + text)
+  if (!summaries || summaries.length === 0) {
     return (
-      <TouchableOpacity style={styles.activityItem} onPress={() => handlePress(item)}>
-        <View style={styles.activityIconContainer}>
-          <IconComponent
-            size={24}
-            color={getIconColor()}
-          />
-        </View>
-        <View style={styles.activityContent}>
-          <Text style={styles.activityTitle} >{item.summary}</Text>
-          <View style={styles.activitySourceContainer}>
-            <Text style={styles.activitySource}>{dateLabel}</Text>
-            <ChevronRight
-              size={16}
-              color={colors.textSecondary}
-            />
+      <View style={styles.container}>
+        <View style={styles.noDataContainer}>
+          <View style={styles.noDataContent}>
+            <View style={styles.noDataIconContainer}>
+              <Clock size={40} color={colors.primary} />
+            </View>
+            <Text style={styles.noDataTitle}>No activity yet</Text>
+            <Text style={styles.noDataText}>Your snapshot summaries and feedback will appear here</Text>
           </View>
         </View>
-      </TouchableOpacity>
-    );
-  };
-
-  const renderEmptyState = (): React.JSX.Element => (
-    <View style={styles.emptyContainer}>
-      <Clock
-        size={64}
-        color={colors.textSecondary}
-      />
-      <Text style={styles.emptyTitle}>No Activity Yet</Text>
-      <Text style={styles.emptySubtitle}>
-        Your activity will appear here as you use the app
-      </Text>
-    </View>
-  );
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Loading activity...</Text>
       </View>
     );
   }
 
   return (
-    <View style={styles.container}>
-      <FlatList
-        data={summaries}
-        renderItem={renderSummaryItem}
-        keyExtractor={(item) => item.skin_result_id}
-        contentContainerStyle={styles.listContainer}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={renderEmptyState}
-        ItemSeparatorComponent={() => <View style={styles.separator} />}
-      />
-    </View>
+    <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
+      <View style={styles.mainCard}>
+        <View style={styles.cardHeader}>
+          <View style={styles.cardHeaderRow}>
+            <NotebookPen size={20} color="#414651" />
+            <Text style={styles.cardHeaderTitle}>Journal</Text>
+          </View>
+          <Text style={styles.cardHeaderSubtitle}>Your snapshot summaries and feedback</Text>
+        </View>
+        {summaries.map((item, index) => {
+          const dateLabel = formatJournalTimestamp(item.updated_at || item.created_at);
+          const isLast = index === summaries.length - 1;
+          return (
+            <TouchableOpacity
+              key={item.skin_result_id}
+              style={[styles.journalRow, !isLast && styles.journalRowBorder]}
+              onPress={() => handlePress(item)}
+              activeOpacity={0.7}
+            >
+              <View style={styles.journalIconContainer}>
+                <BookOpen size={24} color={colors.primary} />
+              </View>
+              <View style={styles.journalContent}>
+                <Text style={styles.journalTitle} numberOfLines={2}>{item.summary}</Text>
+                <Text style={styles.journalDate}>{dateLabel}</Text>
+              </View>
+              <ChevronRight size={18} color="#D6D3D1" />
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+      <View style={styles.bottomSpacer} />
+    </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: colors.background,
+    backgroundColor: '#FAFAF9',
   },
-  listContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
+  mainCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  activityItem: {
+  cardHeader: {
+    marginBottom: 20,
+  },
+  cardHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    paddingVertical: spacing.md,
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 4,
   },
-  activityIconContainer: {
+  cardHeaderTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: fontFamily.bold,
+    color: '#1C1917',
+  },
+  cardHeaderSubtitle: {
+    fontSize: 13,
+    color: '#78716C',
+    marginTop: 2,
+  },
+  journalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+  },
+  journalRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  journalIconContainer: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: colors.white,
+    backgroundColor: colors.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: spacing.md,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 1,
-    },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+    marginRight: 12,
   },
-  activityContent: {
+  journalContent: {
     flex: 1,
     justifyContent: 'center',
   },
-  activityTitle: {
-    ...typography.body,
-    color: colors.textPrimary,
+  journalTitle: {
+    fontSize: 15,
     fontWeight: '500',
-    marginBottom: spacing.xs,
+    fontFamily: fontFamily.medium,
+    color: '#1C1917',
+    marginBottom: 2,
     lineHeight: 20,
   },
-  activitySourceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: spacing.xs,
+  journalDate: {
+    fontSize: 13,
+    color: '#78716C',
   },
-  activitySource: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    flex: 1,
+  bottomSpacer: {
+    height: 100,
   },
-  activityTimestamp: {
-    ...typography.caption,
-    color: colors.textMicrocopy,
-    fontSize: 12,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: colors.border,
-    marginLeft: 64, // Align with content (48px icon + 16px margin)
-  },
-  loadingContainer: {
+  noDataContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
+    padding: spacing.xl,
   },
-  loadingText: {
-    ...typography.body,
-    color: colors.textSecondary,
-    marginTop: spacing.md,
+  noDataContent: {
+    alignItems: 'center',
+    maxWidth: 320,
   },
-  emptyContainer: {
-    flex: 1,
+  noDataIconContainer: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: colors.primary + '15',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxl,
+    marginBottom: spacing.xl,
   },
-  emptyTitle: {
+  noDataTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: colors.textPrimary,
-    marginTop: spacing.lg,
+    fontFamily: fontFamily.semiBold,
+    color: '#1C1917',
     marginBottom: spacing.sm,
-  },
-  emptySubtitle: {
-    ...typography.body,
-    color: colors.textSecondary,
     textAlign: 'center',
-    lineHeight: 20,
   },
-  // Removed coming soon overlay and faded content to enable interaction
+  noDataText: {
+    fontSize: 15,
+    color: '#78716C',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
 });
 
 export default ActivityList;

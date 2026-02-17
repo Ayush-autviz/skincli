@@ -48,10 +48,14 @@ export default function AboutMeScreen(): React.JSX.Element {
         fetchProfile();
     }, []);
 
-    // Refresh photos on focus
+    // Refresh photos only on first mount, not every focus
+    const hasLoadedPhotosRef = React.useRef(false);
     useFocusEffect(
         useCallback(() => {
-            refreshPhotos();
+            if (!hasLoadedPhotosRef.current) {
+                hasLoadedPhotosRef.current = true;
+                refreshPhotos();
+            }
         }, [refreshPhotos])
     );
 

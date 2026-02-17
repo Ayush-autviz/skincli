@@ -242,7 +242,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                         showsVerticalScrollIndicator={false}
                         onEndReached={handleLoadMore}
                         onEndReachedThreshold={0.5}
-                        ListFooterComponent={renderFooter}
+                        //ListFooterComponent={renderFooter}
                     />
                 )
             ) : (

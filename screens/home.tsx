@@ -137,6 +137,7 @@ export default function HomeScreen(): React.JSX.Element {
     // Top concerns state
     const [topConcerns, setTopConcerns] = useState<TopConcern[]>([]);
     const [isLoadingConcerns, setIsLoadingConcerns] = useState<boolean>(false);
+    const loadedConcernsPhotoIdRef = useRef<string | null>(null);
 
     // Group photos by date
     const dateGroups = useMemo(() => {
@@ -196,20 +197,27 @@ export default function HomeScreen(): React.JSX.Element {
         }, [refreshPhotos])
     );
 
-    // Load concerns for current photo when it changes
+    // Load concerns for current photo when it changes (skip if same photo)
+    const currentPhotoId = currentPhoto?.id || currentPhoto?.hautUploadData?.imageId || null;
     useEffect(() => {
         if (currentPhoto) {
+            const photoId = currentPhoto.id || currentPhoto.hautUploadData?.imageId;
+            if (photoId && photoId === loadedConcernsPhotoIdRef.current) {
+                return; // Already loaded concerns for this photo
+            }
             loadConcernsForPhoto(currentPhoto);
         } else {
+            loadedConcernsPhotoIdRef.current = null;
             setTopConcerns([]);
         }
-    }, [currentPhoto]);
+    }, [currentPhotoId]);
 
     // Load concerns for the current photo
     const loadConcernsForPhoto = async (photo: any) => {
         if (!photo?.id && !photo?.hautUploadData?.imageId) return;
 
         const imageId = photo.hautUploadData?.imageId || photo.id;
+        loadedConcernsPhotoIdRef.current = photo.id || imageId;
         setIsLoadingConcerns(true);
 
         try {

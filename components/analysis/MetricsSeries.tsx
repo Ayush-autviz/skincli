@@ -650,13 +650,11 @@ const TimeSelector = forwardRef(
     );
   });
 
+// Chart palette: red (low), mid (medium), green (high) only
 const getColorForScore = (score) => {
-  if (score <= 20) return '#E53935'; // Deep red
-  if (score <= 35) return '#FF6D3A'; // Orange
-  if (score <= 50) return '#FFA726'; // Amber/Gold
-  if (score <= 65) return '#FFD54F'; // Yellow
-  if (score <= 80) return '#66BB6A'; // Medium green
-  return '#2E9E5A'; // Rich green
+  if (score <= 40) return '#F97066'; // Red
+  if (score <= 70) return '#F79009'; // Mid
+  return '#17B26A'; // Rich green
 };
 
 // Helper to normalize metric values and handle null/zero cases
@@ -717,22 +715,13 @@ const calculatePercentageChange = (scores) => {
   return Math.round(percentChange * 10) / 10; // Round to 1 decimal place
 };
 
-// Helper to generate light version of a color
+// Bar background colors for chart palette only
 const getLightColor = (hexColor) => {
-  // Convert hex to RGB, then create a light version
   if (!hexColor || hexColor === '#999999') return '#f0f0f0'; // Grey for null values
-
   switch (hexColor) {
-    case '#E53935': return '#FFEBEA'; // Light red
-    case '#FF6D3A': return '#FFF0E8'; // Light orange
-    case '#FFA726': return '#FFF4E6'; // Light amber
-    case '#FFD54F': return '#FFF9E0'; // Light yellow
-    case '#66BB6A': return '#E8F5E8'; // Light medium green
-    case '#2E9E5A': return '#E0F2E4'; // Light rich green
-    // Legacy colors (for age metrics)
-    case '#FF3B30': return '#FFEBEA';
-    case '#FFB340': return '#FFF4E6';
-    case '#34C759': return '#E8F5E8';
+    case '#F97066': return '#FEE4E2'; // Red bar background
+    case '#F79009': return '#FEF0C7'; // Mid bar background
+    case '#17B26A': return '#DCFAE6'; // Rich green bar background
     default: return '#f0f0f0';
   }
 };
@@ -750,34 +739,22 @@ const calculateActualAge = (birthDate) => {
   return age;
 };
 
-// Get age comparison color for perceived age metric
+// Get age comparison color for perceived age metric (uses chart palette only)
 const getAgeComparisonColor = (perceivedAge, actualAge) => {
   if (!actualAge || !perceivedAge) return '#222'; // Default color if no data
-
   const ageDifference = perceivedAge - actualAge;
-
-  if (ageDifference > 5) {
-    return '#FF3B30'; // Red - perceived age is more than 5 years greater than actual age
-  } else if (ageDifference > 0) {
-    return '#FFB340'; // Yellow - perceived age is greater than actual age but within 5 years
-  } else {
-    return '#34C759'; // Green - perceived age is less than or equal to actual age (good)
-  }
+  if (ageDifference > 5) return '#F97066'; // Red
+  if (ageDifference > 0) return '#F79009'; // Mid
+  return '#17B26A'; // Green
 };
 
-// Get age comparison color for eye age metric
+// Get age comparison color for eye age metric (uses chart palette only)
 const getEyeAgeComparisonColor = (eyeAge, actualAge) => {
   if (!actualAge || !eyeAge) return '#222'; // Default color if no data
-
   const ageDifference = eyeAge - actualAge;
-
-  if (ageDifference <= 0) {
-    return '#34C759'; // Green - eye age is equal to or less than actual age (good)
-  } else if (ageDifference < 5) {
-    return '#FFB340'; // Yellow - eye age is more than actual age but less than 5 years
-  } else {
-    return '#FF3B30'; // Red - eye age is more than 5 years greater than actual age
-  }
+  if (ageDifference <= 0) return '#17B26A'; // Green
+  if (ageDifference < 5) return '#F79009'; // Mid
+  return '#F97066'; // Red
 };
 
 // SkinTypeTrendChart component for progress screen

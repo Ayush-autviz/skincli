@@ -1320,7 +1320,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   return (
     <View style={styles.container}>
-      {loading && routineItems.length !== 0 ? (
+      {loading && routineItems.length === 0 ? (
         <RoutineSkeleton />
       ) : (
         <SectionList

@@ -66,7 +66,7 @@ const JournalSkeleton = (): React.JSX.Element => (
       {[1, 2, 3, 4].map((row) => (
         <SkeletonPlaceholder key={row} borderRadius={4}>
           <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" paddingVertical={14}>
-            <SkeletonPlaceholder.Item width={48} height={48} borderRadius={24} marginRight={12} />
+            {/* <SkeletonPlaceholder.Item width={48} height={48} borderRadius={24} marginRight={12} /> */}
             <SkeletonPlaceholder.Item flex={1}>
               <SkeletonPlaceholder.Item width="90%" height={14} marginBottom={6} />
               <SkeletonPlaceholder.Item width={140} height={12} />
@@ -158,9 +158,9 @@ const ActivityList: React.FC = (): React.JSX.Element => {
               onPress={() => handlePress(item)}
               activeOpacity={0.7}
             >
-              <View style={styles.journalIconContainer}>
+              {/* <View style={styles.journalIconContainer}>
                 <BookOpen size={24} color={colors.primary} />
-              </View>
+              </View> */}
               <View style={styles.journalContent}>
                 <Text style={styles.journalTitle} numberOfLines={2}>{item.summary}</Text>
                 <Text style={styles.journalDate}>{dateLabel}</Text>

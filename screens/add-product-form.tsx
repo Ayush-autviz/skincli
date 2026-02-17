@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { ArrowLeft, Calendar } from 'lucide-react-native';
+import { ChevronLeft, Calendar } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import { createRoutineItem } from '../utils/newApiService';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -175,16 +175,28 @@ const AddProductFormScreen = (): React.JSX.Element => {
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-                    <ArrowLeft size={24} color="#1C1917" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Add to Routine</Text>
-                <View style={{ width: 24 }} />
+            {/* Header - same as Product Detail */}
+            <View style={styles.headerContainer}>
+                <View style={styles.header}>
+                    <TouchableOpacity
+                        style={styles.backButton}
+                        onPress={() => navigation.goBack()}
+                    >
+                        <View style={styles.iconContainer}>
+                            <ChevronLeft size={30} color={"#44403C"} />
+                        </View>
+                    </TouchableOpacity>
+
+                    <View style={styles.titleContainer}>
+                        <Text style={styles.headerTitle}>Add to Routine</Text>
+                    </View>
+
+                    <View style={styles.rightContainer} />
+                </View>
+                <View style={styles.shadowContainer} />
             </View>
 
-            <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.content} contentContainerStyle={{ paddingTop: 40 }} showsVerticalScrollIndicator={false}>
                 <Text style={styles.sectionTitle}>Use this product for</Text>
 
                 <Text style={styles.subTitle}>Measurable concerns</Text>
@@ -302,24 +314,72 @@ const AddProductFormScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: colors.background,
+    },
+    headerContainer: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+        height: 105,
+        backgroundColor: colors.background,
+        borderBottomWidth: 0.4,
+        justifyContent: 'flex-end',
+        borderBottomColor: '#E5E5E5',
     },
     header: {
         flexDirection: 'row',
-        alignItems: 'center',
         justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#F5F5F4',
+        alignItems: 'center',
+       // paddingTop: 55,
+       backgroundColor: colors.background,
+        paddingBottom: 10,
+        paddingHorizontal: spacing.lg,
     },
     backButton: {
-        padding: 4,
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    iconContainer: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    titleContainer: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: spacing.md,
     },
     headerTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#1C1917',
+        fontSize: 20,
+        fontWeight: '500',
+        color: colors.textPrimary,
+    },
+    rightContainer: {
+        width: 44,
+        height: 44,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    shadowContainer: {
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 1,
+        backgroundColor: colors.primary,
+        opacity: 0.1,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
     },
     content: {
         flex: 1,

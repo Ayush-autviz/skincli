@@ -225,12 +225,33 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
     return concernEntries.map(([key]) => key);
   };
 
-  // Fetch comparison data and identify lowest scoring concerns
+  // Helper to resolve filtered concerns from lowest scoring or profile fallback
+  const resolveFilteredConcerns = (lowestConcerns: string[], profileConcerns?: Record<string, boolean>): Concern[] => {
+    if (lowestConcerns.length > 0) {
+      const concernMap: Record<string, Concern> = {};
+      allConcerns.forEach(concern => { concernMap[concern.keyForLookup] = concern; });
+      return lowestConcerns.map(key => concernMap[key]).filter(c => c && c.advice);
+    }
+    if (profileConcerns) {
+      const userKeys = new Set<string>();
+      Object.entries(profileConcerns).forEach(([name, isSelected]) => {
+        if (isSelected && PROFILE_TO_CONCERN_MAPPING[name]) userKeys.add(PROFILE_TO_CONCERN_MAPPING[name]);
+      });
+      if (userKeys.size > 0) return allConcerns.filter(c => userKeys.has(c.keyForLookup) && c.advice);
+    }
+    return allConcerns.filter(c => c.advice);
+  };
+
+  // Fetch comparison data, identify concerns, then fetch concern messages — all before hiding skeleton
   useEffect(() => {
-    const fetchComparisonData = async (): Promise<void> => {
+    let isCancelled = false;
+
+    const fetchAllData = async (): Promise<void> => {
       try {
         setIsLoadingComparison(true);
         console.log('🔵 Fetching comparison data for ingredients recommendations');
+
+        let resolvedConcerns: Concern[] = [];
 
         const response = await getComparison('older_than_6_month');
 
@@ -240,21 +261,15 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
 
           setComparisonData(transformedPhotos);
 
-          // Get scores from the latest image
           const latestScoresData = getLatestImageScores(transformedPhotos);
-          console.log('🔵 Latest image scores:', latestScoresData);
-
-          // Store latest scores for UI display
           setLatestScores(latestScoresData);
 
-          // Identify the 3 lowest scoring concerns from latest image
           const lowestConcerns = getLowestScoringConcerns(latestScoresData);
-          console.log('🔵 Lowest scoring concerns from latest image:', lowestConcerns);
-
           setLowestScoringConcerns(lowestConcerns);
+
+          resolvedConcerns = resolveFilteredConcerns(lowestConcerns, profile?.concerns);
         } else {
           console.log('⚠️ No comparison data available, falling back to profile concerns');
-          // Fallback to profile-based selection
           if (profile?.concerns) {
             const userConcernKeys = new Set<string>();
             Object.entries(profile.concerns).forEach(([profileConcernName, isSelected]) => {
@@ -264,10 +279,43 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
             });
             setSelectedConcerns(userConcernKeys);
           }
+          resolvedConcerns = resolveFilteredConcerns([], profile?.concerns);
+        }
+
+        // Now fetch concern messages in parallel before hiding the skeleton
+        const concernsToFetch = resolvedConcerns
+          .slice(0, 3)
+          .filter((concern) => concern.advice?.ingredients?.length);
+
+        if (concernsToFetch.length > 0) {
+          const messageResults = await Promise.all(
+            concernsToFetch.map(async (concern) => {
+              const concernName = getConcernNameForAPI(concern.keyForLookup);
+              if (!concernName) return null;
+              try {
+                const resp = await generateConcernMessage(concernName) as ConcernMessageResponse;
+                if (resp.success && resp.data) {
+                  return { key: concern.keyForLookup, data: resp.data };
+                }
+              } catch (error) {
+                console.error('🔴 Error fetching concern message:', error);
+              }
+              return null;
+            })
+          );
+
+          if (!isCancelled) {
+            const updates: Record<string, ConcernMessageData> = {};
+            messageResults.forEach((result) => {
+              if (result) updates[result.key] = result.data;
+            });
+            if (Object.keys(updates).length > 0) {
+              setConcernMessages((prev) => ({ ...prev, ...updates }));
+            }
+          }
         }
       } catch (error) {
         console.error('🔴 Error fetching comparison data:', error);
-        // Fallback to profile-based selection
         if (profile?.concerns) {
           const userConcernKeys = new Set<string>();
           Object.entries(profile.concerns).forEach(([profileConcernName, isSelected]) => {
@@ -278,97 +326,34 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
           setSelectedConcerns(userConcernKeys);
         }
       } finally {
-        setIsLoadingComparison(false);
+        if (!isCancelled) {
+          setIsLoadingComparison(false);
+        }
       }
     };
 
-    fetchComparisonData();
+    fetchAllData();
+
+    return () => { isCancelled = true; };
   }, [profile?.concerns]);
 
   // Automatically determine which concerns to show based on user profile (fallback)
   useEffect(() => {
     if (profile?.concerns && lowestScoringConcerns.length === 0) {
       const userConcernKeys = new Set<string>();
-
-      // Convert profile concerns (boolean flags) to concern keys
       Object.entries(profile.concerns).forEach(([profileConcernName, isSelected]) => {
         if (isSelected && PROFILE_TO_CONCERN_MAPPING[profileConcernName]) {
           userConcernKeys.add(PROFILE_TO_CONCERN_MAPPING[profileConcernName]);
         }
       });
-
       setSelectedConcerns(userConcernKeys);
     }
   }, [profile?.concerns, lowestScoringConcerns.length]);
 
   // Filter concerns based on lowest scoring concerns from comparison data or fallback to selected concerns
   const filteredConcerns = ((): Concern[] => {
-    // If we have lowest scoring concerns from comparison data, use those in the same order
-    if (lowestScoringConcerns.length > 0) {
-      // Create a map for quick lookup
-      const concernMap: Record<string, Concern> = {};
-      allConcerns.forEach(concern => {
-        concernMap[concern.keyForLookup] = concern;
-      });
-
-      // Return concerns in the same order as lowestScoringConcerns
-      return lowestScoringConcerns
-        .map(concernKey => concernMap[concernKey])
-        .filter(concern => concern && concern.advice);
-    }
-
-    // Fallback to selected concerns from profile
-    if (selectedConcerns.size > 0) {
-      return allConcerns.filter(concern =>
-        selectedConcerns.has(concern.keyForLookup) && concern.advice
-      );
-    }
-
-    // Final fallback - show all concerns with advice
-    return allConcerns.filter(concern => concern.advice);
+    return resolveFilteredConcerns(lowestScoringConcerns, profile?.concerns);
   })();
-
-  useEffect(() => {
-    let isCancelled = false;
-    const fetchConcernMessages = async (): Promise<void> => {
-      const concernsToFetch = filteredConcerns
-        .slice(0, 3)
-        .filter((concern) => concern.advice?.ingredients?.length)
-        .filter((concern) => !concernMessages[concern.keyForLookup]);
-
-      if (concernsToFetch.length === 0) {
-        return;
-      }
-
-      const updates: Record<string, ConcernMessageData> = {};
-
-      for (const concern of concernsToFetch) {
-        const concernName = getConcernNameForAPI(concern.keyForLookup);
-        if (!concernName) {
-          continue;
-        }
-
-        try {
-          const response = await generateConcernMessage(concernName) as ConcernMessageResponse;
-          if (response.success && response.data) {
-            updates[concern.keyForLookup] = response.data;
-          }
-        } catch (error) {
-          console.error('🔴 Error fetching concern message:', error);
-        }
-      }
-
-      if (!isCancelled && Object.keys(updates).length > 0) {
-        setConcernMessages((prev) => ({ ...prev, ...updates }));
-      }
-    };
-
-    fetchConcernMessages();
-
-    return () => {
-      isCancelled = true;
-    };
-  }, [filteredConcerns, concernMessages]);
 
   const toggleExpanded = (concernKey: string): void => {
     const newExpanded = new Set(expandedConcerns);

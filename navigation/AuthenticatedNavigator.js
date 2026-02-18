@@ -25,6 +25,7 @@ import ProductDetailScreen from '../screens/product-detail';
 import TrackingReviewScreen from '../screens/tracking-review';
 import FindProductScreen from '../screens/find-product';
 import AddProductFormScreen from '../screens/add-product-form';
+import AddTreatmentFormScreen from '../screens/add-treatment-form';
 
 // Import auth store
 
@@ -190,6 +191,15 @@ function AuthenticatedNavigator() {
             <Stack.Screen
               name="AddProductForm"
               component={AddProductFormScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="AddTreatmentForm"
+              component={AddTreatmentFormScreen}
               options={{
                 animation: 'slide_from_right',
                 headerShown: false,

@@ -1175,7 +1175,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
   // Handle add treatment from sheet
   const handleAddTreatment = (): void => {
     setShowAddRoutineSheet(false);
-    (navigation as any).navigate('CreateRoutine', { type: 'Treatment' });
+    (navigation as any).navigate('AddTreatmentForm');
   };
 
   // Update the renderSectionHeader function

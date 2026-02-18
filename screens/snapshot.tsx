@@ -224,7 +224,7 @@ const SnapshotScreen = (): React.JSX.Element => {
   const userId = user?.user_id;
 
   // Contexts
-  const { selectedSnapshot, setSelectedSnapshot, refreshPhotos } = usePhotoContext();
+  const { selectedSnapshot, setSelectedSnapshot, refreshPhotos, photos } = usePhotoContext();
 
   // State management
   const [uiState, setUiState] = useState<string>('loading');
@@ -240,6 +240,9 @@ const SnapshotScreen = (): React.JSX.Element => {
   // AI Summary state
   const [summary, setSummary] = useState<string | null>(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
+
+  // Score changes state (computed from previous photo)
+  const [scoreChanges, setScoreChanges] = useState<Record<string, { arrow: string; value: number }>>({});
 
   // Refs
   const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -335,7 +338,83 @@ const SnapshotScreen = (): React.JSX.Element => {
 
           setPhotoData(photoDataObj);
           setAnalysisResults(results);
-          setLoadingMicrocopy('Analysis complete');
+          setLoadingMicrocopy('Preparing results...');
+
+          // Fetch AI summary + compute score changes in parallel before showing results
+          const contextPhotos = photos || [];
+          await Promise.all([
+            // 1. AI Summary
+            (async () => {
+              try {
+                const summaryResp = await getImageChatSummary(imgId);
+                if (summaryResp.summary) {
+                  setSummary(summaryResp.summary);
+                } else {
+                  const currentUser = useAuthStore.getState().user;
+                  const currentProfile = useAuthStore.getState().profile;
+                  const chatData = {
+                    imageId: imgId,
+                    firstName: currentUser?.user_name || currentProfile?.user_name || 'User',
+                    age: currentProfile?.age || 25,
+                    skinType: currentProfile?.skinType || 'normal',
+                    skinConcerns: currentProfile?.concerns
+                      ? Object.keys(currentProfile.concerns).filter(key => currentProfile.concerns![key])
+                      : [],
+                    excludedMetrics: [],
+                    metrics: transformedMetrics || {}
+                  };
+                  try {
+                    const chatResponse: any = await sendSnapshotFirstChat(chatData);
+                    if (chatResponse.success && chatResponse.data) {
+                      setSummary(chatResponse.data.message || chatResponse.data.feedback);
+                    }
+                  } catch (_) { /* continue without summary */ }
+                }
+              } catch (_) { setSummary(null); }
+              setSummaryLoading(false);
+            })(),
+            // 2. Score changes from previous photo
+            (async () => {
+              try {
+                // Find the previous photo (not the current one) from context
+                const sortedPhotos = [...contextPhotos].sort((a: any, b: any) => {
+                  const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+                  const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+                  return dateB.getTime() - dateA.getTime();
+                });
+                // The most recent photo that isn't this one
+                const prevPhoto = sortedPhotos.find((p: any) => {
+                  const pImgId = p.hautUploadData?.imageId || p.id;
+                  return pImgId !== imgId && pImgId !== photoId;
+                });
+                if (prevPhoto) {
+                  const prevImgId = prevPhoto.hautUploadData?.imageId || prevPhoto.id;
+                  const prevResults = await getHautAnalysisResults(prevImgId);
+                  if (prevResults && prevResults.length > 0) {
+                    const prevMetrics = transformHautResults(prevResults);
+                    const changes: Record<string, { arrow: string; value: number }> = {};
+                    const scoreKeys = [
+                      'pigmentationScore', 'uniformnessScore', 'rednessScore',
+                      'acneScore', 'hydrationScore', 'eyeAreaCondition', 'linesScore', 'poresScore'
+                    ];
+                    scoreKeys.forEach(key => {
+                      const curr = transformedMetrics[key];
+                      const prev = (prevMetrics as any)[key];
+                      if (curr !== undefined && prev !== undefined && typeof curr === 'number' && typeof prev === 'number') {
+                        const diff = curr - prev;
+                        changes[key] = {
+                          arrow: diff > 0 ? '↑' : diff < 0 ? '↓' : '→',
+                          value: Math.abs(Math.round(diff))
+                        };
+                      }
+                    });
+                    setScoreChanges(changes);
+                  }
+                }
+              } catch (_) { /* continue without changes */ }
+            })()
+          ]);
+
           setUiState('complete');
           refreshPhotos();
           stopPolling();
@@ -419,51 +498,7 @@ const SnapshotScreen = (): React.JSX.Element => {
     return () => { stopPolling(); };
   }, []);
 
-  // ===== Fetch AI Summary =====
-  useEffect(() => {
-    if (photoData && uiState === 'complete') {
-      const imgId = photoData.imageId;
-      if (imgId) {
-        setSummaryLoading(true);
-        getImageChatSummary(imgId)
-          .then(response => {
-            if (response.summary) {
-              setSummary(response.summary);
-            } else {
-              setSummary(null);
-              const currentUser = useAuthStore.getState().user;
-              const currentProfile = useAuthStore.getState().profile;
-              const chatData = {
-                imageId: imgId,
-                firstName: currentUser?.user_name || currentProfile?.user_name || 'User',
-                age: currentProfile?.age || 25,
-                skinType: currentProfile?.skinType || 'normal',
-                skinConcerns: currentProfile?.concerns
-                  ? Object.keys(currentProfile.concerns).filter(key => currentProfile.concerns![key])
-                  : [],
-                excludedMetrics: [],
-                metrics: photoData?.metrics || {}
-              };
-              sendSnapshotFirstChat(chatData)
-                .then((chatResponse: any) => {
-                  if (chatResponse.success && chatResponse.data) {
-                    setSummary(chatResponse.data.message || chatResponse.data.feedback);
-                  }
-                })
-                .catch(() => { });
-            }
-          })
-          .catch(() => { setSummary(null); })
-          .finally(() => { setSummaryLoading(false); });
-      } else {
-        setSummary(null);
-        setSummaryLoading(false);
-      }
-    } else {
-      setSummary(null);
-      setSummaryLoading(false);
-    }
-  }, [photoData, uiState]);
+  // AI summary is now fetched inside startPollingForResults before uiState becomes 'complete'
 
   // ===== Auto-delete low quality images =====
   useEffect(() => {
@@ -713,8 +748,9 @@ const SnapshotScreen = (): React.JSX.Element => {
                   </View>
                   <View style={styles.analysisRowRight}>
                     <Text style={styles.analysisChangeText}>
-                      {item.value >= 70 ? '↑' : item.value < 50 ? '↓' : '→'}
-                      {Math.floor(Math.random() * 15) + 1}
+                      {scoreChanges[item.key]
+                        ? `${scoreChanges[item.key].arrow}${scoreChanges[item.key].value}`
+                        : ''}
                     </Text>
                     <View style={styles.analysisDotContainer}>
                       <View style={[styles.analysisDot, { backgroundColor: color }]} />

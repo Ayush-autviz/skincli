@@ -482,19 +482,21 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                     </>
                 )}
 
-                {/* Save Button */}
-                <TouchableOpacity
-                    style={[
-                        styles.saveButton,
-                        (!canSave || isSaving) && styles.disabledButton,
-                    ]}
-                    onPress={handleSave}
-                    disabled={!canSave || isSaving}
-                >
-                    <Text style={styles.saveButtonText}>
-                        {isSaving ? 'Saving...' : 'Save Treatment'}
-                    </Text>
-                </TouchableOpacity>
+                {/* Save Button - Only show when both category and treatment type are selected */}
+                {selectedCategory && selectedSubcategory && (
+                    <TouchableOpacity
+                        style={[
+                            styles.saveButton,
+                            (!canSave || isSaving) && styles.disabledButton,
+                        ]}
+                        onPress={handleSave}
+                        disabled={!canSave || isSaving}
+                    >
+                        <Text style={styles.saveButtonText}>
+                            {isSaving ? 'Saving...' : 'Save Treatment'}
+                        </Text>
+                    </TouchableOpacity>
+                )}
             </ScrollView>
         </SafeAreaView>
     );

@@ -139,6 +139,7 @@ import {
   ActivityIndicator,
   Dimensions
 } from 'react-native';
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import {
   ChevronLeft,
   ChevronRight,
@@ -156,7 +157,7 @@ import { useRoute, useNavigation } from '@react-navigation/native';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import ListItem from '../components/ui/ListItem';
 //import FloatingTooltip from '../../components/ui/FloatingTooltip';
-import { colors, fontFamily } from '../styles';
+import { colors, fontFamily, spacing } from '../styles';
 import useAuthStore from '../stores/authStore';
 import { getSkinTrendScores, getHautMaskImages, generateConcernMessage } from '../utils/newApiService';
 import { LineChart } from 'react-native-chart-kit';
@@ -1455,18 +1456,22 @@ export default function MetricDetailScreen(): React.JSX.Element {
       <StatusBar barStyle="dark-content" />
 
       {/* Header */}
-      <View style={styles.header}>
-        <View style={styles.headerLeft}>
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
           <TouchableOpacity
             style={styles.backButton}
             onPress={() => navigation.goBack()}
           >
-            <ChevronLeft size={24} color="#000" />
+            <View style={styles.iconContainer}>
+              <ChevronLeft size={30} color="#44403C" />
+            </View>
           </TouchableOpacity>
-
-          <Text style={styles.headerTitle}>{getHeaderNameForMetric(metricKey)}</Text>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>{getHeaderNameForMetric(metricKey)}</Text>
+          </View>
+          <View style={styles.rightContainer} />
         </View>
-
+        <View style={styles.shadowLine} />
       </View>
 
       {/* Content */}
@@ -1680,9 +1685,45 @@ export default function MetricDetailScreen(): React.JSX.Element {
         {(() => {
           const conditionName = getConditionNameForMetric(metricKey);
 
-          // Don't show mask image for perceived eye age
-          if (metricKey === 'eyeAge') {
-            return null;
+          // Header with description only for age metrics - no image
+          if (metricKey === 'eyeAge' || metricKey === 'perceivedAge') {
+            const actualAge = calculateActualAge(profile?.birth_date);
+            const latestScore = Number(metricValue);
+            const tagColor = getAgeComparisonColor(latestScore, actualAge);
+            let changeArrow = '→';
+            let changeAbs = 0;
+
+            if (Array.isArray(trendScores) && trendScores.length >= 2) {
+              const lastIdx = trendScores.length - 1;
+              const s0 = Number(trendScores[lastIdx]?.skin_condition_score ?? trendScores[lastIdx]?.score ?? latestScore);
+              const s1 = Number(trendScores[lastIdx - 1]?.skin_condition_score ?? trendScores[lastIdx - 1]?.score ?? latestScore);
+              const diff = s0 - s1;
+              changeAbs = Math.abs(Math.round(diff));
+              changeArrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+            }
+
+            return (
+              <View style={{ marginHorizontal: 16, marginTop: spacing.xxl }}>
+                <View style={styles.metricCardRow}>
+                  <View style={styles.maskContentRight}>
+                    <Text style={styles.smartContextText}>
+                      {getSmartContextText(metricValue, metricKey, currentConcernDetails)}
+                    </Text>
+                    <View style={styles.scoreRowContainer}>
+                      <View style={styles.combinedScoreChip}>
+                        <View style={styles.changeInfo}>
+                          <Text style={styles.changeText}>{changeArrow}{changeAbs} Today</Text>
+                        </View>
+                        <View style={styles.scoreInfo}>
+                          <View style={[styles.analysisDot, { backgroundColor: tagColor }]} />
+                          <Text style={styles.scoreText}>{Number.isFinite(Number(metricValue)) ? Number(metricValue) : '--'}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            );
           }
 
           // Check if we have mask images data - use fetched mask images
@@ -1738,7 +1779,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
             console.log('🔵 changeArrow:', changeArrow);
 
             return (
-              <View style={{ marginHorizontal: 16 }}>
+              <View style={{ marginHorizontal: 16, marginTop: spacing.xxl }}>
                 <View style={styles.metricCardRow}>
                   <View style={styles.maskImageContainer}>
                     <Image
@@ -1756,8 +1797,9 @@ export default function MetricDetailScreen(): React.JSX.Element {
                     />
                     {backgroundImageLoading && (
                       <View style={styles.imageLoadingContainer}>
-                        <ActivityIndicator size="large" color={colors.primary} />
-                        <Text style={styles.loadingText}>Loading image...</Text>
+                        <SkeletonPlaceholder borderRadius={12}>
+                          <SkeletonPlaceholder.Item width={150} height={150} />
+                        </SkeletonPlaceholder>
                       </View>
                     )}
                     {maskImageData?.mask_img_url && (
@@ -1826,7 +1868,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
 
         {/* Content Section: Overview or Age Guidance */}
-        <View style={styles.contentSectionContainer}>
+        {/* <View style={styles.contentSectionContainer}>
 
           <>
             <Text style={styles.contentSectionTitle}>Overview</Text>
@@ -1835,19 +1877,19 @@ export default function MetricDetailScreen(): React.JSX.Element {
             </Text>
           </>
 
-        </View>
+        </View> */}
 
         {/* Skin Type Details Section */}
-        {metricKey === 'skinType' && currentConcernDetails?.typeDescriptions && (
+        {/* {metricKey === 'skinType' && currentConcernDetails?.typeDescriptions && (
           <View style={styles.contentSectionContainer}>
             <Text style={styles.contentSectionTitle}>Skin Type Details</Text>
             <View style={styles.descriptionCard}>
               {currentConcernDetails?.typeDescriptions[metricValue] && (
                 <>
                   <View style={styles.descriptionHeader}>
-                    {/* <View style={styles.descriptionIconContainer}>
+                    <View style={styles.descriptionIconContainer}>
                       <Droplets size={20} color={colors.primary} />
-                    </View> */}
+                    </View>
                     <Text style={styles.descriptionTitle}>{metricValue}</Text>
                   </View>
                   <Text style={styles.descriptionText}>
@@ -1885,7 +1927,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
               )}
             </View>
           </View>
-        )}
+        )} */}
 
         {/* Skin Tone Details Section */}
         {metricKey === 'skinTone' && currentConcernDetails?.toneDescriptions && (
@@ -2061,6 +2103,17 @@ export default function MetricDetailScreen(): React.JSX.Element {
           </>
         )}
 
+        <View style={[styles.ingredientCard, { marginHorizontal: 20 }]}>
+
+          <>
+            <Text style={styles.cardHeaderTitle}>About {getHeaderNameForMetric(metricKey)}</Text>
+            <Text style={[styles.cardHeaderSubtitle, { marginTop: spacing.sm }]}>
+              {currentConcernDetails ? currentConcernDetails.overview : 'Loading overview...'}
+            </Text>
+          </>
+
+        </View>
+
         {/* Space at bottom for better scrolling */}
         <View style={{ height: 40 }} />
       </ScrollView>
@@ -2081,27 +2134,91 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAFAF9',
   },
+  // header: {
+  //   flexDirection: 'row',
+  //   justifyContent: 'space-between',
+  //   alignItems: 'center',
+  //   paddingHorizontal: 16,
+  //   paddingVertical: 12,
+  //   borderBottomWidth: 1,
+  //   borderBottomColor: '#eee',
+  // },
+  // headerLeft: {
+  //   flexDirection: 'row',
+  //   alignItems: 'center',
+  // },
+  // backButton: {
+  //   paddingRight: 10,
+  //   paddingVertical: 4,
+  // },
+  // headerTitle: {
+  //   fontSize: 18,
+  //   fontWeight: '600',
+  //   color: '#000',
+  // },
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    height: 105,
+    backgroundColor: colors.background,
+    borderBottomWidth: 0.4,
+    justifyContent: 'flex-end',
+    borderBottomColor: '#E5E5E5',
+  },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  headerLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    backgroundColor: colors.background,
+    paddingBottom: 10,
+    paddingHorizontal: spacing.lg,
   },
   backButton: {
-    paddingRight: 10,
-    paddingVertical: 4,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#000',
+    fontSize: 20,
+    fontWeight: '500',
+    color: colors.textPrimary,
+  },
+  rightContainer: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shadowLine: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.primary,
+    opacity: 0.1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   trackButton: {
     padding: 4,
@@ -2337,7 +2454,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   adviceItem: {
-    marginBottom: 16,
+    // marginBottom: 16,
     marginHorizontal: 10,
     padding: 12,
     borderRadius: 8,
@@ -3253,11 +3370,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
     fontFamily: fontFamily.bold,
-    color: '#1C1917',
+    color: '#44403C',
   },
   cardHeaderSubtitle: {
     fontSize: 13,
-    color: '#78716C',
+    color: '#4B5565',
     marginTop: 2,
   },
   ingredientRow: {

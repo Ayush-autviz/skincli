@@ -273,10 +273,26 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
 
         setIsSaving(true);
 
+        console.log('treatment apiItemData', {
+            name: selectedSubcategory.name,
+            type: selectedCategory.name,
+            concern: selectedConcerns,
+            frequency: formatFrequencyForApi(frequency),
+            treatment_date: treatmentDate.toISOString().split('T')[0],
+            extra: {
+                dateCreated: new Date().toISOString(),
+                treatmentDate: treatmentDate.toISOString(),
+                category: selectedCategory.name,
+                subcategory: selectedSubcategory.name,
+                frequency: frequency,
+            },
+        });
+
+
         try {
             const apiItemData: any = {
                 name: selectedSubcategory.name,
-                type: selectedCategory.apiType,
+                type: selectedCategory.name,
                 concern: selectedConcerns,
                 frequency: formatFrequencyForApi(frequency),
                 treatment_date: treatmentDate.toISOString().split('T')[0],
@@ -404,11 +420,11 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                                     About {selectedSubcategory.name}
                                 </Text>
                             </View>
-                 
-                                <Text style={styles.infoCardDescription}>
-                                    {selectedSubcategory.description}
-                                </Text>
-                   
+
+                            <Text style={styles.infoCardDescription}>
+                                {selectedSubcategory.description}
+                            </Text>
+
                         </TouchableOpacity>
 
                         {/* Concerns */}
@@ -594,9 +610,9 @@ const styles = StyleSheet.create({
         gap: 10,
     },
     categoryCard: {
-        paddingVertical: 14,
+        paddingVertical: 12,
         paddingHorizontal: 16,
-        borderRadius: 12,
+        borderRadius: 16,
         backgroundColor: '#F5F5F4',
         borderWidth: 1.5,
         borderColor: '#E7E5E4',

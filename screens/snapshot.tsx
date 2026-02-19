@@ -620,7 +620,7 @@ const SnapshotScreen = (): React.JSX.Element => {
     : [];
 
   return (
-    <View style={[styles.container, { paddingTop: insets.top }]}>
+    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#FFFFFF' }]}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* ===== Header ===== */}

@@ -208,9 +208,9 @@ export default function AboutMeScreen(): React.JSX.Element {
                 )}
             </View>
 
-            <TouchableOpacity onPress={handleLogout}>
+            {/* <TouchableOpacity onPress={handleLogout}>
                 <Text style={{ color: '#000000' }}>Logout</Text>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
             {/* Tab Bar */}
             <View style={styles.tabBar}>
                 <TouchableOpacity

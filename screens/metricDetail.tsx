@@ -623,7 +623,9 @@ const getConditionNameForMetric = (metricKey: string) => {
     'translucencyScore': 'translucency',
     'pigmentationScore': 'pigmentation',
     'uniformnessScore': 'uniformness',
-    'eyeAreaCondition': 'eye_bags'
+    'eyeAreaCondition': 'eye_bags',
+    'skinTone': 'skin_tone',
+    'skinType': 'skin_type'
   };
 
   return mapping[metricKey] || null;
@@ -1386,6 +1388,27 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
   // Helper function to get smart context text using scoreLevels when available
   const getSmartContextText = (metricValue: string | number, metricKey: string, currentConcernDetails: ConcernDetail | null): string => {
+    // Special handling for categorical metrics
+    if (metricKey === 'skinType' || metricKey === 'skinTone') {
+      if (currentConcernDetails) {
+        // Try scoreLevels first (consistent with new structure)
+        if (currentConcernDetails.scoreLevels && (currentConcernDetails.scoreLevels as any)[metricValue]) {
+          return (currentConcernDetails.scoreLevels as any)[metricValue].text;
+        }
+
+        // Fallback to typeDescriptions for skinType
+        if (metricKey === 'skinType' && (currentConcernDetails as any).typeDescriptions && (currentConcernDetails as any).typeDescriptions[metricValue]) {
+          return (currentConcernDetails as any).typeDescriptions[metricValue].description;
+        }
+
+        // Fallback to toneDescriptions for skinTone
+        if (metricKey === 'skinTone' && (currentConcernDetails as any).toneDescriptions && (currentConcernDetails as any).toneDescriptions[metricValue]) {
+          return (currentConcernDetails as any).toneDescriptions[metricValue].description;
+        }
+      }
+      return currentConcernDetails?.contextText || `Your skin is classified as ${metricValue}.`;
+    }
+
     if (!Number.isFinite(Number(metricValue))) {
       return 'No measurement available for this metric.';
     }
@@ -1408,12 +1431,35 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
   // Helper function to get the level name and styling from scoreLevels
   const getScoreLevelInfo = (metricValue: string | number, currentConcernDetails: ConcernDetail | null): { levelName: string; color: string; bg: string; } => {
-    if (!currentConcernDetails || !currentConcernDetails.scoreLevels || !Number.isFinite(Number(metricValue))) {
-      // Fallback to the old system for backward compatibility
-      const numericValue = Number(metricValue);
-      if (numericValue >= 70) return { levelName: 'Good', color: '#2e7d32', bg: '#e6f4ea' };
-      if (numericValue >= 50) return { levelName: 'Fair', color: '#f57c00', bg: '#fff8e1' };
-      return { levelName: 'Poor', color: '#c62828', bg: '#fdecea' };
+    if (!currentConcernDetails || !currentConcernDetails.scoreLevels) {
+      return { levelName: 'Unknown', color: '#666', bg: '#f5f5f5' };
+    }
+
+    // Check if it's a categorical value in scoreLevels
+    if (typeof metricValue === 'string' && (currentConcernDetails.scoreLevels as any)[metricValue]) {
+      const levelData = (currentConcernDetails.scoreLevels as any)[metricValue];
+      let color = '#666', bg = '#f5f5f5';
+      const lowerValue = metricValue.toLowerCase();
+
+      // Assign colors based on common skin type/tone categories
+      if (lowerValue.includes('normal') || lowerValue.includes('balanced')) {
+        color = '#2e7d32'; bg = '#e6f4ea';
+      } else if (lowerValue.includes('oily') || lowerValue.includes('dry')) {
+        color = '#f57c00'; bg = '#fff8e1';
+      } else if (lowerValue.includes('combination') || lowerValue.includes('sensitive')) {
+        color = '#d84315'; bg = '#ffebe9';
+      }
+
+      return {
+        levelName: metricValue,
+        color,
+        bg
+      };
+    }
+
+    if (!Number.isFinite(Number(metricValue))) {
+      // Fallback for non-numeric values that didn't match a category
+      return { levelName: String(metricValue), color: '#666', bg: '#f5f5f5' };
     }
 
     const numericValue = Number(metricValue);
@@ -1685,15 +1731,21 @@ export default function MetricDetailScreen(): React.JSX.Element {
         {(() => {
           const conditionName = getConditionNameForMetric(metricKey);
 
-          // Header with description only for age metrics - no image
-          if (metricKey === 'eyeAge' || metricKey === 'perceivedAge') {
+          // Header with description only for age metrics and profile metrics - no image
+          if (metricKey === 'eyeAge' || metricKey === 'perceivedAge' || metricKey === 'skinType' || metricKey === 'skinTone') {
+            const isCategorical = metricKey === 'skinType' || metricKey === 'skinTone';
             const actualAge = calculateActualAge(profile?.birth_date);
-            const latestScore = Number(metricValue);
-            const tagColor = getAgeComparisonColor(latestScore, actualAge);
+            const latestScore = isCategorical ? metricValue : Number(metricValue);
+
+            // Get color and level info
+            const scoreLevelInfo = getScoreLevelInfo(metricValue, currentConcernDetails);
+            const tagColor = isCategorical ? scoreLevelInfo.color : getAgeComparisonColor(Number(latestScore), actualAge);
+
             let changeArrow = '→';
             let changeAbs = 0;
+            let showChange = !isCategorical;
 
-            if (Array.isArray(trendScores) && trendScores.length >= 2) {
+            if (!isCategorical && Array.isArray(trendScores) && trendScores.length >= 2) {
               const lastIdx = trendScores.length - 1;
               const s0 = Number(trendScores[lastIdx]?.skin_condition_score ?? trendScores[lastIdx]?.score ?? latestScore);
               const s1 = Number(trendScores[lastIdx - 1]?.skin_condition_score ?? trendScores[lastIdx - 1]?.score ?? latestScore);
@@ -1711,12 +1763,14 @@ export default function MetricDetailScreen(): React.JSX.Element {
                     </Text>
                     <View style={styles.scoreRowContainer}>
                       <View style={styles.combinedScoreChip}>
-                        <View style={styles.changeInfo}>
-                          <Text style={styles.changeText}>{changeArrow}{changeAbs} Today</Text>
-                        </View>
+                        {showChange && (
+                          <View style={styles.changeInfo}>
+                            <Text style={styles.changeText}>{changeArrow}{changeAbs} Today</Text>
+                          </View>
+                        )}
                         <View style={styles.scoreInfo}>
                           <View style={[styles.analysisDot, { backgroundColor: tagColor }]} />
-                          <Text style={styles.scoreText}>{Number.isFinite(Number(metricValue)) ? Number(metricValue) : '--'}</Text>
+                          <Text style={styles.scoreText}>{isCategorical ? latestScore : (Number.isFinite(Number(metricValue)) ? Number(metricValue) : '--')}</Text>
                         </View>
                       </View>
                     </View>

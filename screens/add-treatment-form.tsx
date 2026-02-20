@@ -19,6 +19,7 @@ interface TreatmentSubcategory {
     name: string;
     description: string;
     concerns: string[];
+    metricNames: string[];
 }
 
 interface TreatmentCategory {
@@ -45,6 +46,10 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Neck lines',
                     'Lines around lips',
                 ],
+                metricNames: [
+                    'Lines',
+                    'Eye Area Condition'
+                ]
             },
             {
                 name: 'Hyaluronic Acid Dermal Fillers',
@@ -58,6 +63,9 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Facial contour concerns',
                     'Acne scars',
                 ],
+                metricNames: [
+                    'Lines',
+                ]
             },
             {
                 name: 'Biostimulatory Dermal Fillers',
@@ -68,6 +76,9 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Deeper facial folds',
                     'Contour support',
                 ],
+                metricNames: [
+                    'Lines',
+                ]
             },
             {
                 name: 'Permanent Dermal Fillers',
@@ -78,6 +89,9 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Deeper facial folds',
                     'Contour support',
                 ],
+                metricNames: [
+                    'Lines',
+                ]
             },
         ],
     },
@@ -90,12 +104,20 @@ const treatmentCategories: TreatmentCategory[] = [
                 description:
                     'Superficial microneedling involves shallow needle penetration limited to the upper layers of the skin. Intended to support skin texture, tone, and product absorption with little to no downtime.',
                 concerns: ['Skin refresh'],
+                metricNames: [
+                    'Evenness',
+                    'Visible Pores'
+                ]
             },
             {
                 name: 'Medical Microneedling',
                 description:
                     'Uses greater needle depths to reach the dermis. Intended to stimulate collagen and elastin production for concerns such as acne scarring, deeper wrinkles, or skin laxity.',
                 concerns: ['Acne scars', 'Fine lines', 'Mild laxity'],
+                metricNames: [
+                    'Evenness',
+                    'Visible Pores'
+                ]
             },
             {
                 name: 'Superficial Chemical Peels',
@@ -107,6 +129,10 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Mild acne',
                     'Fine lines',
                 ],
+                metricNames: [
+                    'Evenness',
+                    'Breakouts'
+                ]
             },
             {
                 name: 'Medium-Depth Chemical Peels',
@@ -119,6 +145,9 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Acne scarring',
                     'Fine lines',
                 ],
+                metricNames: [
+                    'Evenness',
+                ]
             },
             {
                 name: 'Deep Chemical Peels',
@@ -132,12 +161,18 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Dullness',
                     'Deep lines',
                 ],
+                metricNames: [
+                    'Evenness',
+                ]
             },
             {
                 name: 'Microdermabrasion',
                 description:
                     'A non-invasive exfoliating treatment that gently removes the outermost layer of dead skin cells to improve brightness, smoothness, and texture.',
                 concerns: ['Dull skin', 'Rough texture', 'Congestion'],
+                metricNames: [
+                    'Evenness',
+                ]
             },
         ],
     },
@@ -155,6 +190,10 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Redness',
                     'Broken capillaries',
                 ],
+                metricNames: [
+                    'Evenness',
+                    'Pigmentation'
+                ]
             },
             {
                 name: 'Laser Resurfacing',
@@ -167,6 +206,10 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Texture',
                     'Skin tightening',
                 ],
+                metricNames: [
+                    'Lines',
+                    'Evenness'
+                ]
             },
             {
                 name: 'LED Light Therapy',
@@ -178,6 +221,9 @@ const treatmentCategories: TreatmentCategory[] = [
                     'Inflammation',
                     'Collagen stimulation',
                 ],
+                metricNames: [
+                    'Redness',
+                ]
             },
         ],
     },
@@ -223,14 +269,6 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
         setTimeout(() => scrollRef.current?.scrollTo({ y: 400, animated: true }), 200);
     };
 
-    const handleConcernToggle = (concern: string) => {
-        setSelectedConcerns(prev => {
-            if (prev.includes(concern)) {
-                return prev.filter(c => c !== concern);
-            }
-            return [...prev, concern];
-        });
-    };
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
         setShowDatePicker(false);
@@ -266,34 +304,20 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
             Alert.alert('Missing Information', 'Please select a treatment type.');
             return;
         }
-        if (selectedConcerns.length === 0) {
-            Alert.alert('Missing Information', 'Please select at least one concern.');
-            return;
-        }
+        // if (selectedConcerns.length === 0) {
+        //     Alert.alert('Missing Information', 'Please select at least one concern.');
+        //     return;
+        // }
 
         setIsSaving(true);
-
-        console.log('treatment apiItemData', {
-            name: selectedSubcategory.name,
-            type: selectedCategory.name,
-            concern: selectedConcerns,
-            frequency: formatFrequencyForApi(frequency),
-            treatment_date: treatmentDate.toISOString().split('T')[0],
-            extra: {
-                dateCreated: new Date().toISOString(),
-                treatmentDate: treatmentDate.toISOString(),
-                category: selectedCategory.name,
-                subcategory: selectedSubcategory.name,
-                frequency: frequency,
-            },
-        });
 
 
         try {
             const apiItemData: any = {
                 name: selectedSubcategory.name,
                 type: selectedCategory.name,
-                concern: selectedConcerns,
+                // concern: selectedConcerns,
+                concern: selectedSubcategory.metricNames,
                 frequency: formatFrequencyForApi(frequency),
                 treatment_date: treatmentDate.toISOString().split('T')[0],
                 extra: {
@@ -324,7 +348,7 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
     };
 
     const canSave =
-        selectedCategory && selectedSubcategory && selectedConcerns.length > 0;
+        selectedCategory && selectedSubcategory
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
@@ -429,28 +453,38 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
 
                         {/* Concerns */}
                         <Text style={styles.sectionTitle}>What concerns are you addressing?</Text>
-                        <Text style={styles.subTitle}>Select all that apply</Text>
+                        {/* <Text style={styles.subTitle}>Select all that apply</Text> */}
                         <View style={styles.chipsContainer}>
                             {selectedSubcategory.concerns.map(concern => (
-                                <TouchableOpacity
+                                <View
                                     key={concern}
-                                    style={[
-                                        styles.chip,
-                                        selectedConcerns.includes(concern) && styles.selectedChip,
-                                    ]}
-                                    onPress={() => handleConcernToggle(concern)}
+                                    style={styles.chip}
                                 >
-                                    <Text
-                                        style={[
-                                            styles.chipText,
-                                            selectedConcerns.includes(concern) && styles.selectedChipText,
-                                        ]}
-                                    >
+                                    <Text style={styles.chipText}>
                                         {concern}
                                     </Text>
-                                </TouchableOpacity>
+                                </View>
                             ))}
                         </View>
+
+                        {/* Metric Names */}
+                        {selectedSubcategory.metricNames && selectedSubcategory.metricNames.length > 0 && (
+                            <>
+                                <Text style={styles.sectionTitle}>Metrics addressed</Text>
+                                <View style={styles.chipsContainer}>
+                                    {selectedSubcategory.metricNames.map(metric => (
+                                        <View
+                                            key={metric}
+                                            style={styles.chip}
+                                        >
+                                            <Text style={styles.chipText}>
+                                                {metric}
+                                            </Text>
+                                        </View>
+                                    ))}
+                                </View>
+                            </>
+                        )}
 
                         {/* Frequency */}
                         <Text style={styles.sectionTitle}>How often?</Text>

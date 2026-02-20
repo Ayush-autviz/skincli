@@ -955,25 +955,32 @@ const styles = StyleSheet.create({
   },
   profileRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    // alignItems: 'center',
     justifyContent: 'space-between',
-    gap: 8,
+    flexWrap: 'wrap',
+    // gap: 8,
   },
   profileItem: {
-    flex: 1,
-    alignItems: 'center',
+    // flex: 1,
+    // alignItems: 'center',
+    width: '48%',
+    marginBottom: 12,
+    backgroundColor: '#F5F5F5',
+    padding: 6,
+    borderRadius: 8,
   },
   profileItemBorder: {
     borderRightWidth: 1,
     borderRightColor: '#F3F4F6',
   },
   profileLabel: {
-    fontSize: 11,
+    fontSize: 13,
     color: '#A9A29D',
     marginBottom: 6,
     fontWeight: '600',
     textTransform: 'capitalize',
     fontFamily: 'Inter-Medium',
+    textAlign: 'center',
   },
   profileValue: {
     fontSize: 15,
@@ -1182,12 +1189,12 @@ const styles = StyleSheet.create({
     gap: 2,
   },
   profileValueContainer: {
-    backgroundColor: '#F5F5F5',
-    borderRadius: 6,
+    // backgroundColor: '#F5F5F5',
+    // borderRadius: 6,
     width: "100%",
     justifyContent: "center",
     alignItems: "center",
-    height: 40,
+    // height: 40,
   },
 });
 

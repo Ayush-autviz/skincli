@@ -35,7 +35,7 @@ type TabType = 'photos' | 'activity';
 
 export default function AboutMeScreen(): React.JSX.Element {
     const navigation = useNavigation();
-    const { user, profile, setProfile } = useAuthStore();
+    const { user, profile, setProfile, logout } = useAuthStore();
     const { photos, isLoading: isPhotosLoading, refreshPhotos, loadMorePhotos, pagination, isLoadingMore } = usePhotoContext();
     const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
     const [isProfileLoading, setIsProfileLoading] = useState<boolean>(false);
@@ -127,6 +127,23 @@ export default function AboutMeScreen(): React.JSX.Element {
         );
     };
 
+    const handleLogout = () => {
+        try {
+            logout();
+
+            const delay = true ? 100 : 300;
+            setTimeout(() => {
+                if (navigation && typeof (navigation as any).navigate === 'function') {
+                    (navigation as any).navigate('SignIn');
+                } else {
+                    console.error('🔴 [SettingsDrawer] Navigation not available for sign out');
+                }
+            }, delay);
+        } catch (error) {
+            console.error('🔴 [SettingsDrawer] Error during sign out:', error);
+        }
+    };
+
 
 
     return (
@@ -191,6 +208,9 @@ export default function AboutMeScreen(): React.JSX.Element {
                 )}
             </View>
 
+            <TouchableOpacity onPress={handleLogout}>
+                <Text style={{ color: '#000000' }}>Logout</Text>
+            </TouchableOpacity>
             {/* Tab Bar */}
             <View style={styles.tabBar}>
                 <TouchableOpacity
@@ -246,7 +266,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                         showsVerticalScrollIndicator={false}
                         onEndReached={handleLoadMore}
                         onEndReachedThreshold={0.5}
-                        //ListFooterComponent={renderFooter}
+                    //ListFooterComponent={renderFooter}
                     />
                 )
             ) : (
@@ -409,9 +429,10 @@ const styles = StyleSheet.create({
     // Empty State
     emptyContainer: {
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: 'flex-start',
         alignItems: 'center',
         paddingHorizontal: spacing.xl,
+        paddingTop: 150,
     },
     emptyText: {
         fontSize: 18,

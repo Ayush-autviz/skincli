@@ -29,9 +29,10 @@ import {
 } from 'react-native';
 import { KeyboardAwareScrollView } from 'react-native-keyboard-aware-scroll-view';
 import { useNavigation } from '@react-navigation/native';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
+import { Mail, Lock, Eye, EyeOff, Search } from 'lucide-react-native';
 import { signIn } from '../utils/newApiService';
 import useAuthStore from '../stores/authStore';
+import { SvgXml } from 'react-native-svg';
 
 export default function SignIn(): React.JSX.Element {
   const [email, setEmail] = useState<string>('');
@@ -39,7 +40,7 @@ export default function SignIn(): React.JSX.Element {
   const [showPassword, setShowPassword] = useState<boolean>(false);
   const [error, setError] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  
+
   const navigation = useNavigation();
   const { setUser, setTokens, setProfileStatus, setLoading: setStoreLoading } = useAuthStore();
   const passwordRef = useRef<TextInput>(null);
@@ -61,13 +62,13 @@ export default function SignIn(): React.JSX.Element {
       setError('Please enter a valid email address');
       return;
     }
-    
+
     setError('');
     setIsLoading(true);
-    
+
     try {
       const result = await signIn({ email: email.toLowerCase().trim(), password });
-      
+
       if ((result as any).success) {
         setUser((result as any).user);
         setTokens((result as any).access_token, (result as any).refresh_token);
@@ -81,6 +82,27 @@ export default function SignIn(): React.JSX.Element {
     }
   };
 
+  const magicIcon = `
+<svg width="80" height="80" viewBox="0 0 80 80" fill="none" xmlns="http://www.w3.org/2000/svg">
+<mask id="mask0_18813_20448" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="0" y="0" width="80" height="80">
+<circle cx="40" cy="40" r="40" fill="white"/>
+</mask>
+<g mask="url(#mask0_18813_20448)">
+<mask id="mask1_18813_20448" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="2" y="38" width="79" height="34">
+<rect x="2.47915" y="38.8075" width="77.7489" height="31.8929" fill="#D9D9D9" stroke="#0498B3" stroke-width="0.798147"/>
+</mask>
+<g mask="url(#mask1_18813_20448)">
+<circle cx="39.7669" cy="37.9678" r="29.023" stroke="#0498B3" stroke-width="3.99074"/>
+</g>
+<circle cx="39.7641" cy="37.9687" r="22.9482" stroke="#0498B3" stroke-width="3.99074"/>
+<line x1="63.6411" y1="38.3703" x2="69.6982" y2="38.3703" stroke="#0498B3" stroke-width="3.99074" stroke-linecap="round"/>
+<line x1="9.22364" y1="38.3703" x2="15.731" y2="38.3703" stroke="#0498B3" stroke-width="3.99074" stroke-linecap="round"/>
+<line x1="40.2893" y1="66.8212" x2="40.2893" y2="82.8351" stroke="#0498B3" stroke-width="3.99074"/>
+<line x1="40.5586" y1="74.2447" x2="40.5586" y2="80.1182" stroke="#0498B3" stroke-width="7.98147" stroke-linecap="round"/>
+</g>
+</svg>
+`
+
   return (
     <View style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
@@ -90,125 +112,113 @@ export default function SignIn(): React.JSX.Element {
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
-        bounces={false}
+        bounces={true}
         enableOnAndroid={true}
         extraScrollHeight={20}
         enableResetScrollToCoords={false}
       >
-        {/* Header Image */}
-        <View style={styles.imageContainer}>
-          <Image
-            source={require('../assets/images/auth.png')}
-            style={styles.headerImage}
-            resizeMode="cover"
-            accessibilityLabel="Sign in illustration"
-          />
-        </View>
-            <View style={styles.formContainer}>
-              <View style={styles.formHeader}>
-                <Text style={styles.title}>Sign in</Text>
-                <View style={styles.titleUnderline} />
-              </View>
+        <SafeAreaView style={styles.safeArea}>
+          {/* Logo Section */}
+          <View style={styles.logoSection}>
+            <View style={styles.logoCircle}>
+              <SvgXml xml={magicIcon} width={100} height={100} />
+            </View>
+            <Text style={styles.welcomeBack}>Welcome back!</Text>
+            <Text style={styles.subText}>Please enter your details.</Text>
+          </View>
 
-              {error ? (
-                <View style={styles.errorContainer}>
-                  <Text style={styles.errorText} accessibilityRole="alert">
-                    {error}
-                  </Text>
-                </View>
-              ) : <View style={{height: 65}} />}
-              
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Email</Text>
-                <View style={styles.inputWrapper}>
-                  <Mail size={20} color="#9CA3AF" style={styles.inputIcon} />
-                  <TextInput
-                    style={styles.input}
-                    placeholder="demo@email.com"
-                    value={email}
-                    onChangeText={setEmail}
-                    autoCapitalize="none"
-                    keyboardType="email-address"
-                    placeholderTextColor="#9CA3AF"
-                    returnKeyType="next"
-                    onSubmitEditing={() => passwordRef.current?.focus()}
-                    accessibilityLabel="Email input"
-                    accessibilityHint="Enter your email address"
-                    autoComplete="email"
-                    textContentType="emailAddress"
-                  />
-                </View>
+          <View style={styles.formContainer}>
+            {error ? (
+              <View style={styles.errorContainer}>
+                <Text style={styles.errorText} accessibilityRole="alert">
+                  {error}
+                </Text>
               </View>
-              
-              <View style={styles.inputContainer}>
-                <Text style={styles.label}>Password</Text>
-                <View style={styles.inputWrapper}>
-                  <Lock size={20} color="#9CA3AF" style={styles.inputIcon} />
-                  <TextInput
-                    ref={passwordRef}
-                    style={styles.input}
-                    placeholder="Enter your password"
-                    value={password}
-                    onChangeText={setPassword}
-                    secureTextEntry={!showPassword}
-                    placeholderTextColor="#9CA3AF"
-                    returnKeyType="done"
-                    onSubmitEditing={handleSignIn}
-                    autoComplete="current-password"
-                    textContentType="password"
-                    accessibilityLabel="Password input"
-                    accessibilityHint="Enter your password"
-                  />
-                  <TouchableOpacity
-                    onPress={() => setShowPassword(!showPassword)}
-                    style={styles.eyeIcon}
-                    accessibilityLabel={showPassword ? "Hide password" : "Show password"}
-                    accessibilityRole="button"
-                  >
-                    {showPassword ? (
-                      <EyeOff size={20} color="#9CA3AF" />
-                    ) : (
-                      <Eye size={20} color="#9CA3AF" />
-                    )}
-                  </TouchableOpacity>
-                </View>
+            ) : null}
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Email</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter email"
+                  value={email}
+                  onChangeText={setEmail}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  placeholderTextColor="#9CA3AF"
+                  returnKeyType="next"
+                  onSubmitEditing={() => passwordRef.current?.focus()}
+                  accessibilityLabel="Email input"
+                  autoComplete="email"
+                  textContentType="emailAddress"
+                />
               </View>
-              
-              <TouchableOpacity 
-                style={styles.forgotPasswordContainer}
-                accessibilityRole="link"
-                onPress={() => (navigation as any).navigate('ForgotPassword')}
-              >
-                <Text style={styles.forgotPasswordText}>
-                  Forgot Password?
-                </Text>
-              </TouchableOpacity>
+            </View>
 
-              <TouchableOpacity 
-                style={[styles.signInButton, isLoading && styles.signInButtonDisabled]}
-                onPress={handleSignIn}
-                disabled={isLoading}
-                accessibilityLabel={isLoading ? "Signing in" : "Sign in"}
-              >
-                <Text style={styles.signInButtonText}>
-                  {isLoading ? 'Signing in...' : 'Sign In'}
-                </Text>
-              </TouchableOpacity>
-
-              <View style={styles.signUpContainer}>
-                <Text style={styles.signUpText}>
-                  Don't have an Account!{' '}
-                </Text>
-                <TouchableOpacity 
-                  accessibilityRole="link"
-                  onPress={() => (navigation as any).navigate('SignUp')}
+            <View style={styles.inputContainer}>
+              <Text style={styles.label}>Password</Text>
+              <View style={styles.inputWrapper}>
+                <TextInput
+                  ref={passwordRef}
+                  style={styles.input}
+                  placeholder="••••••••"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  placeholderTextColor="#9CA3AF"
+                  returnKeyType="done"
+                  onSubmitEditing={handleSignIn}
+                  autoComplete="current-password"
+                  textContentType="password"
+                  accessibilityLabel="Password input"
+                />
+                <TouchableOpacity
+                  onPress={() => setShowPassword(!showPassword)}
+                  style={styles.eyeIcon}
                 >
-                  <Text style={styles.signUpLink}>
-                    Sign up
-                  </Text>
+                  {showPassword ? (
+                    <EyeOff size={20} color="#9CA3AF" />
+                  ) : (
+                    <Eye size={20} color="#9CA3AF" />
+                  )}
                 </TouchableOpacity>
               </View>
-        </View>
+            </View>
+
+            <TouchableOpacity
+              style={styles.forgotPasswordContainer}
+              onPress={() => (navigation as any).navigate('ForgotPassword')}
+            >
+              <Text style={styles.forgotPasswordText}>
+                Forgot password
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={[styles.signInButton, isLoading && styles.signInButtonDisabled]}
+              onPress={handleSignIn}
+              disabled={isLoading}
+            >
+              <Text style={styles.signInButtonText}>
+                {isLoading ? 'Signing in...' : 'Sign in'}
+              </Text>
+            </TouchableOpacity>
+
+            <View style={styles.signUpContainer}>
+              <Text style={styles.signUpText}>
+                Don’t have an account?{' '}
+              </Text>
+              <TouchableOpacity
+                onPress={() => (navigation as any).navigate('SignUp')}
+              >
+                <Text style={styles.signUpLink}>
+                  Sign up
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </SafeAreaView>
       </KeyboardAwareScrollView>
     </View>
   );
@@ -221,142 +231,133 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
   },
   scrollContent: {
     flexGrow: 1,
+    paddingBottom: 40,
   },
-  imageContainer: {
-    width: '100%',
-    height: 250,
+  safeArea: {
+    flex: 1,
+  },
+  logoSection: {
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 30,
+  },
+  logoCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
     backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+    marginBottom: 40,
   },
-  headerImage: {
-    width: '100%',
-    height: '100%',
-  },
-  formContainer: {
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 30,
-    paddingTop: 20,
-    paddingBottom: 50,
-  },
-  formHeader: {
-    marginBottom: 20,
-    alignItems: 'flex-start',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: '600',
-    color: '#1F2937',
+  welcomeBack: {
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#111827',
     marginBottom: 8,
   },
-  titleUnderline: {
-    width: 60,
-    height: 3,
-    backgroundColor: '#8B7355',
-    borderRadius: 2,
+  subText: {
+    fontSize: 16,
+    color: '#6B7280',
+    fontWeight: '400',
+  },
+  formContainer: {
+    paddingHorizontal: 24,
+    marginTop: 20,
   },
   errorContainer: {
-    marginBottom: 20, 
-    backgroundColor: '#FFE5E5',
+    marginBottom: 20,
+    backgroundColor: '#FEF2F2',
     borderRadius: 8,
     padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: '#FF6B6B',
+    borderWidth: 1,
+    borderColor: '#FEE2E2',
   },
   errorText: {
-    color: '#D73527',
+    color: '#EF4444',
     fontSize: 14,
     textAlign: 'center',
     fontWeight: '500',
   },
   inputContainer: {
-    marginBottom: 24,
+    marginBottom: 20,
   },
   label: {
-    fontSize: 16,
-    fontWeight: '500',
-    color: '#6B7280',
-    marginBottom: 12,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+    marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderBottomWidth: 1,
-    borderBottomColor: '#8B7355',
-    paddingBottom: 8,
-    minHeight: 44, // Accessibility minimum touch target
-  },
-  inputIcon: {
-    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#D1D5DB',
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    paddingHorizontal: 12,
   },
   input: {
     flex: 1,
+    height: 48,
     fontSize: 16,
-    color: '#1F2937',
-    paddingVertical: 4,
-    minHeight: 44, // Accessibility minimum touch target
+    color: '#111827',
   },
   eyeIcon: {
     padding: 8,
-    minWidth: 44, // Accessibility minimum touch target
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   forgotPasswordContainer: {
-    alignSelf: 'flex-end',
-    marginTop: 8,
-    minHeight: 24, // Accessibility minimum touch target
-    justifyContent: 'center',
+    alignSelf: 'flex-start',
+    marginTop: 4,
+    marginBottom: 24,
   },
   forgotPasswordText: {
     fontSize: 14,
-    color: '#FF6B6B',
-    fontWeight: '500',
+    color: '#08879b',
+    fontWeight: '600',
   },
   signInButton: {
-    backgroundColor: '#8B7355',
-    borderRadius: 25,
-    paddingVertical: 16,
-    marginTop: 20,
-    marginBottom: 10,
-    minHeight: 56, // Better touch target
+    backgroundColor: '#08879b',
+    borderRadius: 8,
+    height: 52,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 2, // Android shadow
-    shadowColor: '#000', // iOS shadow
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.1,
-    shadowRadius: 3.84,
+    marginBottom: 24,
   },
   signInButtonDisabled: {
     opacity: 0.7,
-    elevation: 0,
-    shadowOpacity: 0,
   },
   signInButtonText: {
     color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 16,
+    fontWeight: '700',
   },
   signUpContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    flexWrap: 'wrap',
   },
   signUpText: {
-    fontSize: 16,
-    color: '#9CA3AF',
+    fontSize: 14,
+    color: '#6B7280',
   },
   signUpLink: {
-    color: '#FF6B6B',
-    fontWeight: '500',
-    fontSize: 16,
+    color: '#08879b',
+    fontWeight: '700',
+    fontSize: 14,
   },
 });

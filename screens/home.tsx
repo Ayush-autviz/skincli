@@ -155,6 +155,9 @@ export default function HomeScreen(): React.JSX.Element {
 
         // Group existing photos by date
         photos.forEach((photo: any) => {
+            // Skip photos with empty storageUrl
+            if (!photo.storageUrl) return;
+
             const photoDate = photo.timestamp ? new Date(photo.timestamp) : new Date();
             const dateKey = format(photoDate, 'yyyy-MM-dd');
             let dateLabel = format(photoDate, 'MMM d').toUpperCase();
@@ -188,7 +191,7 @@ export default function HomeScreen(): React.JSX.Element {
     const hasPhotosForCurrentDate = currentDateGroup?.photos.length > 0;
 
     // console.log("currentPhoto", currentPhoto);
-    // console.log("currentDateGroup", currentDateGroup);
+    console.log("currentDateGroup", currentDateGroup);
 
     // Refresh photos on focus
     useFocusEffect(
@@ -258,7 +261,7 @@ export default function HomeScreen(): React.JSX.Element {
             }
 
             if (results && results.length > 0) {
-                const transformedMetrics = transformHautResults(results);
+                const transformedMetrics: any = transformHautResults(results);
 
                 // Helper function to calculate change
                 const calculateChange = (currentValue: number, previousValue: number | undefined): { change: number | null; changeText: string; changeDirection: 'up' | 'down' | 'none' } => {
@@ -511,6 +514,7 @@ export default function HomeScreen(): React.JSX.Element {
                         /* 3D Carousel for multiple photos - 3 images visible */
                         <View style={styles.carouselContainer}>
                             <Carousel
+                                key={`carousel-${currentDateGroup?.date}-${currentDateGroup?.photos?.length}`}
                                 ref={carouselRef}
                                 loop={false}
                                 width={173}
@@ -526,10 +530,11 @@ export default function HomeScreen(): React.JSX.Element {
                                 scrollAnimationDuration={300}
                                 onSnapToItem={(index) => {
                                     // Reverse the index back to match original photo array
-                                    const reversedIndex = currentDateGroup.photos.length - 1 - index;
+                                    const photosCount = currentDateGroup?.photos?.length || 0;
+                                    const reversedIndex = photosCount > 0 ? photosCount - 1 - index : 0;
                                     handleCarouselSnap(reversedIndex);
                                 }}
-                                defaultIndex={currentDateGroup.photos.length - 1 - currentPhotoInDate}
+                                defaultIndex={Math.max(0, Math.min((currentDateGroup?.photos?.length || 0) - 1, (currentDateGroup?.photos?.length || 0) - 1 - currentPhotoInDate))}
                                 renderItem={renderCarouselItem}
                             />
                         </View>

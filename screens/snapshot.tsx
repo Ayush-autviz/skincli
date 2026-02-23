@@ -766,15 +766,21 @@ const SnapshotScreen = (): React.JSX.Element => {
 
         {/* SkinCheck Card */}
         {uiState === 'complete' && (
-          <View style={styles.skinCheckCard}>
-            <Text style={styles.skinCheckTitle}>SkinCheck</Text>
-            <Text style={styles.skinCheckDescription}>
-              Dermatologist approved ingredients proven to help improve pigmentation
-            </Text>
-            <TouchableOpacity activeOpacity={0.7}>
-              <Text style={styles.skinCheckLink}>Request a SkinCheck →</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.skinCheckCard}
+            onPress={() => (navigation as any).navigate('SkinCheck')}
+            activeOpacity={0.8}
+          >
+            <View>
+              <Text style={styles.skinCheckTitle}>SkinCheck</Text>
+              <Text style={styles.skinCheckDescription}>
+                Send this scan, your scores, and your routine to your skin health professional.
+              </Text>
+            </View>
+            <View>
+              <ChevronRight size={20} color="#D7D3D0" />
+            </View>
+          </TouchableOpacity>
         )}
 
         {/* No Results State */}
@@ -1064,28 +1070,31 @@ const styles = StyleSheet.create({
 
   // SkinCheck Card
   skinCheckCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
     padding: 20,
     marginBottom: 12,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOpacity: 0.09,
+    shadowRadius: 10,
+    elevation: 3,
   },
   skinCheckTitle: {
     fontSize: 17,
     fontWeight: '700',
     color: '#44403C',
-    marginBottom: 6,
+    marginBottom: 2,
     fontFamily: 'Inter-Bold',
   },
   skinCheckDescription: {
     fontSize: 13,
     color: '#A9A29D',
-    lineHeight: 18,
-    marginBottom: 12,
+    // lineHeight: 18,
+    marginBottom: 4,
     fontFamily: 'Inter-Regular',
   },
   skinCheckLink: {

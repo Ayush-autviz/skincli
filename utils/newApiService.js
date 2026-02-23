@@ -1387,6 +1387,33 @@ export const postChatMessage = async (body) => {
 // END COMPARISON/PROGRESS API FUNCTIONS
 // -----------------------------------------------------------------------------
 
+/**
+ * Generates a report link for an expert
+ * @param {string} email - Expert's email
+ * @returns {Promise<Object>} Response data
+ */
+export const generateExpertReportLink = async (email) => {
+  try {
+    console.log("🔵 Generating expert report link for:", email);
+    const response = await apiClient.post("/expert-view/generate-report-link", {
+      expert_email: email,
+    });
+
+    if (response.data.status === 200 || response.data.status === 201) {
+      return response.data;
+    }
+
+    throw new Error(response.data.message || "Failed to generate report link");
+  } catch (error) {
+    console.error("🔴 generateExpertReportLink error:", error);
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to generate report link"
+    );
+  }
+};
+
 // -----------------------------------------------------------------------------
 // THREAD-BASED CHAT API FUNCTIONS
 // -----------------------------------------------------------------------------

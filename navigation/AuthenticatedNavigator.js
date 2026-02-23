@@ -26,6 +26,7 @@ import TrackingReviewScreen from '../screens/tracking-review';
 import FindProductScreen from '../screens/find-product';
 import AddProductFormScreen from '../screens/add-product-form';
 import AddTreatmentFormScreen from '../screens/add-treatment-form';
+import SkinCheckScreen from '../screens/skin-check';
 
 // Import auth store
 
@@ -209,6 +210,15 @@ function AuthenticatedNavigator() {
             <Stack.Screen
               name="FindProduct"
               component={FindProductScreen}
+              options={{
+                animation: 'slide_from_right',
+                headerShown: false,
+              }}
+            />
+
+            <Stack.Screen
+              name="SkinCheck"
+              component={SkinCheckScreen}
               options={{
                 animation: 'slide_from_right',
                 headerShown: false,

@@ -12,6 +12,7 @@ import {
     ActivityIndicator,
     Dimensions,
     FlatList,
+    Alert,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { User, PencilLine } from 'lucide-react-native';
@@ -36,7 +37,7 @@ type TabType = 'photos' | 'activity';
 export default function AboutMeScreen(): React.JSX.Element {
     const navigation = useNavigation();
     const { user, profile, setProfile, logout } = useAuthStore();
-    const { photos, isLoading: isPhotosLoading, refreshPhotos, loadMorePhotos, pagination, isLoadingMore } = usePhotoContext();
+    const { photos, isLoading: isPhotosLoading, refreshPhotos, loadMorePhotos, pagination, isLoadingMore, setSelectedSnapshot } = usePhotoContext();
     const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
     const [isProfileLoading, setIsProfileLoading] = useState<boolean>(false);
     const [activeTab, setActiveTab] = useState<TabType>('photos');
@@ -78,11 +79,39 @@ export default function AboutMeScreen(): React.JSX.Element {
     };
 
     const handlePhotoPress = (photo: any): void => {
+        // Convert timestamp to string if it's a date object or missing
+        let timestampParam = photo.apiData?.created_at || null;
+        if (photo.created_at) {
+            timestampParam = new Date(photo.created_at).toString();
+        } else if (photo.timestamp) {
+            const ts = photo.timestamp;
+            let dateObj;
+            if (ts?.seconds) {
+                dateObj = new Date(ts.seconds * 1000);
+            } else {
+                dateObj = new Date(ts);
+            }
+            if (!isNaN(dateObj.getTime())) {
+                timestampParam = dateObj.toString();
+            }
+        }
+
+        // Set selected snapshot in context before navigating
+        setSelectedSnapshot({
+            id: photo.id,
+            url: photo.storageUrl,
+            storageUrl: photo.storageUrl,
+            threadId: photo.threadId,
+            apiData: {
+                created_at: timestampParam
+            }
+        });
+
         (navigation as any).navigate('Snapshot', {
             photoId: photo.id,
             thumbnailUrl: photo.storageUrl,
             localUri: photo.storageUrl,
-            timestamp: photo.apiData?.created_at || null,
+            timestamp: timestampParam,
             fromPhotoGrid: 'true',
             imageId: photo.hautUploadData?.imageId || photo.id,
         });
@@ -128,26 +157,43 @@ export default function AboutMeScreen(): React.JSX.Element {
     };
 
     const handleLogout = () => {
-        try {
-            logout();
+        Alert.alert(
+            'Logout',
+            'Are you sure you want to logout?',
+            [
+                {
+                    text: 'Cancel',
+                    style: 'cancel',
+                },
+                {
+                    text: 'Logout',
+                    style: 'destructive',
+                    onPress: async () => {
+                        try {
+                            logout();
 
-            const delay = true ? 100 : 300;
-            setTimeout(() => {
-                if (navigation && typeof (navigation as any).navigate === 'function') {
-                    (navigation as any).navigate('SignIn');
-                } else {
-                    console.error('🔴 [SettingsDrawer] Navigation not available for sign out');
-                }
-            }, delay);
-        } catch (error) {
-            console.error('🔴 [SettingsDrawer] Error during sign out:', error);
-        }
+                            const delay = true ? 100 : 300;
+                            setTimeout(() => {
+                                if (navigation && typeof (navigation as any).navigate === 'function') {
+                                    (navigation as any).navigate('SignIn');
+                                } else {
+                                    console.error('🔴 [SettingsDrawer] Navigation not available for sign out');
+                                }
+                            }, delay);
+                        } catch (error) {
+                            console.error('🔴 [SettingsDrawer] Error during sign out:', error);
+                        }
+                    },
+                },
+            ],
+            { cancelable: true }
+        );
     };
 
 
 
     return (
-        <SafeAreaView style={styles.container}>
+        <View style={styles.container}>
             <HomeHeader onMenuPress={() => setIsSettingsVisible(true)} />
 
 
@@ -208,26 +254,28 @@ export default function AboutMeScreen(): React.JSX.Element {
                 )}
             </View>
 
-            {/* <TouchableOpacity onPress={handleLogout}>
-                <Text style={{ color: '#000000' }}>Logout</Text>
-            </TouchableOpacity> */}
             {/* Tab Bar */}
-            <View style={styles.tabBar}>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'photos' && styles.activeTab]}
-                    onPress={() => setActiveTab('photos')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'photos' && styles.activeTabText]}>
-                        Photos
-                    </Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={[styles.tab, activeTab === 'activity' && styles.activeTab]}
-                    onPress={() => setActiveTab('activity')}
-                >
-                    <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>
-                        TBD
-                    </Text>
+            <View style={styles.tabContainer}>
+                <View style={styles.tabBar}>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'photos' && styles.activeTab]}
+                        onPress={() => setActiveTab('photos')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'photos' && styles.activeTabText]}>
+                            Photos
+                        </Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                        style={[styles.tab, activeTab === 'activity' && styles.activeTab]}
+                        onPress={() => setActiveTab('activity')}
+                    >
+                        <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>
+                            TBD
+                        </Text>
+                    </TouchableOpacity>
+                </View>
+                <TouchableOpacity onPress={handleLogout}>
+                    <Text style={{ color: '#cf4f4fff', fontWeight: '600' }}>Logout</Text>
                 </TouchableOpacity>
             </View>
 
@@ -282,7 +330,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                 isVisible={isSettingsVisible}
                 onClose={() => setIsSettingsVisible(false)}
             />
-        </SafeAreaView>
+        </View>
     );
 }
 
@@ -299,7 +347,7 @@ const styles = StyleSheet.create({
 
     // Header - Removed in favor of HomeHeader
     headerSpacer: {
-        height: 40, // Match HomeHeader height
+        height: 100, // Match HomeHeader height
     },
     // header: {
     //     backgroundColor: '#FFFFFF',
@@ -320,7 +368,7 @@ const styles = StyleSheet.create({
     profileCard: {
         backgroundColor: '#FFFFFF',
         marginHorizontal: spacing.md,
-        marginTop: spacing.md + 40,
+        marginTop: spacing.md + 100,
         marginBottom: spacing.md,
         paddingVertical: 20,
         paddingHorizontal: spacing.lg,
@@ -374,16 +422,23 @@ const styles = StyleSheet.create({
     },
     editButton: {
         position: 'absolute',
+        zIndex: 100,
         top: 12,
         right: 12,
         padding: 8,
     },
 
     // Tab Bar
-    tabBar: {
+    tabContainer: {
+        marginHorizontal: spacing.md,
         flexDirection: 'row',
+        justifyContent: 'space-between',
         borderBottomWidth: 1,
         borderBottomColor: '#E3E8EF',
+        alignItems: 'center',
+    },
+    tabBar: {
+        flexDirection: 'row',
         marginHorizontal: spacing.md,
     },
     tab: {

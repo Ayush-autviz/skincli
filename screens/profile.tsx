@@ -207,16 +207,22 @@ export default function Profile(): React.JSX.Element {
   return (
     <SafeAreaView style={styles.container}>
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-          activeOpacity={0.7}
-        >
-          <ChevronLeft size={24} color="#1C1917" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Edit Profile</Text>
-        <View style={styles.headerRight} />
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <View style={styles.iconContainer}>
+              <ChevronLeft size={30} color="#44403C" />
+            </View>
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>Edit Profile</Text>
+          </View>
+          <View style={styles.rightContainer} />
+        </View>
+        <View style={styles.shadowLine} />
       </View>
 
       <KeyboardAwareScrollView
@@ -262,7 +268,7 @@ export default function Profile(): React.JSX.Element {
               <ImageIcon size={24} color="#57534E" strokeWidth={1.5} />
             </View>
           )}
-          <Text style={styles.photoUploadText}>Photo Upload +</Text>
+          {/* <Text style={styles.photoUploadText}>Photo Upload +</Text> */}
         </TouchableOpacity>
 
         {/* Input Fields */}
@@ -368,7 +374,7 @@ export default function Profile(): React.JSX.Element {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   loadingContainer: {
     flex: 1,
@@ -377,29 +383,69 @@ const styles = StyleSheet.create({
   },
 
   // Header
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    height: 105,
+    backgroundColor: colors.background,
+    borderBottomWidth: 0.4,
+    justifyContent: 'flex-end',
     borderBottomColor: '#E5E5E5',
   },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: colors.background,
+    paddingBottom: 10,
+    paddingHorizontal: spacing.lg,
+  },
   backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: {
     width: 40,
     height: 40,
+    borderRadius: 20,
     justifyContent: 'center',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
   },
   headerTitle: {
-    fontSize: 18,
-    // fontWeight: '600',
-    fontFamily: fontFamily.semiBold,
-    color: '#1C1917',
+    fontSize: 20,
+    fontWeight: '500',
+    color: colors.textPrimary,
   },
-  headerRight: {
-    width: 40,
+  rightContainer: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shadowLine: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.primary,
+    opacity: 0.1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
 
   // Scroll View
@@ -408,7 +454,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.xxl,
   },
 
   // Messages
@@ -527,19 +573,38 @@ const styles = StyleSheet.create({
     paddingTop: spacing.sm,
     backgroundColor: '#FFFFFF',
   },
+  // saveButton: {
+  //   backgroundColor: '#E0F4F7',
+  //   borderRadius: 30,
+  //   paddingVertical: 16,
+  //   alignItems: 'center',
+  // },
+  // saveButtonDisabled: {
+  //   opacity: 0.6,
+  // },
+  // saveButtonText: {
+  //   fontSize: 16,
+  //   // fontWeight: '600',
+  //   fontFamily: fontFamily.semiBold,
+  //   color: '#1C1917',
+  // },
+  // Save button
   saveButton: {
-    backgroundColor: '#E0F4F7',
-    borderRadius: 30,
-    paddingVertical: 16,
+    backgroundColor: '#0498B3',
+    paddingVertical: 12,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 16,
     alignItems: 'center',
+    justifyContent: 'center',
+    // marginTop: 28,
+
   },
   saveButtonDisabled: {
     opacity: 0.6,
   },
   saveButtonText: {
     fontSize: 16,
-    // fontWeight: '600',
-    fontFamily: fontFamily.semiBold,
-    color: '#1C1917',
+    fontWeight: '600',
+    color: '#FFFFFF',
   },
 });

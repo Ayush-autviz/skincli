@@ -996,18 +996,31 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
   // Extract parameters from navigation
   const { metricKey, metricValue, photoData } = params || {};
-  console.log('🔵 metricKey in metricDetail:', params);
-
-  const [backgroundImageLoading, setBackgroundImageLoading] = useState<boolean>(true);
-  const [maskImages, setMaskImages] = useState<any>(null);
-  const [maskImagesLoading, setMaskImagesLoading] = useState<boolean>(false);
-  const [maskImageLoading, setMaskImageLoading] = useState<boolean>(true); // Added state for mask image loading
-
 
   // Parse the photoData if it's a string
   const parsedPhotoData = typeof photoData === 'string' ? JSON.parse(photoData) : photoData;
 
-  console.log(parsedPhotoData, 'parsed photo data');
+  const [backgroundImageLoading, setBackgroundImageLoading] = useState<boolean>(true);
+  const [maskImages, setMaskImages] = useState<any>(null);
+  // Initialize to true if we have an imageId to fetch
+  const [maskImagesLoading, setMaskImagesLoading] = useState<boolean>(!!parsedPhotoData?.hautUploadData?.imageId);
+  const [maskImageLoading, setMaskImageLoading] = useState<boolean>(true);
+
+  // Reset loading states when navigating to a different metric
+  useEffect(() => {
+    setBackgroundImageLoading(true);
+    setMaskImageLoading(true);
+
+    // Safety timeout: if images don't load within 8 seconds, show whatever we have
+    const timer = setTimeout(() => {
+      setBackgroundImageLoading(false);
+      setMaskImageLoading(false);
+      setMaskImagesLoading(false);
+    }, 8000);
+
+    return () => clearTimeout(timer);
+  }, [metricKey]);
+
 
   // Fetch mask images when component loads
   useEffect(() => {
@@ -1832,44 +1845,50 @@ export default function MetricDetailScreen(): React.JSX.Element {
             console.log('🔵 changeAbs:', changeAbs);
             console.log('🔵 changeArrow:', changeArrow);
 
+            // Determine if everything related to the image is loaded
+            const hasMaskOverlay = !!maskImageData?.mask_img_url;
+            const backgroundImageUri = maskImageData?.image_url || parsedPhotoData?.storageUrl;
+            const hasBackgroundImage = !!backgroundImageUri;
+
+            // The content is "ready" only when:
+            // 1. Data has been fetched from API (maskImagesLoading is false)
+            // 2. IF there's a background image, it has finished loading (backgroundImageLoading is false)
+            // 3. IF there's a mask overlay, it has finished loading (maskImageLoading is false)
+            const baseImageReady = !hasBackgroundImage || !backgroundImageLoading;
+            const maskOverlayReady = !hasMaskOverlay || !maskImageLoading;
+
+            const everythingLoaded = !maskImagesLoading && baseImageReady && maskOverlayReady;
+
             return (
               <View style={{ marginHorizontal: 16, marginTop: spacing.xxl }}>
                 <View style={styles.metricCardRow}>
                   <View style={styles.maskImageContainer}>
                     <Image
-                      source={{ uri: sanitizeS3Uri(maskImageData?.image_url || parsedPhotoData?.storageUrl) as string }}
-                      style={styles.backgroundImage as any}
+                      source={{ uri: sanitizeS3Uri(backgroundImageUri) as string }}
+                      style={[
+                        styles.backgroundImage as any,
+                        { opacity: everythingLoaded ? 1 : 0 }
+                      ]}
                       resizeMode="cover"
-                      onError={(error: any) => {
-                        setMaskImagesLoading(false);
-                        setBackgroundImageLoading(false);
-                      }}
-                      onLoad={() => {
-                        setMaskImagesLoading(false);
-                        setBackgroundImageLoading(false);
-                      }}
+                      onLoadEnd={() => setBackgroundImageLoading(false)}
                     />
-                    {backgroundImageLoading && (
+                    {!everythingLoaded && (
                       <View style={styles.imageLoadingContainer}>
                         <SkeletonPlaceholder borderRadius={12}>
                           <SkeletonPlaceholder.Item width={150} height={150} />
                         </SkeletonPlaceholder>
                       </View>
                     )}
-                    {maskImageData?.mask_img_url && (
-                      <View style={styles.svgOverlay}>
+                    {hasMaskOverlay && (
+                      <View style={[styles.svgOverlay, { opacity: everythingLoaded ? 1 : 0 }]}>
                         <ConditionalImage
                           source={sanitizeS3Uri(maskImageData.mask_img_url) as string}
                           style={styles.svgOverlay as any}
                           resizeMode="contain"
                           width="100%"
                           height="100%"
-                          onError={() => {
-                            setMaskImagesLoading(false);
-                          }}
-                          onLoad={() => {
-                            setMaskImagesLoading(false);
-                          }}
+                          onLoad={() => setMaskImageLoading(false)}
+                          onError={() => setMaskImageLoading(false)}
                         />
                       </View>
                     )}
@@ -2796,7 +2815,7 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
   },
   changeInfo: {
-    paddingHorizontal: 10,
+    // paddingHorizontal: 10,
     paddingVertical: 6,
   },
   changeText: {

@@ -742,7 +742,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         marginTop: 28,
-        marginBottom: 50,
+        // marginBottom: 50,
     },
     disabledButton: {
         backgroundColor: '#D6D3D1',

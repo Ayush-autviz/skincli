@@ -330,7 +330,11 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       'am': 'AM',
       'pm': 'PM',
       'both': 'AM + PM',
-      'as_needed': 'As needed'
+      'as_needed': 'As needed',
+      'AM': 'AM',
+      'PM': 'PM',
+      'Both': 'AM + PM',
+      'As needed': 'As needed'
     };
 
     const frequencyMap: { [key: string]: string } = {
@@ -392,7 +396,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         const response = await getRoutineItems() as ApiResponse;
 
         if (response.success && response.data) {
-          // console.log('🔄 MyRoutine: Routine items fetchedHHHHHHHHH:', response.data);
+          console.log('🔄 MyRoutine: Routine items fetchedHHHHHHHHH:', response.data);
           const transformedItems = response.data.map(transformApiItem);
           setRoutineItems(transformedItems);
           shouldRefetchOnFocusRef.current = false; // No need to refetch if we have data
@@ -1019,20 +1023,31 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       .map(title => {
         const items = grouped[title];
 
-        const usageOrder: { [key: string]: number } = { 'AM': 1, 'Both': 2, 'PM': 3 };
+        const usageOrder: { [key: string]: number } = {
+          'AM': 1,
+          'AM + PM': 2,
+          'PM': 3,
+          'As needed': 4
+        };
+        const defaultOrder = 2; // Default for unknown usage
 
         items.sort((a, b) => {
-          const usageA = a.usage || 'Both';
-          const usageB = b.usage || 'Both';
-          const orderA = usageOrder[usageA] || 2;
-          const orderB = usageOrder[usageB] || 2;
-          if (orderA === orderB) {
-            // Sort by creation date descending (newest first) if usage is same
-            const dateA = a.dateCreated?.getTime?.() || 0;
-            const dateB = b.dateCreated?.getTime?.() || 0;
+          const orderA = usageOrder[a.usage] || defaultOrder;
+          const orderB = usageOrder[b.usage] || defaultOrder;
+
+          if (orderA !== orderB) {
+            return orderA - orderB;
+          }
+
+          // Secondary sort: start_date descending (newest first)
+          const dateA = a.dateStarted?.getTime() || 0;
+          const dateB = b.dateStarted?.getTime() || 0;
+          if (dateA !== dateB) {
             return dateB - dateA;
           }
-          return orderA - orderB;
+
+          // Tertiary sort: name ascending (alphabetical) for stability
+          return a.name.localeCompare(b.name);
         });
 
         // Map section title for display

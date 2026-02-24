@@ -533,7 +533,8 @@ const SnapshotScreen = (): React.JSX.Element => {
   };
 
   const handleClose = (): void => {
-    (navigation as any).navigate('Tabs');
+    // (navigation as any).navigate('Tabs');
+    navigation.goBack();
   };
 
   const handleNavigateToChat = (): void => {

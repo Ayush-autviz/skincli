@@ -241,7 +241,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                                     />
                                 ) : (
                                     <View style={styles.profileImagePlaceholder}>
-                                        <User size={32} color="#A9A29D" />
+                                        <User size={32} color="#0498B3" />
                                     </View>
                                 )}
                             </View>
@@ -402,7 +402,7 @@ const styles = StyleSheet.create({
         width: 72,
         height: 72,
         borderRadius: 36,
-        backgroundColor: '#E7E5E4',
+        backgroundColor: '#f5f5f5',
         justifyContent: 'center',
         alignItems: 'center',
     },

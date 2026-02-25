@@ -193,11 +193,16 @@ export default function HomeScreen(): React.JSX.Element {
     // console.log("currentPhoto", currentPhoto);
     console.log("currentDateGroup", currentDateGroup);
 
-    // Refresh photos on focus
+    // Refresh photos when screen comes into focus
+    const hasInitialRefreshed = useRef(false);
     useFocusEffect(
         useCallback(() => {
-            refreshPhotos();
-        }, [refreshPhotos])
+            // Only refresh if we haven't refreshed yet or if photos list is empty
+            if (!hasInitialRefreshed.current || photos.length === 0) {
+                refreshPhotos();
+                hasInitialRefreshed.current = true;
+            }
+        }, [refreshPhotos, photos.length])
     );
 
     // Load concerns for current photo when it changes (skip if same photo)

@@ -255,8 +255,8 @@ export default function Profile(): React.JSX.Element {
           disabled={isProfileLoading}
         >
           {isProfileLoading ? (
-            <SkeletonPlaceholder borderRadius={35}>
-              <SkeletonPlaceholder.Item width={70} height={70} borderRadius={35} />
+            <SkeletonPlaceholder borderRadius={60}>
+              <SkeletonPlaceholder.Item width={120} height={120} borderRadius={60} />
             </SkeletonPlaceholder>
           ) : currentProfileImage ? (
             <Image
@@ -265,7 +265,7 @@ export default function Profile(): React.JSX.Element {
             />
           ) : (
             <View style={styles.photoPlaceholder}>
-              <ImageIcon size={24} color="#57534E" strokeWidth={1.5} />
+              <User size={50} color="#0498B3" />
             </View>
           )}
           {/* <Text style={styles.photoUploadText}>Photo Upload +</Text> */}
@@ -491,23 +491,24 @@ const styles = StyleSheet.create({
   photoUploadContainer: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: spacing.lg,
     gap: 14,
   },
   profileImage: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
   },
   photoPlaceholder: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
     borderWidth: 1,
     borderColor: '#E7E5E4',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#f5f5f5',
   },
   photoUploadText: {
     fontSize: 16,

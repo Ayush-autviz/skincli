@@ -369,7 +369,16 @@ const PhotoThumbCard = ({
   );
 };
 
-const TimeSelector = forwardRef(
+interface TimeSelectorProps {
+  selectedIndex: number | null;
+  onSelectDate: (index: number) => void;
+  photos: any[];
+  onMaximize?: (photo: any, index: number) => void;
+  summaryLoading?: boolean;
+  routineFlagLoading?: boolean;
+}
+
+const TimeSelector = forwardRef<any, TimeSelectorProps>(
   (
     {
       selectedIndex,
@@ -1368,9 +1377,14 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
   );
 };
 
-const MetricsSeries = ({ photos }) => {
+interface MetricsSeriesProps {
+  photos: any[];
+  initialPhotoId?: string | null;
+}
+
+const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId }) => {
   const navigation = useNavigation();
-  const [selectedIndex, setSelectedIndex] = useState(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [summary, setSummary] = useState(null);
   const [summaryLoading, setSummaryLoading] = useState(false);
   const [routineFlag, setRoutineFlag] = useState(null);
@@ -1506,49 +1520,60 @@ const MetricsSeries = ({ photos }) => {
     });
   };
 
+  // Reset initial selection flag when initialPhotoId changes
+  useEffect(() => {
+    initialSelectionDoneRef.current = false;
+  }, [initialPhotoId]);
+
   // Auto-select most recent photo on mount/data load (run only once per data load)
   useEffect(() => {
-    // Only run if timestamps exist, have length, AND initial selection hasn't been done yet
-    if (!initialSelectionDoneRef.current && timestamps && timestamps.length > 0) {
-      // Add small delay to ensure the component has fully rendered
-      const timer = setTimeout(() => {
-        const lastIndex = timestamps.length - 1;
-        // Check index validity one last time before setting/scrolling
-        if (lastIndex >= 0) {
-          // console.log('[MetricsSeries useEffect] Auto-selecting initial photo (last index):', {
-          //   index: lastIndex,
-          //   total: timestamps.length,
-          //   photoId: photos[lastIndex]?.hautUploadData?.imageId
-          // });
-          setSelectedIndex(lastIndex);
+    // Only run if timestamps exist, have length
+    if (timestamps && timestamps.length > 0) {
+      if (!initialSelectionDoneRef.current) {
+        // Add small delay to ensure the component has fully rendered
+        const timer = setTimeout(() => {
+          const lastIndex = timestamps.length - 1;
+          // Check index validity one last time before setting/scrolling
+          if (lastIndex >= 0) {
+            let selectionIndex = lastIndex;
 
-          // Scroll the TimeSelector to the end
-          timeSelectorRef.current?.scrollToIndex(lastIndex);
+            // If initialPhotoId is provided, find its index in the current photos array
+            if (initialPhotoId) {
+              const foundIndex = photos.findIndex(p =>
+                p.id === initialPhotoId ||
+                p.hautUploadData?.imageId === initialPhotoId
+              );
+              if (foundIndex !== -1) {
+                selectionIndex = foundIndex;
+              }
+            }
 
-          // Add additional delay for metrics scroll sync on initial load
-          // This ensures MetricRow ScrollViews are fully mounted before sync
-          setTimeout(() => {
-            // console.log('[MetricsSeries] Triggering initial metrics scroll sync');
-            // Set flag to force scroll sync in MetricRow components
-            forceScrollSyncRef.current = true;
-            // Don't trigger another setState - just let the existing scrollPosition logic handle it
-          }, 200); // Shorter delay since content is always rendered
+            setSelectedIndex(selectionIndex);
 
-          // Mark initial selection as done
-          initialSelectionDoneRef.current = true;
-        } else {
-          console.warn('[MetricsSeries useEffect] Auto-selection skipped: lastIndex calculation invalid.');
-        }
-      }, 100); // Small delay to let TimeSelector render
+            // Scroll the TimeSelector to the selected index
+            timeSelectorRef.current?.scrollToIndex(selectionIndex);
 
-      return () => clearTimeout(timer); // Cleanup timer
+            // Add additional delay for metrics scroll sync on initial load
+            // This ensures MetricRow ScrollViews are fully mounted before sync
+            setTimeout(() => {
+              // Set flag to force scroll sync in MetricRow components
+              forceScrollSyncRef.current = true;
+            }, 200);
+
+            // Mark initial selection as done
+            initialSelectionDoneRef.current = true;
+          }
+        }, 100);
+
+        return () => clearTimeout(timer);
+      }
     }
     // If timestamps array becomes empty later, reset the ref so selection happens again if data returns
     else if (timestamps && timestamps.length === 0) {
       initialSelectionDoneRef.current = false;
-      setSelectedIndex(null); // Clear selection if no data
+      setSelectedIndex(null);
     }
-  }, [photos, timestamps]); // Removed showContent dependency since content always renders
+  }, [photos, timestamps, initialPhotoId]);
 
   // Update summary and routine flag when selectedIndex changes
   // Data now comes directly from the API response, no separate API calls needed

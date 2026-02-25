@@ -17,7 +17,7 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ScrollView, RefreshControl } from 'react-native';
 import { AlertCircle, RefreshCw, TrendingUp } from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 import HomeHeader from '../components/ui/HomeHeader';
@@ -27,6 +27,8 @@ import { getComparison, transformComparisonData } from '../utils/newApiService';
 
 export default function ProgressTab(): React.JSX.Element {
   const navigation = useNavigation();
+  const route = useRoute();
+  const initialPhotoId = (route?.params as any)?.photoId;
   const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
   const [photos, setPhotos] = useState<any[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -194,7 +196,7 @@ export default function ProgressTab(): React.JSX.Element {
               />
             }
           >
-            <MetricsSeries photos={analyzedPhotos} />
+            <MetricsSeries photos={analyzedPhotos} initialPhotoId={initialPhotoId} />
           </ScrollView>
         ) : (
           <EmptyState />

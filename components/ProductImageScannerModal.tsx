@@ -13,6 +13,8 @@ import {
   Text,
   Image,
   Animated,
+  Linking,
+  Platform,
 } from 'react-native';
 import { Camera, useCameraDevices, useCameraPermission, PhotoFile } from 'react-native-vision-camera';
 import { X, Camera as CameraIcon, RotateCcw, Check, Sparkles } from 'lucide-react-native';
@@ -37,10 +39,10 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
   const [isProcessing, setIsProcessing] = useState<boolean>(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [processingStep, setProcessingStep] = useState<string>('');
-  
+
   const cameraRef = useRef<Camera>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
-  
+
   const devices = useCameraDevices();
   const device = devices.find(d => d.position === 'back');
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -87,7 +89,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
       const photo = await cameraRef.current.takePhoto({
         qualityPrioritization: 'balanced',
       });
-      
+
       const imageUri = `file://${photo.path}`;
       setCapturedImage(imageUri);
     } catch (error) {
@@ -116,7 +118,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
 
       if (result.success && result.data) {
         setProcessingStep('Fetching product details...');
-        
+
         // If we have a UPC, try to get full product details
         if (result.data.upc) {
           try {
@@ -129,7 +131,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
                 search_product_name: result.data.search_product_name,
                 search_brand_name: result.data.search_brand_name,
               };
-              
+
               if (onProductScanned) {
                 onProductScanned(fullProductData);
               }
@@ -140,7 +142,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
             console.log('UPC lookup failed, using extracted data:', upcError);
           }
         }
-        
+
         // Use extracted data if UPC lookup fails or no UPC
         if (onProductScanned) {
           onProductScanned(result.data);
@@ -185,17 +187,29 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
   if (hasPermission === false) {
     return (
       <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
-        <StatusBar barStyle="light-content" backgroundColor="black" />
-        <View style={styles.container}>
+        <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+        <View style={[styles.container, { backgroundColor: '#FFFFFF' }]}>
           <View style={styles.permissionContainer}>
-            <CameraIcon size={48} color={colors.textSecondary} />
+            <View style={styles.logoCircle}>
+              <CameraIcon size={48} color="#08879b" />
+            </View>
             <Text style={styles.permissionTitle}>Camera Access Required</Text>
             <Text style={styles.permissionText}>
-              Camera permission is required to scan products.
+              Camera permission is required to scan products. Please enable it in your device settings.
             </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButtonLarge}>
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
+
+            <View style={styles.permissionActionContainer}>
+              <TouchableOpacity
+                onPress={() => Linking.openSettings()}
+                style={styles.openSettingsButton}
+              >
+                <Text style={styles.openSettingsButtonText}>Open Settings</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity onPress={onClose} style={styles.stayCloseButton}>
+                <Text style={styles.stayCloseButtonText}>Not Now</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -251,7 +265,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
                 isActive={visible && !capturedImage}
                 photo={true}
               />
-              
+
               {/* Scan Frame Overlay */}
               <View style={styles.overlay}>
                 <View style={styles.scanFrame}>
@@ -263,7 +277,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
               </View>
             </>
           )}
-          
+
           {/* Processing overlay */}
           {isProcessing && (
             <View style={styles.processingOverlay}>
@@ -299,7 +313,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
           {capturedImage ? (
             // Show Retake and Confirm buttons
             <View style={styles.previewButtons}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.retakeButton}
                 onPress={handleRetake}
                 disabled={isProcessing}
@@ -307,8 +321,8 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
                 <RotateCcw size={20} color="#fff" />
                 <Text style={styles.retakeButtonText}>Retake</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={[styles.confirmButton, isProcessing && styles.buttonDisabled]}
                 onPress={handleConfirm}
                 disabled={isProcessing}
@@ -323,7 +337,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
             // Show Capture button
             <View style={styles.captureContainer}>
               <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.captureButton}
                   onPress={handleCapture}
                   activeOpacity={0.8}
@@ -564,19 +578,70 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: 30,
+    backgroundColor: '#FFFFFF',
+  },
+  logoCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#FFFFFF',
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 10,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
+    marginBottom: 40,
   },
   permissionTitle: {
-    fontSize: 20,
+    fontSize: 24,
     fontWeight: '700',
-    color: colors.textPrimary,
-    marginTop: spacing.lg,
-    marginBottom: spacing.sm,
+    color: '#111827',
+    marginBottom: 12,
+    textAlign: 'center',
   },
   permissionText: {
     fontSize: 16,
-    color: colors.textSecondary,
+    color: '#6B7280',
     textAlign: 'center',
+    lineHeight: 24,
+    marginBottom: 40,
+  },
+  permissionActionContainer: {
+    width: '100%',
+    gap: 12,
+  },
+  openSettingsButton: {
+    backgroundColor: '#08879b',
+    borderRadius: 12,
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  openSettingsButtonText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '700',
+  },
+  stayCloseButton: {
+    height: 56,
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: '100%',
+  },
+  stayCloseButtonText: {
+    color: '#08879b',
+    fontSize: 16,
+    fontWeight: '600',
   },
   closeButtonLarge: {
     backgroundColor: colors.primary,

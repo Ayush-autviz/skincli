@@ -16,45 +16,53 @@ import { Text, View } from 'react-native';
 
 const Stack = createNativeStackNavigator();
 
+// Import splash screen
+import SplashScreen from '../screens/splash';
+
 function AppNavigator() {
   const { isAuthenticated, user } = useAuthStore();
+  const [showSplash, setShowSplash] = React.useState(true);
+
+  if (showSplash) {
+    return <SplashScreen onFinish={() => setShowSplash(false)} />;
+  }
 
   return (
 
-            <NavigationContainer>
-              <Stack.Navigator
-                screenOptions={{
-                  headerShown: false,
-                }}
-              >
-                {!isAuthenticated || !user ? (
-                  <>
-                    <Stack.Screen 
-                      name="Auth" 
-                      component={AuthNavigator}
-                      options={{
-                        animation: 'fade',
-                      }}
-                    />
-                    <Stack.Screen 
-                      name="Onboarding" 
-                      component={OnboardingNavigator}
-                      options={{
-                        animation: 'fade',
-                      }}
-                    />
-                  </>
-                ) : (
-                  <Stack.Screen 
-                    name="Authenticated" 
-                    component={AuthenticatedNavigator}
-                    options={{
-                      animation: 'fade',
-                    }}
-                  />
-                )}
-              </Stack.Navigator>
-            </NavigationContainer>
+    <NavigationContainer>
+      <Stack.Navigator
+        screenOptions={{
+          headerShown: false,
+        }}
+      >
+        {!isAuthenticated || !user ? (
+          <>
+            <Stack.Screen
+              name="Auth"
+              component={AuthNavigator}
+              options={{
+                animation: 'fade',
+              }}
+            />
+            <Stack.Screen
+              name="Onboarding"
+              component={OnboardingNavigator}
+              options={{
+                animation: 'fade',
+              }}
+            />
+          </>
+        ) : (
+          <Stack.Screen
+            name="Authenticated"
+            component={AuthenticatedNavigator}
+            options={{
+              animation: 'fade',
+            }}
+          />
+        )}
+      </Stack.Navigator>
+    </NavigationContainer>
   );
 }
 

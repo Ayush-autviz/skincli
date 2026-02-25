@@ -517,17 +517,18 @@ export default function HomeScreen(): React.JSX.Element {
                                 key={`carousel-${currentDateGroup?.date}-${currentDateGroup?.photos?.length}`}
                                 ref={carouselRef}
                                 loop={false}
-                                width={173}
+                                width={SCREEN_WIDTH - 36}
                                 height={173}
-                                style={{ width: SCREEN_WIDTH - 32, justifyContent: 'center', alignItems: 'center' }}
+                                style={{ width: SCREEN_WIDTH - 64, justifyContent: 'center', alignItems: 'center' }}
                                 data={[...currentDateGroup.photos].reverse()}
                                 mode="parallax"
                                 modeConfig={{
-                                    parallaxScrollingScale: 0.75,
-                                    parallaxScrollingOffset: 100,
-                                    parallaxAdjacentItemScale: 0.7,
+                                    parallaxScrollingScale: 1.0,
+                                    parallaxScrollingOffset: 200,
+                                    parallaxAdjacentItemScale: 0.8,
                                 }}
                                 scrollAnimationDuration={300}
+                                // onSnapToItem={handleCarouselSnap}
                                 onSnapToItem={(index) => {
                                     // Reverse the index back to match original photo array
                                     const photosCount = currentDateGroup?.photos?.length || 0;
@@ -535,6 +536,8 @@ export default function HomeScreen(): React.JSX.Element {
                                     handleCarouselSnap(reversedIndex);
                                 }}
                                 defaultIndex={Math.max(0, Math.min((currentDateGroup?.photos?.length || 0) - 1, (currentDateGroup?.photos?.length || 0) - 1 - currentPhotoInDate))}
+
+                                // defaultIndex={currentPhotoInDate}
                                 renderItem={renderCarouselItem}
                             />
                         </View>
@@ -625,7 +628,17 @@ export default function HomeScreen(): React.JSX.Element {
                                     </View>
                                 </TouchableOpacity>
                             ))}
-                            <TouchableOpacity style={styles.seeAllButton}>
+                            <TouchableOpacity
+                                style={styles.seeAllButton}
+                                onPress={() => {
+                                    if (currentPhoto) {
+                                        const photoId = currentPhoto.id || currentPhoto.hautUploadData?.imageId;
+                                        (navigation as any).navigate('Progress', { photoId });
+                                    } else {
+                                        (navigation as any).navigate('Progress');
+                                    }
+                                }}
+                            >
                                 <Text style={styles.seeAllText}>See all →</Text>
                             </TouchableOpacity>
                         </>
@@ -722,14 +735,13 @@ const styles = StyleSheet.create({
     },
     photoWrapper: {
         alignSelf: 'center',
-        width: SCREEN_WIDTH - 100,
-        // aspectRatio: 1,
+        width: SCREEN_WIDTH - 64,
         justifyContent: 'center',
         alignItems: 'center',
     },
     photo: {
-        width: 173,
-        height: 173,
+        width: 213,
+        height: 213,
         borderRadius: 32,
     },
     photoPlaceholder: {
@@ -969,8 +981,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     carouselImage: {
-        width: 213,
-        height: 213,
+        width: 173,
+        height: 173,
         borderRadius: 32,
     },
 

@@ -190,7 +190,12 @@ export default function AboutMeScreen(): React.JSX.Element {
         );
     };
 
+    // Filter photos to only include those with storageUrl
+    const filteredPhotos = React.useMemo(() => {
+        return photos.filter((photo: any) => !!photo.storageUrl);
+    }, [photos]);
 
+    console.log('filteredPhotos', filteredPhotos);
 
     return (
         <View style={styles.container}>
@@ -281,7 +286,7 @@ export default function AboutMeScreen(): React.JSX.Element {
 
             {/* Tab Content */}
             {activeTab === 'photos' ? (
-                isPhotosLoading && photos.length === 0 ? (
+                isPhotosLoading && filteredPhotos.length === 0 ? (
                     <View style={styles.photoGrid}>
                         <SkeletonPlaceholder borderRadius={4}>
                             <SkeletonPlaceholder.Item flexDirection="row" flexWrap="wrap">
@@ -297,7 +302,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                             </SkeletonPlaceholder.Item>
                         </SkeletonPlaceholder>
                     </View>
-                ) : photos.length === 0 ? (
+                ) : filteredPhotos.length === 0 ? (
                     <View style={styles.emptyContainer}>
                         <Text style={styles.emptyText}>No photos yet</Text>
                         <Text style={styles.emptySubtext}>
@@ -306,7 +311,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                     </View>
                 ) : (
                     <FlatList
-                        data={photos}
+                        data={filteredPhotos}
                         renderItem={renderPhotoItem}
                         keyExtractor={(item) => item.id}
                         numColumns={NUM_COLUMNS}

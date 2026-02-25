@@ -9,8 +9,9 @@ import {
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ArrowLeft, Send, ScanLine, Search, PenTool, Check } from 'lucide-react-native';
+import { ArrowLeft, Send, ScanLine, Search, PenTool, Check, ChevronLeft } from 'lucide-react-native';
 import { colors, typography, spacing, shadows, borderRadius } from '../styles';
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import TabHeader from '../components/ui/TabHeader';
 import useAuthStore from '../stores/authStore';
 import ProductImageScannerModal from '../components/ProductImageScannerModal';
@@ -58,10 +59,10 @@ interface RequestProductInput {
 const formatTimestamp = (timestamp: string | Date | null): string => {
   console.log("🔵 formatTimestamp", timestamp);
   if (!timestamp) return '';
-  
+
   try {
     let date: Date;
-    
+
     // If timestamp is a string (UTC from API), parse it
     if (typeof timestamp === 'string') {
       // Ensure the timestamp is treated as UTC by adding Z if missing
@@ -75,20 +76,20 @@ const formatTimestamp = (timestamp: string | Date | null): string => {
     } else {
       return '';
     }
-    
+
     // Check if date is valid
     if (isNaN(date.getTime())) {
       console.warn('Invalid timestamp:', timestamp);
       return '';
     }
-    
+
     // Convert to local time and format as HH:MM
     return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: true
     });
-    
+
   } catch (error) {
     console.error('Error formatting timestamp:', error, timestamp);
     return '';
@@ -128,7 +129,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
 
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const fadeAnim = useRef(new Animated.Value(1)).current;
 
   // Initialize chat
   useEffect(() => {
@@ -165,7 +166,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
       setIsInitializing(true);
       setError(null);
       console.log("🔵 initializeChat", chatType, imageId, initialMessage);
-      
+
       // Special handling for snapshot_feedback type
       if (chatType === 'snapshot_feedback' && imageId) {
         await loadExistingChatHistory();
@@ -174,12 +175,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
         await sendInitialMessage();
       }
 
-      // Start fade in animation
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 500,
-        useNativeDriver: true,
-      }).start();
+
 
     } catch (error) {
       console.error('Error initializing chat:', error);
@@ -192,13 +188,13 @@ const ThreadChatScreen = (): React.JSX.Element => {
   const loadExistingChatHistory = async (): Promise<void> => {
     try {
       console.log('🔵 Loading existing chat history for image_id:', imageId);
-      
+
       const response = await getChatHistoryByImageId(imageId!);
-      
+
       if ((response as any).success && (response as any).data.result) {
         const threadData = (response as any).data.result;
         setThreadId(threadData.id);
-        
+
         // Format existing messages
         const existingMessages = threadData.messages || [];
         const formattedMessages: Message[] = existingMessages.map((msg: any, index: number) => ({
@@ -207,7 +203,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
           role: msg.role,
           timestamp: msg.timestamp || msg.created_at || new Date().toISOString()
         }));
-        
+
         setMessages(formattedMessages);
         console.log('✅ Loaded existing chat history:', formattedMessages.length, 'messages');
       } else {
@@ -239,7 +235,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
 
       if ((response as any).success) {
         setThreadId((response as any).data.thread_id);
-        
+
         // Only use the response messages array to display chat messages
         const responseMessages = (response as any).data.messages || [];
         const formattedMessages: Message[] = responseMessages.map((msg: any, index: number) => ({
@@ -273,7 +269,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
     if (!inputText.trim() || !threadId) return;
 
     const messageToSend = inputText.trim();
-    
+
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: messageToSend,
@@ -287,12 +283,12 @@ const ThreadChatScreen = (): React.JSX.Element => {
     if (inputRef.current) {
       inputRef.current.clear();
     }
-    
+
     // Scroll to bottom after adding user message
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
-    
+
     setIsLoading(true);
 
     try {
@@ -313,7 +309,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
         // Add AI response (last message from the response)
         const aiMessages = (response as any).data.messages || [];
         const lastAiMessage = aiMessages[aiMessages.length - 1];
-        
+
         if (lastAiMessage && lastAiMessage.role === 'assistant') {
           const aiMessage: Message = {
             id: `ai-${Date.now()}`,
@@ -322,7 +318,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
             timestamp: lastAiMessage.timestamp
           };
           setMessages(prev => [...prev, aiMessage]);
-          
+
           // Scroll to bottom after adding AI message
           setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
@@ -362,7 +358,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
       if (confirmed) {
         // Confirm the item
         const response = await confirmThreadItem(threadId, pendingItem, false);
-        
+
         if ((response as any).success) {
           // Add confirmation message
           const confirmMessage: Message = {
@@ -375,7 +371,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
           // Add AI response (last message from the response)
           const aiMessages = (response as any).data.messages || [];
           const lastAiMessage = aiMessages[aiMessages.length - 1];
-          
+
           if (lastAiMessage && lastAiMessage.role === 'assistant') {
             const aiMessage: Message = {
               id: `ai-${Date.now()}`,
@@ -405,7 +401,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
           // Add AI response (last message from the response)
           const aiMessages = (response as any).data.messages || [];
           const lastAiMessage = aiMessages[aiMessages.length - 1];
-          
+
           if (lastAiMessage && lastAiMessage.role === 'assistant') {
             const aiMessage: Message = {
               id: `ai-${Date.now()}`,
@@ -453,7 +449,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
         // Add AI response (last message from the response) to chat
         const aiMessages = (response as any).data.messages || [];
         const lastAiMessage = aiMessages[aiMessages.length - 1];
-        
+
         if (lastAiMessage && lastAiMessage.role === 'assistant') {
           const aiMessage: Message = {
             id: `ai-${Date.now()}`,
@@ -462,7 +458,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
             timestamp: lastAiMessage.timestamp
           };
           setMessages(prev => [...prev, aiMessage]);
-          
+
           // Scroll to bottom after adding AI message
           setTimeout(() => {
             flatListRef.current?.scrollToEnd({ animated: true });
@@ -525,7 +521,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
       // However, since we already searched by name, the product should have UPC
       // If it doesn't, we'll try to fetch it using searchProductByUPC with the product name
       // But that won't work - we need UPC to search by UPC
-      
+
       // For now, if product doesn't have UPC, we'll send the product name
       // The backend should handle product name to UPC conversion or accept product name
       if (product.product_name) {
@@ -559,7 +555,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
     if (!manualProductName.trim() || !threadId) return;
 
     const messageToSend = `add ${manualProductName.trim()} to my routine`;
-    
+
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       content: messageToSend,
@@ -571,12 +567,12 @@ const ThreadChatScreen = (): React.JSX.Element => {
     setManualProductName('');
     setShowManualInput(false);
     setRequestProductInput(null);
-    
+
     // Scroll to bottom after adding user message
     setTimeout(() => {
       flatListRef.current?.scrollToEnd({ animated: true });
     }, 100);
-    
+
     setIsLoading(true);
 
     try {
@@ -648,16 +644,49 @@ const ThreadChatScreen = (): React.JSX.Element => {
     <MessageBubble message={item} />
   );
 
+  const ChatSkeleton = (): React.JSX.Element => (
+    <View style={styles.skeletonContainer}>
+      <SkeletonPlaceholder backgroundColor="#F3F4F6" highlightColor="#FFFFFF">
+        <SkeletonPlaceholder.Item padding={spacing.lg}>
+          {/* AI Message */}
+          <SkeletonPlaceholder.Item marginBottom={spacing.md} alignItems="flex-start">
+            <SkeletonPlaceholder.Item width={width * 0.65} height={44} borderRadius={16} />
+          </SkeletonPlaceholder.Item>
+
+          {/* User Message */}
+          <SkeletonPlaceholder.Item marginBottom={spacing.md} alignItems="flex-end">
+            <SkeletonPlaceholder.Item width={width * 0.45} height={44} borderRadius={16} />
+          </SkeletonPlaceholder.Item>
+
+          {/* AI Message */}
+          <SkeletonPlaceholder.Item marginBottom={spacing.md} alignItems="flex-start">
+            <SkeletonPlaceholder.Item width={width * 0.75} height={60} borderRadius={16} />
+          </SkeletonPlaceholder.Item>
+
+          {/* User Message */}
+          <SkeletonPlaceholder.Item marginBottom={spacing.md} alignItems="flex-end">
+            <SkeletonPlaceholder.Item width={width * 0.55} height={44} borderRadius={16} />
+          </SkeletonPlaceholder.Item>
+
+          {/* AI Message */}
+          <SkeletonPlaceholder.Item marginBottom={spacing.md} alignItems="flex-start">
+            <SkeletonPlaceholder.Item width={width * 0.6} height={44} borderRadius={16} />
+          </SkeletonPlaceholder.Item>
+        </SkeletonPlaceholder.Item>
+      </SkeletonPlaceholder>
+    </View>
+  );
+
   const MessageBubble = ({ message }: { message: Message }): React.JSX.Element => {
     const isUser = message.role === 'user';
-    
+
     // Debug timestamp for both user and assistant messages
     console.log(`🔵 Message ${message.role} timestamp:`, {
       role: message.role,
       timestamp: message.timestamp,
       formatted: formatTimestamp(message.timestamp)
     });
-    
+
     return (
       <View style={[
         styles.messageContainer,
@@ -742,7 +771,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
         <View style={styles.productInputHeader}>
           <Text style={styles.productInputTitle}>{requestProductInput.message || 'How would you like to add this product?'}</Text>
         </View>
-        
+
         {showManualInput ? (
           /* Show text input when manual entry is selected */
           <View style={styles.manualInputContainer}>
@@ -837,14 +866,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
     );
   };
 
-  if (isInitializing) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color={colors.primary} />
-        <Text style={styles.loadingText}>Initializing chat...</Text>
-      </View>
-    );
-  }
+
 
   if (error) {
     return (
@@ -860,14 +882,24 @@ const ThreadChatScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
-      
+
       {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => (navigation as any).goBack()} style={styles.backButton}>
-          <ArrowLeft size={24} color={colors.textPrimary} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>AI Assistant</Text>
-        <View style={styles.headerSpacer} />
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backButton}
+            onPress={() => navigation.goBack()}
+          >
+            <View style={styles.iconContainer}>
+              <ChevronLeft size={30} color="#44403C" />
+            </View>
+          </TouchableOpacity>
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>AI Assistant</Text>
+          </View>
+          <View style={styles.rightContainer} />
+        </View>
+        <View style={styles.shadowLine} />
       </View>
 
       <KeyboardAvoidingView
@@ -876,31 +908,34 @@ const ThreadChatScreen = (): React.JSX.Element => {
         keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
       >
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          {/* Messages */}
-          <FlatList
-            ref={flatListRef}
-            data={messages}
-            renderItem={renderMessage}
-            keyExtractor={(item) => item.id}
-            style={styles.messagesList}
-            contentContainerStyle={[
-              styles.messagesContainer,
-              { paddingBottom: keyboardHeight > 0 ? 20 : 0 }
-            ]}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-            keyboardDismissMode="interactive"
-            onContentSizeChange={() => {
-              if (messages.length > 0) {
-                flatListRef.current?.scrollToEnd({ animated: true });
-              }
-            }}
-            onLayout={() => {
-              if (messages.length > 0) {
-                flatListRef.current?.scrollToEnd({ animated: false });
-              }
-            }}
-          />
+          {isInitializing ? (
+            <ChatSkeleton />
+          ) : (
+            <FlatList
+              ref={flatListRef}
+              data={messages}
+              renderItem={renderMessage}
+              keyExtractor={(item) => item.id}
+              style={styles.messagesList}
+              contentContainerStyle={[
+                styles.messagesContainer,
+                { paddingBottom: keyboardHeight > 0 ? 20 : 0 }
+              ]}
+              showsVerticalScrollIndicator={false}
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="interactive"
+              onContentSizeChange={() => {
+                if (messages.length > 0) {
+                  flatListRef.current?.scrollToEnd({ animated: true });
+                }
+              }}
+              onLayout={() => {
+                if (messages.length > 0) {
+                  flatListRef.current?.scrollToEnd({ animated: false });
+                }
+              }}
+            />
+          )}
 
           {/* Pending Item Card */}
           <PendingItemCard />
@@ -991,6 +1026,11 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     marginTop: spacing.md,
   },
+  skeletonContainer: {
+    flex: 1,
+    paddingTop: 110, // Account for fixed header height
+    backgroundColor: '#FFFFFF',
+  },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -1015,26 +1055,69 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: '600',
   },
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    height: 105,
+    backgroundColor: colors.background,
+    borderBottomWidth: 0.4,
+    justifyContent: 'flex-end',
+    borderBottomColor: '#E5E5E5',
+  },
   header: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: colors.background,
+    paddingBottom: 10,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F3F4F6',
   },
   backButton: {
-    padding: spacing.xs,
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
   },
   headerTitle: {
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: 20,
+    fontWeight: '500',
     color: colors.textPrimary,
-    flex: 1,
-    textAlign: 'center',
   },
-  headerSpacer: {
-    width: 40,
+  rightContainer: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shadowLine: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.primary,
+    opacity: 0.1,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
   },
   content: {
     flex: 1,
@@ -1062,7 +1145,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
   },
   userBubble: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#0498B3',
     borderBottomRightRadius: 4,
   },
   aiBubble: {
@@ -1160,7 +1243,7 @@ const styles = StyleSheet.create({
     color: colors.textPrimary,
   },
   sendButton: {
-    backgroundColor: colors.primary,
+    backgroundColor: '#0498B3',
     width: 40,
     height: 40,
     borderRadius: 20,
@@ -1172,6 +1255,7 @@ const styles = StyleSheet.create({
   },
   keyboardAvoidingView: {
     flex: 1,
+    marginTop: 40
   },
   journalSummaryFooter: {
     backgroundColor: '#FFFF',

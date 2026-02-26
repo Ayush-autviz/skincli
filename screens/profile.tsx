@@ -572,7 +572,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.lg,
     paddingTop: spacing.sm,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: colors.background,
   },
   // saveButton: {
   //   backgroundColor: '#E0F4F7',

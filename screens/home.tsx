@@ -124,7 +124,7 @@ const ImageWithSkeleton = ({
 export default function HomeScreen(): React.JSX.Element {
     const navigation = useNavigation();
     const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
-    const { photos, isLoading, refreshPhotos, loadMorePhotos, pagination, isLoadingMore } = usePhotoContext();
+    const { photos, isLoading, refreshPhotos, loadMorePhotos, pagination, isLoadingMore, setSelectedSnapshot } = usePhotoContext();
     const { user, profile } = useAuthStore();
 
     // Date group navigation state
@@ -388,6 +388,17 @@ export default function HomeScreen(): React.JSX.Element {
     const handlePhotoPress = (photo?: any) => {
         const targetPhoto = photo || currentPhoto;
         if (targetPhoto) {
+            // Set selected snapshot in context before navigating
+            setSelectedSnapshot({
+                id: targetPhoto.id,
+                url: targetPhoto.storageUrl,
+                storageUrl: targetPhoto.storageUrl,
+                threadId: targetPhoto.threadId,
+                apiData: {
+                    created_at: targetPhoto.apiData?.created_at || null
+                }
+            });
+
             (navigation as any).navigate('Snapshot', {
                 photoId: targetPhoto.id,
                 thumbnailUrl: targetPhoto.storageUrl,
@@ -438,6 +449,17 @@ export default function HomeScreen(): React.JSX.Element {
     // We strictly use the passed item, so we don't depend on currentPhoto or handlePhotoPress
     const onCarouselItemPress = useCallback((item: any) => {
         if (item) {
+            // Set selected snapshot in context before navigating
+            setSelectedSnapshot({
+                id: item.id,
+                url: item.storageUrl,
+                storageUrl: item.storageUrl,
+                threadId: item.threadId,
+                apiData: {
+                    created_at: item.apiData?.created_at || null
+                }
+            });
+
             (navigation as any).navigate('Snapshot', {
                 photoId: item.id,
                 thumbnailUrl: item.storageUrl,
@@ -447,7 +469,7 @@ export default function HomeScreen(): React.JSX.Element {
                 imageId: item.hautUploadData?.imageId || item.id,
             });
         }
-    }, [navigation]);
+    }, [navigation, setSelectedSnapshot]);
 
     // Render carousel item with skeleton loading (Memoized to prevent unnecessary re-renders)
     const renderCarouselItem = useCallback(({ item, index }: { item: any; index: number }) => (
@@ -745,8 +767,8 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     photo: {
-        width: 213,
-        height: 213,
+        width: 173,
+        height: 173,
         borderRadius: 32,
     },
     photoPlaceholder: {

@@ -74,7 +74,7 @@ function CustomTabBar({ state, descriptors, navigation }) {
             if (!isFocused && !event.defaultPrevented) {
               // Handle Scan tab specially - navigate to Camera
               if (route.name === 'Scan') {
-                navigation.navigate('Camera');
+                navigation.navigate('Camera', { fromScanTab: true });
               } else {
                 navigation.navigate(route.name);
               }

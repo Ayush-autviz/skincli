@@ -31,12 +31,12 @@ const measurableConcerns = [
     'Lines',
     'Visible Pores',
     'Eye Area',
-    'Dry Skin'
+    'Evenness',
+    // 'Dry Skin'
 ];
 
 const allConcerns = [
     'Anti-aging (eyes)',
-    'Evenness',
     'Other',
     'Dry Skin',
     'Enlarged Pores',
@@ -161,7 +161,7 @@ const AddProductFormScreen = (): React.JSX.Element => {
                 Alert.alert('Success!', 'Product added to your routine.', [
                     {
                         text: 'OK',
-                        onPress: () => (navigation as any).navigate('Tabs', { screen: 'Routine' })
+                        onPress: () => (navigation as any).navigate('Tabs', { screen: 'MyRoutine' })
                     }
                 ]);
             }
@@ -332,8 +332,8 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-       // paddingTop: 55,
-       backgroundColor: colors.background,
+        // paddingTop: 55,
+        backgroundColor: colors.background,
         paddingBottom: 10,
         paddingHorizontal: spacing.lg,
     },

@@ -17,7 +17,7 @@ import {
   Platform,
 } from 'react-native';
 import { Camera, useCameraDevices, useCameraPermission, PhotoFile } from 'react-native-vision-camera';
-import { X, Camera as CameraIcon, RotateCcw, Check, Sparkles } from 'lucide-react-native';
+import { X, Camera as CameraIcon, RotateCcw, Check, Sparkles, ArrowRight, RotateCw } from 'lucide-react-native';
 import { colors, spacing, typography, borderRadius } from '../styles';
 import { extractProductFromImage, searchProductByUPC } from '../utils/newApiService';
 
@@ -241,9 +241,10 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+          {/* <TouchableOpacity onPress={onClose} style={styles.closeButton}>
             <X size={24} color="#fff" />
-          </TouchableOpacity>
+          </TouchableOpacity> */}
+          <View style={{ width: 40 }} />
           <View style={styles.headerTitleContainer}>
             <Text style={styles.headerTitle}>Scan Product</Text>
           </View>
@@ -291,7 +292,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
         </View>
 
         {/* Instructions */}
-        <View style={styles.instructionContainer}>
+        {/* <View style={styles.instructionContainer}>
           {capturedImage ? (
             <Text style={styles.instructionText}>
               Confirm this image to identify the product
@@ -306,20 +307,20 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
               </Text>
             </>
           )}
-        </View>
+        </View> */}
 
         {/* Action Buttons */}
         <View style={styles.buttonContainer}>
           {capturedImage ? (
             // Show Retake and Confirm buttons
-            <View style={styles.previewButtons}>
+            <>
               <TouchableOpacity
-                style={styles.retakeButton}
+                style={styles.textButton}
                 onPress={handleRetake}
                 disabled={isProcessing}
               >
-                <RotateCcw size={20} color="#fff" />
-                <Text style={styles.retakeButtonText}>Retake</Text>
+                {/* <Text style={styles.buttonText}>Retake</Text> */}
+                <RotateCw size={20} color="#fff" />
               </TouchableOpacity>
 
               <TouchableOpacity
@@ -327,28 +328,33 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
                 onPress={handleConfirm}
                 disabled={isProcessing}
               >
-                {/* <Check size={20} color="#fff" /> */}
                 <Text style={styles.confirmButtonText}>
                   {isProcessing ? 'Processing...' : 'Identify Product'}
                 </Text>
+                <ArrowRight size={20} color="#fff" />
               </TouchableOpacity>
-            </View>
+
+              {/* <View style={styles.textButton} /> */}
+            </>
           ) : (
-            // Show Capture button
-            <View style={styles.captureContainer}>
-              <Animated.View style={{ transform: [{ scale: pulseAnim }] }}>
-                <TouchableOpacity
-                  style={styles.captureButton}
-                  onPress={handleCapture}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.captureButtonInner}>
-                    <CameraIcon size={32} color="#fff" />
-                  </View>
-                </TouchableOpacity>
-              </Animated.View>
-              <Text style={styles.captureHint}>Tap to capture</Text>
-            </View>
+            // Show Capture button with Cancel
+            <>
+              <TouchableOpacity
+                style={styles.textButton}
+                onPress={onClose}
+              >
+                <Text style={styles.buttonText}>Cancel</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.captureButton}
+                onPress={handleCapture}
+              >
+                <View style={styles.captureButtonInner} />
+              </TouchableOpacity>
+
+              <View style={[styles.textButton, { minWidth: 60 }]} />
+            </>
           )}
         </View>
       </View>
@@ -421,8 +427,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     width: 40,
     height: 40,
-    borderColor: colors.primary,
-    borderWidth: 4,
+    borderColor: colors.background,
+    borderWidth: 6,
   },
   topLeft: {
     top: 0,
@@ -505,31 +511,39 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   buttonContainer: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: 50,
-    paddingTop: spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    paddingBottom: 80,
     backgroundColor: '#000',
+  },
+  textButton: {
+    // padding: 10,
+    // minWidth: 80,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
   },
   captureContainer: {
     alignItems: 'center',
   },
   captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: colors.primary,
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     justifyContent: 'center',
     alignItems: 'center',
-    borderWidth: 4,
-    borderColor: 'rgba(255,255,255,0.3)',
   },
   captureButtonInner: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: 'white',
   },
   captureHint: {
     fontSize: 14,
@@ -557,16 +571,19 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   confirmButton: {
-    flex: 2,
+    flex: 0,
+    minWidth: 150,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.primary,
+    // backgroundColor: '#00839B',
     paddingVertical: spacing.md,
-    borderRadius: 25,
+    // paddingHorizontal: spacing.lg,
+    borderRadius: 12,
     gap: 8,
   },
   confirmButtonText: {
+    textDecorationLine: 'underline',
     fontSize: 16,
     fontWeight: '600',
     color: '#fff',

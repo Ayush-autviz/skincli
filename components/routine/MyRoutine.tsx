@@ -1263,7 +1263,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       !item.dateStopped && item.type.toLowerCase() === 'product'
     ).length;
     const totalTreatments = routineItems.filter(item =>
-      !item.dateStopped && item.type.toLowerCase().includes('treatment')
+      !item.dateStopped && item.type.toLowerCase() !== 'product'
     ).length;
 
     return (

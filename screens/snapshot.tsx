@@ -55,6 +55,7 @@ interface SnapshotParams {
   timestamp?: string;
   fromPhotoGrid?: string;
   imageId?: string;
+  fromScanTab?: boolean;
 }
 
 interface PhotoData {
@@ -69,6 +70,8 @@ interface PhotoData {
   urls?: { [key: string]: string };
   masks?: { lines?: any };
 }
+
+
 
 // Configurations
 const ANALYSIS_TIMEOUT_SECONDS = 45;
@@ -95,6 +98,8 @@ const EllipsisMenu = ({
       ]
     );
   };
+
+
 
   return (
     <>
@@ -217,7 +222,9 @@ const SnapshotScreen = (): React.JSX.Element => {
   const insets = useSafeAreaInsets();
   const params = route.params as SnapshotParams || {};
 
-  const { photoId, localUri, userId: paramUserId, timestamp, fromPhotoGrid, imageId: passedImageId } = params;
+  const { photoId, localUri, userId: paramUserId, timestamp, fromPhotoGrid, imageId: passedImageId, fromScanTab } = params;
+
+  console.log('fromscan', fromScanTab);
 
   // Auth store
   const { user, profile } = useAuthStore();
@@ -416,7 +423,9 @@ const SnapshotScreen = (): React.JSX.Element => {
           ]);
 
           setUiState('complete');
-          refreshPhotos();
+          if (fromScanTab) {
+            refreshPhotos();
+          }
           stopPolling();
         } else {
           pollingTimeoutRef.current = setTimeout(poll, 3000);
@@ -533,8 +542,11 @@ const SnapshotScreen = (): React.JSX.Element => {
   };
 
   const handleClose = (): void => {
-    // (navigation as any).navigate('Tabs');
-    navigation.goBack();
+    if (fromScanTab) {
+      (navigation as any).navigate('Tabs', { screen: 'Home' });
+    } else {
+      navigation.goBack();
+    }
   };
 
   const handleNavigateToChat = (): void => {
@@ -619,6 +631,9 @@ const SnapshotScreen = (): React.JSX.Element => {
       .filter(key => metrics[key] !== undefined && typeof metrics[key] === 'number')
       .map(key => ({ key, value: metrics[key], label: formatMetricName(key) }))
     : [];
+
+  console.log('from screen', fromScanTab);
+
 
   return (
     <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#FFFFFF' }]}>

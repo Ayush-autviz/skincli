@@ -2,19 +2,19 @@
 // Camera screen with react-native-vision-camera integration
 
 import React, { useState, useRef, useEffect } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  ActivityIndicator, 
-  Alert, 
-  Linking, 
-  Image, 
-  Dimensions 
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Linking,
+  Image,
+  Dimensions
 } from 'react-native';
 import { Camera, useCameraDevices, useCameraPermission } from 'react-native-vision-camera';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useRoute } from '@react-navigation/native';
 import * as ImagePicker from 'react-native-image-picker';
 import useAuthStore from '../stores/authStore';
 import Svg, { Path, Defs, Mask, Rect } from 'react-native-svg';
@@ -80,16 +80,16 @@ FACE OVERLAY CONFIGURATION
 const FACE_OVERLAY = {
   // Width of face rectangle as percentage of screen width
   RECT_WIDTH_PCT: 0.76,
-  
+
   // Height of face rectangle as percentage of screen width (to maintain aspect ratio)
   RECT_HEIGHT_PCT: 1.1,
-  
+
   // Border radius of the face rectangle in pixels
   RECT_RADIUS_PCT: 0.3,
-  
+
   // Vertical center position as percentage of screen height (0 = top, 1 = bottom)
   RECT_CENTERED_AT_PCT: 0.45,
-  
+
   // Optional: Additional configuration
   BORDER_WIDTH: 2,
   BORDER_COLOR: 'rgba(255,255,255,.33)',
@@ -102,12 +102,12 @@ console.log('🔵 CAMERA: Camera screen with Haut.ai API integration loaded');
 // Add this component after the FACE_OVERLAY constants
 const FaceOverlay = (): React.JSX.Element => {
   const { width: screenWidth, height: screenHeight } = Dimensions.get('window');
-  
+
   // Calculate dimensions
   const faceWidth = screenWidth * FACE_OVERLAY.RECT_WIDTH_PCT;
   const faceHeight = screenWidth * FACE_OVERLAY.RECT_HEIGHT_PCT;
   const borderRadius = faceWidth * FACE_OVERLAY.RECT_RADIUS_PCT;
-  
+
   // Calculate position
   const centerY = screenHeight * FACE_OVERLAY.RECT_CENTERED_AT_PCT;
   const rectY = centerY - (faceHeight / 2);
@@ -129,14 +129,14 @@ const FaceOverlay = (): React.JSX.Element => {
           />
         </Mask>
       </Defs>
-      
+
       <Rect
         width="100%"
         height="100%"
         fill="rgba(0,0,0,0.45)"
         mask="url(#mask)"
       />
-      
+
       {/* Border for the face guide */}
       <Rect
         x={rectX}
@@ -153,12 +153,14 @@ const FaceOverlay = (): React.JSX.Element => {
   );
 };
 
-interface CameraScreenProps {}
+interface CameraScreenProps { }
 
 const CameraScreen = (): React.JSX.Element => {
   // Only the hooks we actually use
   const { user } = useAuthStore();
   const navigation = useNavigation();
+  const route = useRoute();
+  const fromScanTab = (route.params as any)?.fromScanTab;
   const [camera, setCamera] = useState<Camera | null>(null);
   const [isCameraActive, setIsCameraActive] = useState<boolean>(true);
   const [facing, setFacing] = useState<'front' | 'back'>('front');
@@ -180,7 +182,7 @@ const CameraScreen = (): React.JSX.Element => {
       uid: user?.user_id,
       email: user?.email
     });
-    
+
     // Test API connection if user is authenticated
     if (user?.user_id) {
       testUserRegistration(user.user_id, user.email);
@@ -191,18 +193,18 @@ const CameraScreen = (): React.JSX.Element => {
   const testUserRegistration = async (userId: string, userEmail: string): Promise<void> => {
     try {
       console.log('🔵 TEST: Testing user registration in external API');
-      
+
       // Try to create user subject (this will fail if user already exists, which is fine)
       // const { subjectId } = await createUserSubject(userId, userEmail);
       console.log('✅ TEST: User registration check skipped (already registered)');
-      
+
     } catch (error: any) {
       if (error.message.includes('already exists') || error.message.includes('duplicate')) {
         console.log('✅ TEST: User already exists in external API (this is expected)');
       } else {
         console.error('🔴 TEST: User registration test failed:', error);
         Alert.alert(
-          'API Connection Issue', 
+          'API Connection Issue',
           'Unable to connect to analysis service. Please check your internet connection and try again.',
           [
             { text: 'OK', onPress: () => console.log('User acknowledged API issue') }
@@ -217,7 +219,7 @@ const CameraScreen = (): React.JSX.Element => {
     return () => {
       // Ensure shutdown is called on unmount
       (async () => {
-         await shutdownCamera();
+        await shutdownCamera();
       })();
     };
   }, []);
@@ -257,7 +259,7 @@ const CameraScreen = (): React.JSX.Element => {
   //               <Settings size={20} color={colors.textOnPrimary} />
   //               <Text style={styles.primaryButtonText}>Open Settings</Text>
   //             </TouchableOpacity>
-              
+
   //             <TouchableOpacity 
   //               style={styles.secondaryButton}
   //               onPress={() => (navigation as any).goBack()}
@@ -286,14 +288,14 @@ const CameraScreen = (): React.JSX.Element => {
               Please sign in to use the camera and analyze your skin photos.
             </Text>
             <View style={styles.errorButtonContainer}>
-              <TouchableOpacity 
+              <TouchableOpacity
                 style={styles.primaryButton}
                 onPress={() => (navigation as any).navigate('SignIn')}
               >
                 <Text style={styles.primaryButtonText}>Sign In</Text>
               </TouchableOpacity>
-              
-              <TouchableOpacity 
+
+              <TouchableOpacity
                 style={styles.secondaryButton}
                 onPress={() => (navigation as any).goBack()}
               >
@@ -361,23 +363,24 @@ const CameraScreen = (): React.JSX.Element => {
 
       const userId = user.user_id;
       console.log('🔵 PROCESS: User ID found:', userId);
-      
+
       const photoId = `${Date.now()}`;
-      
+
       await shutdownCamera();
-      await new Promise<void>(resolve => setTimeout(resolve, 200)); 
-      
+      await new Promise<void>(resolve => setTimeout(resolve, 200));
+
       // Navigate to snapshot screen immediately with photo data
       // The snapshot screen will handle Haut.ai API processing and polling for results
-      (navigation as any).navigate('Snapshot', { 
-        photoId, 
+      (navigation as any).navigate('Snapshot', {
+        photoId,
         localUri: photo.uri,
         userId: userId,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        fromScanTab: fromScanTab
       });
-      
+
       console.log('✅ PROCESS: Navigated to snapshot screen for Haut.ai processing');
-      
+
     } catch (error: any) {
       console.error('🔴 PROCESS ERROR (General):', error);
       Alert.alert('Error', `Failed to process photo: ${error.message}`);
@@ -405,7 +408,7 @@ const CameraScreen = (): React.JSX.Element => {
       console.error('🔴 CAMERA ERROR Stack:', error.stack);
       Alert.alert('Error', 'Failed to capture photo. Please try again.');
       // Ensure camera is reactivated if processPhoto failed early
-      setIsCameraActive(true); 
+      setIsCameraActive(true);
     }
   };
 
@@ -413,7 +416,7 @@ const CameraScreen = (): React.JSX.Element => {
   const handleUpload = async (): Promise<void> => {
     try {
       console.log('🔵 UPLOAD: Starting upload flow');
-      
+
       // Using settings directly from the React Native Image Picker documentation
       const result = await ImagePicker.launchImageLibrary({
         mediaType: 'photo',
@@ -441,19 +444,19 @@ const CameraScreen = (): React.JSX.Element => {
     }
   };
 
-  
+
   return (
     <View style={styles.container}>
       {isCameraActive ? (
         <>
-        {device && (
-          <Camera 
-            ref={ref => setCamera(ref)}
-            style={styles.camera}
-            device={device}
-            isActive={isCameraActive}
-            photo={true}
-          />
+          {device && (
+            <Camera
+              ref={ref => setCamera(ref)}
+              style={styles.camera}
+              device={device}
+              isActive={isCameraActive}
+              photo={true}
+            />
           )}
           <FaceOverlay />
           <View style={styles.instructionsContainer}>
@@ -462,7 +465,7 @@ const CameraScreen = (): React.JSX.Element => {
             <Text style={styles.instructionsText}>Do not wear makeup</Text>
           </View>
           <View style={styles.buttonContainer}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.textButton}
               onPress={async () => {
                 await shutdownCamera();
@@ -472,7 +475,7 @@ const CameraScreen = (): React.JSX.Element => {
               <Text style={styles.buttonText}>Cancel</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.captureButton}
               onPress={handleCapture}
             >
@@ -497,7 +500,7 @@ const styles = StyleSheet.create({
   camera: {
     flex: 1,
   },
-  
+
   // Instructions
   instructionsContainer: {
     position: 'absolute',
@@ -516,7 +519,7 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 3,
   },
-  
+
   // Camera Controls
   buttonContainer: {
     flex: 0,
@@ -555,7 +558,7 @@ const styles = StyleSheet.create({
     borderRadius: 25,
     backgroundColor: 'white',
   },
-  
+
   // Loading State
   loadingContainer: {
     flex: 1,
@@ -569,7 +572,7 @@ const styles = StyleSheet.create({
     marginTop: spacing.md,
     textAlign: 'center',
   },
-  
+
   // Error States - Matching app design
   errorContainer: {
     flex: 1,
@@ -604,13 +607,13 @@ const styles = StyleSheet.create({
     lineHeight: 22,
     marginBottom: spacing.xl,
   },
-  
+
   // Error State Button Container
   errorButtonContainer: {
     alignItems: 'center',
     width: '100%',
   },
-  
+
   // Button Styles - Matching app design
   primaryButton: {
     flexDirection: 'row',
@@ -648,7 +651,7 @@ const styles = StyleSheet.create({
     marginLeft: spacing.sm,
     fontWeight: '500',
   },
-  
+
   // Legacy styles (keeping for compatibility)
   message: {
     fontSize: 16,

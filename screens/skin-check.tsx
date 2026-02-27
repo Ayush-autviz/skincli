@@ -105,7 +105,7 @@ const SkinCheckScreen = () => {
                     {step === 1 ? (
                         <>
                             <View style={styles.iconContainer}>
-                                <CheckCircle2 size={44} color="#00839B" strokeWidth={2} />
+                                <CheckCircle2 size={85} color="#00839B" strokeWidth={1.5} />
                             </View>
 
                             <Text style={styles.title}>SkinCheck</Text>

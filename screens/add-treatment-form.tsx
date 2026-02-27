@@ -336,7 +336,7 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                     {
                         text: 'OK',
                         onPress: () =>
-                            (navigation as any).navigate('Tabs', { screen: 'Routine' }),
+                            (navigation as any).navigate('Tabs', { screen: 'MyRoutine' }),
                     },
                 ]);
             }
@@ -452,17 +452,12 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                         </TouchableOpacity>
 
                         {/* Concerns */}
-                        <Text style={styles.sectionTitle}>What concerns are you addressing?</Text>
-                        {/* <Text style={styles.subTitle}>Select all that apply</Text> */}
-                        <View style={styles.chipsContainer}>
+                        <Text style={styles.sectionTitle}>Concerns addressed</Text>
+                        <View style={styles.infoListContainer}>
                             {selectedSubcategory.concerns.map(concern => (
-                                <View
-                                    key={concern}
-                                    style={styles.chip}
-                                >
-                                    <Text style={styles.chipText}>
-                                        {concern}
-                                    </Text>
+                                <View key={concern} style={styles.infoListItem}>
+                                    <View style={styles.infoListDot} />
+                                    <Text style={styles.infoListText}>{concern}</Text>
                                 </View>
                             ))}
                         </View>
@@ -471,15 +466,11 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                         {selectedSubcategory.metricNames && selectedSubcategory.metricNames.length > 0 && (
                             <>
                                 <Text style={styles.sectionTitle}>Metrics addressed</Text>
-                                <View style={styles.chipsContainer}>
+                                <View style={styles.infoListContainer}>
                                     {selectedSubcategory.metricNames.map(metric => (
-                                        <View
-                                            key={metric}
-                                            style={styles.chip}
-                                        >
-                                            <Text style={styles.chipText}>
-                                                {metric}
-                                            </Text>
+                                        <View key={metric} style={styles.infoListItem}>
+                                            <View style={styles.infoListDot} />
+                                            <Text style={styles.infoListText}>{metric}</Text>
                                         </View>
                                     ))}
                                 </View>
@@ -677,6 +668,31 @@ const styles = StyleSheet.create({
         backgroundColor: '#F5F5F4',
         borderWidth: 1,
         borderColor: '#E7E5E4',
+    },
+    infoListContainer: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        marginBottom: 8,
+    },
+    infoListItem: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        width: '50%',
+        marginBottom: 10,
+        paddingRight: 8,
+    },
+    infoListDot: {
+        width: 5,
+        height: 5,
+        borderRadius: 2.5,
+        backgroundColor: '#0498B3',
+        marginRight: 10,
+    },
+    infoListText: {
+        fontSize: 14,
+        color: '#57534E',
+        flex: 1,
+        lineHeight: 18,
     },
     selectedChip: {
         backgroundColor: '#57534E',

@@ -320,7 +320,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
                 disabled={isProcessing}
               >
                 {/* <Text style={styles.buttonText}>Retake</Text> */}
-                <RotateCw size={20} color="#fff" />
+                <RotateCw size={24} color="#fff" />
               </TouchableOpacity>
 
               <TouchableOpacity

@@ -70,11 +70,12 @@ const styles = StyleSheet.create({
         backgroundColor: '#FFFFFF',
         // justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 250
+        //marginTop: 250
     },
     logoCircle: {
         width: 120,
         height: 120,
+        marginTop: 250,
         borderRadius: 1000,
         backgroundColor: '#FFFFFF',
         justifyContent: 'center',

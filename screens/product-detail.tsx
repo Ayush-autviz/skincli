@@ -19,6 +19,7 @@ import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, Trendi
 import { colors, fontSize, spacing, typography, borderRadius, shadows, fontFamily } from '../styles';
 import { searchProductByUPC, deleteRoutineItem, toggleTracking, getRoutineItems } from '../utils/newApiService';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
+import HomeHeader from '../components/ui/HomeHeader';
 
 interface ProductDetailParams {
   itemId?: string;
@@ -732,25 +733,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
         </View>
       </Modal>
       {/* Header */}
-      <View style={styles.headerContainer}>
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={handleBack}
-          >
-            <View style={styles.iconContainer}>
-              <ChevronLeft size={30} color={"#44403C"} />
-            </View>
-          </TouchableOpacity>
-
-          <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>Product Detail</Text>
-          </View>
-
-          <View style={styles.rightContainer} />
-        </View>
-        <View style={styles.shadowContainer} />
-      </View>
+      <HomeHeader onBackPress={handleBack} />
 
       {isFetchingProduct ? (
         <ProductDetailSkeleton />
@@ -785,6 +768,19 @@ const ProductDetailScreen = (): React.JSX.Element => {
                   <Text style={styles.productNameNew}>
                     {productData.product_name || routineData.name || 'Unknown Product'}
                   </Text>
+
+                  {/* Dynamic Usage Text */}
+                  {!isAddMode && routineData.dateStarted && (
+                    <Text style={{
+                      fontSize: fontSize.sm,
+                      fontFamily: fontFamily.regular,
+                      color: colors.textSecondary,
+                      marginTop: spacing.sm,
+                      lineHeight: 20
+                    }}>
+                      Using <Text style={{ fontFamily: fontFamily.semiBold }}>{formatConcernName(routineData.frequency || '')} / {getUsagePills().join(' / ')}</Text> since <Text style={{ fontFamily: fontFamily.semiBold }}>{new Date(routineData.dateStarted).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+                    </Text>
+                  )}
                 </View>
               </View>
               {/* Add to Your Routine Button - Only in add mode */}
@@ -796,6 +792,43 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 >
                   <Text style={styles.addToRoutineText}>Add to Your Routine</Text>
                 </TouchableOpacity>
+              )}
+
+              {/* Usage text, Remove, and Edit buttons - Only in view mode */}
+              {!isAddMode && (
+                <View style={{ marginTop: 0, width: '100%' }}>
+
+                  {/* Remove Button */}
+                  <TouchableOpacity
+                    style={styles.addToRoutineButton}
+                    onPress={handleRemove}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.addToRoutineText}>Remove from routine</Text>
+                  </TouchableOpacity>
+
+                  {/* Edit Button */}
+                  {/* <TouchableOpacity
+                    style={{
+                      flexDirection: 'row',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      gap: 6,
+                      marginTop: spacing.md
+                    }}
+                    onPress={handleEdit}
+                    activeOpacity={0.7}
+                  >
+                    <Edit size={16} color={colors.textSecondary} />
+                    <Text style={{
+                      fontSize: fontSize.md,
+                      fontFamily: fontFamily.medium,
+                      color: colors.textSecondary
+                    }}>
+                      Edit
+                    </Text>
+                  </TouchableOpacity> */}
+                </View>
               )}
             </View>
           </View>

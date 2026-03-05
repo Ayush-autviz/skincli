@@ -659,10 +659,27 @@ export default function HomeScreen(): React.JSX.Element {
                                 style={styles.seeAllButton}
                                 onPress={() => {
                                     if (currentPhoto) {
-                                        const photoId = currentPhoto.id || currentPhoto.hautUploadData?.imageId;
-                                        (navigation as any).navigate('Progress', { photoId });
+                                        // Set selected snapshot in context before navigating
+                                        setSelectedSnapshot({
+                                            id: currentPhoto.id,
+                                            url: currentPhoto.storageUrl,
+                                            storageUrl: currentPhoto.storageUrl,
+                                            threadId: currentPhoto.threadId,
+                                            apiData: {
+                                                created_at: currentPhoto.apiData?.created_at || null
+                                            }
+                                        });
+
+                                        (navigation as any).navigate('Snapshot', {
+                                            photoId: currentPhoto.id,
+                                            thumbnailUrl: currentPhoto.storageUrl,
+                                            localUri: currentPhoto.storageUrl,
+                                            timestamp: currentPhoto.apiData?.created_at || null,
+                                            fromPhotoGrid: 'true',
+                                            imageId: currentPhoto.hautUploadData?.imageId || currentPhoto.id,
+                                        });
                                     } else {
-                                        (navigation as any).navigate('Progress');
+                                        (navigation as any).navigate('Camera');
                                     }
                                 }}
                             >

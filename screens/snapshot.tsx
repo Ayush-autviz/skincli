@@ -405,7 +405,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                       'acneScore', 'hydrationScore', 'eyeAreaCondition', 'linesScore', 'poresScore'
                     ];
                     scoreKeys.forEach(key => {
-                      const curr = transformedMetrics[key];
+                      const curr = (transformedMetrics as any)[key];
                       const prev = (prevMetrics as any)[key];
                       if (curr !== undefined && prev !== undefined && typeof curr === 'number' && typeof prev === 'number') {
                         const diff = curr - prev;
@@ -656,7 +656,17 @@ const SnapshotScreen = (): React.JSX.Element => {
       >
         {/* Photo Card */}
         {imageUri ? (
-          <View style={styles.photoCard}>
+          <TouchableOpacity
+            style={styles.photoCard}
+            onPress={() => {
+              if (photoData) {
+                (navigation as any).navigate('MaskViewer', {
+                  photoData: JSON.stringify(photoData)
+                });
+              }
+            }}
+            activeOpacity={0.9}
+          >
             <Image
               source={{ uri: imageUri }}
               style={styles.photoImage}
@@ -665,7 +675,7 @@ const SnapshotScreen = (): React.JSX.Element => {
             <View style={styles.photoOverlayChip}>
               <Text style={styles.photoOverlayChipText}>+ Zoom / Masks</Text>
             </View>
-          </View>
+          </TouchableOpacity>
         ) : null}
 
         {/* AI Insight Card – styled like MyRoutine's RoutineListFooter */}
@@ -758,7 +768,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                     <View>
                       <Text style={styles.analysisMetricName}>{item.label}</Text>
                       {item.key === 'poresScore' && (
-                        <Text style={styles.analysisMicrotext}>This is microtext</Text>
+                        <Text style={styles.analysisMicrotext}>Face a light source for best results</Text>
                       )}
                     </View>
                   </View>

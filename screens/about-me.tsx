@@ -25,6 +25,7 @@ import { getProfile } from '../utils/newApiService';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageWithSkeleton from '../components/ui/ImageWithSkeleton';
+import ActivityList from '../components/routine/ActivityList';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const HORIZONTAL_PADDING = 16; // spacing.md
@@ -199,7 +200,7 @@ export default function AboutMeScreen(): React.JSX.Element {
 
     return (
         <View style={styles.container}>
-            <HomeHeader onMenuPress={() => setIsSettingsVisible(true)} />
+            <HomeHeader onMenuPress={() => setIsSettingsVisible(true)} title="About Me" />
 
 
 
@@ -275,7 +276,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                         onPress={() => setActiveTab('activity')}
                     >
                         <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>
-                            TBD
+                            Journal
                         </Text>
                     </TouchableOpacity>
                 </View>
@@ -323,12 +324,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                     />
                 )
             ) : (
-                <View style={styles.emptyContainer}>
-                    <Text style={styles.emptyText}>Activity</Text>
-                    <Text style={styles.emptySubtext}>
-                        Your activity will appear here
-                    </Text>
-                </View>
+                <ActivityList />
             )}
 
             <SettingsDrawer

@@ -26,7 +26,6 @@ import SettingsDrawer from '../components/layout/SettingsDrawer';
 
 import MyRoutine from '../components/routine/MyRoutine';
 import RecommendationsList from '../components/routine/RecommendationsList';
-import ActivityList from '../components/routine/ActivityList';
 import { colors, spacing, typography, fontFamily } from '../styles';
 
 export default function RoutineTab(): React.JSX.Element {
@@ -59,7 +58,7 @@ export default function RoutineTab(): React.JSX.Element {
     <View style={styles.outerContainer}>
       {/* Custom Magic Mirror Header */}
       {/* Custom Magic Mirror Header */}
-      <HomeHeader onMenuPress={handleMenuPress} />
+      <HomeHeader onMenuPress={handleMenuPress} title="My Routine" />
 
       <View style={styles.contentContainer}>
         {/* Tab Navigation */}
@@ -78,20 +77,12 @@ export default function RoutineTab(): React.JSX.Element {
             <Text style={[styles.tabText, activeTab === 'recommendations' && styles.activeTabText]}>Ingredients</Text>
             {activeTab === 'recommendations' && <View style={styles.activeTabIndicator} />}
           </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.tabButton}
-            onPress={() => setActiveTab('activity')}
-          >
-            <Text style={[styles.tabText, activeTab === 'activity' && styles.activeTabText]}>Journal</Text>
-            {activeTab === 'activity' && <View style={styles.activeTabIndicator} />}
-          </TouchableOpacity>
         </View>
 
         {/* Tab Content */}
         <View style={styles.tabContentContainer}>
           {activeTab === 'myRoutine' && <MyRoutine ref={myRoutineRef} />}
           {activeTab === 'recommendations' && <RecommendationsList recommendations={[]} onRecommendationPress={() => { }} />}
-          {activeTab === 'activity' && <ActivityList />}
         </View>
       </View>
 

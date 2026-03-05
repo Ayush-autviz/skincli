@@ -99,6 +99,8 @@ interface RoutineItem {
   dateCreated: Date;
   is_tracking_paused: boolean;
   upc?: string; // UPC code for scanned products
+  brand?: string;
+  image_url?: string;
   extra: any;
 }
 
@@ -368,6 +370,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       stopReason: apiItem.end_reason || '',
       dateCreated: getDate(apiItem.dateCreated) || new Date(),
       upc: apiItem.upc || undefined, // Include UPC code if present
+      brand: apiItem.brand_name || apiItem.brand || undefined,
+      image_url: apiItem.image_url || undefined,
       extra: apiItem.extra || {}
     };
   };
@@ -749,6 +753,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       usage: finalUsage,
       frequency: formatParameter(newItemFrequency),
       concern: newItemConcerns,
+      brand_name: editingItem?.brand || undefined,
+      image_url: editingItem?.image_url || undefined,
       extra: {
         concerns: newItemConcerns,
         dateCreated: editingItem?.dateCreated?.toISOString() || new Date().toISOString()
@@ -898,14 +904,27 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     }
 
     // Get brand name if available
-    const brandName = item.extra?.brand || 'CERAVE';
+    const brandName = item.extra?.brand || (item as any).brand_name || (item as any).brand || '';
 
-    const renderItemImage = () => (
-      <Image
-        source={{ uri: 'https://images.unsplash.com/photo-1620916566398-39f1143ab7be?ixlib=rb-4.0.3&auto=format&fit=crop&w=150&q=80' }}
-        style={styles.itemImage}
-      />
-    );
+    const renderItemImage = () => {
+      const imageUrl = item.extra?.image_url || (item as any).image_url;
+      if (imageUrl) {
+        return (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.itemImage}
+            resizeMode="cover"
+          />
+        );
+      }
+      return (
+        <View style={[styles.itemImage, { justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ color: '#A9A29D', fontSize: 10 }}>No Image</Text>
+        </View>
+      );
+    };
+
+    console.log('item routine', item);
 
     return (
       <TouchableOpacity
@@ -913,12 +932,16 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         onPress={() => item && handleNavigateToProductDetail(item)}
         activeOpacity={0.9}
       >
-        {/* <View style={styles.itemImageContainer}>
+        <View style={styles.itemImageContainer}>
           {renderItemImage()}
-        </View> */}
+        </View>
 
         <View style={styles.itemContentContainer}>
-          <Text style={styles.brandText}>{brandName}</Text>
+          {
+            brandName && (
+              <Text style={styles.brandText}>{brandName}</Text>
+            )
+          }
           <Text style={styles.itemNameText}>{item.name}</Text>
 
           <Text style={styles.usageText}>
@@ -1277,61 +1300,58 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           </TouchableOpacity>
         </View>
 
-        {/* Archived Section Card */}
-        {routineItems.some(item => item.dateStopped && new Date(item.dateStopped) <= new Date()) && (
-          <TouchableOpacity
-            style={styles.archivedCard}
-            onPress={() => (navigation as any).navigate('ArchivedRoutines')}
-            activeOpacity={0.9}
-          >
-            <View style={styles.archivedIconContainer}>
-              <Archive size={26} color="#717680" />
-            </View>
-            <View style={styles.archivedCardContent}>
-              <Text style={styles.archivedCardTitle}>Previously used products</Text>
-              <Text style={styles.archivedCardSubtitle}>
-                {routineItems.filter(item => item.dateStopped && new Date(item.dateStopped) <= new Date()).length} archived items
-              </Text>
-            </View>
-            <ChevronRight size={20} color="#D6D3D1" />
-          </TouchableOpacity>
-        )}
       </View>
     );
   };
 
   // --- List Footer Component ---
-  const RoutineListFooter = (): React.JSX.Element => (
-    <View style={styles.listFooterContainer}>
-      <TouchableOpacity
-        style={styles.letsGetStartedCard}
-        activeOpacity={0.85}
-        onPress={handleNavigateToChat}
-      >
-        <View style={styles.avatarContainer}>
-          <Image
-            source={require('../../assets/images/amber-avatar-new.png')}
-            style={styles.avatarImageLarge}
-            resizeMode="contain"
-          />
-        </View>
-        <View style={styles.letsGetStartedContent}>
-          <Text style={styles.letsGetStartedTitle}>Let’s get started!</Text>
-          <Text style={styles.letsGetStartedText}>
-            Chat with me here to add your current skincare routine — or fill it in manually by tapping the add button.
-          </Text>
-        </View>
-      </TouchableOpacity>
+  const RoutineListFooter = (): React.JSX.Element => {
+    const archivedItemsCount = routineItems.filter(item => item.dateStopped && new Date(item.dateStopped) <= new Date()).length;
 
-      <TouchableOpacity
-        style={styles.mainAddButton}
-        onPress={openAddModal}
-        activeOpacity={0.8}
-      >
-        <Text style={styles.mainAddButtonText}>Add to routine</Text>
-      </TouchableOpacity>
-    </View>
-  );
+    return (
+      <View style={styles.listFooterContainer}>
+        {/* Mini Archived Section */}
+        {archivedItemsCount > 0 && (
+          <TouchableOpacity
+            style={styles.miniArchivedCard}
+            onPress={() => (navigation as any).navigate('ArchivedRoutines')}
+            activeOpacity={0.7}
+          >
+            <Archive size={14} color="#A9A29D" style={{ marginRight: 6 }} />
+            <Text style={styles.miniArchivedText}>{archivedItemsCount} archived items</Text>
+          </TouchableOpacity>
+        )}
+
+        <TouchableOpacity
+          style={styles.letsGetStartedCard}
+          activeOpacity={0.85}
+          onPress={handleNavigateToChat}
+        >
+          <View style={styles.avatarContainer}>
+            <Image
+              source={require('../../assets/images/amber-avatar-new.png')}
+              style={styles.avatarImageLarge}
+              resizeMode="contain"
+            />
+          </View>
+          <View style={styles.letsGetStartedContent}>
+            <Text style={styles.letsGetStartedTitle}>Let’s get started!</Text>
+            <Text style={styles.letsGetStartedText}>
+              Chat with me here to add your current skincare routine — or fill it in manually by tapping the add button.
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={styles.mainAddButton}
+          onPress={openAddModal}
+          activeOpacity={0.8}
+        >
+          <Text style={styles.mainAddButtonText}>+ Add to routine</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   return (
     <View style={styles.container}>
@@ -1449,8 +1469,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   archivedCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
     backgroundColor: '#E9EAEB',
     borderRadius: 16,
     padding: 8,
@@ -1500,6 +1518,19 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#78716C',
     marginLeft: 6,
+  },
+  // Mini Archived Text Button
+  miniArchivedCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    marginBottom: spacing.md,
+  },
+  miniArchivedText: {
+    fontSize: 13,
+    color: '#A9A29D',
+    fontWeight: '500',
   },
 
   // --- Section Header ---
@@ -1608,9 +1639,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   chevronContainer: {
-    justifyContent: 'flex-start',
-    paddingLeft: 8,
-    paddingTop: 0, // Align with top content
+    position: 'absolute',
+    right: 16,
+    top: 16,
   },
 
   // --- List Footer (Let's get started) ---
@@ -1848,6 +1879,13 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     justifyContent: 'flex-end',
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    zIndex: 9999,
+    elevation: 9999,
   },
   sheetContainer: {
     backgroundColor: '#FFFFFF',

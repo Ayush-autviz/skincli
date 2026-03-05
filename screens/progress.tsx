@@ -176,6 +176,7 @@ export default function ProgressTab(): React.JSX.Element {
     <View style={styles.container}>
       <HomeHeader
         onMenuPress={handleMenuPress}
+        title="Progress"
       />
 
       <View style={styles.content}>

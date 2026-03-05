@@ -1,8 +1,8 @@
 import React from 'react';
-import { View, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
 import { SvgXml } from 'react-native-svg';
-import { colors, spacing } from '../../styles';
-import { Menu } from 'lucide-react-native';
+import { colors, spacing, fontFamily } from '../../styles';
+import { ChevronLeft } from 'lucide-react-native';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -21,49 +21,35 @@ const headerSvg = `<svg width="159" height="32" viewBox="0 0 159 32" fill="none"
 </svg>`;
 
 interface HomeHeaderProps {
-    onMenuPress: () => void;
+    onMenuPress?: () => void;
+    onBackPress?: () => void;
     rightComponent?: React.ReactNode;
+    title?: string;
 }
 
-export default function HomeHeader({ onMenuPress, rightComponent }: HomeHeaderProps): React.JSX.Element {
+export default function HomeHeader({ onMenuPress, onBackPress, rightComponent, title }: HomeHeaderProps): React.JSX.Element {
     return (
         <View style={styles.headerContainer}>
             <View style={styles.header}>
-                {/* Left - Menu Icon (Hidden/Removed based on design, but keeping placeholder logic if needed) 
-                For now, we'll keep the menu functionality available but maybe minimal or hidden if requested.
-                The prompt asked for "Header like this" (image) which has no menu. 
-                However, to preserve functionality, I'll allow it but maybe the user wants it removed?
-                Given "new component" request, I'll replicate the design exactly.
-                The design has NO menu icon.
-                But I'll put a transparent touchable area or just omit it?
-                If I omit it, user can't open settings.
-                I will include the menu button but make it transparent/hidden or subtle? 
-                No, I'll format it as a standard header but with the Logo in center.
-                If the user wants to remove the menu icon, I'll wait for explicit instruction.
-                The image shows a CLEAN header. 
-                I'll render the menu icon but maybe clean up the styling to match the white aesthetics.
-            */}
-
-                {/* Menu Button - Kept for functionality, but we can adjust styling/visibility */}
-                {/** 
-             * NOTE: The user's screenshot does NOT show a menu icon.
-             * I will comment this out to match the visual request exactly.
-             * If navigation is needed, I can add it back.
-             */}
-                {/* <TouchableOpacity 
-            onPress={onMenuPress}
-            style={styles.menuButton}
-            activeOpacity={0.7}
-          >
-             <Menu size={24} color={colors.textPrimary} />
-          </TouchableOpacity> */}
-                {/* Placeholder for left side balance */}
-                <View style={{ width: 44 }} />
-
-
-                {/* Center - Logo */}
+                {/* Left - Back or Menu Component */}
+                {onBackPress ? (
+                    <TouchableOpacity
+                        onPress={onBackPress}
+                        style={styles.menuButton}
+                        activeOpacity={0.7}
+                    >
+                        <ChevronLeft size={30} color="#44403C" />
+                    </TouchableOpacity>
+                ) : (
+                    <View style={{ width: 44 }} />
+                )}
+                {/* Center - Logo or Title */}
                 <View style={styles.logoContainer}>
-                    <SvgXml xml={headerSvg} width={159} height={26} />
+                    {title ? (
+                        <Text style={styles.headerTitle}>{title}</Text>
+                    ) : (
+                        <SvgXml xml={headerSvg} width={159} height={26} />
+                    )}
                 </View>
 
                 {/* Right - Optional Component */}
@@ -75,7 +61,7 @@ export default function HomeHeader({ onMenuPress, rightComponent }: HomeHeaderPr
 
             {/* Bottom border */}
             <View style={styles.borderContainer} />
-        </View>
+        </View >
     );
 }
 
@@ -100,6 +86,7 @@ const styles = StyleSheet.create({
     menuButton: {
         width: 44,
         height: 44,
+        marginTop: 10,
         justifyContent: 'center',
         alignItems: 'flex-start',
     },
@@ -108,6 +95,12 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         justifyContent: 'center',
         paddingTop: 12,
+    },
+    headerTitle: {
+        fontSize: 22,
+        fontFamily: fontFamily.semiBold,
+        color: '#1C1917',
+
     },
     rightContainer: {
         width: 44,

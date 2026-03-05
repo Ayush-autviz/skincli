@@ -1778,6 +1778,16 @@ export const createRoutineItem = async (itemData) => {
       formData.append("upc", itemData.upc);
     }
 
+    // Add brand if provided
+    if (itemData.brand_name) {
+      formData.append("brand_name", itemData.brand_name);
+    }
+
+    // Add image_url if provided
+    if (itemData.image_url) {
+      formData.append("image_url", itemData.image_url);
+    }
+
     // Add new fields for updated API
     if (itemData.concern && Array.isArray(itemData.concern)) {
       formData.append("concern", JSON.stringify(itemData.concern));
@@ -1847,9 +1857,10 @@ export const updateRoutineItem = async (itemId, itemData) => {
 
     // Create form data as API expects application/x-www-form-urlencoded
     const formData = new URLSearchParams();
-    formData.append("name", itemData.name);
     formData.append("type", itemData.type?.toLowerCase() || '');
-    formData.append("upc", itemData.upc);
+    if (itemData.upc) formData.append("upc", itemData.upc);
+    if (itemData.brand_name) formData.append("brand_name", itemData.brand_name);
+    if (itemData.image_url) formData.append("image_url", itemData.image_url);
 
     // Only add usage and frequency if they exist (for non-treatment types)
     if (itemData.usage) {
@@ -2064,6 +2075,7 @@ export const getComparisonSummaries = async () => {
     if (response.data.status === 200) {
       console.log('✅ Comparison summaries fetched successfully');
       const summaries = (response.data.data && response.data.data.summaries) || [];
+      console.log('🔵 Summaries:', summaries);
       return {
         success: true,
         data: summaries,

@@ -35,6 +35,7 @@ export default function ProgressTab(): React.JSX.Element {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<any>(null);
   const [isError, setIsError] = useState<boolean>(false);
+  const [apiTopConcerns, setApiTopConcerns] = useState<string[]>([]);
 
   const handleMenuPress = (): void => {
     // setIsSettingsVisible(true);
@@ -56,6 +57,10 @@ export default function ProgressTab(): React.JSX.Element {
       const response = await getComparison('older_than_6_month');
 
       if ((response as any).success && (response as any).data) {
+        const resultData = (response as any).data?.result;
+        const apiTopConcernsData = resultData?.user_top_concerns || [];
+        setApiTopConcerns(apiTopConcernsData);
+
         const transformedPhotos = transformComparisonData((response as any).data);
         console.log(`✅ Loaded ${transformedPhotos.length} photos for progress display`);
         setPhotos(transformedPhotos);
@@ -197,7 +202,7 @@ export default function ProgressTab(): React.JSX.Element {
               />
             }
           >
-            <MetricsSeries photos={analyzedPhotos} initialPhotoId={initialPhotoId} />
+            <MetricsSeries photos={analyzedPhotos} initialPhotoId={initialPhotoId} apiTopConcerns={apiTopConcerns} setApiTopConcerns={setApiTopConcerns} />
           </ScrollView>
         ) : (
           <EmptyState />

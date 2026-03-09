@@ -286,44 +286,36 @@ export default function HomeScreen(): React.JSX.Element {
                     }
                 };
 
-                // Extract top concerns - Pigmentation, Evenness, Redness
+                // Define map of all supported metric keys -> Concern Name
+                const METRIC_TO_CONCERN_MAP: Record<string, string> = {
+                    pigmentationScore: 'Pigmentation',
+                    uniformnessScore: 'Evenness',
+                    rednessScore: 'Redness',
+                    acneScore: 'Breakouts',
+                    poresScore: 'Visible Pores',
+                    linesScore: 'Lines',
+                    hydrationScore: 'Dewiness',
+                    eyeAreaCondition: 'Eye Area Condition'
+                };
+
+                // Extract top concerns dynamically
                 const concerns: TopConcern[] = [];
 
-                if (transformedMetrics.pigmentationScore !== undefined) {
-                    const changeInfo = calculateChange(
-                        transformedMetrics.pigmentationScore,
-                        previousMetrics?.pigmentationScore
-                    );
-                    concerns.push({
-                        name: 'Pigmentation',
-                        value: transformedMetrics.pigmentationScore,
-                        ...changeInfo,
-                    });
-                }
-
-                if (transformedMetrics.uniformnessScore !== undefined) {
-                    const changeInfo = calculateChange(
-                        transformedMetrics.uniformnessScore,
-                        previousMetrics?.uniformnessScore
-                    );
-                    concerns.push({
-                        name: 'Evenness',
-                        value: transformedMetrics.uniformnessScore,
-                        ...changeInfo,
-                    });
-                }
-
-                if (transformedMetrics.rednessScore !== undefined) {
-                    const changeInfo = calculateChange(
-                        transformedMetrics.rednessScore,
-                        previousMetrics?.rednessScore
-                    );
-                    concerns.push({
-                        name: 'Redness',
-                        value: transformedMetrics.rednessScore,
-                        ...changeInfo,
-                    });
-                }
+                Object.entries(METRIC_TO_CONCERN_MAP).forEach(([metricKey, concernName]) => {
+                    if (transformedMetrics[metricKey] !== undefined && transformedMetrics[metricKey] !== null) {
+                        if (transformedMetrics.topConcerns && transformedMetrics.topConcerns.includes(metricKey)) {
+                            const changeInfo = calculateChange(
+                                transformedMetrics[metricKey],
+                                previousMetrics?.[metricKey]
+                            );
+                            concerns.push({
+                                name: concernName,
+                                value: transformedMetrics[metricKey],
+                                ...changeInfo,
+                            });
+                        }
+                    }
+                });
 
                 setTopConcerns(concerns);
             }
@@ -689,7 +681,10 @@ export default function HomeScreen(): React.JSX.Element {
                     ) : (
                         <View style={styles.emptyConcernsContainer}>
                             <Text style={styles.emptyConcernsText}>
-                                Complete a new scan to see your skin scores
+                                {topConcerns.length > 0
+                                    ? "No top concerns selected. Go to your metrics to select some."
+                                    : "Complete a new scan to see your skin scores"
+                                }
                             </Text>
                         </View>
                     )}

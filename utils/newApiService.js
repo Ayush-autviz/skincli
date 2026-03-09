@@ -939,7 +939,7 @@ export const transformHautResults = (hautResults) => {
       image_quality_score: "imageQualityOverall",
     };
 
-    const metrics = { imageQuality: { overall: 0, focus: 0, lighting: 0 } };
+    const metrics = { imageQuality: { overall: 0, focus: 0, lighting: 0 }, topConcerns: [] };
 
     console.log("hautResults", hautResults);
 
@@ -971,6 +971,18 @@ export const transformHautResults = (hautResults) => {
       if (key) {
         if (area === "face" || metrics[key] === undefined) {
           metrics[key] = value;
+          // Dynamically collect the metric keys that are top concerns
+          // 1. Check top-level item
+          if (item.is_top_concern === true && !metrics.topConcerns.includes(key)) {
+            metrics.topConcerns.push(key);
+          }
+          // 2. Also check if ANY of its sub-metrics have is_top_concern === true
+          if (Array.isArray(item.sub_metrics)) {
+            const hasTopConcernSubMetric = item.sub_metrics.some((sub) => sub.is_top_concern === true);
+            if (hasTopConcernSubMetric && !metrics.topConcerns.includes(key)) {
+              metrics.topConcerns.push(key);
+            }
+          }
         }
       }
     });
@@ -1154,6 +1166,40 @@ export const getComparison = async (dateFilter = "older_than_6_months") => {
     );
   }
 };
+
+/**
+ * Toggles a top concern for the user
+ * @param {string} concern - The concern name to toggle (e.g., "Breakouts")
+ * @returns {Promise<Object>} Success response with updated top concerns
+ */
+export const toggleTopConcern = async (concern) => {
+  try {
+    console.log("🔵 Toggling top concern:", concern);
+
+    const response = await apiClient.patch(
+      "/haut_process/top-concerns/toggle",
+      { concern: concern }
+    );
+
+    if (response.data.status === 200 || response.status === 200) {
+      console.log("✅ Top concern toggled successfully", response.data.data);
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    } else {
+      throw new Error(response.data.message || "Failed to toggle top concern");
+    }
+  } catch (error) {
+    console.error("🔴 toggleTopConcern error:", error);
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to toggle top concern"
+    );
+  }
+};
+
 
 /**
  * Transforms comparison API response into photo format expected by MetricsSeries

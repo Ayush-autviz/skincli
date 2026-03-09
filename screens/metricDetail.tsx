@@ -151,6 +151,7 @@ import {
   Plus,
   RotateCcw,
   SoapDispenserDroplet,
+  ShieldPlus,
 } from 'lucide-react-native';
 import { ConditionalImage } from '../utils/imageUtils';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -159,7 +160,7 @@ import ListItem from '../components/ui/ListItem';
 //import FloatingTooltip from '../../components/ui/FloatingTooltip';
 import { colors, fontFamily, spacing } from '../styles';
 import useAuthStore from '../stores/authStore';
-import { getSkinTrendScores, getHautMaskImages, generateConcernMessage } from '../utils/newApiService';
+import { getSkinTrendScores, getHautMaskImages, generateConcernMessage, toggleTopConcern } from '../utils/newApiService';
 import { LineChart } from 'react-native-chart-kit';
 
 // Import the JSON data
@@ -665,15 +666,15 @@ const getConcernNameForAPI = (metricKey: string) => {
   // Convert camelCase to Title Case
   // Handle special cases first
   const specialCases: Record<string, string> = {
-    'hydration': 'Hydration',
+    'hydration': 'Dewiness',
     'redness': 'Redness',
-    'pores': 'Pores',
-    'acne': 'Acne',
+    'pores': 'Visible Pores',
+    'acne': 'Breakouts',
     'lines': 'Lines',
     'translucency': 'Translucency',
     'pigmentation': 'Pigmentation',
-    'uniformness': 'Uniformness',
-    'eyeAge': 'Eye Age',
+    'uniformness': 'Evenness',
+    'eyeAge': 'Perceived Eye Age',
     'eyeAreaCondition': 'Eye Area Condition',
     'perceivedAge': 'Perceived Age',
     'skinTone': 'Skin Tone',
@@ -988,14 +989,74 @@ const sanitizeS3Uri = (uriString: string | null | undefined): string | null | un
   // return encodeURI(uriString);
 };
 
-export default function MetricDetailScreen(): React.JSX.Element {
+// DetailSkeleton component for MetricDetail screen
+const DetailSkeleton = () => (
+  <View style={{ flex: 1, backgroundColor: '#FFFFFF' }}>
+    <ScrollView style={{ flex: 1 }}>
+      <View style={{ padding: 16 }}>
+        {/* Metric Card Skeleton */}
+        <SkeletonPlaceholder borderRadius={12}>
+          <SkeletonPlaceholder.Item width="100%" height={160} marginBottom={16} />
+        </SkeletonPlaceholder>
+
+        {/* Mask Section Skeleton */}
+        <SkeletonPlaceholder borderRadius={12}>
+          <SkeletonPlaceholder.Item width="100%" height={300} marginBottom={16} />
+        </SkeletonPlaceholder>
+
+        {/* About Card Skeleton */}
+        <SkeletonPlaceholder borderRadius={12}>
+          <SkeletonPlaceholder.Item width="100%" height={200} marginBottom={16} />
+        </SkeletonPlaceholder>
+
+        {/* Ingredients Card Skeleton */}
+        <SkeletonPlaceholder borderRadius={12}>
+          <SkeletonPlaceholder.Item width="100%" height={250} marginBottom={16} />
+        </SkeletonPlaceholder>
+      </View>
+    </ScrollView>
+  </View>
+);
+
+export default function MetricDetailScreen() {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as RouteParams;
-  const { user, profile } = useAuthStore();
+  const { user, profile, topConcerns, setTopConcerns } = useAuthStore();
 
   // Extract parameters from navigation
   const { metricKey, metricValue, photoData } = params || {};
+
+  // Handle toggling of top concern
+  const [isTogglingConcern, setIsTogglingConcern] = useState(false);
+  const concernName = getConcernNameForAPI(metricKey) || '';
+  const isTopConcern = topConcerns?.includes(concernName);
+
+  const handleToggleTopConcern = async () => {
+    if (!concernName || isTogglingConcern) return;
+
+    // Optimistic update
+    const previousConcerns = [...(topConcerns || [])];
+    const newConcerns = isTopConcern
+      ? previousConcerns.filter(c => c !== concernName)
+      : [...previousConcerns, concernName];
+
+    setTopConcerns(newConcerns);
+    setIsTogglingConcern(true);
+
+    try {
+      const response: any = await toggleTopConcern(concernName);
+      if (response.success && response.data?.top_concerns) {
+        setTopConcerns(response.data.top_concerns);
+      }
+    } catch (error) {
+      console.error('Failed to toggle top concern:', error);
+      // Revert on failure
+      setTopConcerns(previousConcerns);
+    } finally {
+      setIsTogglingConcern(false);
+    }
+  };
 
   // Parse the photoData if it's a string
   const parsedPhotoData = typeof photoData === 'string' ? JSON.parse(photoData) : photoData;
@@ -1510,6 +1571,10 @@ export default function MetricDetailScreen(): React.JSX.Element {
     return { levelName: 'Unknown', color: '#666', bg: '#f5f5f5' };
   };
 
+  if (!currentConcernDetails) {
+    return <DetailSkeleton />;
+  }
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
@@ -1528,7 +1593,20 @@ export default function MetricDetailScreen(): React.JSX.Element {
           <View style={styles.titleContainer}>
             <Text style={styles.headerTitle}>{getHeaderNameForMetric(metricKey)}</Text>
           </View>
-          <View style={styles.rightContainer} />
+          <View style={styles.rightContainer}>
+            <TouchableOpacity
+              onPress={handleToggleTopConcern}
+              disabled={isTogglingConcern}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ padding: 8, opacity: isTogglingConcern ? 0.5 : 1 }}
+            >
+              <Star
+                size={22}
+                color={isTopConcern ? "#FFB340" : "#D6D3D1"}
+                fill={isTopConcern ? "#FFB340" : "transparent"}
+              />
+            </TouchableOpacity>
+          </View>
         </View>
         <View style={styles.shadowLine} />
       </View>
@@ -1926,15 +2004,28 @@ export default function MetricDetailScreen(): React.JSX.Element {
                     </View>
                   </View>
                 </View>
-                {maskImagesLoading && (
-                  <View style={styles.maskImagesLoadingContainer}>
-                    <ActivityIndicator size="small" color={colors.primary} />
-                    <Text style={styles.maskImagesLoadingText}>Loading analysis data...</Text>
-                  </View>
-                )}
               </View>
             );
           }
+          // While mask images are being fetched from API, show a skeleton card
+          if (maskImagesLoading) {
+            return (
+              <View style={{ marginHorizontal: 16, marginTop: spacing.xxl }}>
+                <SkeletonPlaceholder borderRadius={12}>
+                  <SkeletonPlaceholder.Item flexDirection="row" alignItems="flex-start">
+                    <SkeletonPlaceholder.Item width={150} height={150} borderRadius={12} marginRight={16} />
+                    <SkeletonPlaceholder.Item flex={1}>
+                      <SkeletonPlaceholder.Item width="80%" height={14} borderRadius={4} marginBottom={8} />
+                      <SkeletonPlaceholder.Item width="90%" height={14} borderRadius={4} marginBottom={8} />
+                      <SkeletonPlaceholder.Item width="60%" height={14} borderRadius={4} marginBottom={16} />
+                      <SkeletonPlaceholder.Item width={90} height={32} borderRadius={16} />
+                    </SkeletonPlaceholder.Item>
+                  </SkeletonPlaceholder.Item>
+                </SkeletonPlaceholder>
+              </View>
+            );
+          }
+
           return null;
         })()}
 
@@ -2054,137 +2145,235 @@ export default function MetricDetailScreen(): React.JSX.Element {
 
 
         {/* Advice Details Section */}
-        {currentConcernDetails?.advice && (
-          <>
-            {/* Ingredients */}
-            {currentConcernDetails.advice?.ingredients && currentConcernDetails.advice.ingredients.length > 0 && (
-              <View style={styles.adviceItem}>
+        {(() => {
+          const patienceNote = currentConcernDetails?.advice?.Behavior?.find(
+            (b: string) => b.toLowerCase().includes('patient') || b.toLowerCase().includes('patience') || b.toLowerCase().includes('consistency matters')
+          );
+
+          return (
+            <>
+              {/* Ingredients */}
+              {currentConcernDetails?.advice?.ingredients && currentConcernDetails.advice.ingredients.length > 0 && (
+                <View style={styles.adviceItem}>
 
 
-                <View style={styles.ingredientCard}>
-                  <View style={styles.cardHeader}>
-                    <View style={styles.cardHeaderRow}>
-                      <SoapDispenserDroplet size={20} color="#414651" />
-                      <Text style={styles.cardHeaderTitle}>Helpful Ingredients</Text>
+                  <View style={styles.ingredientCard}>
+                    <View style={styles.cardHeader}>
+                      <View style={styles.cardHeaderRow}>
+                        {/* <SoapDispenserDroplet size={20} color="#414651" /> */}
+                        <Text style={styles.cardHeaderTitle}>Helpful Ingredients</Text>
+                      </View>
+                      <Text style={styles.cardHeaderSubtitle}>Dermatologist approved ingredients for your concerns</Text>
                     </View>
-                    <Text style={styles.cardHeaderSubtitle}>Dermatologist approved ingredients for your concerns</Text>
+
+                    {concernMessageLoading ? (
+                      // Skeleton rows while routine-match API loads
+                      <SkeletonPlaceholder borderRadius={8}>
+                        <SkeletonPlaceholder.Item>
+                          {[0, 1, 2].map((i) => (
+                            <SkeletonPlaceholder.Item
+                              key={i}
+                              flexDirection="row"
+                              alignItems="center"
+                              paddingVertical={14}
+                              paddingHorizontal={4}
+                              marginBottom={i < 2 ? 0 : 0}
+                            >
+                              <SkeletonPlaceholder.Item
+                                width={36}
+                                height={36}
+                                borderRadius={18}
+                                marginRight={12}
+                              />
+                              <SkeletonPlaceholder.Item flex={1}>
+                                <SkeletonPlaceholder.Item
+                                  width="50%"
+                                  height={14}
+                                  borderRadius={4}
+                                  marginBottom={6}
+                                />
+                                <SkeletonPlaceholder.Item
+                                  width="35%"
+                                  height={12}
+                                  borderRadius={4}
+                                />
+                              </SkeletonPlaceholder.Item>
+                            </SkeletonPlaceholder.Item>
+                          ))}
+                        </SkeletonPlaceholder.Item>
+                      </SkeletonPlaceholder>
+                    ) : (
+                      currentConcernDetails.advice?.ingredients?.map((ingredient: string, index: number) => {
+                        // Parse ingredient to get name and description
+                        const colonIndex = ingredient.indexOf(':');
+                        const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
+                        const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
+
+                        // Find entry in found_ingredients
+                        const foundEntry = concernMessageData?.found_ingredients?.find((found) => {
+                          if (typeof found === 'string') {
+                            return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                          }
+                          return found?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                        });
+                        const isFound = Boolean(foundEntry);
+                        const foundProducts =
+                          foundEntry && typeof foundEntry !== 'string' && Array.isArray(foundEntry.products)
+                            ? foundEntry.products
+                            : [];
+
+                        const isLast = index === (currentConcernDetails.advice?.ingredients?.length || 0) - 1;
+
+                        return (
+                          <TouchableOpacity
+                            key={index}
+                            style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
+                            activeOpacity={0.7}
+                            onPress={() => {
+                              const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
+                              (navigation as any).navigate('ThreadChat', {
+                                chatType: 'snapshot_feedback',
+                                initialMessage: message
+                              });
+                            }}
+                          >
+                            <View style={styles.ingredientIconContainer}>
+                              <SoapDispenserDroplet
+                                size={28}
+                                color={isFound ? "#414651" : "#D6D3D1"}
+                                strokeWidth={1.5}
+                              />
+                            </View>
+                            <View style={styles.ingredientContent}>
+                              <Text style={styles.ingredientName}>{ingredientName}</Text>
+
+                              <View style={styles.routineChip}>
+                                <View style={[styles.routineDot, { backgroundColor: isFound ? '#12B76A' : '#A9A29D' }]} />
+                                <Text style={styles.routineText}>
+                                  {isFound ? 'In your Routine' : 'Not in Routine'}
+                                </Text>
+                              </View>
+
+                              {isFound && foundProducts.length > 0 ? (
+                                <Text style={styles.productHighlight}>
+                                  {foundProducts.join(', ')}
+                                </Text>
+                              ) : (
+                                ingredientDesc ? (
+                                  <Text style={styles.ingredientDesc}>{ingredientDesc}</Text>
+                                ) : null
+                              )}
+                            </View>
+                            <ChevronRight size={18} color="#D6D3D1" />
+                          </TouchableOpacity>
+                        );
+                      })
+                    )}
                   </View>
 
-                  {currentConcernDetails.advice?.ingredients?.map((ingredient: string, index: number) => {
-                    // Parse ingredient to get name and description
-                    const colonIndex = ingredient.indexOf(':');
-                    const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
-                    const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
-
-                    // Find entry in found_ingredients
-                    const foundEntry = concernMessageData?.found_ingredients?.find((found) => {
-                      if (typeof found === 'string') {
-                        return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-                      }
-                      return found?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-                    });
-                    const isFound = Boolean(foundEntry);
-                    const foundProducts =
-                      foundEntry && typeof foundEntry !== 'string' && Array.isArray(foundEntry.products)
-                        ? foundEntry.products
-                        : [];
-
-                    const isLast = index === (currentConcernDetails.advice?.ingredients?.length || 0) - 1;
-
-                    return (
-                      <TouchableOpacity
-                        key={index}
-                        style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
-                        activeOpacity={0.7}
-                        onPress={() => {
-                          const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
-                          (navigation as any).navigate('ThreadChat', {
-                            chatType: 'snapshot_feedback',
-                            initialMessage: message
-                          });
-                        }}
+                  {concernMessageLoading ? (
+                    // Skeleton for Amber's Insight card while API loads
+                    <SkeletonPlaceholder borderRadius={12}>
+                      <SkeletonPlaceholder.Item
+                        flexDirection="row"
+                        alignItems="center"
+                        padding={16}
                       >
-                        <View style={styles.ingredientIconContainer}>
-                          {isFound ? (
-                            <CircleCheck size={22} color="#079455" />
-                          ) : (
-                            <CircleCheck size={22} color="#E7E5E4" />
-                          )}
-                        </View>
-                        <View style={styles.ingredientContent}>
-                          <Text style={styles.ingredientName}>{ingredientName}</Text>
-                          {isFound && foundProducts.length > 0 ? (
-                            <Text style={styles.ingredientDesc} numberOfLines={1}>
-                              Products: {foundProducts.join(', ')}
-                            </Text>
-                          ) : (
-                            ingredientDesc ? (
-                              <Text style={styles.ingredientDesc} numberOfLines={1}>{ingredientDesc}</Text>
-                            ) : null
-                          )}
-                        </View>
-                        <ChevronRight size={18} color="#D6D3D1" />
-                      </TouchableOpacity>
-                    );
-                  })}
+                        <SkeletonPlaceholder.Item
+                          width={44}
+                          height={44}
+                          borderRadius={22}
+                          marginRight={12}
+                        />
+                        <SkeletonPlaceholder.Item flex={1}>
+                          <SkeletonPlaceholder.Item
+                            width="40%"
+                            height={14}
+                            borderRadius={4}
+                            marginBottom={8}
+                          />
+                          <SkeletonPlaceholder.Item
+                            width="90%"
+                            height={12}
+                            borderRadius={4}
+                            marginBottom={4}
+                          />
+                          <SkeletonPlaceholder.Item
+                            width="70%"
+                            height={12}
+                            borderRadius={4}
+                          />
+                        </SkeletonPlaceholder.Item>
+                      </SkeletonPlaceholder.Item>
+                    </SkeletonPlaceholder>
+                  ) : concernMessageData?.message ? (
+                    <TouchableOpacity
+                      style={styles.aiInsightCard}
+                      onPress={() => {
+                        (navigation as any).navigate('ThreadChat', {
+                          chatType: 'ingredients_related_chat',
+                          initialMessage: concernMessageData.message
+                        });
+                      }}
+                    >
+                      <View style={styles.aiAvatarContainer}>
+                        <Image
+                          source={require('../assets/images/amber-avatar-new.png')}
+                          style={styles.aiAvatarIcon as ImageStyle}
+                          resizeMode="contain"
+                        />
+                      </View>
+                      <View style={styles.aiInsightContent}>
+                        <Text style={styles.aiInsightTitle}>Amber's Insight</Text>
+                        <Text style={styles.aiInsightSubtext}>
+                          {concernMessageData.message}
+                        </Text>
+                      </View>
+                      <View style={{ paddingTop: 2 }}>
+                        <ChevronRight size={20} color="#9CA3AF" />
+                      </View>
+                    </TouchableOpacity>
+                  ) : null}
+
                 </View>
+              )}
+            </>
+          );
+        })()}
 
-                {concernMessageData?.message && (
-                  <TouchableOpacity
-                    style={styles.aiInsightCard}
-                    onPress={() => {
-                      (navigation as any).navigate('ThreadChat', {
-                        chatType: 'ingredients_related_chat',
-                        initialMessage: concernMessageData.message
-                      });
-                    }}
-                  >
-                    <View style={styles.aiAvatarContainer}>
-                      <Image
-                        source={require('../assets/images/amber-avatar-new.png')}
-                        style={styles.aiAvatarIcon as ImageStyle}
-                        resizeMode="contain"
-                      />
-                    </View>
-                    <View style={styles.aiInsightContent}>
-                      <Text style={styles.aiInsightTitle}>Amber's Insight</Text>
-                      <Text style={styles.aiInsightSubtext}>
-                        {concernMessageData.message}
-                      </Text>
-                    </View>
-                    <View style={{ paddingTop: 2 }}>
-                      <ChevronRight size={20} color="#9CA3AF" />
-                    </View>
-                  </TouchableOpacity>
-                )}
+        < View style={[styles.ingredientCard, { marginHorizontal: 20 }]}>
+          <Text style={styles.cardHeaderTitle}>About {getHeaderNameForMetric(metricKey)}</Text>
+          <Text style={[styles.cardHeaderSubtitle, { marginTop: spacing.sm, marginBottom: spacing.md }]}>
+            {currentConcernDetails ? currentConcernDetails.overview : 'Loading overview...'}
+          </Text>
 
+          {/* Patience Note Box */}
+          {(() => {
+            const patienceNote = currentConcernDetails?.advice?.Behavior?.find(
+              (b: string) => b.toLowerCase().includes('patient') || b.toLowerCase().includes('patience') || b.toLowerCase().includes('consistency matters')
+            );
+
+            if (!patienceNote) return null;
+
+            return (
+              <View style={styles.patienceBox}>
+                <View style={styles.patienceIconContainer}>
+                  <Info size={18} color="#5D6B98" />
+                </View>
+                <Text style={styles.patienceText}>{patienceNote}</Text>
               </View>
-            )}
+            );
+          })()}
 
-            {/* Behavior */}
-            {/* {currentConcernDetails.advice?.Behavior && currentConcernDetails.advice.Behavior.length > 0 && (
-              <View style={styles.adviceItem}>
-                <Text style={styles.adviceLabel}>Lifestyle Tips</Text>
-                {currentConcernDetails.advice?.Behavior?.map((behavior: string, index: number) => (
-                  <View key={index} style={styles.adviceListItem}>
-                    <Text style={styles.adviceListItemText}>•</Text>
-                    <Text style={styles.adviceListItemText}>{behavior}</Text>
-                  </View>
-                ))}
+          {/* Medical Disclaimer Box */}
+          {currentConcernDetails?.advice?.disclaimer && (
+            <View style={styles.medicalBox}>
+              <View style={styles.medicalIconContainer}>
+                <ShieldPlus size={18} color="#5D6B98" />
               </View>
-            )} */}
-          </>
-        )}
-
-        <View style={[styles.ingredientCard, { marginHorizontal: 20 }]}>
-
-          <>
-            <Text style={styles.cardHeaderTitle}>About {getHeaderNameForMetric(metricKey)}</Text>
-            <Text style={[styles.cardHeaderSubtitle, { marginTop: spacing.sm }]}>
-              {currentConcernDetails ? currentConcernDetails.overview : 'Loading overview...'}
-            </Text>
-          </>
-
+              <Text style={styles.medicalText}>{currentConcernDetails.advice.disclaimer}</Text>
+            </View>
+          )}
         </View>
 
         {/* Space at bottom for better scrolling */}
@@ -2198,7 +2387,7 @@ export default function MetricDetailScreen(): React.JSX.Element {
         y={tooltip.y}
         content={tooltip.content}
       /> */}
-    </SafeAreaView>
+    </SafeAreaView >
   );
 }
 
@@ -2954,8 +3143,46 @@ const styles = StyleSheet.create({
   },
   trendScoreDate: {
     fontSize: 14,
-    color: '#666',
+    color: '#6B7280',
     fontWeight: '500',
+  },
+  // New Disclaimer and Patience Box Styles
+  patienceBox: {
+    flexDirection: 'row',
+    backgroundColor: '#EFF1F5',
+    padding: 12,
+    borderRadius: 12,
+    marginBottom: 12,
+    alignItems: 'flex-start',
+  },
+  patienceIconContainer: {
+    marginRight: 10,
+    marginTop: 2,
+  },
+  patienceText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#57534E',
+    fontWeight: '400',
+  },
+  medicalBox: {
+    flexDirection: 'row',
+    backgroundColor: '#EFF1F5',
+    padding: 12,
+    borderRadius: 12,
+    alignItems: 'flex-start',
+  },
+  medicalIconContainer: {
+    marginRight: 10,
+    marginTop: 2,
+  },
+  medicalText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#57534E',
+    fontWeight: '400',
   },
   trendScoreValue: {
     fontSize: 16,
@@ -3452,7 +3679,7 @@ const styles = StyleSheet.create({
   },
   ingredientRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     paddingVertical: 14,
   },
   ingredientRowBorder: {
@@ -3475,6 +3702,36 @@ const styles = StyleSheet.create({
   ingredientDesc: {
     fontSize: 13,
     color: '#A9A29D',
+    lineHeight: 18,
+  },
+  routineChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    borderWidth: 0.5,
+    borderColor: '#E9EAEB',
+    alignSelf: 'flex-start',
+    marginVertical: 6,
+  },
+  routineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
+  },
+  routineText: {
+    fontSize: 12,
+    color: '#57534E',
+    fontWeight: '500',
+  },
+  productHighlight: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1917',
+    marginTop: 2,
   },
 
   // Considerations styles for skin tone

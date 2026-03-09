@@ -12,7 +12,7 @@ const useAuthStore = create(
       user: null,
       isAuthenticated: false,
       loading: false,
-      
+
       // Tokens
       accessToken: null,
       refreshToken: null,
@@ -24,10 +24,13 @@ const useAuthStore = create(
       // Profile data and status
       profile: null,
       profileStatus: null, // true = complete, false = incomplete
-      
+
+      // Top Concerns
+      topConcerns: [],
+
       // Actions
       setUser: (user) => set({ user, isAuthenticated: !!user }),
-      
+
       setTokens: (accessToken, refreshToken) => set({
         accessToken,
         refreshToken
@@ -45,13 +48,15 @@ const useAuthStore = create(
       setProfile: (profile) => set({ profile }),
 
       setProfileStatus: (profileStatus) => set({ profileStatus }),
-      
+
+      setTopConcerns: (topConcerns) => set({ topConcerns }),
+
       setLoading: (loading) => set({ loading }),
-      
+
       updateProfile: (profileData) => set((state) => ({
         profile: { ...state.profile, ...profileData }
       })),
-      
+
       // Clear all auth data on logout
       logout: () => set({
         user: null,
@@ -62,9 +67,10 @@ const useAuthStore = create(
         fcmTokenRegistered: false,
         profile: null,
         profileStatus: null,
+        topConcerns: [],
         loading: false
       }),
-      
+
       // Get current state
       getState: () => get(),
     }),
@@ -80,6 +86,7 @@ const useAuthStore = create(
         fcmTokenRegistered: state.fcmTokenRegistered,
         profile: state.profile,
         profileStatus: state.profileStatus,
+        topConcerns: state.topConcerns,
       }),
     }
   )

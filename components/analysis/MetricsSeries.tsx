@@ -117,6 +117,7 @@ import { useNavigation } from '@react-navigation/native'; // Import navigation
 import { colors, shadows, fontFamily } from '../../styles';
 import { Expand, Flag, NotebookPen, Book, FlagIcon, Star, ChevronRight as ChevronRightIcon } from 'lucide-react-native';
 import useAuthStore from '../../stores/authStore';
+import { toggleTopConcern } from '../../utils/newApiService';
 import { LineChart } from 'react-native-chart-kit';
 import { Svg, Line as SvgLine, Circle as SvgCircle } from 'react-native-svg';
 
@@ -158,6 +159,44 @@ const IMAGE_QUALITY_KEYS = [
   'lighting',
   'overall'
 ];
+
+// Helper function to convert metricKey to concern name for API
+const getConcernNameForAPI = (metricKey: string): string | null => {
+  if (!metricKey) return null;
+
+  // Remove "Score" suffix if present
+  let processedKey = metricKey;
+  if (processedKey.endsWith('Score')) {
+    processedKey = processedKey.substring(0, processedKey.length - 'Score'.length);
+  }
+
+  // Convert camelCase to Title Case
+  // Handle special cases first
+  const specialCases: Record<string, string> = {
+    'hydration': 'Dewiness',
+    'redness': 'Redness',
+    'pores': 'Visible Pores',
+    'acne': 'Breakouts',
+    'lines': 'Lines',
+    'translucency': 'Translucency',
+    'pigmentation': 'Pigmentation',
+    'uniformness': 'Evenness',
+    'eyeAge': 'Perceived Eye Age',
+    'eyeAreaCondition': 'Eye Area Condition',
+    'perceivedAge': 'Perceived Age',
+    'skinTone': 'Skin Tone',
+    'skinType': 'Skin Type'
+  };
+
+  if (specialCases[processedKey]) {
+    return specialCases[processedKey];
+  }
+
+  // Default: convert camelCase to Title Case
+  return processedKey.replace(/([A-Z])/g, ' $1')
+    .replace(/^./, (str: string) => str.toUpperCase())
+    .trim();
+};
 
 export const processPhotoMetrics = (photos) => {
   if (!photos?.length) return { metrics: [], timestamps: [] };
@@ -1051,10 +1090,40 @@ const SkinTypeTrendChart = ({
   );
 };
 
-export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScrollSyncRef, photos, profile, navigateToSnapshot, navigateToMetricDetail, hideNavigation = false }) => {
+export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScrollSyncRef, photos, profile, navigateToSnapshot, navigateToMetricDetail, hideNavigation = false, apiTopConcerns = [], setApiTopConcerns }: any) => {
   if (!metric?.scores?.length) return null;
 
   const scrollViewRef = useRef(null);
+
+  const [isTogglingConcern, setIsTogglingConcern] = useState(false);
+  const concernName = getConcernNameForAPI(metric.metricName) || '';
+  const isTopConcern = apiTopConcerns?.includes(concernName);
+
+  const handleToggleTopConcern = async () => {
+    if (!concernName || isTogglingConcern || !setApiTopConcerns) return;
+
+    // Optimistic update
+    const previousConcerns = [...(apiTopConcerns || [])];
+    const newConcerns = isTopConcern
+      ? previousConcerns.filter((c: string) => c !== concernName)
+      : [...previousConcerns, concernName];
+
+    setApiTopConcerns(newConcerns);
+    setIsTogglingConcern(true);
+
+    try {
+      const response: any = await toggleTopConcern(concernName);
+      if (response.success && response.data?.top_concerns) {
+        setApiTopConcerns(response.data.top_concerns);
+      }
+    } catch (error) {
+      console.error('Failed to toggle top concern:', error);
+      // Revert on failure
+      setApiTopConcerns(previousConcerns);
+    } finally {
+      setIsTogglingConcern(false);
+    }
+  };
 
   // Special handling for skin type - render SkinTypeTrendChart instead of bar chart
   if (metric.metricName === 'skinType') {
@@ -1092,8 +1161,19 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
           disabled={hideNavigation}
         >
           <View style={styles.cardHeaderLeft}>
-            <Star size={16} color="#A9A29D" />
-            <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation(); handleToggleTopConcern(); }}
+              disabled={isTogglingConcern}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ paddingRight: 4, opacity: isTogglingConcern ? 0.5 : 1 }}
+            >
+              <Star
+                size={18}
+                color={isTopConcern ? "#FFB340" : "#A9A29D"}
+                fill={isTopConcern ? "#FFB340" : "transparent"}
+              />
+            </TouchableOpacity>
+            <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName as keyof typeof METRIC_LABELS] || metric.metricName}</Text>
           </View>
           {!hideNavigation && <ChevronRightIcon size={18} color="#D6D3D1" />}
         </TouchableOpacity>
@@ -1227,7 +1307,18 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
         disabled={hideNavigation}
       >
         <View style={styles.cardHeaderLeft}>
-          <Star size={16} color="#A9A29D" />
+          <TouchableOpacity
+            onPress={(e) => { e.stopPropagation(); handleToggleTopConcern(); }}
+            disabled={isTogglingConcern}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+            style={{ paddingRight: 4, opacity: isTogglingConcern ? 0.5 : 1 }}
+          >
+            <Star
+              size={18}
+              color={isTopConcern ? "#FFB340" : "#A9A29D"}
+              fill={isTopConcern ? "#FFB340" : "transparent"}
+            />
+          </TouchableOpacity>
           <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
         </View>
         {!hideNavigation && <ChevronRightIcon size={18} color="#D6D3D1" />}
@@ -1380,9 +1471,11 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
 interface MetricsSeriesProps {
   photos: any[];
   initialPhotoId?: string | null;
+  apiTopConcerns?: string[];
+  setApiTopConcerns?: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId }) => {
+const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, apiTopConcerns = [], setApiTopConcerns }) => {
   const navigation = useNavigation();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [summary, setSummary] = useState(null);
@@ -1654,6 +1747,8 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId })
             profile={profile}
             navigateToSnapshot={navigateToSnapshot}
             navigateToMetricDetail={navigateToMetricDetail}
+            apiTopConcerns={apiTopConcerns}
+            setApiTopConcerns={setApiTopConcerns}
           />
         ))}
       </ScrollView>

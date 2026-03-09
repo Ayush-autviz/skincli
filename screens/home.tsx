@@ -275,7 +275,7 @@ export default function HomeScreen(): React.JSX.Element {
                     }
                     const diff = currentValue - previousValue;
                     if (diff === 0) {
-                        return { change: 0, changeText: 'No change', changeDirection: 'none' };
+                        return { change: 0, changeText: '', changeDirection: 'none' };
                     }
                     const absDiff = Math.abs(Math.round(diff));
                     // For skin scores, higher is generally better, so positive diff = improvement (up arrow)
@@ -634,9 +634,7 @@ export default function HomeScreen(): React.JSX.Element {
                                                     </Text>
                                                 </View>
                                             )}
-                                            {concern.changeDirection === 'none' && concern.change === 0 && (
-                                                <Text style={styles.noChangeText}>No change</Text>
-                                            )}
+
                                             {/* Score with color indicator */}
                                             <View style={styles.scoreIndicatorContainer}>
                                                 <View style={[styles.scoreIndicator, { backgroundColor: getScoreColor(concern.value) }]} />

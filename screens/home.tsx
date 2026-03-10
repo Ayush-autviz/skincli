@@ -12,7 +12,7 @@ import {
     Dimensions,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { ChevronLeft, ChevronRight, Star, Plus, ArrowUp, ArrowDown } from 'lucide-react-native';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Star, Plus, ArrowUp, ArrowDown } from 'lucide-react-native';
 import { SvgXml } from 'react-native-svg';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import Carousel, { ICarouselInstance } from 'react-native-reanimated-carousel';
@@ -21,8 +21,9 @@ import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import useAuthStore from '../stores/authStore';
-import { getHautAnalysisResults, transformHautResults } from '../utils/newApiService';
+import { getHautAnalysisResults, transformHautResults, generateConcernMessage } from '../utils/newApiService';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
+import concernsData from '../data/concerns.json';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -42,11 +43,41 @@ const scanPlaceholderSvg = `<svg width="69" height="71" viewBox="0 0 69 71" fill
 
 interface TopConcern {
     name: string;
+    metricKey: string;
     value: number;
     change: number | null; // positive = improved, negative = worsened
     changeText: string;
     changeDirection: 'up' | 'down' | 'none'; // up arrow, down arrow, or no change
+    ingredients: string[]; // from concerns.json advice.ingredients
+    foundIngredients: Array<string | { ingredient: string; products?: string[] }>;
+    ingredientsLoading: boolean;
 }
+
+// Helper function to convert metricKey to concern name for API
+const getConcernNameForAPI = (metricKey: string) => {
+    if (!metricKey) return null;
+    let processedKey = metricKey;
+    if (processedKey.endsWith('Score')) {
+        processedKey = processedKey.substring(0, processedKey.length - 'Score'.length);
+    }
+    const specialCases: Record<string, string> = {
+        'hydration': 'Dewiness',
+        'redness': 'Redness',
+        'pores': 'Visible Pores',
+        'acne': 'Breakouts',
+        'lines': 'Lines',
+        'translucency': 'Translucency',
+        'pigmentation': 'Pigmentation',
+        'uniformness': 'Evenness',
+        'eyeAreaCondition': 'Eye Area Condition',
+    };
+    if (specialCases[processedKey]) {
+        return specialCases[processedKey];
+    }
+    return processedKey.replace(/([A-Z])/g, ' $1')
+        .replace(/^./, str => str.toUpperCase())
+        .trim();
+};
 
 // Global cache to track which images have already been loaded
 const loadedImagesCache = new Set<string>();
@@ -138,6 +169,15 @@ export default function HomeScreen(): React.JSX.Element {
     const [topConcerns, setTopConcerns] = useState<TopConcern[]>([]);
     const [isLoadingConcerns, setIsLoadingConcerns] = useState<boolean>(false);
     const loadedConcernsPhotoIdRef = useRef<string | null>(null);
+    const [expandedConcerns, setExpandedConcerns] = useState<Record<string, boolean>>({});
+
+    // Toggle ingredient visibility for a concern
+    const toggleConcernExpanded = (concernName: string) => {
+        setExpandedConcerns(prev => ({
+            ...prev,
+            [concernName]: !prev[concernName],
+        }));
+    };
 
     // Group photos by date
     const dateGroups = useMemo(() => {
@@ -308,16 +348,63 @@ export default function HomeScreen(): React.JSX.Element {
                                 transformedMetrics[metricKey],
                                 previousMetrics?.[metricKey]
                             );
+
+                            // Look up ingredients from concerns.json
+                            let ingredients: string[] = [];
+                            if ((concernsData as any).skinConcerns) {
+                                const concernData = (concernsData as any).skinConcerns[metricKey];
+                                if (concernData?.advice?.ingredients) {
+                                    ingredients = concernData.advice.ingredients;
+                                }
+                            }
+
                             concerns.push({
                                 name: concernName,
+                                metricKey,
                                 value: transformedMetrics[metricKey],
                                 ...changeInfo,
+                                ingredients,
+                                foundIngredients: [],
+                                ingredientsLoading: ingredients.length > 0,
                             });
                         }
                     }
                 });
 
                 setTopConcerns(concerns);
+
+                // Fetch routine-match data for each concern's ingredients
+                concerns.forEach(async (concern) => {
+                    if (concern.ingredients.length === 0) return;
+                    const apiConcernName = getConcernNameForAPI(concern.metricKey);
+                    if (!apiConcernName) return;
+                    try {
+                        const response = await generateConcernMessage(apiConcernName) as any;
+                        if (response?.success && response.data) {
+                            setTopConcerns(prev => prev.map(c =>
+                                c.metricKey === concern.metricKey
+                                    ? {
+                                        ...c,
+                                        foundIngredients: response.data.found_ingredients || [],
+                                        ingredientsLoading: false,
+                                    }
+                                    : c
+                            ));
+                        } else {
+                            setTopConcerns(prev => prev.map(c =>
+                                c.metricKey === concern.metricKey
+                                    ? { ...c, ingredientsLoading: false }
+                                    : c
+                            ));
+                        }
+                    } catch {
+                        setTopConcerns(prev => prev.map(c =>
+                            c.metricKey === concern.metricKey
+                                ? { ...c, ingredientsLoading: false }
+                                : c
+                        ));
+                    }
+                });
             }
         } catch (error) {
             // console.log('Error loading concerns:', error);
@@ -602,107 +689,147 @@ export default function HomeScreen(): React.JSX.Element {
                         <ConcernsSkeleton />
                     ) : topConcerns.length > 0 ? (
                         <>
-                            {topConcerns.map((concern) => (
-                                <TouchableOpacity
-                                    key={concern.name}
-                                    style={styles.concernCard}
-                                    onPress={() => {
-                                        // Navigate to metric detail
-                                        (navigation as any).navigate('MetricDetail', {
-                                            metricKey: concern.name.toLowerCase() + 'Score',
-                                            metricValue: concern.value,
-                                        });
-                                    }}
-                                >
-                                    <Text style={styles.concernName}>{concern.name}</Text>
-                                    <View style={styles.concernValueContainer}>
-                                        <View style={styles.scoreBadge}>
-                                            {/* Change indicator with arrow */}
-                                            {concern.changeDirection === 'up' && (
-                                                <View style={styles.changeIndicator}>
-                                                    <ArrowUp size={12} color="#44403C" />
-                                                    <Text style={styles.changeValue}>
-                                                        {Math.abs(concern.change || 0)}
-                                                    </Text>
-                                                </View>
-                                            )}
-                                            {concern.changeDirection === 'down' && (
-                                                <View style={styles.changeIndicator}>
-                                                    <ArrowDown size={12} color="#44403C" />
-                                                    <Text style={styles.changeValue}>
-                                                        {Math.abs(concern.change || 0)}
-                                                    </Text>
-                                                </View>
-                                            )}
+                            <Text style={styles.concernSubtitle}>
+                                Dermatologists recommend using at least one of the following ingredients for your top concerns
+                            </Text>
+                            {topConcerns.map((concern) => {
+                                const isExpanded = expandedConcerns[concern.name] ?? false;
+                                const MAX_VISIBLE = 2;
+                                const hasMore = concern.ingredients.length > MAX_VISIBLE;
+                                const visibleIngredients = isExpanded ? concern.ingredients : concern.ingredients.slice(0, MAX_VISIBLE);
 
-                                            {/* Score with color indicator */}
-                                            <View style={styles.scoreIndicatorContainer}>
-                                                <View style={[styles.scoreIndicator, { backgroundColor: getScoreColor(concern.value) }]} />
-                                                <Text style={styles.concernValue}>{concern.value}</Text>
+                                return (
+                                    <View key={concern.name} style={styles.concernCard}>
+                                        {/* Concern Header Row */}
+                                        <TouchableOpacity
+                                            style={styles.concernHeaderRow}
+                                            onPress={() => {
+                                                (navigation as any).navigate('MetricDetail', {
+                                                    metricKey: concern.metricKey,
+                                                    metricValue: concern.value,
+                                                });
+                                            }}
+                                        >
+                                            <Text style={styles.concernName}>{concern.name}</Text>
+                                            <View style={styles.concernValueContainer}>
+                                                <View style={styles.scoreBadge}>
+                                                    {concern.changeDirection === 'up' && (
+                                                        <View style={styles.changeIndicator}>
+                                                            <ArrowUp size={12} color="#44403C" />
+                                                            <Text style={styles.changeValue}>
+                                                                {Math.abs(concern.change || 0)}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                    {concern.changeDirection === 'down' && (
+                                                        <View style={styles.changeIndicator}>
+                                                            <ArrowDown size={12} color="#44403C" />
+                                                            <Text style={styles.changeValue}>
+                                                                {Math.abs(concern.change || 0)}
+                                                            </Text>
+                                                        </View>
+                                                    )}
+                                                    <View style={styles.scoreIndicatorContainer}>
+                                                        <View style={[styles.scoreIndicator, { backgroundColor: getScoreColor(concern.value) }]} />
+                                                        <Text style={styles.concernValue}>{concern.value}</Text>
+                                                    </View>
+                                                </View>
+                                                <ChevronRight size={24} color="#A9A29D" />
                                             </View>
-                                        </View>
-                                        <ChevronRight size={24} color="#A9A29D" />
-                                    </View>
-                                </TouchableOpacity>
-                            ))}
-                            <TouchableOpacity
-                                style={styles.seeAllButton}
-                                onPress={() => {
-                                    if (currentPhoto) {
-                                        // Set selected snapshot in context before navigating
-                                        setSelectedSnapshot({
-                                            id: currentPhoto.id,
-                                            url: currentPhoto.storageUrl,
-                                            storageUrl: currentPhoto.storageUrl,
-                                            threadId: currentPhoto.threadId,
-                                            apiData: {
-                                                created_at: currentPhoto.apiData?.created_at || null
-                                            }
-                                        });
+                                        </TouchableOpacity>
 
-                                        (navigation as any).navigate('Snapshot', {
-                                            photoId: currentPhoto.id,
-                                            thumbnailUrl: currentPhoto.storageUrl,
-                                            localUri: currentPhoto.storageUrl,
-                                            timestamp: currentPhoto.apiData?.created_at || null,
-                                            fromPhotoGrid: 'true',
-                                            imageId: currentPhoto.hautUploadData?.imageId || currentPhoto.id,
-                                        });
-                                    } else {
-                                        (navigation as any).navigate('Camera');
-                                    }
-                                }}
-                            >
-                                <Text style={styles.seeAllText}>See all →</Text>
-                            </TouchableOpacity>
+                                        {/* Ingredient Rows */}
+                                        {concern.ingredientsLoading ? (
+                                            <View style={styles.ingredientLoadingContainer}>
+                                                <SkeletonPlaceholder borderRadius={4}>
+                                                    <SkeletonPlaceholder.Item>
+                                                        {[1, 2].map((i) => (
+                                                            <SkeletonPlaceholder.Item
+                                                                key={i}
+                                                                flexDirection="row"
+                                                                justifyContent="space-between"
+                                                                alignItems="center"
+                                                                paddingVertical={10}
+                                                                paddingHorizontal={4}
+                                                            >
+                                                                <SkeletonPlaceholder.Item width={100} height={14} borderRadius={4} />
+                                                                <SkeletonPlaceholder.Item width={80} height={14} borderRadius={4} />
+                                                            </SkeletonPlaceholder.Item>
+                                                        ))}
+                                                    </SkeletonPlaceholder.Item>
+                                                </SkeletonPlaceholder>
+                                            </View>
+                                        ) : concern.ingredients.length > 0 ? (
+                                            <View style={styles.ingredientListContainer}>
+                                                {visibleIngredients.map((ingredient, idx) => {
+                                                    const colonIndex = ingredient.indexOf(':');
+                                                    const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
+
+                                                    const foundEntry = concern.foundIngredients?.find((found) => {
+                                                        if (typeof found === 'string') {
+                                                            return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                                                        }
+                                                        return (found as any)?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                                                    });
+                                                    const isFound = Boolean(foundEntry);
+                                                    const isLast = idx === visibleIngredients.length - 1 && !hasMore;
+
+                                                    return (
+                                                        <View
+                                                            key={idx}
+                                                            style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
+                                                        >
+                                                            <Text style={styles.ingredientName}>{ingredientName}</Text>
+                                                            {isFound && (
+                                                                <View style={styles.routineChip}>
+                                                                    <View style={styles.routineDot} />
+                                                                    <Text style={styles.routineText}>In your Routine</Text>
+                                                                </View>
+                                                            )}
+                                                        </View>
+                                                    );
+                                                })}
+                                                {hasMore && (
+                                                    <TouchableOpacity
+                                                        style={styles.showMoreButton}
+                                                        onPress={() => toggleConcernExpanded(concern.name)}
+                                                    >
+                                                        <Text style={styles.showMoreText}>
+                                                            {isExpanded ? 'Show less' : 'Show more'}
+                                                        </Text>
+                                                    </TouchableOpacity>
+                                                )}
+                                            </View>
+                                        ) : null}
+                                    </View>
+                                );
+                            })}
                         </>
                     ) : (
                         <View style={styles.emptyConcernsContainer}>
                             <Text style={styles.emptyConcernsText}>
-                                {topConcerns.length > 0
-                                    ? "No top concerns selected. Go to your metrics to select some."
-                                    : "Complete a new scan to see your skin scores"
-                                }
+                                {"Complete a new scan to see your skin scores"}
                             </Text>
                         </View>
                     )}
                 </View>
 
-                {/* Routine Score Section */}
-                <View style={styles.sectionCard}>
-                    <Text style={styles.sectionTitle}>Routine Score</Text>
-
-                    <View style={styles.routineScoreContainer}>
-                        <View style={styles.routineScoreCircle}>
-                            <View style={styles.routineScorePlaceholder}>
-                                {/* Placeholder for circular progress */}
-                            </View>
+                {/* SkinCheck Card */}
+                {topConcerns.length > 0 && (
+                    <TouchableOpacity
+                        style={styles.skinCheckCard}
+                        onPress={() => (navigation as any).navigate('SkinCheck')}
+                        activeOpacity={0.8}
+                    >
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.skinCheckTitle}>SkinCheck</Text>
+                            <Text style={styles.skinCheckDescription}>
+                                Send this scan, your scores, and your routine to your skin health professional.
+                            </Text>
                         </View>
-                        <View style={styles.routineScoreInfo}>
-                            <Text style={styles.routineScoreLabel}>[TBD - Placeholder]</Text>
-                        </View>
-                    </View>
-                </View>
+                        <ChevronRight size={20} color="#D7D3D0" />
+                    </TouchableOpacity>
+                )}
 
                 {/* Bottom spacing for tab bar */}
                 <View style={{ height: 100 }} />
@@ -878,30 +1005,29 @@ const styles = StyleSheet.create({
     },
 
     // Concerns
+    concernSubtitle: {
+        fontSize: 13,
+        color: '#A8A29E',
+        marginBottom: 16,
+        lineHeight: 18,
+    },
     concernCard: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
         backgroundColor: '#F5F5F5',
         borderRadius: 12,
-        paddingHorizontal: 16,
-        paddingVertical: 16,
         marginBottom: 10,
+        overflow: 'hidden',
     },
-    concernRow: {
+    concernHeaderRow: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        paddingVertical: 14,
-    },
-    concernRowBorder: {
-        borderBottomWidth: 1,
-        borderBottomColor: '#F0F0F0',
+        paddingHorizontal: 16,
+        paddingVertical: 16,
     },
     concernName: {
         fontSize: 16,
         fontWeight: '500',
-        color: "#57534E",
+        color: '#57534E',
     },
     concernValueContainer: {
         flexDirection: 'row',
@@ -951,51 +1077,91 @@ const styles = StyleSheet.create({
     },
     emptyConcernsContainer: {
         paddingBottom: 8,
-        // alignItems: 'center',
     },
     emptyConcernsText: {
         fontSize: 14,
         color: colors.textTertiary,
-        //textAlign: 'center',
-    },
-    seeAllButton: {
-        marginTop: spacing.sm,
-    },
-    seeAllText: {
-        fontSize: 14,
-        color: colors.tabSelected,
-        fontWeight: '500',
     },
 
-    // Routine Score
-    routineScoreContainer: {
+    // Ingredient rows inside concern card
+    ingredientLoadingContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 12,
+    },
+    ingredientListContainer: {
+        paddingHorizontal: 16,
+        paddingBottom: 4,
+    },
+    ingredientRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: spacing.md,
+        justifyContent: 'space-between',
+        paddingVertical: 12,
     },
-    routineScoreCircle: {
-        width: 60,
-        height: 60,
-        borderRadius: 30,
-        backgroundColor: '#F0F0F0',
-        justifyContent: 'center',
-        alignItems: 'center',
+    ingredientRowBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#E7E5E4',
     },
-    routineScorePlaceholder: {
-        width: 50,
-        height: 50,
-        borderRadius: 25,
-        borderWidth: 4,
-        borderColor: colors.tabSelected,
-        borderTopColor: 'transparent',
-    },
-    routineScoreInfo: {
-        marginLeft: spacing.md,
-    },
-    routineScoreLabel: {
+    ingredientName: {
         fontSize: 14,
-        color: colors.textTertiary,
+        fontWeight: '400',
+        color: '#44403C',
+        flex: 1,
     },
+    routineChip: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 4,
+        marginLeft: 8,
+    },
+    routineDot: {
+        width: 6,
+        height: 6,
+        borderRadius: 3,
+        backgroundColor: '#12B76A',
+    },
+    routineText: {
+        fontSize: 12,
+        color: '#57534E',
+        fontWeight: '400',
+    },
+    showMoreButton: {
+        paddingVertical: 10,
+    },
+    showMoreText: {
+        fontSize: 13,
+        color: '#A8A29E',
+    },
+
+    // SkinCheck Card
+    skinCheckCard: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 16,
+        padding: 20,
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.09,
+        shadowRadius: 10,
+        elevation: 3,
+    },
+    skinCheckTitle: {
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#44403C',
+        marginBottom: 2,
+        fontFamily: fontFamily.bold,
+    },
+    skinCheckDescription: {
+        fontSize: 13,
+        color: '#A9A29D',
+        marginBottom: 4,
+    },
+
+    // (Routine Score section removed - replaced by SkinCheck card)
     scoreIndicatorContainer: {
         flexDirection: 'row',
         alignItems: 'center',

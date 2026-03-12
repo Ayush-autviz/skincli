@@ -33,7 +33,7 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography, fontFamily } from '../../styles';
 import useAuthStore from '../../stores/authStore';
 import { getComparison, transformComparisonData, generateConcernMessage } from '../../utils/newApiService';
-import { Camera, CircleCheck, Star, ChevronRight, SoapDispenserDroplet } from 'lucide-react-native';
+import { Camera } from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 
 // Import the concerns data
@@ -429,12 +429,8 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
   const renderIngredientRow = (ingredient: string, itemIndex: number, concernKey: string, isLast: boolean): React.JSX.Element => {
     const colonIndex = ingredient.indexOf(':');
     const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
-    const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
     const presence = getIngredientPresence(ingredientName, concernKey);
     const isPresent = presence.status === 'present';
-    const productText = presence.products && presence.products.length > 0
-      ? presence.products.join(', ')
-      : ingredientDesc || `For ${CONCERN_KEY_TO_DISPLAY_NAME[concernKey] || concernKey}`;
 
     return (
       <TouchableOpacity
@@ -449,20 +445,13 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
           });
         }}
       >
-        <View style={styles.ingredientIconContainer}>
-          {isPresent ? (
-            <CircleCheck size={22} color="#079455" />
-          ) : (
-            <CircleCheck size={22} color="#E7E5E4" />
-          )}
-        </View>
-        <View style={styles.ingredientContent}>
-          <Text style={styles.ingredientName}>{ingredientName}</Text>
-          {productText ? (
-            <Text style={styles.ingredientDesc} numberOfLines={1}>{productText}</Text>
-          ) : null}
-        </View>
-        <ChevronRight size={18} color="#D6D3D1" />
+        <Text style={styles.ingredientName}>{ingredientName}</Text>
+        {isPresent && (
+          <View style={styles.routineChip}>
+            <View style={styles.routineDot} />
+            <Text style={styles.routineText}>In your Routine</Text>
+          </View>
+        )}
       </TouchableOpacity>
     );
   };
@@ -471,43 +460,40 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
   if (isLoadingComparison) {
     return (
       <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-        <View style={styles.mainCard}>
-          {/* Header Skeleton */}
-          <SkeletonPlaceholder borderRadius={4}>
-            <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" gap={8} marginBottom={6}>
-              <SkeletonPlaceholder.Item width={20} height={20} borderRadius={10} />
-              <SkeletonPlaceholder.Item width={180} height={16} />
-            </SkeletonPlaceholder.Item>
-            <SkeletonPlaceholder.Item width={280} height={12} marginBottom={20} />
-          </SkeletonPlaceholder>
-
-          {/* Concern Sections Skeleton */}
+        <View style={styles.contentPadding}>
+          {/* Concern Cards Skeleton */}
           {[1, 2, 3].map((section) => (
-            <View key={section} style={{ marginBottom: 16 }}>
+            <View key={section} style={styles.concernCard}>
               {/* Concern Header */}
               <SkeletonPlaceholder borderRadius={4}>
-                <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="center" paddingVertical={12}>
-                  <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" gap={8}>
-                    <SkeletonPlaceholder.Item width={16} height={16} borderRadius={8} />
-                    <SkeletonPlaceholder.Item width={120} height={14} />
-                  </SkeletonPlaceholder.Item>
-                  <SkeletonPlaceholder.Item width={50} height={24} borderRadius={8} />
+                <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="center" paddingHorizontal={16} paddingVertical={20}>
+                  <SkeletonPlaceholder.Item width={140} height={18} />
+                  <SkeletonPlaceholder.Item width={45} height={26} borderRadius={13} />
                 </SkeletonPlaceholder.Item>
               </SkeletonPlaceholder>
 
+              <View style={styles.headerSeparator} />
+
               {/* Ingredient Rows */}
-              {[1, 2, 3].map((row) => (
-                <SkeletonPlaceholder key={row} borderRadius={4}>
-                  <SkeletonPlaceholder.Item flexDirection="row" alignItems="center" paddingVertical={14}>
-                    <SkeletonPlaceholder.Item width={22} height={22} borderRadius={11} marginRight={12} />
-                    <SkeletonPlaceholder.Item flex={1}>
-                      <SkeletonPlaceholder.Item width={140} height={14} marginBottom={4} />
-                      <SkeletonPlaceholder.Item width={100} height={12} />
+              <View style={{ paddingHorizontal: 16 }}>
+                {[1, 2, 3].map((row, index) => (
+                  <SkeletonPlaceholder key={row} borderRadius={4}>
+                    <SkeletonPlaceholder.Item
+                      flexDirection="row"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      paddingVertical={16}
+                      borderBottomWidth={index < 2 ? 1 : 0}
+                      borderColor="#F0F0F0"
+                    >
+                      <SkeletonPlaceholder.Item width={row === 2 ? 110 : 150} height={16} />
+                      {row === 1 && (
+                        <SkeletonPlaceholder.Item width={100} height={28} borderRadius={8} />
+                      )}
                     </SkeletonPlaceholder.Item>
-                    <SkeletonPlaceholder.Item width={18} height={18} borderRadius={9} />
-                  </SkeletonPlaceholder.Item>
-                </SkeletonPlaceholder>
-              ))}
+                  </SkeletonPlaceholder>
+                ))}
+              </View>
             </View>
           ))}
         </View>
@@ -531,17 +517,7 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
 
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
-      {/* Main Card */}
-      <View style={styles.mainCard}>
-        {/* Card Header */}
-        <View style={styles.cardHeader}>
-          <View style={styles.cardHeaderRow}>
-            <SoapDispenserDroplet size={20} color="#414651" />
-            <Text style={styles.cardHeaderTitle}>Recommended Ingredients</Text>
-          </View>
-          <Text style={styles.cardHeaderSubtitle}>Dermatologist approved ingredients for your top concerns</Text>
-        </View>
-
+      <View style={styles.contentPadding}>
         {/* Concern Sections */}
         {filteredConcerns.map((concern, concernIndex) => {
           if (!concern.advice) return null;
@@ -554,13 +530,10 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
           const displayName = CONCERN_KEY_TO_DISPLAY_NAME[concern.keyForLookup] || concern.displayName || concern.keyForLookup;
 
           return (
-            <View key={concern.keyForLookup} style={styles.concernSection}>
+            <View key={concern.keyForLookup} style={styles.concernCard}>
               {/* Concern Header */}
               <View style={styles.concernHeader}>
-                <View style={styles.concernHeaderLeft}>
-                  <Star size={16} color="#A9A29D" />
-                  <Text style={styles.concernTitle}>{displayName}</Text>
-                </View>
+                <Text style={styles.concernTitle}>{displayName}</Text>
                 {score > 0 && (
                   <View style={styles.scoreBadge}>
                     <View style={[styles.scoreIndicator, { backgroundColor: getScoreColor(score) }]} />
@@ -569,30 +542,34 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
                 )}
               </View>
 
-              {/* Ingredient Items */}
-              {visibleItems.map((item, itemIndex) => {
-                if (typeof item === 'string') {
-                  return renderIngredientRow(
-                    item,
-                    itemIndex,
-                    concern.keyForLookup,
-                    itemIndex === visibleItems.length - 1 && !hasMore
-                  );
-                }
-                return null;
-              })}
+              <View style={styles.headerSeparator} />
 
-              {/* Show More */}
-              {hasMore && (
-                <TouchableOpacity
-                  style={styles.showMoreButton}
-                  onPress={() => toggleExpanded(concern.keyForLookup)}
-                >
-                  <Text style={styles.showMoreText}>
-                    {isExpanded ? 'Show less' : `Show ${itemsToShow.length - 3} more`}
-                  </Text>
-                </TouchableOpacity>
-              )}
+              <View style={styles.ingredientsListWrapper}>
+                {/* Ingredient Items */}
+                {visibleItems.map((item, itemIndex) => {
+                  if (typeof item === 'string') {
+                    return renderIngredientRow(
+                      item,
+                      itemIndex,
+                      concern.keyForLookup,
+                      itemIndex === visibleItems.length - 1 && !hasMore
+                    );
+                  }
+                  return null;
+                })}
+
+                {/* Show More */}
+                {hasMore && (
+                  <TouchableOpacity
+                    style={styles.showMoreButton}
+                    onPress={() => toggleExpanded(concern.keyForLookup)}
+                  >
+                    <Text style={styles.showMoreText}>
+                      {isExpanded ? 'Show less' : `Show ${itemsToShow.length - 3} more`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
           );
         })}
@@ -609,67 +586,43 @@ export default RecommendationsList;
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#F5F5F5',
+  },
+  contentPadding: {
+    padding: 16,
   },
 
-  // Main Card
-  mainCard: {
+  // Concern Card
+  concernCard: {
     backgroundColor: '#FFFFFF',
     borderRadius: 16,
-    padding: 16,
-    marginHorizontal: 16,
-    marginTop: 16,
+    marginBottom: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.04,
     shadowRadius: 8,
     elevation: 2,
-  },
-
-  // Card Header
-  cardHeader: {
-    marginBottom: 20,
-  },
-  cardHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginBottom: 4,
-  },
-  cardHeaderTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    fontFamily: fontFamily.bold,
-    color: '#1C1917',
-  },
-  cardHeaderSubtitle: {
-    fontSize: 13,
-    color: '#78716C',
-    marginTop: 2,
-  },
-
-  // Concern Section
-  concernSection: {
-    marginBottom: 8,
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
   },
   concernHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: '#F0F0F0',
+    paddingHorizontal: 16,
+    paddingTop: 20,
+    paddingBottom: 16,
   },
-  concernHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  headerSeparator: {
+    height: 1,
+    backgroundColor: '#F0F0F0',
+    marginHorizontal: 16,
   },
   concernTitle: {
-    fontSize: 15,
-    fontWeight: '600',
-    fontFamily: fontFamily.semiBold,
-    color: '#1C1917',
+    fontSize: 16,
+    fontWeight: '700',
+    fontFamily: fontFamily.bold,
+    color: '#57534E',
   },
 
   // Score Badge
@@ -677,54 +630,78 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
-    padding: 6,
-    borderRadius: 8,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: 16,
     backgroundColor: '#F5F5F5',
   },
   scoreIndicator: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
   },
   scoreValue: {
     fontSize: 14,
     fontWeight: '600',
     fontFamily: fontFamily.semiBold,
-    color: '#1C1917',
+    color: '#44403C',
+  },
+
+  // Ingredient List Wrapper
+  ingredientsListWrapper: {
+    paddingHorizontal: 16,
   },
 
   // Ingredient Row
   ingredientRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 14,
+    justifyContent: 'space-between',
+    paddingVertical: 18,
   },
   ingredientRowBorder: {
-    borderTopWidth: 1,
-    borderTopColor: '#F0F0F0',
-  },
-  ingredientIconContainer: {
-    marginRight: 12,
-  },
-  ingredientContent: {
-    flex: 1,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   ingredientName: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: '500',
     fontFamily: fontFamily.medium,
-    color: '#1C1917',
-    marginBottom: 2,
+    color: '#44403C',
+    flex: 1,
   },
-  ingredientDesc: {
-    fontSize: 13,
-    color: '#A9A29D',
+
+  // Routine Chip
+  routineChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E7E5E4',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 4,
+    marginLeft: 8,
+  },
+  routineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#12B76A',
+  },
+  routineText: {
+    fontSize: 12,
+    color: '#57534E',
+    fontWeight: '400',
   },
 
   // Show More
   showMoreButton: {
-    paddingVertical: 14,
-
+    paddingVertical: 18,
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+    alignItems: 'center',
   },
   showMoreText: {
     fontSize: 14,

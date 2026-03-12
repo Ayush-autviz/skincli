@@ -707,6 +707,7 @@ export default function HomeScreen(): React.JSX.Element {
                                                 (navigation as any).navigate('MetricDetail', {
                                                     metricKey: concern.metricKey,
                                                     metricValue: concern.value,
+                                                    photoData: currentPhoto ? JSON.stringify(currentPhoto) : undefined,
                                                 });
                                             }}
                                         >
@@ -1111,6 +1112,12 @@ const styles = StyleSheet.create({
     routineChip: {
         flexDirection: 'row',
         alignItems: 'center',
+        backgroundColor: '#FFF',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E7E5E4',
+        paddingHorizontal: 8,
+        paddingVertical: 6,
         gap: 4,
         marginLeft: 8,
     },

@@ -281,7 +281,7 @@ export default function AboutMeScreen(): React.JSX.Element {
                     </TouchableOpacity>
                 </View>
                 <TouchableOpacity onPress={handleLogout}>
-                    <Text style={{ color: '#cf4f4fff', fontWeight: '600' }}>Logout</Text>
+                    <Text style={{ color: '#717680', fontWeight: '400',fontSize: 15 }}>Log Out</Text>
                 </TouchableOpacity>
             </View>
 
@@ -440,7 +440,7 @@ const styles = StyleSheet.create({
     },
     tabBar: {
         flexDirection: 'row',
-        marginHorizontal: spacing.md,
+        //marginHorizontal: spacing.md,
     },
     tab: {
         paddingVertical: 10,

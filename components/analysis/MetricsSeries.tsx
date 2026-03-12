@@ -1142,7 +1142,8 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                 maskImages: selectedPhoto?.maskImages,
                 metricKey: metric.metricName,
                 metricValue: metric.scores[selectedIndex]?.score,
-                photoData: JSON.stringify(selectedPhoto)
+                photoData: JSON.stringify(selectedPhoto),
+                isTopConcern: isTopConcern
               });
             } else {
               const firstPhoto = photos[0];
@@ -1152,7 +1153,8 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                   maskImages: firstPhoto?.maskImages,
                   metricKey: metric.metricName,
                   metricValue: metric.scores[0]?.score,
-                  photoData: JSON.stringify(firstPhoto)
+                  photoData: JSON.stringify(firstPhoto),
+                  isTopConcern: isTopConcern
                 });
               }
             }
@@ -1161,18 +1163,20 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
           disabled={hideNavigation}
         >
           <View style={styles.cardHeaderLeft}>
-            <TouchableOpacity
-              onPress={(e) => { e.stopPropagation(); handleToggleTopConcern(); }}
-              disabled={isTogglingConcern}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ paddingRight: 4, opacity: isTogglingConcern ? 0.5 : 1 }}
-            >
-              <Star
-                size={18}
-                color={isTopConcern ? "#FFB340" : "#A9A29D"}
-                fill={isTopConcern ? "#FFB340" : "transparent"}
-              />
-            </TouchableOpacity>
+            {isTopConcern && (
+              <TouchableOpacity
+                onPress={(e) => { e.stopPropagation(); handleToggleTopConcern(); }}
+                disabled={isTogglingConcern}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{ paddingRight: 4, opacity: isTogglingConcern ? 0.5 : 1 }}
+              >
+                <Star
+                  size={18}
+                  color={"#00839B"}
+                  fill={"#00839B"}
+                />
+              </TouchableOpacity>
+            )}
             <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName as keyof typeof METRIC_LABELS] || metric.metricName}</Text>
           </View>
           {!hideNavigation && <ChevronRightIcon size={18} color="#D6D3D1" />}
@@ -1281,7 +1285,8 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
         maskImages: selectedPhoto?.maskImages,
         metricKey: metric.metricName,
         metricValue: metric.scores[selectedIndex]?.score,
-        photoData: JSON.stringify(selectedPhoto)
+        photoData: JSON.stringify(selectedPhoto),
+        isTopConcern: isTopConcern
       });
     } else {
       const firstPhoto = photos[0];
@@ -1291,7 +1296,8 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
           maskImages: firstPhoto?.maskImages,
           metricKey: metric.metricName,
           metricValue: metric.scores[0]?.score,
-          photoData: JSON.stringify(firstPhoto)
+          photoData: JSON.stringify(firstPhoto),
+          isTopConcern: isTopConcern
         });
       }
     }
@@ -1307,18 +1313,20 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
         disabled={hideNavigation}
       >
         <View style={styles.cardHeaderLeft}>
-          <TouchableOpacity
-            onPress={(e) => { e.stopPropagation(); handleToggleTopConcern(); }}
-            disabled={isTogglingConcern}
-            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-            style={{ paddingRight: 4, opacity: isTogglingConcern ? 0.5 : 1 }}
-          >
-            <Star
-              size={18}
-              color={isTopConcern ? "#FFB340" : "#A9A29D"}
-              fill={isTopConcern ? "#FFB340" : "transparent"}
-            />
-          </TouchableOpacity>
+          {isTopConcern && (
+            <TouchableOpacity
+              onPress={(e) => { e.stopPropagation(); handleToggleTopConcern(); }}
+              disabled={isTogglingConcern}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+              style={{ paddingRight: 4, opacity: isTogglingConcern ? 0.5 : 1 }}
+            >
+              <Star
+                size={18}
+                color={"#00839B"}
+                fill={"#00839B"}
+              />
+            </TouchableOpacity>
+          )}
           <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
         </View>
         {!hideNavigation && <ChevronRightIcon size={18} color="#D6D3D1" />}
@@ -1722,6 +1730,20 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
   // Determine the note text based on the current thread summary
   const noteText = selectedIndex !== null && photos[selectedIndex] ? photos[selectedIndex].summary || "" : "";
 
+  const sortedMetrics = React.useMemo(() => {
+    if (!metrics || metrics.length === 0) return [];
+    if (!apiTopConcerns || apiTopConcerns.length === 0) return metrics;
+    const isTop = (metricName: string) => {
+      const concernName = getConcernNameForAPI(metricName) || '';
+      return apiTopConcerns.includes(concernName);
+    };
+    return [...metrics].sort((a, b) => {
+      const at = isTop(a.metricName) ? 1 : 0;
+      const bt = isTop(b.metricName) ? 1 : 0;
+      return bt - at; // top concerns first
+    });
+  }, [metrics, apiTopConcerns]);
+
   return (
     <View style={styles.container}>
       {/* Main content - always rendered */}
@@ -1735,7 +1757,7 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
         routineFlagLoading={routineFlagLoading}
       />
       <ScrollView style={[styles.metricsContainer, { zIndex: 1 }]}>
-        {metrics.map((metric, index) => (
+        {sortedMetrics.map((metric, index) => (
           <MetricRow
             key={index}
             metric={metric}

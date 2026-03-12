@@ -42,6 +42,7 @@ import {
   getImageChatSummary,
   sendSnapshotFirstChat,
 } from '../utils/newApiService';
+import { getComparison } from '../utils/newApiService';
 import useAuthStore from '../stores/authStore';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import Modal from 'react-native-modal';
@@ -198,7 +199,7 @@ const formatMetricName = (key: string): string => {
     'eyeAreaCondition': 'Eye Condition',
     'linesScore': 'Lines',
     'pigmentationScore': 'Pigmentation',
-    'poresScore': 'Visable Pores',
+    'poresScore': 'Visible Pores',
     'hydrationScore': 'Dewiness',
     'uniformnessScore': 'Evenness',
     'eyeAge': 'Eye Age',
@@ -250,6 +251,7 @@ const SnapshotScreen = (): React.JSX.Element => {
 
   // Score changes state (computed from previous photo)
   const [scoreChanges, setScoreChanges] = useState<Record<string, { arrow: string; value: number }>>({});
+  const [apiTopConcerns, setApiTopConcerns] = useState<string[]>([]);
 
   // Refs
   const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -419,6 +421,15 @@ const SnapshotScreen = (): React.JSX.Element => {
                   }
                 }
               } catch (_) { /* continue without changes */ }
+            })(),
+            // 3. Fetch user top concerns from API
+            (async () => {
+              try {
+                const resp: any = await getComparison('older_than_6_month');
+                const resultData = resp?.data?.result;
+                const tops = resultData?.user_top_concerns || [];
+                setApiTopConcerns(tops);
+              } catch (_) { /* ignore */ }
             })()
           ]);
 
@@ -612,6 +623,27 @@ const SnapshotScreen = (): React.JSX.Element => {
   const rawImageUri = photoData?.urls?.['500x500'] || photoData?.urls?.['800x1200'] || photoData?.storageUrl || localUri;
   const imageUri = sanitizeS3Uri(rawImageUri || '');
   const metrics = photoData?.metrics;
+  const getConcernNameForAPI = (metricKey: string): string | null => {
+    if (!metricKey) return null;
+    let processedKey = metricKey.endsWith('Score') ? metricKey.slice(0, -'Score'.length) : metricKey;
+    const special: Record<string, string> = {
+      hydration: 'Dewiness',
+      redness: 'Redness',
+      pores: 'Visible Pores',
+      acne: 'Breakouts',
+      lines: 'Lines',
+      translucency: 'Translucency',
+      pigmentation: 'Pigmentation',
+      uniformness: 'Evenness',
+      eyeAge: 'Perceived Eye Age',
+      eyeAreaCondition: 'Eye Area Condition',
+      perceivedAge: 'Perceived Age',
+      skinTone: 'Skin Tone',
+      skinType: 'Skin Type',
+    };
+    if (special[processedKey]) return special[processedKey];
+    return processedKey.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+  };
 
   // Get standalone metrics for the profile row
   const profileOrder = ['skinType', 'skinTone', 'perceivedAge', 'eyeAge'];
@@ -631,6 +663,19 @@ const SnapshotScreen = (): React.JSX.Element => {
       .filter(key => metrics[key] !== undefined && typeof metrics[key] === 'number')
       .map(key => ({ key, value: metrics[key], label: formatMetricName(key) }))
     : [];
+  const sortedScoreMetrics = (() => {
+    if (!Array.isArray(scoreMetrics) || scoreMetrics.length === 0) return scoreMetrics;
+    if (!apiTopConcerns || apiTopConcerns.length === 0) return scoreMetrics;
+    const isTop = (metricKey: string) => {
+      const concern = getConcernNameForAPI(metricKey) || '';
+      return apiTopConcerns.includes(concern);
+    };
+    return [...scoreMetrics].sort((a, b) => {
+      const at = isTop(a.key) ? 1 : 0;
+      const bt = isTop(b.key) ? 1 : 0;
+      return bt - at;
+    });
+  })();
 
   console.log('from screen', fromScanTab);
 
@@ -739,18 +784,20 @@ const SnapshotScreen = (): React.JSX.Element => {
         )}
 
         {/* Analysis Section */}
-        {scoreMetrics.length > 0 && (
+        {sortedScoreMetrics.length > 0 && (
           <View style={styles.analysisCard}>
             <Text style={styles.analysisTitle}>Analysis</Text>
 
-            {scoreMetrics.map((item, index) => {
+            {sortedScoreMetrics.map((item, index) => {
               const { color } = getMetricTag(item.value as number);
+              const concernName = getConcernNameForAPI(item.key) || '';
+              const isTop = apiTopConcerns.includes(concernName);
               return (
                 <TouchableOpacity
                   key={item.key}
                   style={[
                     styles.analysisRow,
-                    index < scoreMetrics.length && styles.analysisRowBorder,
+                    index < sortedScoreMetrics.length && styles.analysisRowBorder,
                   ]}
                   onPress={() => {
                     (navigation as any).navigate('MetricDetail', {
@@ -764,7 +811,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.analysisRowLeft}>
-                    <Star size={16} color="#79716B" style={{ marginRight: 6 }} />
+                    {isTop && <Star size={16} color="#00839B" style={{ marginRight: 6 }} />}
                     <View>
                       <Text style={styles.analysisMetricName}>{item.label}</Text>
                       {item.key === 'poresScore' && (

@@ -1026,11 +1026,13 @@ export default function MetricDetailScreen() {
 
   // Extract parameters from navigation
   const { metricKey, metricValue, photoData } = params || {};
+  const paramIsTopConcern = (params as any)?.isTopConcern;
 
   // Handle toggling of top concern
   const [isTogglingConcern, setIsTogglingConcern] = useState(false);
   const concernName = getConcernNameForAPI(metricKey) || '';
   const isTopConcern = topConcerns?.includes(concernName);
+  const isTopConcernDisplay = typeof paramIsTopConcern === 'boolean' ? paramIsTopConcern : isTopConcern;
 
   const handleToggleTopConcern = async () => {
     if (!concernName || isTogglingConcern) return;
@@ -1205,6 +1207,22 @@ export default function MetricDetailScreen() {
       ? new Date(date.seconds * 1000)
       : new Date(date);
     return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+  };
+
+  const getRelativeDayLabel = (dateInput: any): string => {
+    if (!dateInput) return 'Today';
+    const d = typeof dateInput === 'object' && dateInput.seconds
+      ? new Date(dateInput.seconds * 1000)
+      : new Date(dateInput);
+    const now = new Date();
+    const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    if (sameDay) return 'Today';
+    const yesterday = new Date(now);
+    yesterday.setDate(now.getDate() - 1);
+    const isYesterday = d.getFullYear() === yesterday.getFullYear() && d.getMonth() === yesterday.getMonth() && d.getDate() === yesterday.getDate();
+    if (isYesterday) return 'Yesterday';
+    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    return `${monthNames[d.getMonth()]} ${d.getDate()}`;
   };
 
   // Handle chart selection changes
@@ -1602,8 +1620,8 @@ export default function MetricDetailScreen() {
             >
               <Star
                 size={22}
-                color={isTopConcern ? "#FFB340" : "#D6D3D1"}
-                fill={isTopConcern ? "#FFB340" : "transparent"}
+                color={isTopConcernDisplay ? "#00839B" : "#D6D3D1"}
+                fill={isTopConcernDisplay ? "#00839B" : "transparent"}
               />
             </TouchableOpacity>
           </View>
@@ -1828,13 +1846,37 @@ export default function MetricDetailScreen() {
             const actualAge = calculateActualAge(profile?.birth_date);
             const latestScore = isCategorical ? metricValue : Number(metricValue);
 
+            // Resolve display value for categorical metrics (skinType/skinTone)
+            const profileFieldKey = metricKey === 'skinTone' ? 'skinTone' : 'skinType';
+            let displayValue: string | null = null;
+            if (isCategorical) {
+              const providedVal = typeof metricValue === 'string' && metricValue.trim() ? metricValue.trim() : null;
+              let trendVal: string | null = null;
+              if (Array.isArray(trendScores) && trendScores.length > 0) {
+                const lastIdx = trendScores.length - 1;
+                trendVal = (trendScores[lastIdx]?.skin_condition_type
+                  || trendScores[lastIdx]?.skinType
+                  || trendScores[lastIdx]?.type
+                  || null);
+              }
+              const parsedMetricsVal = parsedPhotoData?.metrics?.[profileFieldKey] || null;
+              const profileVal = (profile as any)?.[profileFieldKey] || null;
+              displayValue = providedVal || trendVal || parsedMetricsVal || profileVal;
+            }
+
             // Get color and level info
-            const scoreLevelInfo = getScoreLevelInfo(metricValue, currentConcernDetails);
+            const valueForLevel = isCategorical ? (displayValue ?? '--') : metricValue;
+            const scoreLevelInfo = getScoreLevelInfo(valueForLevel as any, currentConcernDetails);
             const tagColor = isCategorical ? scoreLevelInfo.color : getAgeComparisonColor(Number(latestScore), actualAge);
 
             let changeArrow = '→';
             let changeAbs = 0;
             let showChange = !isCategorical;
+            let chipDateLabel: string | null = null;
+            if (Array.isArray(trendScores) && trendScores.length >= 1) {
+              const lastIdx = trendScores.length - 1;
+              chipDateLabel = getRelativeDayLabel(trendScores[lastIdx]?.created_at || trendScores[lastIdx]?.timestamp);
+            }
 
             if (!isCategorical && Array.isArray(trendScores) && trendScores.length >= 2) {
               const lastIdx = trendScores.length - 1;
@@ -1845,23 +1887,71 @@ export default function MetricDetailScreen() {
               changeArrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
             }
 
+            // Determine if everything related to the image is loaded
+            const backgroundImageUri = parsedPhotoData?.storageUrl;
+            const hasBackgroundImage = !!backgroundImageUri;
+            const baseImageReady = !hasBackgroundImage || !backgroundImageLoading;
+            const everythingLoaded = baseImageReady;
+
             return (
               <View style={{ marginHorizontal: 16, marginTop: spacing.xxl }}>
                 <View style={styles.metricCardRow}>
+                  <View style={styles.maskImageContainer}>
+                    <Image
+                      source={{ uri: sanitizeS3Uri(backgroundImageUri) as string }}
+                      style={[
+                        styles.backgroundImage as any,
+                        { opacity: everythingLoaded ? 1 : 0 }
+                      ]}
+                      resizeMode="cover"
+                      onLoadEnd={() => setBackgroundImageLoading(false)}
+                    />
+                    {!everythingLoaded && (
+                      <View style={styles.imageLoadingContainer}>
+                        <SkeletonPlaceholder borderRadius={12}>
+                          <SkeletonPlaceholder.Item width={150} height={150} />
+                        </SkeletonPlaceholder>
+                      </View>
+                    )}
+                    <TouchableOpacity
+                      style={styles.photoOverlayChip}
+                      activeOpacity={0.7}
+                      onPress={() => {
+                        const photoDataWithMasks = {
+                          ...parsedPhotoData,
+                          maskImages: maskImages ?? parsedPhotoData?.maskImages
+                        };
+                        (navigation as any).navigate('MaskViewer', {
+                          photoData: JSON.stringify(photoDataWithMasks),
+                          initialConditionName: conditionName
+                        });
+                      }}
+                    >
+                      <Text style={styles.photoOverlayChipText}>+ Zoom / Masks</Text>
+                    </TouchableOpacity>
+                  </View>
                   <View style={styles.maskContentRight}>
                     <Text style={styles.smartContextText}>
                       {getSmartContextText(metricValue, metricKey, currentConcernDetails)}
                     </Text>
                     <View style={styles.scoreRowContainer}>
                       <View style={styles.combinedScoreChip}>
-                        {showChange && (
-                          <View style={styles.changeInfo}>
-                            <Text style={styles.changeText}>{changeArrow}{changeAbs} Today</Text>
-                          </View>
-                        )}
+                        <View style={styles.changeInfo}>
+                          {isLoadingTrends || !chipDateLabel ? (
+                            <SkeletonPlaceholder borderRadius={8}>
+                              <SkeletonPlaceholder.Item width={80} height={14} />
+                            </SkeletonPlaceholder>
+                          ) : (
+                            <Text style={styles.changeText}>
+                              {showChange ? `${changeArrow}${changeAbs} ${chipDateLabel}` : chipDateLabel}
+                            </Text>
+                          )}
+                        </View>
                         <View style={styles.scoreInfo}>
                           <View style={[styles.analysisDot, { backgroundColor: tagColor }]} />
-                          <Text style={styles.scoreText}>{isCategorical ? latestScore : (Number.isFinite(Number(metricValue)) ? Number(metricValue) : '--')}</Text>
+                          <Text style={styles.scoreText}>
+                            {isCategorical ? (displayValue ?? '--') : (metricValue ? String(metricValue) : '--')}
+                          </Text>
                         </View>
                       </View>
                     </View>
@@ -1908,6 +1998,11 @@ export default function MetricDetailScreen() {
             const tagColor = latestScore >= 70 ? '#22C55E' : latestScore < 50 ? '#EF4444' : '#F59E0B';
             let changeArrow = '→';
             let changeAbs = 0;
+            let chipDateLabel: string | null = null;
+            if (Array.isArray(trendScores) && trendScores.length >= 1) {
+              const lastIdx = trendScores.length - 1;
+              chipDateLabel = getRelativeDayLabel(trendScores[lastIdx]?.created_at || trendScores[lastIdx]?.timestamp);
+            }
             if (Array.isArray(trendScores) && trendScores.length >= 2) {
               const lastIdx = trendScores.length - 1;
               const s0 = Number(trendScores[lastIdx]?.skin_condition_score ?? trendScores[lastIdx]?.score ?? latestScore);
@@ -1994,7 +2089,13 @@ export default function MetricDetailScreen() {
                     <View style={styles.scoreRowContainer}>
                       <View style={styles.combinedScoreChip}>
                         <View style={styles.changeInfo}>
-                          <Text style={styles.changeText}>{changeArrow}{changeAbs} Today</Text>
+                          {isLoadingTrends || !chipDateLabel ? (
+                            <SkeletonPlaceholder borderRadius={8}>
+                              <SkeletonPlaceholder.Item width={90} height={14} />
+                            </SkeletonPlaceholder>
+                          ) : (
+                            <Text style={styles.changeText}>{`${changeArrow}${changeAbs} ${chipDateLabel}`}</Text>
+                          )}
                         </View>
                         <View style={styles.scoreInfo}>
                           <View style={[styles.analysisDot, { backgroundColor: tagColor }]} />

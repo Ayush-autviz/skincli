@@ -2,7 +2,7 @@
 // Component to display and manage the user's routine items
 
 import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle, useRef } from 'react';
-import { View, Text, SectionList, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image, Modal, ScrollView } from 'react-native';
+import { View, Text, SectionList, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image, Modal, ScrollView, Animated, Easing } from 'react-native';
 import { colors, spacing, typography, palette } from '../../styles';
 import { useNavigation } from '@react-navigation/native';
 import { ClipboardPlus, Pill } from 'lucide-react-native';
@@ -1200,20 +1200,48 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
   };
 
   // Open the add routine sheet
+  const sheetTranslateY = useRef(new Animated.Value(300)).current;
+
   const openAddModal = (): void => {
     setShowAddRoutineSheet(true);
+    // Allow modal to mount before animating
+    requestAnimationFrame(() => {
+      sheetTranslateY.setValue(300);
+      Animated.timing(sheetTranslateY, {
+        toValue: 0,
+        duration: 250,
+        easing: Easing.out(Easing.cubic),
+        useNativeDriver: true,
+      }).start();
+    });
+  };
+
+  const closeAddModal = (after?: () => void): void => {
+    Animated.timing(sheetTranslateY, {
+      toValue: 300,
+      duration: 220,
+      easing: Easing.in(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({ finished }) => {
+      if (finished) {
+        setShowAddRoutineSheet(false);
+        if (after) after();
+      }
+    });
   };
 
   // Handle add product from sheet
   const handleAddProduct = (): void => {
-    setShowAddRoutineSheet(false);
-    (navigation as any).navigate('FindProduct');
+    closeAddModal(() => {
+      (navigation as any).navigate('FindProduct');
+    });
   };
 
   // Handle add treatment from sheet
   const handleAddTreatment = (): void => {
-    setShowAddRoutineSheet(false);
-    (navigation as any).navigate('AddTreatmentForm');
+    closeAddModal(() => {
+      (navigation as any).navigate('AddTreatmentForm');
+    });
   };
 
   // Update the renderSectionHeader function
@@ -1224,15 +1252,14 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           <Text style={styles.sectionHeaderText}>{title}</Text>
           <View style={styles.sectionHeaderLine} />
         </View>
-        {/* <TouchableOpacity
-          style={styles.sectionAddButton}
-          onPress={() => openAddModalWithFrequency(title)}
-        >
-          <Plus
-            size={16}
-            color={"#fff"}
-          />
-        </TouchableOpacity> */}
+        {title === 'DAILY' && (
+          <TouchableOpacity
+            onPress={openAddModal}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.addLinkText}>+ Add to routine</Text>
+          </TouchableOpacity>
+        )}
       </View>
     </View>
   );
@@ -1281,27 +1308,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
   };
 
   // --- List Header Component ---
-  const RoutineListHeader = (): React.JSX.Element => {
-    const totalProducts = routineItems.filter(item =>
-      !item.dateStopped && item.type.toLowerCase() === 'product'
-    ).length;
-    const totalTreatments = routineItems.filter(item =>
-      !item.dateStopped && item.type.toLowerCase() !== 'product'
-    ).length;
-
-    return (
-      <View style={styles.listHeaderContainer}>
-        <View style={styles.summaryContainer}>
-          <Text style={styles.summaryText}>
-            {totalProducts} Total Products, {totalTreatments} Treatment
-          </Text>
-          <TouchableOpacity onPress={openAddModal}>
-            <Text style={styles.addLinkText}>+ Add to routine</Text>
-          </TouchableOpacity>
-        </View>
-
-      </View>
-    );
+  const RoutineListHeader = (): React.JSX.Element | null => {
+    return null;
   };
 
   // --- List Footer Component ---
@@ -1377,17 +1385,17 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
       {/* Add to Routine Bottom Sheet */}
       <Modal
-        animationType="slide"
+        animationType="none"
         transparent={true}
         visible={showAddRoutineSheet}
-        onRequestClose={() => setShowAddRoutineSheet(false)}
+        onRequestClose={() => closeAddModal()}
       >
         <TouchableOpacity
           style={styles.sheetOverlay}
           activeOpacity={1}
-          onPress={() => setShowAddRoutineSheet(false)}
+          onPress={() => closeAddModal()}
         >
-          <View style={styles.sheetContainer}>
+          <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: sheetTranslateY }] }]}>
             <View style={styles.sheetHandle} />
 
             <TouchableOpacity
@@ -1408,12 +1416,12 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
             <TouchableOpacity
               style={styles.sheetCancelButton}
-              onPress={() => setShowAddRoutineSheet(false)}
+              onPress={() => closeAddModal()}
               activeOpacity={0.7}
             >
               <Text style={styles.sheetCancelText}>Cancel</Text>
             </TouchableOpacity>
-          </View>
+          </Animated.View>
         </TouchableOpacity>
       </Modal>
     </View>
@@ -1429,6 +1437,7 @@ const styles = StyleSheet.create({
   },
   sectionsList: {
     flex: 1,
+    marginTop:10
   },
   listContentContainerBase: {
     paddingBottom: 40,

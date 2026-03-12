@@ -35,6 +35,7 @@ import { ConditionalImage } from '../utils/imageUtils';
 
 // Import the concerns data
 import concernsData from '../data/concerns.json';
+import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const IMAGE_SIZE = SCREEN_WIDTH - 40;
@@ -52,6 +53,7 @@ const colors = {
   textTertiary: '#9CA3AF',
   error: '#FF6B6B',
 };
+const ACTIVE_UNDERLINE_COLOR = '#00839B';
 
 // Enhanced spring config for smooth animations
 const springConfig = {
@@ -231,10 +233,11 @@ const ZoomableMaskImage = ({
   return (
     <View style={styles.maskImageContainer}>
       {isLoading && (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={styles.loadingText}>Loading...</Text>
-        </View>
+        // <View style={styles.loadingContainer}>
+          <SkeletonPlaceholder borderRadius={28}>
+            <SkeletonPlaceholder.Item width="100%" height="100%" borderRadius={28} />
+          </SkeletonPlaceholder>
+        // </View>
       )}
 
       <GestureHandlerRootView style={styles.gestureContainer}>
@@ -258,10 +261,13 @@ const ZoomableMaskImage = ({
                 />
 
                 <ConditionalImage
-                  source={{ uri: sanitizeS3Uri(maskUri) }}
+                  source={sanitizeS3Uri(maskUri)}
                   style={styles.maskOverlay}
                   resizeMode="cover"
+                  width="100%"
+                  height="100%"
                   onLoad={() => setMaskLoaded(true)}
+                  onError={() => setMaskLoaded(true)}
                 />
               </>
             ) : maskUri ? (
@@ -342,7 +348,7 @@ const MaskViewerScreen = (): React.JSX.Element => {
         };
 
         const concernKey = conditionToConcernKey[mask.skin_condition_name];
-        const concernDetails = concernsData?.skinConcerns?.[concernKey];
+        const concernDetails = (concernsData as any)?.skinConcerns?.[concernKey];
 
         // Only include if maskVerbiage exists
         return concernDetails?.maskVerbiage;
@@ -416,6 +422,7 @@ const MaskViewerScreen = (): React.JSX.Element => {
       }
     },
   });
+  const [tabWidths, setTabWidths] = useState<Record<number, number>>({});
 
   const scrollToIndex = (index: number): void => {
     scrollRef.current?.scrollTo({
@@ -475,21 +482,15 @@ const MaskViewerScreen = (): React.JSX.Element => {
           ))}
         </Animated.ScrollView>
 
-        {/* Current mask label */}
-        <View style={styles.currentLabelContainer}>
-          <View style={styles.currentLabel}>
-            <Text style={styles.currentLabelText}>
-              {maskOptions[activeIndex]?.displayName}
-            </Text>
-            <View style={styles.currentLabelIndicator} />
-          </View>
-
-          {/* Mask Verbiage from concerns.json */}
+        {/* Title + description */}
+        <View style={styles.captionContainer}>
+          <Text style={styles.captionTitle}>
+            {maskOptions[activeIndex]?.displayName}
+          </Text>
           {(() => {
             const currentCondition = maskOptions[activeIndex]?.skin_condition_name;
             if (currentCondition && currentCondition !== 'none') {
-              // Map condition names to concern keys
-              const conditionToConcernKey: { [key: string]: string } = {
+              const map: { [key: string]: string } = {
                 'redness': 'rednessScore',
                 'hydration': 'hydrationScore',
                 'eye_bags': 'eyeAreaCondition',
@@ -499,34 +500,19 @@ const MaskViewerScreen = (): React.JSX.Element => {
                 'pigmentation': 'pigmentationScore',
                 'uniformness': 'uniformnessScore'
               };
-
-              const concernKey = conditionToConcernKey[currentCondition];
-              const concernDetails = concernsData?.skinConcerns?.[concernKey];
-
-              if (concernDetails?.maskVerbiage) {
-                return (
-                  <View style={styles.maskVerbiageContainer}>
-                    {Array.isArray(concernDetails.maskVerbiage) ? (
-                      concernDetails.maskVerbiage.map((verbiage: string, index: number) => (
-                        <View key={index} style={styles.maskVerbiageItem}>
-                          <View style={styles.maskVerbiageBullet} />
-                          <Text style={styles.maskVerbiageText}>
-                            {verbiage}
-                          </Text>
-                        </View>
-                      ))
-                    ) : (
-                      <Text style={styles.maskVerbiageText}>
-                        {concernDetails.maskVerbiage}
-                      </Text>
-                    )}
-                  </View>
-                );
+              const key = map[currentCondition];
+              const details = (concernsData as any)?.skinConcerns?.[key];
+              if (details?.maskVerbiage) {
+                const text = Array.isArray(details.maskVerbiage)
+                  ? details.maskVerbiage.join(' ')
+                  : details.maskVerbiage;
+                return <Text style={styles.captionDesc}>{text}</Text>;
               }
             }
             return null;
           })()}
         </View>
+      
       </View>
 
       {/* Bottom navigation */}
@@ -540,28 +526,35 @@ const MaskViewerScreen = (): React.JSX.Element => {
               style={styles.navigationScroll}
               ref={navigationScrollRef}
             >
-              {maskOptions.map((maskOption, index) => {
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    onPress={() => scrollToIndex(index)}
-                    activeOpacity={0.7}
-                  >
-                    <View style={[styles.navigationTab]}>
+              {maskOptions.map((maskOption, index) => (
+                <TouchableOpacity
+                  key={index}
+                  onPress={() => scrollToIndex(index)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.navigationTab}>
+                    <View
+                      style={styles.navigationTabLabel}
+                      onLayout={(e) => {
+                        const w = e.nativeEvent.layout.width;
+                        setTabWidths(prev => (prev[index] === w ? prev : { ...prev, [index]: w }));
+                      }}
+                    >
                       <Animated.Text style={[styles.navigationTabText, { color: '#FFF' }]}>
                         {maskOption.displayName}
                       </Animated.Text>
                       {index === activeIndex && (
-                        <View style={styles.activeTabIndicator} />
+                        <View style={[styles.activeTabIndicator, { width: tabWidths[index] ?? '100%' }]} />
                       )}
                     </View>
-                  </TouchableOpacity>
-                );
-              })}
+                  </View>
+                </TouchableOpacity>
+              ))}
             </Animated.ScrollView>
           </View>
         </View>
-      </View>
+        </View>
+      {/* </GestureHandlerRootView> */}
       {/* </GestureHandlerRootView> */}
     </SafeAreaView>
   );
@@ -621,7 +614,7 @@ const styles = StyleSheet.create({
   maskImageContainer: {
     width: IMAGE_SIZE,
     height: IMAGE_SIZE,
-    borderRadius: 20,
+    borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: '#111',
     shadowColor: '#000',
@@ -630,16 +623,35 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 15,
   },
+  captionContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    paddingBottom: 54,
+    alignItems: 'center',
+  },
+  captionTitle: {
+    color: '#FFF',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  captionDesc: {
+    color: '#C7C7C7',
+    fontSize: 14,
+    lineHeight: 20,
+    textAlign: 'center',
+    maxWidth: SCREEN_WIDTH * 0.8,
+  },
   loadingContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
+    // position: 'absolute',
+    // top: 0,
+    // left: 0,
+    // right: 0,
+    // bottom: 0,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.8)',
-    zIndex: 10,
+    //backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    //zIndex: 10,
   },
   loadingText: {
     color: 'white',
@@ -748,6 +760,11 @@ const styles = StyleSheet.create({
     minWidth: 80,
     position: 'relative',
   },
+  navigationTabLabel: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   navigationTabText: {
     fontSize: 14,
     fontWeight: '500',
@@ -757,9 +774,9 @@ const styles = StyleSheet.create({
   activeTabIndicator: {
     position: 'absolute',
     bottom: 0,
-    width: 30,
+    left: 0,
     height: 3,
-    backgroundColor: colors.primary,
+    backgroundColor: ACTIVE_UNDERLINE_COLOR,
     borderRadius: 1.5,
   },
   maskVerbiageContainer: {

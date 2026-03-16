@@ -26,8 +26,8 @@ import { SvgXml } from 'react-native-svg';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
 import { searchProducts } from '../utils/newApiService';
-import ProductImageScannerModal from '../components/ProductImageScannerModal';
-import { useCameraPermission } from 'react-native-vision-camera';
+// import ProductImageScannerModal from '../components/ProductImageScannerModal'; // Removed
+// import { useCameraPermission } from 'react-native-vision-camera'; // Removed
 
 // Custom barcode/scanner icon SVG
 const barcodeScannerSvg = `
@@ -71,10 +71,8 @@ const FindProductScreen = (): React.JSX.Element => {
     const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
     const [isSearching, setIsSearching] = useState<boolean>(false);
     const [hasSearched, setHasSearched] = useState<boolean>(false);
-    const [showScannerModal, setShowScannerModal] = useState<boolean>(false);
-    const searchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const [searchTimeoutRef] = [useRef<ReturnType<typeof setTimeout> | null>(null)];
     const inputRef = useRef<TextInput>(null);
-    const { hasPermission, requestPermission } = useCameraPermission();
 
     // Handle search with debouncing
     useEffect(() => {
@@ -135,7 +133,7 @@ const FindProductScreen = (): React.JSX.Element => {
     };
 
     const handleProductScanned = async (productData: any) => {
-        setShowScannerModal(false);
+        // setShowScannerModal(false);
 
         // Navigate to ProductDetail in "add" mode
         (navigation as any).navigate('ProductDetail', {
@@ -149,29 +147,11 @@ const FindProductScreen = (): React.JSX.Element => {
         navigation.goBack();
     };
 
+    /* // Removed handleCameraPress
     const handleCameraPress = async () => {
-        if (hasPermission) {
-            setShowScannerModal(true);
-        } else if (hasPermission === false) {
-            Alert.alert(
-                "Camera Access Required",
-                "Camera permission is required to scan products. Please enable it in your device settings to use this feature.",
-                [
-                    { text: "Cancel", style: "cancel" },
-                    {
-                        text: "Open Settings",
-                        onPress: () => Linking.openSettings()
-                    }
-                ]
-            );
-        } else {
-            // Permission is null, request it
-            const granted = await requestPermission();
-            if (granted) {
-                setShowScannerModal(true);
-            }
-        }
+        ...
     };
+    */
 
     const renderProductItem = ({ item }: { item: SearchResult }) => (
         <TouchableOpacity
@@ -271,12 +251,7 @@ const FindProductScreen = (): React.JSX.Element => {
                         autoCorrect={false}
                     />
                 </View>
-                <TouchableOpacity
-                    style={styles.cameraButton}
-                    onPress={handleCameraPress}
-                >
-                    <Image source={require('../assets/images/camera.png')} style={styles.cameraIcon} />
-                </TouchableOpacity>
+                {/* Camera Button Removed */}
             </View>
 
             {/* Content */}
@@ -298,16 +273,7 @@ const FindProductScreen = (): React.JSX.Element => {
                 )}
             </KeyboardAvoidingView>
 
-            {/* Product Scanner Modal */}
-            <ProductImageScannerModal
-                visible={showScannerModal}
-                onClose={() => setShowScannerModal(false)}
-                onProductScanned={handleProductScanned}
-                onError={(message) => {
-                    console.log('Scanner error:', message);
-                    setShowScannerModal(false);
-                }}
-            />
+            {/* Product Scanner Modal Removed */}
         </SafeAreaView>
     );
 };

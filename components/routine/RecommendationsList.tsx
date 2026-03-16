@@ -632,7 +632,7 @@ const styles = StyleSheet.create({
     gap: 6,
     paddingVertical: 6,
     paddingHorizontal: 10,
-    borderRadius: 16,
+    borderRadius: 10,
     backgroundColor: '#F5F5F5',
   },
   scoreIndicator: {

@@ -21,7 +21,8 @@ import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import useAuthStore from '../stores/authStore';
-import { getHautAnalysisResults, transformHautResults, generateConcernMessage } from '../utils/newApiService';
+import { getHautAnalysisResults, transformHautResults, generateConcernMessage, getReportHistory } from '../utils/newApiService';
+import SkinCheckCard from '../components/home/SkinCheckCard';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
 import concernsData from '../data/concerns.json';
 
@@ -171,6 +172,10 @@ export default function HomeScreen(): React.JSX.Element {
     const loadedConcernsPhotoIdRef = useRef<string | null>(null);
     const [expandedConcerns, setExpandedConcerns] = useState<Record<string, boolean>>({});
 
+    // Skin Check reports state
+    const [reports, setReports] = useState<any[]>([]);
+    const [isLoadingReports, setIsLoadingReports] = useState<boolean>(true);
+
     // Toggle ingredient visibility for a concern
     const toggleConcernExpanded = (concernName: string) => {
         setExpandedConcerns(prev => ({
@@ -242,8 +247,23 @@ export default function HomeScreen(): React.JSX.Element {
                 refreshPhotos();
                 hasInitialRefreshed.current = true;
             }
+            loadReportHistory();
         }, [refreshPhotos, photos.length])
     );
+
+    const loadReportHistory = async () => {
+        try {
+            setIsLoadingReports(true);
+            const response = await getReportHistory() as any;
+            if (response.success) {
+                setReports(response.reports);
+            }
+        } catch (error) {
+            console.error('Error loading report history:', error);
+        } finally {
+            setIsLoadingReports(false);
+        }
+    };
 
     // Load concerns for current photo when it changes (skip if same photo)
     const currentPhotoId = currentPhoto?.id || currentPhoto?.hautUploadData?.imageId || null;
@@ -679,158 +699,146 @@ export default function HomeScreen(): React.JSX.Element {
                 </View>
 
                 {/* Top Concerns Section */}
-                <View style={styles.sectionCard}>
-                    <View style={styles.sectionHeader}>
-                        <Star size={18} color="#79716B" />
-                        <Text style={styles.sectionTitle}>Top Concerns</Text>
-                    </View>
+                {(isLoadingConcerns || topConcerns.length > 0) && (
+                    <View style={styles.sectionCard}>
+                        <View style={styles.sectionHeader}>
+                            <Star size={18} color="#79716B" />
+                            <Text style={styles.sectionTitle}>Top Concerns</Text>
+                        </View>
 
-                    {isLoadingConcerns ? (
-                        <ConcernsSkeleton />
-                    ) : topConcerns.length > 0 ? (
-                        <>
-                            <Text style={styles.concernSubtitle}>
-                                Dermatologists recommend using at least one of the following ingredients for your top concerns
-                            </Text>
-                            {topConcerns.map((concern) => {
-                                const isExpanded = expandedConcerns[concern.name] ?? false;
-                                const MAX_VISIBLE = 2;
-                                const hasMore = concern.ingredients.length > MAX_VISIBLE;
-                                const visibleIngredients = isExpanded ? concern.ingredients : concern.ingredients.slice(0, MAX_VISIBLE);
+                        {isLoadingConcerns ? (
+                            <ConcernsSkeleton />
+                        ) : topConcerns.length > 0 ? (
+                            <>
+                                <Text style={styles.concernSubtitle}>
+                                    Dermatologists recommend using at least one of the following ingredients for your top concerns
+                                </Text>
+                                {topConcerns.map((concern) => {
+                                    const isExpanded = expandedConcerns[concern.name] ?? false;
+                                    const MAX_VISIBLE = 2;
+                                    const hasMore = concern.ingredients.length > MAX_VISIBLE;
+                                    const visibleIngredients = isExpanded ? concern.ingredients : concern.ingredients.slice(0, MAX_VISIBLE);
 
-                                return (
-                                    <View key={concern.name} style={styles.concernCard}>
-                                        {/* Concern Header Row */}
-                                        <TouchableOpacity
-                                            style={styles.concernHeaderRow}
-                                            onPress={() => {
-                                                (navigation as any).navigate('MetricDetail', {
-                                                    metricKey: concern.metricKey,
-                                                    metricValue: concern.value,
-                                                    photoData: currentPhoto ? JSON.stringify(currentPhoto) : undefined,
-                                                });
-                                            }}
-                                        >
-                                            <Text style={styles.concernName}>{concern.name}</Text>
-                                            <View style={styles.concernValueContainer}>
-                                                <View style={styles.scoreBadge}>
-                                                    {concern.changeDirection === 'up' && (
-                                                        <View style={styles.changeIndicator}>
-                                                            <ArrowUp size={12} color="#44403C" />
-                                                            <Text style={styles.changeValue}>
-                                                                {Math.abs(concern.change || 0)}
-                                                            </Text>
-                                                        </View>
-                                                    )}
-                                                    {concern.changeDirection === 'down' && (
-                                                        <View style={styles.changeIndicator}>
-                                                            <ArrowDown size={12} color="#44403C" />
-                                                            <Text style={styles.changeValue}>
-                                                                {Math.abs(concern.change || 0)}
-                                                            </Text>
-                                                        </View>
-                                                    )}
-                                                    <View style={styles.scoreIndicatorContainer}>
-                                                        <View style={[styles.scoreIndicator, { backgroundColor: getScoreColor(concern.value) }]} />
-                                                        <Text style={styles.concernValue}>{concern.value}</Text>
-                                                    </View>
-                                                </View>
-                                                <ChevronRight size={24} color="#A9A29D" />
-                                            </View>
-                                        </TouchableOpacity>
-
-                                        {/* Ingredient Rows */}
-                                        {concern.ingredientsLoading ? (
-                                            <View style={styles.ingredientLoadingContainer}>
-                                                <SkeletonPlaceholder borderRadius={4}>
-                                                    <SkeletonPlaceholder.Item>
-                                                        {[1, 2].map((i) => (
-                                                            <SkeletonPlaceholder.Item
-                                                                key={i}
-                                                                flexDirection="row"
-                                                                justifyContent="space-between"
-                                                                alignItems="center"
-                                                                paddingVertical={10}
-                                                                paddingHorizontal={4}
-                                                            >
-                                                                <SkeletonPlaceholder.Item width={100} height={14} borderRadius={4} />
-                                                                <SkeletonPlaceholder.Item width={80} height={14} borderRadius={4} />
-                                                            </SkeletonPlaceholder.Item>
-                                                        ))}
-                                                    </SkeletonPlaceholder.Item>
-                                                </SkeletonPlaceholder>
-                                            </View>
-                                        ) : concern.ingredients.length > 0 ? (
-                                            <View style={styles.ingredientListContainer}>
-                                                {visibleIngredients.map((ingredient, idx) => {
-                                                    const colonIndex = ingredient.indexOf(':');
-                                                    const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
-
-                                                    const foundEntry = concern.foundIngredients?.find((found) => {
-                                                        if (typeof found === 'string') {
-                                                            return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-                                                        }
-                                                        return (found as any)?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                                    return (
+                                        <View key={concern.name} style={styles.concernCard}>
+                                            {/* Concern Header Row */}
+                                            <TouchableOpacity
+                                                style={styles.concernHeaderRow}
+                                                onPress={() => {
+                                                    (navigation as any).navigate('MetricDetail', {
+                                                        metricKey: concern.metricKey,
+                                                        metricValue: concern.value,
+                                                        photoData: currentPhoto ? JSON.stringify(currentPhoto) : undefined,
                                                     });
-                                                    const isFound = Boolean(foundEntry);
-                                                    const isLast = idx === visibleIngredients.length - 1 && !hasMore;
-
-                                                    return (
-                                                        <View
-                                                            key={idx}
-                                                            style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
-                                                        >
-                                                            <Text style={styles.ingredientName}>{ingredientName}</Text>
-                                                            {isFound && (
-                                                                <View style={styles.routineChip}>
-                                                                    <View style={styles.routineDot} />
-                                                                    <Text style={styles.routineText}>In your Routine</Text>
-                                                                </View>
-                                                            )}
+                                                }}
+                                            >
+                                                <Text style={styles.concernName}>{concern.name}</Text>
+                                                <View style={styles.concernValueContainer}>
+                                                    <View style={styles.scoreBadge}>
+                                                        {concern.changeDirection === 'up' && (
+                                                            <View style={styles.changeIndicator}>
+                                                                <ArrowUp size={12} color="#44403C" />
+                                                                <Text style={styles.changeValue}>
+                                                                    {Math.abs(concern.change || 0)}
+                                                                </Text>
+                                                            </View>
+                                                        )}
+                                                        {concern.changeDirection === 'down' && (
+                                                            <View style={styles.changeIndicator}>
+                                                                <ArrowDown size={12} color="#44403C" />
+                                                                <Text style={styles.changeValue}>
+                                                                    {Math.abs(concern.change || 0)}
+                                                                </Text>
+                                                            </View>
+                                                        )}
+                                                        <View style={styles.scoreIndicatorContainer}>
+                                                            <View style={[styles.scoreIndicator, { backgroundColor: getScoreColor(concern.value) }]} />
+                                                            <Text style={styles.concernValue}>{concern.value}</Text>
                                                         </View>
-                                                    );
-                                                })}
-                                                {hasMore && (
-                                                    <TouchableOpacity
-                                                        style={styles.showMoreButton}
-                                                        onPress={() => toggleConcernExpanded(concern.name)}
-                                                    >
-                                                        <Text style={styles.showMoreText}>
-                                                            {isExpanded ? 'Show less' : 'Show more'}
-                                                        </Text>
-                                                    </TouchableOpacity>
-                                                )}
-                                            </View>
-                                        ) : null}
-                                    </View>
-                                );
-                            })}
-                        </>
-                    ) : (
-                        <View style={styles.emptyConcernsContainer}>
-                            <Text style={styles.emptyConcernsText}>
-                                {"Complete a new scan to see your skin scores"}
-                            </Text>
-                        </View>
-                    )}
-                </View>
+                                                    </View>
+                                                    <ChevronRight size={24} color="#A9A29D" />
+                                                </View>
+                                            </TouchableOpacity>
 
-                {/* SkinCheck Card */}
-                {topConcerns.length > 0 && (
-                    <TouchableOpacity
-                        style={styles.skinCheckCard}
-                        onPress={() => (navigation as any).navigate('SkinCheck')}
-                        activeOpacity={0.8}
-                    >
-                        <View style={{ flex: 1 }}>
-                            <Text style={styles.skinCheckTitle}>SkinCheck</Text>
-                            <Text style={styles.skinCheckDescription}>
-                                Send this scan, your scores, and your routine to your skin health professional.
-                            </Text>
-                        </View>
-                        <ChevronRight size={20} color="#D7D3D0" />
-                    </TouchableOpacity>
+                                            {/* Ingredient Rows */}
+                                            {concern.ingredientsLoading ? (
+                                                <View style={styles.ingredientLoadingContainer}>
+                                                    <SkeletonPlaceholder borderRadius={4}>
+                                                        <SkeletonPlaceholder.Item>
+                                                            {[1, 2].map((i) => (
+                                                                <SkeletonPlaceholder.Item
+                                                                    key={i}
+                                                                    flexDirection="row"
+                                                                    justifyContent="space-between"
+                                                                    alignItems="center"
+                                                                    paddingVertical={10}
+                                                                    paddingHorizontal={4}
+                                                                >
+                                                                    <SkeletonPlaceholder.Item width={100} height={14} borderRadius={4} />
+                                                                    <SkeletonPlaceholder.Item width={80} height={14} borderRadius={4} />
+                                                                </SkeletonPlaceholder.Item>
+                                                            ))}
+                                                        </SkeletonPlaceholder.Item>
+                                                    </SkeletonPlaceholder>
+                                                </View>
+                                            ) : concern.ingredients.length > 0 ? (
+                                                <View style={styles.ingredientListContainer}>
+                                                    {visibleIngredients.map((ingredient, idx) => {
+                                                        const colonIndex = ingredient.indexOf(':');
+                                                        const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
+
+                                                        const foundEntry = concern.foundIngredients?.find((found) => {
+                                                            if (typeof found === 'string') {
+                                                                return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                                                            }
+                                                            return (found as any)?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                                                        });
+                                                        const isFound = Boolean(foundEntry);
+                                                        const isLast = idx === visibleIngredients.length - 1 && !hasMore;
+
+                                                        return (
+                                                            <View
+                                                                key={idx}
+                                                                style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
+                                                            >
+                                                                <Text style={styles.ingredientName}>{ingredientName}</Text>
+                                                                {isFound && (
+                                                                    <View style={styles.routineChip}>
+                                                                        <View style={styles.routineDot} />
+                                                                        <Text style={styles.routineText}>In your Routine</Text>
+                                                                    </View>
+                                                                )}
+                                                            </View>
+                                                        );
+                                                    })}
+                                                    {hasMore && (
+                                                        <TouchableOpacity
+                                                            style={styles.showMoreButton}
+                                                            onPress={() => toggleConcernExpanded(concern.name)}
+                                                        >
+                                                            <Text style={styles.showMoreText}>
+                                                                {isExpanded ? 'Show less' : 'Show more'}
+                                                            </Text>
+                                                        </TouchableOpacity>
+                                                    )}
+                                                </View>
+                                            ) : null}
+                                        </View>
+                                    );
+                                })}
+                            </>
+                        ) : null}
+                    </View>
                 )}
+
+                {/* SkinCheck Card Section */}
+                <SkinCheckCard
+                    reports={reports}
+                    loading={isLoadingReports}
+                    onPress={() => {
+                        // Navigation to report history handled by screen if needed
+                    }}
+                />
 
                 {/* Bottom spacing for tab bar */}
                 <View style={{ height: 100 }} />

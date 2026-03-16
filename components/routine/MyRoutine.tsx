@@ -3,7 +3,9 @@
 
 import React, { useState, useEffect, useMemo, forwardRef, useImperativeHandle, useRef } from 'react';
 import { View, Text, SectionList, StyleSheet, TouchableOpacity, TextInput, Alert, Platform, Image, Modal, ScrollView, Animated, Easing } from 'react-native';
-import { colors, spacing, typography, palette } from '../../styles';
+import RecommendationsList from '../routine/RecommendationsList';
+import ProductImageScannerModal from '../ProductImageScannerModal';
+import { colors, spacing, typography, palette, fontFamily } from '../../styles';
 import { useNavigation } from '@react-navigation/native';
 import { ClipboardPlus, Pill } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -28,7 +30,11 @@ import {
   X,
   Plus,
   Archive,
-  ChevronRight
+  ChevronRight,
+  Search,
+  Camera,
+  ScanBarcode,
+  CalendarHeart
 } from 'lucide-react-native';
 import {
   getRoutineItems,
@@ -294,6 +300,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
   // State for Add Routine Sheet
   const [showAddRoutineSheet, setShowAddRoutineSheet] = useState<boolean>(false);
+  const [isScannerVisible, setIsScannerVisible] = useState<boolean>(false);
 
   const insets = useSafeAreaInsets();
   const [fixedCardHeight, setFixedCardHeight] = useState<number>(150);
@@ -1230,10 +1237,17 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     });
   };
 
-  // Handle add product from sheet
-  const handleAddProduct = (): void => {
+  // Handle search product from sheet
+  const handleSearchProduct = (): void => {
     closeAddModal(() => {
       (navigation as any).navigate('FindProduct');
+    });
+  };
+
+  // Handle scan product from sheet
+  const handleScanProduct = (): void => {
+    closeAddModal(() => {
+      setIsScannerVisible(true);
     });
   };
 
@@ -1398,12 +1412,30 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           <Animated.View style={[styles.sheetContainer, { transform: [{ translateY: sheetTranslateY }] }]}>
             <View style={styles.sheetHandle} />
 
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Add to Your Routine</Text>
+            </View>
+
             <TouchableOpacity
               style={styles.sheetOption}
-              onPress={handleAddProduct}
+              onPress={handleScanProduct}
               activeOpacity={0.7}
             >
-              <Text style={styles.sheetOptionText}>Add a Product</Text>
+              <View style={styles.optionIconContainer}>
+                <Image source={require('../../assets/images/camera.png')} style={styles.cameraIcon} />
+              </View>
+              <Text style={styles.sheetOptionText}>Scan a Product</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.sheetOption}
+              onPress={handleSearchProduct}
+              activeOpacity={0.7}
+            >
+              <View style={styles.optionIconContainer}>
+                <Search size={24} color="#717680" />
+              </View>
+              <Text style={styles.sheetOptionText}>Search by Product Name</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -1411,6 +1443,9 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
               onPress={handleAddTreatment}
               activeOpacity={0.7}
             >
+              <View style={styles.optionIconContainer}>
+                <CalendarHeart size={24} color="#717680" />
+              </View>
               <Text style={styles.sheetOptionText}>Add a Treatment</Text>
             </TouchableOpacity>
 
@@ -1424,6 +1459,25 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           </Animated.View>
         </TouchableOpacity>
       </Modal>
+
+      {/* Product Image Scanner Modal */}
+      <ProductImageScannerModal
+        visible={isScannerVisible}
+        onClose={() => setIsScannerVisible(false)}
+        onProductScanned={(productData) => {
+          setIsScannerVisible(false);
+          (navigation as any).navigate('ProductDetail', {
+            productData: productData,
+            upc: productData.upc,
+            mode: 'add',
+          });
+        }}
+        onError={(error) => {
+          console.error('🔴 Scanner Error:', error);
+          setIsScannerVisible(false);
+          Alert.alert('Scanner Error', error);
+        }}
+      />
     </View>
   );
 });
@@ -1437,7 +1491,7 @@ const styles = StyleSheet.create({
   },
   sectionsList: {
     flex: 1,
-    marginTop:10
+    marginTop: 10
   },
   listContentContainerBase: {
     paddingBottom: 40,
@@ -1898,41 +1952,73 @@ const styles = StyleSheet.create({
   },
   sheetContainer: {
     backgroundColor: '#FFFFFF',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
     paddingHorizontal: 20,
-    paddingTop: 12,
-    paddingBottom: 34,
+    paddingBottom: 40,
+    paddingTop: 8,
+    width: '100%',
   },
   sheetHandle: {
     width: 60,
     height: 4,
-    backgroundColor: '#D9D9D9',
+    backgroundColor: '#E7E5E4',
     borderRadius: 2,
     alignSelf: 'center',
     marginBottom: 20,
   },
-  sheetOption: {
-    backgroundColor: '#E9EAEB',
-    borderRadius: 16,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    marginBottom: 12,
+  sheetHeader: {
     alignItems: 'center',
+    marginBottom: 24,
+    paddingVertical: 10,
+  },
+  sheetTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#414651',
+    fontFamily: fontFamily.semiBold,
+  },
+  sheetOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F2F4F7',
+    borderRadius: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+  },
+  optionIconContainer: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
   },
   sheetOptionText: {
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: '600',
-    color: '#535862',
+    color: '#414651',
+    fontFamily: fontFamily.semiBold,
+    flex: 1,
+    textAlign: 'left',
   },
   sheetCancelButton: {
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 4,
+    marginTop: 8,
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
   },
   sheetCancelText: {
     fontSize: 16,
-    fontWeight: '500',
-    color: '#535862',
+    fontWeight: '600',
+    color: '#414651',
+    fontFamily: fontFamily.semiBold,
   },
+  cameraIcon: {
+    width: 28,
+    height: 28,
+    resizeMode: 'contain',
+    tintColor: '#414651',
+  }
 });

@@ -2360,4 +2360,35 @@ export const extractProductFromImage = async (imageUri) => {
 // END ROUTINE API FUNCTIONS
 // -----------------------------------------------------------------------------
 
+/**
+ * Fetch report history for expert view
+ * @returns {Promise<Object>} Report history data
+ */
+export const getReportHistory = async () => {
+  try {
+    console.log("🔵 Fetching report history...");
+    const response = await apiClient.get("/expert-view/my-reports/history");
+
+    console.log("🔵 Response of getReportHistory:", response.data.data.reports);
+
+    if (response.data.status === 200) {
+      console.log("✅ Report history fetched successfully");
+      return {
+        success: true,
+        reports: response.data.data.reports || [],
+        total: response.data.data.total || 0,
+      };
+    } else {
+      throw new Error(response.data.message || "Failed to fetch report history");
+    }
+  } catch (error) {
+    console.error("🔴 Report history fetch error:", error);
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to fetch report history"
+    );
+  }
+};
+
 export default apiClient;

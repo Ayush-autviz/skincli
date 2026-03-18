@@ -196,7 +196,7 @@ const formatMetricName = (key: string): string => {
   const customNames: { [key: string]: string } = {
     'acneScore': 'Breakouts',
     'rednessScore': 'Redness',
-    'eyeAreaCondition': 'Eye Condition',
+    'eyeAreaCondition': 'Eye Area Condition',
     'linesScore': 'Lines',
     'pigmentationScore': 'Pigmentation',
     'poresScore': 'Visible Pores',

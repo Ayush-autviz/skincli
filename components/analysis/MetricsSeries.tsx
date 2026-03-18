@@ -1125,6 +1125,51 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
     }
   };
 
+  // Sync scroll position when it changes or when forced
+  useEffect(() => {
+    if (scrollViewRef.current && scrollPosition !== undefined && scrollPosition >= 0) {
+      // Calculate dimensions for debugging
+      const plotAreaWidth = metric.scores.length * 16; // barSlotWidth = 16
+      const rightPadding = 120; // Match the contentContainerStyle paddingRight
+      const totalContentWidth = plotAreaWidth + rightPadding;
+      const maxScrollPosition = Math.max(0, totalContentWidth - width);
+      const boundedScrollPosition = Math.min(scrollPosition, maxScrollPosition);
+
+      // Check if this is a forced sync (initial load) or normal interaction
+      const isForced = forceScrollSyncRef?.current;
+      const shouldAnimate = !isForced; // Don't animate on forced initial sync for speed
+
+      // Add tiny stagger based on metric index to reduce simultaneous animation load
+      const metricIndex = METRIC_KEYS.indexOf(metric.metricName);
+      const staggerDelay = shouldAnimate ? metricIndex * 10 : 0; // No stagger on forced sync
+
+      setTimeout(() => {
+        if (scrollViewRef.current) {
+          scrollViewRef.current.scrollTo({
+            x: boundedScrollPosition,
+            animated: shouldAnimate,
+            duration: shouldAnimate ? 200 : 0
+          });
+        }
+      }, staggerDelay);
+    }
+  }, [scrollPosition, metric.scores.length, metric.metricName]); // Removed selectedIndex from dependencies
+
+  // Separate effect to clear force flag after initial load
+  useEffect(() => {
+    if (forceScrollSyncRef?.current) {
+      // Clear the force flag after a short delay to allow all metrics to scroll
+      const timer = setTimeout(() => {
+        if (forceScrollSyncRef) {
+          // console.log('[MetricRow] Clearing force scroll flag');
+          forceScrollSyncRef.current = false;
+        }
+      }, 500); // Give enough time for all metrics to complete their scroll
+
+      return () => clearTimeout(timer);
+    }
+  }, [forceScrollSyncRef?.current]); // Only run when force flag changes to true
+
   // Special handling for skin type - render SkinTypeTrendChart instead of bar chart
   if (metric.metricName === 'skinType') {
     console.log('inside of skin typemetric from MetricRow');
@@ -1195,63 +1240,6 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
       </View>
     );
   }
-
-  // Sync scroll position when it changes or when forced
-  useEffect(() => {
-    if (scrollViewRef.current && scrollPosition !== undefined && scrollPosition >= 0) {
-      // Calculate dimensions for debugging
-      const plotAreaWidth = metric.scores.length * 16; // barSlotWidth = 16
-      const rightPadding = 120; // Match the contentContainerStyle paddingRight
-      const totalContentWidth = plotAreaWidth + rightPadding;
-      const maxScrollPosition = Math.max(0, totalContentWidth - width);
-      const boundedScrollPosition = Math.min(scrollPosition, maxScrollPosition);
-
-      // Check if this is a forced sync (initial load) or normal interaction
-      const isForced = forceScrollSyncRef?.current;
-      const shouldAnimate = !isForced; // Don't animate on forced initial sync for speed
-
-      // Add tiny stagger based on metric index to reduce simultaneous animation load
-      const metricIndex = METRIC_KEYS.indexOf(metric.metricName);
-      const staggerDelay = shouldAnimate ? metricIndex * 10 : 0; // No stagger on forced sync
-
-      // console.log(`[MetricRow] ${metric.metricName} scroll debug:`, {
-      //   requestedScrollPos: scrollPosition,
-      //   boundedScrollPos: boundedScrollPosition,
-      //   plotAreaWidth,
-      //   totalContentWidth,
-      //   maxScrollPos: maxScrollPosition,
-      //   viewportWidth: width,
-      //   scoresLength: metric.scores.length,
-      //   isForced,
-      //   shouldAnimate
-      // });
-
-      setTimeout(() => {
-        if (scrollViewRef.current) {
-          scrollViewRef.current.scrollTo({
-            x: boundedScrollPosition,
-            animated: shouldAnimate,
-            duration: shouldAnimate ? 200 : 0
-          });
-        }
-      }, staggerDelay);
-    }
-  }, [scrollPosition, metric.scores.length, metric.metricName]); // Removed selectedIndex from dependencies
-
-  // Separate effect to clear force flag after initial load
-  useEffect(() => {
-    if (forceScrollSyncRef?.current) {
-      // Clear the force flag after a short delay to allow all metrics to scroll
-      const timer = setTimeout(() => {
-        if (forceScrollSyncRef) {
-          // console.log('[MetricRow] Clearing force scroll flag');
-          forceScrollSyncRef.current = false;
-        }
-      }, 500); // Give enough time for all metrics to complete their scroll
-
-      return () => clearTimeout(timer);
-    }
-  }, [forceScrollSyncRef?.current]); // Only run when force flag changes to true
 
   const percentChange = calculatePercentageChange(metric.scores);
 

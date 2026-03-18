@@ -24,6 +24,7 @@ import HomeHeader from '../components/ui/HomeHeader';
 import { colors, spacing, typography, shadows } from '../styles';
 import MetricsSeries from '../components/analysis/MetricsSeries';
 import { getComparison, transformComparisonData } from '../utils/newApiService';
+import useAuthStore from '../stores/authStore';
 
 export default function ProgressTab(): React.JSX.Element {
   const navigation = useNavigation();
@@ -35,7 +36,7 @@ export default function ProgressTab(): React.JSX.Element {
   const [refreshing, setRefreshing] = useState<boolean>(false);
   const [error, setError] = useState<any>(null);
   const [isError, setIsError] = useState<boolean>(false);
-  const [apiTopConcerns, setApiTopConcerns] = useState<string[]>([]);
+  const { topConcerns: apiTopConcerns, setTopConcerns: setApiTopConcerns } = useAuthStore();
 
   const handleMenuPress = (): void => {
     // setIsSettingsVisible(true);
@@ -59,7 +60,10 @@ export default function ProgressTab(): React.JSX.Element {
       if ((response as any).success && (response as any).data) {
         const resultData = (response as any).data?.result;
         const apiTopConcernsData = resultData?.user_top_concerns || [];
-        setApiTopConcerns(apiTopConcernsData);
+        // Only update store if it's currently empty to avoid overwriting user changes
+        if (apiTopConcerns.length === 0 && apiTopConcernsData.length > 0) {
+          setApiTopConcerns(apiTopConcernsData);
+        }
 
         const transformedPhotos = transformComparisonData((response as any).data);
         console.log(`✅ Loaded ${transformedPhotos.length} photos for progress display`);

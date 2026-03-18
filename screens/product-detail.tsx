@@ -282,31 +282,19 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle edit button press
   const handleEdit = () => {
-    // Prepare the item data with the current product data
-    const itemData = {
-      name: productData.product_name || routineData.name || '',
-      type: routineData.type || 'Product',
-      usage: routineData.usage || 'AM',
-      frequency: routineData.frequency || 'Daily',
-      concerns: routineData.concerns || [], // Use concerns from routineData
-      dateStarted: routineData.dateStarted || null,
-      dateStopped: routineData.dateStopped || null,
-      stopReason: routineData.stopReason || '',
-      dateCreated: new Date().toISOString(),
-      upc: params.upc || null,
-      productData: {
-        product_name: productData.product_name,
-        brand: productData.brand,
-        upc: params.upc,
-        ingredients: productData.ingredients || [],
-        good_for: productData.good_for || []
-      },
-      extra: routineData.extra || {} // Include extra data
-    };
-
-    (navigation as any).navigate('UpdateRoutine', {
+    (navigation as any).navigate('AddProductForm', {
+      mode: 'edit',
       itemId: params.itemId,
-      itemData: JSON.stringify(itemData)
+      productData: productData,
+      upc: params.upc || productData.upc,
+      prefilledName: productData.product_name || routineData.name,
+      routineData: {
+        ...routineData,
+        concerns: routineData.concerns || [],
+        usage: routineData.usage,
+        frequency: routineData.frequency,
+        dateStarted: routineData.dateStarted,
+      }
     });
   };
 
@@ -808,7 +796,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
                   </TouchableOpacity>
 
                   {/* Edit Button */}
-                  {/* <TouchableOpacity
+                  <TouchableOpacity
                     style={{
                       flexDirection: 'row',
                       justifyContent: 'center',
@@ -827,7 +815,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
                     }}>
                       Edit
                     </Text>
-                  </TouchableOpacity> */}
+                  </TouchableOpacity>
                 </View>
               )}
             </View>

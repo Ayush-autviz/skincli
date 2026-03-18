@@ -139,7 +139,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
             onPress={handleBack}
           >
             <View style={styles.iconContainer}>
-              <ChevronLeft size={30} color={"#44403C"} />
+              <ChevronLeft size={30} color={"#00839B"} />
             </View>
           </TouchableOpacity>
 
@@ -558,7 +558,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     height: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: '#00839B',
     opacity: 0.1,
     shadowColor: '#000',
     shadowOffset: {
@@ -650,7 +650,7 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   stopTrackingLink: {
-    color: colors.primary,
+    color: '#00839B',
     // fontWeight: '600',
     fontFamily: fontFamily.semiBold,
     textDecorationLine: 'underline',
@@ -711,7 +711,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     // fontWeight: '500',
     fontFamily: fontFamily.medium,
-    color: '#44403C',
+    color: '#00839B',
   },
   noChangeText: {
     fontSize: 14,
@@ -781,7 +781,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     minHeight: 56,
     borderWidth: 2,
-    borderColor: '#D7D3D0',
+    borderColor: '#00839B',
   },
   toggleOptionLeft: {
     borderTopRightRadius: 0,
@@ -820,7 +820,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: colors.border,
+    borderColor: '#00839B',
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
@@ -871,7 +871,7 @@ const styles = StyleSheet.create({
     borderRadius: borderRadius.md,
     backgroundColor: colors.background,
     borderWidth: 1,
-    borderColor: colors.border,
+    borderColor: '#00839B',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -954,18 +954,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalTitle: {
-    fontSize: fontSize.xl,
+    fontSize: fontSize.lg,
     // fontWeight: '700',
     fontFamily: fontFamily.bold,
     color: colors.textPrimary,
     textAlign: 'center',
-    marginBottom: spacing.xs,
+    marginBottom: spacing.md,
   },
   modalButton: {
-    backgroundColor: colors.primary,
-    paddingVertical: spacing.md,
+    backgroundColor: '#00839B',
+    paddingVertical: 14,
     paddingHorizontal: spacing.xl,
-    borderRadius: borderRadius.pill,
+    borderRadius: 10,
     width: '100%',
     alignItems: 'center',
     justifyContent: 'center',

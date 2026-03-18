@@ -931,7 +931,36 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       );
     };
 
-    console.log('item routine', item);
+    // Calculate dynamic effectiveness status
+    const getEffectivenessDisplay = () => {
+      if (item.type !== 'Product') return null;
+
+      const hasTracking = item.concern_tracking && item.concern_tracking.length > 0;
+      const isTrackingPaused = item.is_tracking_paused;
+
+      if (!hasTracking || isTrackingPaused) {
+        return 'Start tracking';
+      }
+
+      // Priority: 1. Ready to Review, 2. In Progress, 3. Results (Effective/Not Effective)
+      const readyToReview = item.concern_tracking?.find((t: any) => t.is_completed && t.is_effective === null);
+      if (readyToReview) {
+        return 'Ready to Review';
+      }
+
+      const inProgress = item.concern_tracking?.find((t: any) => !t.is_completed);
+      if (inProgress) {
+        const weeksCompleted = inProgress.weeks_completed || 0;
+        const totalWeeks = inProgress.total_weeks || 0;
+        const weeksRemaining = Math.max(0, totalWeeks - weeksCompleted);
+        return `Review in ${weeksRemaining} week${weeksRemaining !== 1 ? 's' : ''}`;
+      }
+
+      const anyEffective = item.concern_tracking?.some((t: any) => t.is_effective === true);
+      return anyEffective ? 'Effective' : 'Not Effective';
+    };
+
+    const statusText = getEffectivenessDisplay();
 
     return (
       <TouchableOpacity
@@ -955,11 +984,14 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
             Using <Text style={styles.usageBoldText}>{item.frequency} / {displayUsage}</Text> since <Text style={styles.usageBoldText}>{item.dateStarted ? new Date(item.dateStarted).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jan 1, 2024'}</Text>
           </Text>
 
-          <TouchableOpacity style={styles.effectivenessContainer}>
-            <Text style={styles.effectivenessText}>
-              EFFECTIVENESS <Text style={styles.effectivenessStatus}>Review in 3 weeks</Text>
-            </Text>
-          </TouchableOpacity>
+          {statusText && (
+            <View style={styles.effectivenessContainer}>
+              <Text style={styles.effectivenessText}>
+                {!(statusText === 'Ready to Review' || statusText === 'Effective' || statusText === 'Not Effective') && 'EFFECTIVENESS '}
+                <Text style={styles.effectivenessStatus}>{statusText}</Text>
+              </Text>
+            </View>
+          )}
         </View>
 
         <View style={styles.chevronContainer}>

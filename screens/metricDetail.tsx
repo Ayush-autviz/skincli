@@ -1032,7 +1032,7 @@ export default function MetricDetailScreen() {
   const [isTogglingConcern, setIsTogglingConcern] = useState(false);
   const concernName = getConcernNameForAPI(metricKey) || '';
   const isTopConcern = topConcerns?.includes(concernName);
-  const isTopConcernDisplay = typeof paramIsTopConcern === 'boolean' ? paramIsTopConcern : isTopConcern;
+  const isTopConcernDisplay = isTopConcern;
 
   const handleToggleTopConcern = async () => {
     if (!concernName || isTogglingConcern) return;
@@ -2011,7 +2011,7 @@ export default function MetricDetailScreen() {
               console.log('🔵 s1:', s1);
               const diff = s0 - s1;
               changeAbs = Math.abs(Math.round(diff));
-              changeArrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
+              changeArrow = diff < 0 ? '↑' : diff > 0 ? '↓' : '→';
             }
 
             console.log('🔵 latestScore:', latestScore);
@@ -2091,10 +2091,11 @@ export default function MetricDetailScreen() {
                         <View style={styles.changeInfo}>
                           {isLoadingTrends || !chipDateLabel ? (
                             <SkeletonPlaceholder borderRadius={8}>
-                              <SkeletonPlaceholder.Item width={90} height={14} />
+                              <SkeletonPlaceholder.Item width={25} height={15} />
                             </SkeletonPlaceholder>
                           ) : (
-                            <Text style={styles.changeText}>{`${changeArrow}${changeAbs} ${chipDateLabel}`}</Text>
+                            // <Text style={styles.changeText}>{`${changeArrow}${changeAbs} ${chipDateLabel}`}</Text>
+                            <Text style={styles.changeText}>{`${changeArrow}${changeAbs}`}</Text>
                           )}
                         </View>
                         <View style={styles.scoreInfo}>
@@ -3063,7 +3064,7 @@ const styles = StyleSheet.create({
   },
   metricCardRow: {
     flexDirection: 'row',
-    alignItems: 'stretch',
+    alignItems: 'flex-start',
     marginVertical: 16,
     marginHorizontal: 4,
     padding: 12,
@@ -3102,7 +3103,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 4,
     width: "100%",
-    justifyContent: "space-between",
+    gap: 6
+    // justifyContent: "space-between",
   },
   changeInfo: {
     // paddingHorizontal: 10,
@@ -3132,8 +3134,8 @@ const styles = StyleSheet.create({
   maskImageContainer: {
     alignItems: 'center',
     position: 'relative',
-    minHeight: 150,
-    minWidth: 150,
+    height: 150,
+    width: 150,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -3146,8 +3148,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: '100%',
-    height: '100%',
+    width: 150,
+    height: 150,
     borderRadius: 12,
   },
   svgOverlay: {
@@ -3313,7 +3315,7 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: '100%',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
     alignItems: 'center',
     backgroundColor: 'rgba(255,255,255,0.8)',
     borderRadius: 12,

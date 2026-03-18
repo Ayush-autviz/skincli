@@ -15,18 +15,22 @@ import { useNavigation, useRoute } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ChevronLeft, Calendar } from 'lucide-react-native';
 import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
-import { createRoutineItem } from '../utils/newApiService';
+import { createRoutineItem, updateRoutineItem } from '../utils/newApiService';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface AddProductFormParams {
-    productData: any;
+    productData?: any;
     upc?: string;
     prefilledName?: string;
+    itemId?: string;
+    mode?: 'add' | 'edit';
+    routineData?: any;
 }
 
 const measurableConcerns = [
     'Pigmentation',
     'Dewiness',
+    'Breakouts',
     'Redness',
     'Lines',
     'Visible Pores',
@@ -37,7 +41,6 @@ const measurableConcerns = [
 
 const allConcerns = [
     'Anti-aging (eyes)',
-    'Other',
     'Dry Skin',
     'Enlarged Pores',
     'Jowls',
@@ -54,26 +57,36 @@ const allConcerns = [
 const frequencyOptions = [
     'Daily',
     'Weekly',
-    'As Needed'
+    // 'As Needed'
 ];
 
 const timeOptions = [
-    'AM / Mornings',
-    'PM / Evenings',
+    'AM',
+    'PM',
     'Both AM/PM',
-    'As Needed'
+    // 'As Needed'
 ];
 
 const AddProductFormScreen = (): React.JSX.Element => {
     const navigation = useNavigation();
     const route = useRoute();
     const params = route.params as AddProductFormParams || {};
-    const { productData, upc, prefilledName } = params;
+    const { productData, upc, prefilledName, itemId, mode, routineData } = params;
+    const isEditMode = mode === 'edit';
 
-    const [selectedConcerns, setSelectedConcerns] = useState<string[]>([]);
-    const [frequency, setFrequency] = useState<string>('Daily');
-    const [timeOfDay, setTimeOfDay] = useState<string>('AM / Mornings');
-    const [startDate, setStartDate] = useState<Date>(new Date());
+    const [selectedConcerns, setSelectedConcerns] = useState<string[]>(routineData?.concerns || []);
+    const [frequency, setFrequency] = useState<string>(() => {
+        if (routineData?.frequency === 'daily') return 'Daily';
+        if (routineData?.frequency === 'weekly') return 'Weekly';
+        return 'Daily';
+    });
+    const [timeOfDay, setTimeOfDay] = useState<string>(() => {
+        if (routineData?.usage === 'am') return 'AM / Mornings';
+        if (routineData?.usage === 'pm') return 'PM / Evenings';
+        if (routineData?.usage === 'both') return 'Both AM/PM';
+        return 'AM / Mornings';
+    });
+    const [startDate, setStartDate] = useState<Date>(routineData?.dateStarted ? new Date(routineData.dateStarted) : new Date());
     const [showDatePicker, setShowDatePicker] = useState<boolean>(false);
     const [isSaving, setIsSaving] = useState<boolean>(false);
 
@@ -88,9 +101,12 @@ const AddProductFormScreen = (): React.JSX.Element => {
     };
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(false);
         if (selectedDate) {
             setStartDate(selectedDate);
+        }
+        // For Android, we still want it to close on selection normally
+        if (Platform.OS === 'android' && event.type === 'set') {
+            setShowDatePicker(false);
         }
     };
 
@@ -128,13 +144,18 @@ const AddProductFormScreen = (): React.JSX.Element => {
 
         try {
             const apiItemData: any = {
-                name: prefilledName || productData?.product_name || 'New Product',
+                name: prefilledName || productData?.product_name || routineData?.name || 'New Product',
                 type: 'product',
                 concern: selectedConcerns,
                 extra: {
-                    dateCreated: new Date().toISOString()
+                    ...(routineData?.extra || {}),
+                    dateUpdated: new Date().toISOString()
                 }
             };
+
+            if (!isEditMode) {
+                apiItemData.extra.dateCreated = new Date().toISOString();
+            }
 
             if (upc && productData) {
                 apiItemData.upc = upc;
@@ -155,10 +176,15 @@ const AddProductFormScreen = (): React.JSX.Element => {
 
             console.log('🟡 AddProductForm: API Item Data:', apiItemData);
 
-            const response = await createRoutineItem(apiItemData);
+            let response;
+            if (isEditMode && itemId) {
+                response = await updateRoutineItem(itemId, apiItemData);
+            } else {
+                response = await createRoutineItem(apiItemData);
+            }
 
             if ((response as any).success) {
-                Alert.alert('Success!', 'Product added to your routine.', [
+                Alert.alert('Success!', isEditMode ? 'Product updated successfully.' : 'Product added to your routine.', [
                     {
                         text: 'OK',
                         onPress: () => (navigation as any).navigate('Tabs', { screen: 'MyRoutine' })
@@ -188,7 +214,7 @@ const AddProductFormScreen = (): React.JSX.Element => {
                     </TouchableOpacity>
 
                     <View style={styles.titleContainer}>
-                        <Text style={styles.headerTitle}>Add to Routine</Text>
+                        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Product' : 'Add to Routine'}</Text>
                     </View>
 
                     <View style={styles.rightContainer} />
@@ -278,10 +304,14 @@ const AddProductFormScreen = (): React.JSX.Element => {
                 <Text style={styles.sectionTitle}>When did you start using this product?</Text>
                 <TouchableOpacity
                     style={styles.dateInput}
-                    onPress={() => setShowDatePicker(true)}
+                    onPress={() => setShowDatePicker(!showDatePicker)}
                 >
                     <Text style={styles.dateText}>{formatDate(startDate)}</Text>
-                    <Calendar size={20} color="#57534E" />
+                    {showDatePicker ? (
+                        <Text style={styles.doneText}>Done</Text>
+                    ) : (
+                        <Calendar size={20} color="#57534E" />
+                    )}
                 </TouchableOpacity>
 
                 {showDatePicker && (
@@ -459,6 +489,11 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: '600',
         color: '#FFFFFF',
+    },
+    doneText: {
+        fontSize: 16,
+        fontWeight: '600',
+        color: '#0498B3',
     },
 });
 

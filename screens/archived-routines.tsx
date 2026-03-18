@@ -2,7 +2,7 @@
 // Screen to display archived (stopped) routine items
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert, RefreshControl, ScrollView } from 'react-native';
+import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert, RefreshControl, ScrollView, Image } from 'react-native';
 import { colors, spacing, typography, shadows, fontFamily } from '../styles';
 import { ChevronLeft, Archive, Clock, Calendar, Trash2, RotateCcw, AlertCircle, ChevronRight } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
@@ -25,13 +25,15 @@ interface RoutineItem {
   type: string;
   usage: string;
   frequency: string;
-  dateStarted: string | Date | { toDate: () => Date };
+  dateStarted: string | Date | { toDate: () => Date } | null;
   isActive: boolean;
   category?: string;
   brand?: string;
+  brand_name?: string;
+  image_url?: string;
   notes?: string;
-  treatmentDate?: string | Date;
-  dateStopped?: string | Date;
+  treatmentDate?: string | Date | null;
+  dateStopped?: string | Date | null;
 }
 
 interface ApiResponse {
@@ -45,14 +47,16 @@ interface TransformedRoutineItem {
   type: string;
   usage: string;
   frequency: string;
-  dateStarted: string | Date | { toDate: () => Date };
+  dateStarted: string | Date | { toDate: () => Date } | null;
   isActive: boolean;
   category?: string;
   brand?: string;
+  brand_name?: string;
+  image_url?: string;
   notes?: string;
   usageDuration?: string;
-  treatmentDate?: string | Date;
-  dateStopped?: string | Date;
+  treatmentDate?: string | Date | null;
+  dateStopped?: string | Date | null;
   concerns?: any[];
   stopReason?: string;
   dateCreated?: Date;
@@ -72,6 +76,9 @@ interface ApiItem {
   isActive: boolean;
   category?: string;
   brand?: string;
+  brand_name?: string;
+  image_url?: string;
+  dateCreated?: string;
   notes?: string;
   extra?: any;
   concern?: any[];
@@ -175,6 +182,9 @@ const ArchivedRoutines: React.FC = () => {
       frequency: frequencyMap[apiItem.frequency] || apiItem.frequency,
       isActive: apiItem.isActive,
       concerns: apiItem.concern || apiItem.extra?.concerns || [],
+      brand: apiItem.brand_name || apiItem.brand || undefined,
+      brand_name: apiItem.brand_name,
+      image_url: apiItem.image_url,
       // For treatment types, use treatment date; for others, use start/stop dates from root level
       dateStarted: isTreatment ?
         getDate(apiItem.treatment_date) :
@@ -348,7 +358,7 @@ const ArchivedRoutines: React.FC = () => {
     if (item.dateStarted) {
       const startDate = typeof item.dateStarted === 'string' ? new Date(item.dateStarted) :
         item.dateStarted instanceof Date ? item.dateStarted :
-          item.dateStarted.toDate();
+          (item.dateStarted as any).toDate();
       startDateStr = startDate.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
@@ -367,8 +377,26 @@ const ArchivedRoutines: React.FC = () => {
       });
     }
 
-    const brandName = item.extra?.brand || 'CERAVE';
+    const brandName = item.brand || item.extra?.brand || '';
     const stopReason = item.stopReason || 'No reason specified';
+
+    const renderItemImage = () => {
+      const imageUrl = item.image_url || item.extra?.image_url;
+      if (imageUrl) {
+        return (
+          <Image
+            source={{ uri: imageUrl }}
+            style={styles.itemImage}
+            resizeMode="cover"
+          />
+        );
+      }
+      return (
+        <View style={[styles.itemImage, { justifyContent: 'center', alignItems: 'center' }]}>
+          <Text style={{ color: '#A9A29D', fontSize: 10 }}>No Image</Text>
+        </View>
+      );
+    };
 
     return (
       <TouchableOpacity
@@ -376,8 +404,14 @@ const ArchivedRoutines: React.FC = () => {
         onPress={() => { }} // No detail navigation for archived items
         activeOpacity={0.9}
       >
+        <View style={styles.itemImageContainer}>
+          {renderItemImage()}
+        </View>
+
         <View style={styles.itemContentContainer}>
-          <Text style={styles.brandText}>{brandName}</Text>
+          {brandName ? (
+            <Text style={styles.brandText}>{brandName}</Text>
+          ) : null}
           <Text style={styles.itemNameText}>{item.name}</Text>
 
           <Text style={styles.usageText}>
@@ -391,9 +425,9 @@ const ArchivedRoutines: React.FC = () => {
           </View> */}
         </View>
 
-        {/* <View style={styles.chevronContainer}>
+        <View style={styles.chevronContainer}>
           <ChevronRight size={20} color="#D6D3D1" />
-        </View> */}
+        </View>
       </TouchableOpacity>
     );
   };
@@ -734,6 +768,15 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 2,
   },
+  itemImageContainer: {
+    marginRight: 16,
+  },
+  itemImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 8,
+    backgroundColor: '#F5F5F4',
+  },
   itemContentContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -792,9 +835,9 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semiBold,
   },
   chevronContainer: {
-    justifyContent: 'flex-start',
-    paddingLeft: 8,
-    paddingTop: 0,
+    position: 'absolute',
+    right: 16,
+    top: 16,
   },
 
   // Skeleton Styles

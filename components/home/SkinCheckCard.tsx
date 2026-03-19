@@ -110,7 +110,7 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
           <Text style={styles.title}>SkinCheck</Text>
           <ChevronRight size={24} color="#D1D5DB" />
         </View>
-        <Text style={styles.subtitle}>Send your skin scan, and your routine to your skin health professional.</Text>
+        <Text style={styles.subtitle}>Send this scan, your scores, and your routine to your skin health professional.</Text>
       </TouchableOpacity>
     );
   }
@@ -122,7 +122,7 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
           <Text style={styles.title}>SkinCheck</Text>
           <ChevronRight size={24} color="#D1D5DB" />
         </View>
-        <Text style={styles.subtitle}>Send your skin scan, and your routine to your skin health professional.</Text>
+        <Text style={styles.subtitle}>Send this scan, your scores, and your routine to your skin health professional.</Text>
       </View>
 
       <View style={styles.reportsList}>

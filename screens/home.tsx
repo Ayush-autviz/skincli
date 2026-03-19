@@ -848,7 +848,7 @@ export default function HomeScreen(): React.JSX.Element {
                         if (topConcerns && topConcerns.length > 0) {
                             (navigation as any).navigate('SkinCheck');
                         } else {
-                            Alert.alert('No Analysis Results', 'SkinCheck is only available for scans with analysis results.');
+                            Alert.alert('Scan your Face', 'SkinCheck shares a scan for the current day');
                         }
                     }}
                 />

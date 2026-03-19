@@ -8,12 +8,12 @@ import {
     Alert,
     Platform,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { ChevronLeft, Calendar, ChevronDown, ChevronUp, Info } from 'lucide-react-native';
 import { colors, spacing } from '../styles';
-import { createRoutineItem } from '../utils/newApiService';
+import { createRoutineItem, updateRoutineItem } from '../utils/newApiService';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation, useRoute } from '@react-navigation/native';
 
 interface TreatmentSubcategory {
     name: string;
@@ -36,7 +36,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Neuromodulators',
                 description:
-                    'Botulinum toxin injections are one option that may be used by a healthcare provider to reduce the appearance of facial wrinkles. These treatments work by temporarily decreasing muscle activity in targeted areas of the face.',
+                    'Botulinum toxin injections are one option that may be used by a healthcare provider to reduce the appearance of facial wrinkles. These treatments work by temporarily decreasing muscle activity in targeted areas of the face. By relaxing muscles involved in facial expression, botulinum toxin injections can soften dynamic wrinkles, which are lines that form with repeated movements such as frowning, squinting, smiling, or raising the eyebrows.',
                 concerns: [
                     'Dynamic facial lines',
                     'Frown lines',
@@ -54,7 +54,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Hyaluronic Acid Dermal Fillers',
                 description:
-                    'Dermal filler injections involve the placement of injectable materials beneath the skin to soften certain lines or folds and support facial structure. Effects may be visible shortly after treatment.',
+                    'Dermal filler injections are one option that may be used by a healthcare provider to address age-related changes in facial volume and contour. These treatments involve the placement of injectable materials beneath the skin and may be considered to soften certain lines or folds and support facial structure. The procedure is typically performed in an outpatient setting, with effects that may be visible shortly after treatment and vary by individual.',
                 concerns: [
                     'Age-related volume changes',
                     'Under-eye hollowing',
@@ -70,7 +70,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Biostimulatory Dermal Fillers',
                 description:
-                    "These products support the skin's natural collagen production. Rather than providing only immediate filling, they help improve skin structure gradually over time with results developing over weeks to months.",
+                    "Work by supporting the skin’s natural collagen production. Rather than providing only immediate filling, these products help improve skin structure gradually over time. Some initial changes may be seen after treatment, with additional improvement developing over weeks to months. Results can vary by individual and treatment area. The effects are not permanent but tend to last longer than traditional hyaluronic acid fillers.",
                 concerns: [
                     'Volume loss',
                     'Deeper facial folds',
@@ -83,7 +83,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Permanent Dermal Fillers',
                 description:
-                    'Permanent dermal fillers are injectable materials designed to provide long-lasting structural support. Unlike temporary fillers, these products are not naturally absorbed by the body.',
+                    'Permanent dermal fillers are injectable materials designed to provide long-lasting structural support. Unlike temporary fillers, these products are not naturally absorbed by the body and are used selectively in carefully chosen situations.',
                 concerns: [
                     'Volume loss',
                     'Deeper facial folds',
@@ -102,7 +102,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Cosmetic Microneedling',
                 description:
-                    'Superficial microneedling involves shallow needle penetration limited to the upper layers of the skin. Intended to support skin texture, tone, and product absorption with little to no downtime.',
+                    'Superficial microneedling involves shallow needle penetration limited to the upper layers of the skin. These treatments are often performed by licensed aestheticians or with at-home devices and are intended to support skin texture, tone, and product absorption. Temporary redness or mild swelling may occur, with little to no downtime. This approach is not designed to induce significant collagen remodeling.',
                 concerns: ['Skin refresh'],
                 metricNames: [
                     'Evenness',
@@ -112,7 +112,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Medical Microneedling',
                 description:
-                    'Uses greater needle depths to reach the dermis. Intended to stimulate collagen and elastin production for concerns such as acne scarring, deeper wrinkles, or skin laxity.',
+                    'Medical microneedling uses greater needle depths to reach the dermis and is typically performed by a physician or trained medical provider. This approach is intended to stimulate collagen and elastin production and may be considered for concerns such as acne scarring, deeper wrinkles, or skin laxity. Swelling, redness, and downtime may be more pronounced, and results develop gradually over time as the skin remodels.',
                 concerns: ['Acne scars', 'Fine lines', 'Mild laxity'],
                 metricNames: [
                     'Evenness',
@@ -122,7 +122,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Superficial Chemical Peels',
                 description:
-                    'Gently exfoliate the outermost layer of skin to improve brightness, texture, and tone. Commonly used to address dullness, mild discoloration, fine lines, and acne.',
+                    'Superficial chemical peels gently exfoliate the outermost layer of skin to improve brightness, texture, and tone. They are commonly used to address dullness, mild discoloration, fine lines, and acne. These peels require little to no downtime and are often described as a “refresh” for the skin. Results are gradual and best achieved with a series of treatments.',
                 concerns: [
                     'Skin refresh',
                     'Mild discoloration',
@@ -137,7 +137,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Medium-Depth Chemical Peels',
                 description:
-                    'Penetrate beyond the surface to target more noticeable skin concerns. Stimulate stronger skin renewal and collagen production than superficial peels.',
+                    'Medium-depth chemical peels penetrate beyond the surface to target more noticeable skin concerns such as uneven tone, sun damage, fine to moderate wrinkles, and acne scarring. These peels stimulate stronger skin renewal and collagen production than superficial peels. Some peeling and downtime are expected, with visible improvement as the skin heals. Results are longer-lasting and more dramatic than lighter peels.',
                 concerns: [
                     'Hyperpigmentation',
                     'Melasma',
@@ -152,7 +152,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Deep Chemical Peels',
                 description:
-                    'Reach deeper layers of the skin to address significant sun damage, deep wrinkles, scars, and uneven texture. Results can be transformative and long-lasting.',
+                    'Deep chemical peels reach deeper layers of the skin to address significant sun damage, deep wrinkles, scars, and uneven texture. They provide the most dramatic skin resurfacing results and typically require a longer recovery period. Because of their intensity, deep peels are performed less frequently and under close medical supervision. The results can be transformative and long-lasting.',
                 concerns: [
                     'Hyperpigmentation',
                     'Melasma',
@@ -168,7 +168,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Microdermabrasion',
                 description:
-                    'A non-invasive exfoliating treatment that gently removes the outermost layer of dead skin cells to improve brightness, smoothness, and texture.',
+                    'Microdermabrasion is a non-invasive exfoliating treatment that gently removes the outermost layer of dead skin cells to improve brightness, smoothness, and texture.',
                 concerns: ['Dull skin', 'Rough texture', 'Congestion'],
                 metricNames: [
                     'Evenness',
@@ -198,7 +198,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'Laser Resurfacing',
                 description:
-                    'Uses focused light energy to remove damaged skin layers and stimulate collagen, improving wrinkles, texture, scars, and tone.',
+                    'Laser resurfacing uses focused light energy to remove damaged skin layers and stimulate collagen, improving wrinkles, texture, scars, and tone.',
                 concerns: [
                     'Fine lines',
                     'Acne scars',
@@ -214,7 +214,7 @@ const treatmentCategories: TreatmentCategory[] = [
             {
                 name: 'LED Light Therapy',
                 description:
-                    'Uses specific wavelengths of light to support skin healing, reduce inflammation, and improve acne and redness without heat or downtime.',
+                    'LED light therapy uses specific wavelengths of light to support skin healing, reduce inflammation, and improve acne and redness without heat or downtime.',
                 concerns: [
                     'Acne',
                     'Redness',
@@ -233,6 +233,10 @@ const frequencyOptions = ['One-time', 'Weekly', 'Monthly', 'As Needed'];
 
 const AddTreatmentFormScreen = (): React.JSX.Element => {
     const navigation = useNavigation();
+    const route = useRoute();
+    const params = route.params as any || {};
+    const isEditMode = params.mode === 'edit';
+    const itemId = params.itemId;
 
     const [selectedCategory, setSelectedCategory] = useState<TreatmentCategory | null>(null);
     const [selectedSubcategory, setSelectedSubcategory] = useState<TreatmentSubcategory | null>(null);
@@ -244,6 +248,45 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
     const [expandedInfo, setExpandedInfo] = useState<boolean>(false);
 
     const scrollRef = useRef<ScrollView>(null);
+
+    // Effect to pre-fill data in edit mode
+    React.useEffect(() => {
+        if (isEditMode && params.routineData) {
+            const data = params.routineData;
+            
+            // Step 1: Find and set category
+            const category = treatmentCategories.find(c => 
+                c.name.toLowerCase() === data.type?.toLowerCase() || 
+                c.apiType.toLowerCase() === data.type?.toLowerCase()
+            );
+            
+            if (category) {
+                setSelectedCategory(category);
+                
+                // Step 2: Find and set subcategory
+                const subcategory = category.subcategories.find(s => 
+                    s.name.toLowerCase() === data.name?.toLowerCase()
+                );
+                if (subcategory) {
+                    setSelectedSubcategory(subcategory);
+                }
+            }
+
+            // Step 3: Set Frequency
+            if (data.frequency) {
+                const freq = data.frequency.toLowerCase();
+                if (freq === 'weekly') setFrequency('Weekly');
+                else if (freq === 'as_needed' || freq === 'as needed') setFrequency('As Needed');
+                else if (freq === 'monthly') setFrequency('Monthly');
+                else setFrequency('One-time');
+            }
+
+            // Step 4: Set Treatment Date
+            if (data.treatmentDate) {
+                setTreatmentDate(new Date(data.treatmentDate));
+            }
+        }
+    }, [isEditMode, params.routineData]);
 
     const handleCategorySelect = (category: TreatmentCategory) => {
         if (selectedCategory?.name === category.name) {
@@ -316,12 +359,13 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
             const apiItemData: any = {
                 name: selectedSubcategory.name,
                 type: selectedCategory.name,
-                // concern: selectedConcerns,
                 concern: selectedSubcategory.metricNames,
                 frequency: formatFrequencyForApi(frequency),
                 treatment_date: treatmentDate.toISOString().split('T')[0],
                 extra: {
-                    dateCreated: new Date().toISOString(),
+                    dateCreated: isEditMode && params.routineData?.extra?.dateCreated 
+                        ? params.routineData.extra.dateCreated 
+                        : new Date().toISOString(),
                     treatmentDate: treatmentDate.toISOString(),
                     category: selectedCategory.name,
                     subcategory: selectedSubcategory.name,
@@ -329,14 +373,19 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                 },
             };
 
-            const response = await createRoutineItem(apiItemData);
+            let response;
+            if (isEditMode && itemId) {
+                response = await updateRoutineItem(itemId, apiItemData);
+            } else {
+                response = await createRoutineItem(apiItemData);
+            }
 
             if ((response as any).success) {
-                Alert.alert('Success!', 'Treatment added to your routine.', [
+                Alert.alert('Success!', `Treatment ${isEditMode ? 'updated' : 'added to'} your routine.`, [
                     {
                         text: 'OK',
                         onPress: () =>
-                            (navigation as any).navigate('Tabs', { screen: 'MyRoutine' }),
+                            (navigation as any).navigate('Tabs', { screen: 'MyRoutine', params: { refresh: true } }),
                     },
                 ]);
             }
@@ -364,7 +413,7 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                         </View>
                     </TouchableOpacity>
                     <View style={styles.titleContainer}>
-                        <Text style={styles.headerTitle}>Add Treatment</Text>
+                        <Text style={styles.headerTitle}>{isEditMode ? 'Edit Treatment' : 'Add Treatment'}</Text>
                     </View>
                     <View style={styles.rightContainer} />
                 </View>
@@ -452,7 +501,7 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                         </TouchableOpacity>
 
                         {/* Concerns */}
-                        <Text style={styles.sectionTitle}>Concerns addressed</Text>
+                        <Text style={styles.sectionTitle}>This treatment generally addresses these concerns</Text>
                         <View style={styles.infoListContainer}>
                             {selectedSubcategory.concerns.map(concern => (
                                 <View key={concern} style={styles.infoListItem}>
@@ -534,7 +583,7 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                         disabled={!canSave || isSaving}
                     >
                         <Text style={styles.saveButtonText}>
-                            {isSaving ? 'Saving...' : 'Save Treatment'}
+                            {isSaving ? 'Saving...' : (isEditMode ? 'Update Treatment' : 'Save Treatment')}
                         </Text>
                     </TouchableOpacity>
                 )}

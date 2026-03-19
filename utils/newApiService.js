@@ -1841,9 +1841,7 @@ export const createRoutineItem = async (itemData) => {
 
     // Handle treatment types differently - use treatment_date instead of start_date/end_date
     const isTreatmentType = itemData.type && (
-      itemData.type.includes('treatment_facial') ||
-      itemData.type.includes('treatment_injection') ||
-      itemData.type.includes('treatment_other')
+      itemData.type.toLowerCase() !== 'product'
     );
 
     if (isTreatmentType) {
@@ -1923,9 +1921,7 @@ export const updateRoutineItem = async (itemId, itemData) => {
 
     // Handle treatment types differently - use treatment_date instead of start_date/end_date
     const isTreatmentType = itemData.type && (
-      itemData.type.includes('treatment_facial') ||
-      itemData.type.includes('treatment_injection') ||
-      itemData.type.includes('treatment_other')
+      itemData.type.toLowerCase() !== 'product'
     );
 
     if (isTreatmentType) {

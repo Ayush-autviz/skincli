@@ -102,6 +102,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
     ...(params.routineData || {}),
     is_tracking_paused: params.routineData?.is_tracking_paused
   });
+  const isTreatment = routineData.type?.toLowerCase() !== 'product';
 
   console.log('🔍 Product data:', productData);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
@@ -158,6 +159,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
     }
   }, [params.itemId]);
 
+  // Helper to format text from API (replace underscores and capitalize)
+  const formatDisplayText = (text: string) => {
+    if (!text) return '';
+    return text.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+  };
+
   // Fetch fresh product data from API using UPC code
   useEffect(() => {
     const fetchProductData = async () => {
@@ -193,15 +200,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
     }
   }, [params.refresh, fetchRoutineData]);
 
-  // Also refetch when screen comes into focus with refresh flag
+  // Also refetch when screen comes into focus (e.g. returning from rating review)
   useFocusEffect(
     useCallback(() => {
-      // Only refresh if explicitly requested via refresh param
-      if (params.refresh === true) {
-        console.log('🔄 ProductDetail: Screen focused, refreshing routine data...');
-        fetchRoutineData();
-      }
-    }, [params.refresh, fetchRoutineData])
+      console.log('🔄 ProductDetail: Screen focused, refreshing routine data...');
+      fetchRoutineData();
+    }, [fetchRoutineData])
   );
 
   // Check if product is manually added (no UPC means manually added)
@@ -246,7 +250,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
     } else if (usage === 'as_needed') {
       pills.push('As needed');
     } else if (usage) {
-      pills.push(usage);
+      pills.push(formatDisplayText(usage));
     }
 
     return pills;
@@ -264,7 +268,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
     } else if (frequency === 'monthly') {
       pills.push('Monthly');
     } else if (frequency) {
-      pills.push(frequency);
+      pills.push(formatDisplayText(frequency));
     }
 
     return pills;
@@ -282,20 +286,37 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle edit button press
   const handleEdit = () => {
-    (navigation as any).navigate('AddProductForm', {
-      mode: 'edit',
-      itemId: params.itemId,
-      productData: productData,
-      upc: params.upc || productData.upc,
-      prefilledName: productData.product_name || routineData.name,
-      routineData: {
-        ...routineData,
-        concerns: routineData.concerns || [],
-        usage: routineData.usage,
-        frequency: routineData.frequency,
-        dateStarted: routineData.dateStarted,
-      }
-    });
+    const isTreatment = routineData.type && routineData.type.toLowerCase() !== 'product';
+
+    if (isTreatment) {
+      (navigation as any).navigate('AddTreatmentForm', {
+        mode: 'edit',
+        itemId: params.itemId,
+        routineData: {
+          ...routineData,
+          name: routineData.name,
+          type: routineData.type,
+          frequency: routineData.frequency,
+          treatmentDate: routineData.treatmentDate || routineData.dateStarted,
+          concerns: routineData.concerns || []
+        }
+      });
+    } else {
+      (navigation as any).navigate('AddProductForm', {
+        mode: 'edit',
+        itemId: params.itemId,
+        productData: productData,
+        upc: params.upc || productData.upc,
+        prefilledName: productData.product_name || routineData.name,
+        routineData: {
+          ...routineData,
+          concerns: routineData.concerns || [],
+          usage: routineData.usage,
+          frequency: routineData.frequency,
+          dateStarted: routineData.dateStarted,
+        }
+      });
+    }
   };
 
   // Handle start tracking button press
@@ -343,14 +364,14 @@ const ProductDetailScreen = (): React.JSX.Element => {
     else if (usage === 'pm') usageText = 'PM';
     else if (usage === 'both') usageText = 'AM / PM';
     else if (usage === 'as_needed') usageText = 'As needed';
-    else usageText = usage;
+    else usageText = formatDisplayText(usage);
 
     // Format frequency
     let frequencyText = '';
     if (frequency === 'daily') frequencyText = 'Daily';
     else if (frequency === 'weekly') frequencyText = 'Weekly';
     else if (frequency === 'monthly') frequencyText = 'Monthly';
-    else frequencyText = frequency;
+    else frequencyText = formatDisplayText(frequency);
 
     // Format concerns
     const concernsText = concerns.length > 0
@@ -379,6 +400,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle review tracking button press
   const handleReviewTracking = () => {
+    if (isTreatment) {
+      handleUsageResponse('yes'); // Skip modal and navigate
+      return;
+    }
     // Show the usage modal first
     setShowUsageModal(true);
   };
@@ -416,6 +441,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle concern tracking item click - opens the usage modal only if allowed
   const handleConcernClick = (tracking: any) => {
+    if (isTreatment) {
+      handleUsageResponse('yes'); // Skip modal and navigate
+      return;
+    }
     if (canOpenModal(tracking)) {
       setShowUsageModal(true);
     }
@@ -733,9 +762,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
               {/* Product Image Placeholder */}
               <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
                 <View style={styles.productImageContainer}>
-                  {productData.product_image ? (
+                  {(productData.product_image || productData.image_url) ? (
                     <Image
-                      source={{ uri: productData.product_image }}
+                      source={{ uri: productData.product_image || productData.image_url }}
                       style={styles.productImage}
                       resizeMode="contain"
                     />

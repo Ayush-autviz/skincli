@@ -1,0 +1,86 @@
+{
+    "SKIN_CONCERNS": [
+        {
+            "name": "Acne",
+            "Ingredients": [
+                "Benzoyl Peroxide (BPO): Kills acne-causing bacteria and helps unclog pores",
+                "Beta Hydroxy Acid (BHA, Salicylic Acid): Penetrates pores to dissolve debris and reduce inflammation",
+                "Azelaic acid: Can be less irritating for those with sensitive skin. 15% and 20% are delivered by prescription only, less than 15% is OTC.",
+                "Retinoids (Adapalene): Normalize cell turnover to prevent clogged pores and reduce inflammation. Retinoids are delivered by prescription only, but Adapalene is OTC.",
+                "Niacinamide: can help manage the appearance of pigmentation, inflammation, and support collagen, both topical and oral"
+            ]
+        },
+        {
+            "name": "Pigmentation",
+            "Ingredients": [
+                "Vitamin C (Ascorbic Acid, L-Ascorbic Acid): Antioxidants can help fade the appearance of pigmentation",
+                "Niacinamide: can help manage the appearance of pigmentation, inflammation, and support collagen, both topical and oral",
+                "Azelaic acid: Can be less irritating for those with sensitive skin. 15% and 20% are delivered by prescription only, less than 15% is OTC",
+                "Alpha hydroxy acids (lactic acid, glycolic acid): can help manage the appearance of pigmentation",
+                "Tranexamic Acid: can help manage the appearance of pigmentation",
+                "Alpha Arbutin: can help manage the appearance of pigmentation",
+                "Hydroquinone: these tyrosinase inhibitors are delivered by prescription only"
+            ]
+        },
+        {
+            "name": "Uniformness",
+            "Ingredients": [
+                "Retinol: can help manage the appearance of pigmentation and skin texture",
+                "Niacinamide: can help manage the appearance of pigmentation, inflammation, and support collagen, can help manage the appearance of pigmentation, both topical and oral",
+                "Vitamin C (Ascorbic Acid, L-Ascorbic Acid): can help manage the appearance of pigmentation associated with sun damage",
+                "Alpha Arbutin: can help manage the appearance of pigmentation",
+                "Hydroquinone: these tyrosinase inhibitors are delivered by prescription only",
+                "Tranexamic Acid: Addresses hormonally-induced pigmentation"
+            ]
+        },
+        {
+            "name": "Redness",
+            "Ingredients": [
+                "Niacinamide: Can help manage the appearance of pigmentation, inflammation, and support collagen, both topical and oral",
+                "Ceramides: Restore barrier function to protect and retain moisture",
+                "Azelaic Acid: Reduces redness through anti-inflammatory and antimicrobial actions. 15% and 20% are delivered by prescription only, less than 15% is OTC.",
+                "Allantoin: Antiinflammatory effects to help manage redness",
+                "Centella Asiatica: Calms inflammation and supports healing",
+                "Green Tea Extract (Camellia Sinensis, EGCG, Epigallocatechin gallate): Potent antioxidant with anti-inflammatory properties"
+            ]
+        },
+        {
+            "name": "Lines",
+            "Ingredients": [
+                "Retinol: Support collagen and accelerate cell turnover",
+                "Hyaluronic Acid (Sodium Hyaluronate, Hydrolyzed Hyaluronic Acid, Hyaluronan): Adds hydration for skin suppleness",
+                "Vitamin C (Ascorbic Acid, L-Ascorbic Acid): Antioxidant that protects and supports collagen synthesis",
+                "Alpha Hydroxy Acids (AHAs, glycolic acid, lactic acid, mandelic acid, citric acid, malic acid, tartaric acid): Exfoliates skin, improving texture and the appearance of fine lines",
+                "Peptides: Support collagen or modulate muscle contraction"
+            ]
+        },
+        {
+            "name": "Pores",
+            "Ingredients": [
+                "Salicylic Acid: Exfoliates inside the pore lining to help reduce buildup",
+                "Retinol: Support collagen and accelerate cell turnover",
+                "Clay Minerals (Bentonite, Kaolin): Temporarily absorb excess oil and improve pore appearance",
+                "Niacinamide: Regulates sebum and improves cell turnover around pores. Can help with inflammation both topically and orally, which can exaggerate the appearance of pores.",
+                "Retinoids (Adapalene): Normalize cell turnover and strengthen structures around pores. Retinoids are delivered by prescription only, but Adapalene is OTC."
+            ]
+        },
+        {
+            "name": "Hydration",
+            "Ingredients": [
+                "Hyaluronic Acid (Sodium Hyaluronate, Hydrolyzed Hyaluronic Acid, Hyaluronan): Attracts and retains water in the skin, providing deep hydration",
+                "Glycerin: A powerful humectant that draws moisture into the skin and helps maintain softness",
+                "Ceramides: Restore barrier function to protect and retain moisture",
+                "Fatty Acids (Palmytic Acid, Linoleic Acid, Oleic Acid, Stearic Acid): Fatty acids in moisturizers to strengthen the skin barrier."
+            ]
+        },
+        {
+            "name": "Eye Area Condition",
+            "Ingredients": [
+                "Caffeine: Helps reduce puffiness and dark circles by improving micro-circulation",
+                "Hyaluronic Acid (Sodium Hyaluronate, Hydrolyzed Hyaluronic Acid, Hyaluronan): Provides deep hydration to plump and smooth fine lines",
+                "Peptides: Support collagen production to improve firmness and reduce wrinkles",
+                "Green Tea Extract (Camellia Sinensis, EGCG, Epigallocatechin gallate): Potent antioxidant with anti-inflammatory properties"
+            ]
+        }
+    ]
+}

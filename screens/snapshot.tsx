@@ -41,8 +41,9 @@ import {
   deletePhoto,
   getImageChatSummary,
   sendSnapshotFirstChat,
+  getComparison,
+  toggleTopConcern,
 } from '../utils/newApiService';
-import { getComparison } from '../utils/newApiService';
 import useAuthStore from '../stores/authStore';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import Modal from 'react-native-modal';
@@ -228,7 +229,7 @@ const SnapshotScreen = (): React.JSX.Element => {
   console.log('fromscan', fromScanTab);
 
   // Auth store
-  const { user, profile } = useAuthStore();
+  const { user, profile, topConcerns, setTopConcerns } = useAuthStore();
   const userId = user?.user_id;
 
   // Contexts
@@ -251,7 +252,7 @@ const SnapshotScreen = (): React.JSX.Element => {
 
   // Score changes state (computed from previous photo)
   const [scoreChanges, setScoreChanges] = useState<Record<string, { arrow: string; value: number }>>({});
-  const [apiTopConcerns, setApiTopConcerns] = useState<string[]>([]);
+  const [isTogglingConcern, setIsTogglingConcern] = useState(false);
 
   // Refs
   const pollingTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -428,7 +429,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                 const resp: any = await getComparison('older_than_6_month');
                 const resultData = resp?.data?.result;
                 const tops = resultData?.user_top_concerns || [];
-                setApiTopConcerns(tops);
+                setTopConcerns(tops);
               } catch (_) { /* ignore */ }
             })()
           ]);
@@ -552,6 +553,32 @@ const SnapshotScreen = (): React.JSX.Element => {
     // Silent delete placeholder
   };
 
+  const handleToggleTopConcern = async (concernName: string) => {
+    if (!concernName || isTogglingConcern) return;
+
+    // Optimistic update
+    const previousConcerns = [...(topConcerns || [])];
+    const newConcerns = previousConcerns.includes(concernName)
+      ? previousConcerns.filter(c => c !== concernName)
+      : [...previousConcerns, concernName];
+
+    setTopConcerns(newConcerns);
+    setIsTogglingConcern(true);
+
+    try {
+      const response: any = await toggleTopConcern(concernName);
+      if (response.success && response.data?.top_concerns) {
+        setTopConcerns(response.data.top_concerns);
+      }
+    } catch (error) {
+      console.error('Failed to toggle top concern:', error);
+      // Revert on failure
+      setTopConcerns(previousConcerns);
+    } finally {
+      setIsTogglingConcern(false);
+    }
+  };
+
   const handleClose = (): void => {
     if (fromScanTab) {
       (navigation as any).navigate('Tabs', { screen: 'Home' });
@@ -665,10 +692,10 @@ const SnapshotScreen = (): React.JSX.Element => {
     : [];
   const sortedScoreMetrics = (() => {
     if (!Array.isArray(scoreMetrics) || scoreMetrics.length === 0) return scoreMetrics;
-    if (!apiTopConcerns || apiTopConcerns.length === 0) return scoreMetrics;
+    if (!topConcerns || topConcerns.length === 0) return scoreMetrics;
     const isTop = (metricKey: string) => {
       const concern = getConcernNameForAPI(metricKey) || '';
-      return apiTopConcerns.includes(concern);
+      return topConcerns?.includes(concern);
     };
     return [...scoreMetrics].sort((a, b) => {
       const at = isTop(a.key) ? 1 : 0;
@@ -791,7 +818,7 @@ const SnapshotScreen = (): React.JSX.Element => {
             {sortedScoreMetrics.map((item, index) => {
               const { color } = getMetricTag(item.value as number);
               const concernName = getConcernNameForAPI(item.key) || '';
-              const isTop = apiTopConcerns.includes(concernName);
+              const isTop = topConcerns?.includes(concernName);
               return (
                 <TouchableOpacity
                   key={item.key}
@@ -811,7 +838,20 @@ const SnapshotScreen = (): React.JSX.Element => {
                   activeOpacity={0.7}
                 >
                   <View style={styles.analysisRowLeft}>
-                    {isTop && <Star size={16} color="#00839B" style={{ marginRight: 6 }} />}
+                    <TouchableOpacity
+                      onPress={(e) => {
+                        handleToggleTopConcern(concernName);
+                      }}
+                      disabled={isTogglingConcern}
+                      hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                      style={{ marginRight: 6, padding: 4 }}
+                    >
+                      <Star
+                        size={18}
+                        color={isTop ? "#00839B" : "#D6D3D1"}
+                        fill={isTop ? "#00839B" : "transparent"}
+                      />
+                    </TouchableOpacity>
                     <View>
                       <Text style={styles.analysisMetricName}>{item.label}</Text>
                       {item.key === 'poresScore' && (

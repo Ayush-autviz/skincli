@@ -30,6 +30,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute();
   const params = route.params as TrackingReviewParams || {};
+  const isTreatment = params.routineData?.type?.toLowerCase() !== 'product';
 
   const concernTracking = params.concernTracking || [];
   const usageResponse = params.usageResponse || null;
@@ -48,6 +49,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
 
   // Modal state
   const [showSuccessModal, setShowSuccessModal] = useState<boolean>(false);
+  const [hasRated, setHasRated] = useState<boolean>(false);
 
   // Get usage response text
   const getUsageResponseText = () => {
@@ -78,7 +80,21 @@ const TrackingReviewScreen = (): React.JSX.Element => {
   };
 
   const handleBack = () => {
+    // if (hasRated) {
+    //   (navigation as any).navigate({
+    //     name: 'ProductDetail',
+    //     params: {
+    //       itemId: params.itemId,
+    //       productData: params.productData,
+    //       routineData: params.routineData,
+    //       upc: params.productData?.upc,
+    //       refresh: true, // Flag to trigger API refresh
+    //     },
+    //     merge: true,
+    //   });
+    // } else {
     navigation.goBack();
+    //}
   };
 
   const handleStopTracking = async () => {
@@ -162,9 +178,9 @@ const TrackingReviewScreen = (): React.JSX.Element => {
             <View style={styles.productCardContainer}>
               {/* Product Image Placeholder */}
               <View style={styles.productImageContainer}>
-                {params.productData.image_url ? (
+                {(params.productData?.image_url || params.productData?.product_image) ? (
                   <Image
-                    source={{ uri: params.productData.image_url }}
+                    source={{ uri: params.productData.image_url || params.productData.product_image }}
                     style={styles.productImage}
                     resizeMode="contain"
                   />
@@ -192,8 +208,8 @@ const TrackingReviewScreen = (): React.JSX.Element => {
           {/* Product Info */}
 
 
-          {/* Usage Response Text */}
-          {getUsageResponseText() && (
+          {/* Usage Response Text - Hidden for treatments */}
+          {!isTreatment && getUsageResponseText() && (
             <TouchableOpacity
               style={styles.usageResponseContainer}
               onPress={usageResponse === 'no' ? handleStopTracking : undefined}
@@ -258,6 +274,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
 
                     // Show success modal
                     setShowSuccessModal(true);
+                    setHasRated(true);
                   } catch (error: any) {
                     // console.error('Error rating effectiveness:', error);
                     Alert.alert(
@@ -290,6 +307,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
 
                     // Show success modal
                     setShowSuccessModal(true);
+                    setHasRated(true);
                   } catch (error: any) {
                     // console.error('Error rating effectiveness:', error);
                     Alert.alert(
@@ -478,14 +496,6 @@ const TrackingReviewScreen = (): React.JSX.Element => {
               style={styles.modalButton}
               onPress={() => {
                 setShowSuccessModal(false);
-                // Navigate back to product detail screen with refresh flag
-                (navigation as any).navigate('ProductDetail', {
-                  itemId: params.itemId,
-                  productData: params.productData,
-                  routineData: params.routineData,
-                  upc: params.productData?.upc,
-                  refresh: true, // Flag to trigger API refresh
-                }, { replace: true });
               }}
             >
               <Text style={styles.modalButtonText}>OK</Text>

@@ -332,7 +332,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       'nutrition': 'Nutrition',
       'treatment_facial': 'Treatment / Facial',
       'treatment_injection': 'Treatment / Injection',
-      'treatment_other': 'Treatment / Other'
+      'treatment_other': 'Treatment / Other',
+      'injectables': 'Injectables'
     };
 
     const usageMap: { [key: string]: string } = {
@@ -584,11 +585,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       case 5: return newItemUsage.length > 0; // At least one usage time selected
       case 6:
         // For treatment types, check treatment date; for others, check start date
-        const isTreatment = newItemType && (
-          newItemType === 'Treatment / Facial' ||
-          newItemType === 'Treatment / Injection' ||
-          newItemType === 'Treatment / Other'
-        );
+        const isTreatment = newItemType && newItemType.toLowerCase() !== 'product';
         return isTreatment ? !!newItemTreatmentDate : !!newItemDateStarted;
       default: return true;
     }
@@ -664,11 +661,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
     // Check if current type is a treatment type
     const isTreatmentType = (): boolean => {
-      return !!(newItemType && (
-        newItemType === 'Treatment / Facial' ||
-        newItemType === 'Treatment / Injection' ||
-        newItemType === 'Treatment / Other'
-      ));
+      return !!(newItemType && newItemType.toLowerCase() !== 'product');
     };
 
     // For treatment types, validate treatment date
@@ -838,11 +831,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
     let dateInfo: string | null = null;
 
     // Check if this is a treatment type
-    const isTreatment = item.type && (
-      item.type === 'Treatment / Facial' ||
-      item.type === 'Treatment / Injection' ||
-      item.type === 'Treatment / Other'
-    );
+    const isTreatment = item.type && item.type.toLowerCase() !== 'product';
 
     if (isTreatment && item.treatmentDate) {
       // For treatment types, show treatment date
@@ -890,9 +879,9 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
     // console.log('item', item);
 
-    // Determine tracking text for Product type only
+    // Determine tracking text for Product and Treatment types
     let trackingText: string | null = null;
-    if (item.type === 'Product') {
+    if (item.type === 'Product' || isTreatment) {
       const hasTracking = item.concern_tracking && item.concern_tracking.length > 0;
       const isTrackingPaused = item.is_tracking_paused;
 
@@ -933,7 +922,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
     // Calculate dynamic effectiveness status
     const getEffectivenessDisplay = () => {
-      if (item.type !== 'Product') return null;
+      if (item.type !== 'Product' && !isTreatment) return null;
 
       const hasTracking = item.concern_tracking && item.concern_tracking.length > 0;
       const isTrackingPaused = item.is_tracking_paused;
@@ -1058,11 +1047,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
 
     activeItems.forEach(item => {
       // Check if this is a treatment type
-      const isTreatment = item.type && (
-        item.type === 'Treatment / Facial' ||
-        item.type === 'Treatment / Injection' ||
-        item.type === 'Treatment / Other'
-      );
+      const isTreatment = item.type && item.type.toLowerCase() !== 'product';
 
       if (isTreatment) {
         grouped['Treatments'].push(item);
@@ -1145,7 +1130,9 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         brand: item.extra?.brand,
         upc: item.upc || undefined,
         ingredients: item.extra?.ingredients || [],
-        good_for: item.extra?.good_for || []
+        good_for: item.extra?.good_for || [],
+        product_image: item.image_url || item.extra?.image_url,
+        image_url: item.image_url || item.extra?.image_url
       },
       routineData: {
         name: item.name,

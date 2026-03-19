@@ -166,6 +166,7 @@ import { LineChart } from 'react-native-chart-kit';
 // Import the JSON data
 // @ts-ignore
 import concernsData from '../data/concerns.json';
+import ingredientsData from '../data/Ingredients.json';
 import MetricsSeries_simple from '../components/analysis/MetricsSeries_simple';
 import MetricsSeries, { MetricRow, processPhotoMetrics, METRIC_LABELS } from '../components/analysis/MetricsSeries';
 
@@ -691,6 +692,28 @@ const getConcernNameForAPI = (metricKey: string) => {
     .trim();
 };
 
+// Helper function to get ingredients from Ingredients.json based on metricKey
+const getIngredientsForMetric = (metricKey: string): string[] => {
+  if (!metricKey) return [];
+
+  const mapping: Record<string, string> = {
+    'acneScore': 'Acne',
+    'pigmentationScore': 'Pigmentation',
+    'uniformnessScore': 'Uniformness',
+    'rednessScore': 'Redness',
+    'linesScore': 'Lines',
+    'poresScore': 'Pores',
+    'hydrationScore': 'Hydration',
+    'eyeAreaCondition': 'Eye Area Condition'
+  };
+
+  const concernName = mapping[metricKey] || mapping[metricKey.replace('Score', '')];
+  if (!concernName) return [];
+
+  const concern = (ingredientsData.SKIN_CONCERNS as any[]).find(c => c.name === concernName);
+  return concern ? concern.Ingredients : [];
+};
+
 // Helper functions for processing metrics data
 const metricHelpers = {
   // Convert camelCase metric key to snake_case tech_name format
@@ -1146,7 +1169,10 @@ export default function MetricDetailScreen() {
   // Fetch concern message when ingredients are available
   useEffect(() => {
     const fetchConcernMessage = async () => {
-      if (!currentConcernDetails?.advice?.ingredients || currentConcernDetails.advice.ingredients.length === 0) {
+      const ingredients = getIngredientsForMetric(metricKey);
+      const displayIngredients = ingredients.length > 0 ? ingredients : (currentConcernDetails?.advice?.ingredients || []);
+
+      if (displayIngredients.length === 0) {
         return;
       }
 
@@ -1909,7 +1935,7 @@ export default function MetricDetailScreen() {
                     {!everythingLoaded && (
                       <View style={styles.imageLoadingContainer}>
                         <SkeletonPlaceholder borderRadius={12}>
-                          <SkeletonPlaceholder.Item width={150} height={150} />
+                          <SkeletonPlaceholder.Item width={250} height={250} />
                         </SkeletonPlaceholder>
                       </View>
                     )}
@@ -2048,7 +2074,7 @@ export default function MetricDetailScreen() {
                     {!everythingLoaded && (
                       <View style={styles.imageLoadingContainer}>
                         <SkeletonPlaceholder borderRadius={12}>
-                          <SkeletonPlaceholder.Item width={150} height={150} />
+                          <SkeletonPlaceholder.Item width={250} height={250} />
                         </SkeletonPlaceholder>
                       </View>
                     )}
@@ -2114,9 +2140,9 @@ export default function MetricDetailScreen() {
             return (
               <View style={{ marginHorizontal: 16, marginTop: spacing.xxl }}>
                 <SkeletonPlaceholder borderRadius={12}>
-                  <SkeletonPlaceholder.Item flexDirection="row" alignItems="flex-start">
-                    <SkeletonPlaceholder.Item width={150} height={150} borderRadius={12} marginRight={16} />
-                    <SkeletonPlaceholder.Item flex={1}>
+                  <SkeletonPlaceholder.Item flexDirection="column" alignItems="center">
+                    <SkeletonPlaceholder.Item width={250} height={250} borderRadius={12} marginBottom={16} />
+                    <SkeletonPlaceholder.Item width="100%" alignItems="center">
                       <SkeletonPlaceholder.Item width="80%" height={14} borderRadius={4} marginBottom={8} />
                       <SkeletonPlaceholder.Item width="90%" height={14} borderRadius={4} marginBottom={8} />
                       <SkeletonPlaceholder.Item width="60%" height={14} borderRadius={4} marginBottom={16} />
@@ -2252,10 +2278,13 @@ export default function MetricDetailScreen() {
             (b: string) => b.toLowerCase().includes('patient') || b.toLowerCase().includes('patience') || b.toLowerCase().includes('consistency matters')
           );
 
+          const ingredients = getIngredientsForMetric(metricKey);
+          const hasIngredients = ingredients.length > 0 || (currentConcernDetails?.advice?.ingredients && currentConcernDetails.advice.ingredients.length > 0);
+
           return (
             <>
               {/* Ingredients */}
-              {currentConcernDetails?.advice?.ingredients && currentConcernDetails.advice.ingredients.length > 0 && (
+              {hasIngredients && (
                 <View style={styles.adviceItem}>
 
 
@@ -2305,71 +2334,76 @@ export default function MetricDetailScreen() {
                         </SkeletonPlaceholder.Item>
                       </SkeletonPlaceholder>
                     ) : (
-                      currentConcernDetails.advice?.ingredients?.map((ingredient: string, index: number) => {
-                        // Parse ingredient to get name and description
-                        const colonIndex = ingredient.indexOf(':');
-                        const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
-                        const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
+                      (() => {
+                        const ingredients = getIngredientsForMetric(metricKey);
+                        const displayIngredients = ingredients.length > 0 ? ingredients : (currentConcernDetails.advice?.ingredients || []);
 
-                        // Find entry in found_ingredients
-                        const foundEntry = concernMessageData?.found_ingredients?.find((found) => {
-                          if (typeof found === 'string') {
-                            return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-                          }
-                          return found?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-                        });
-                        const isFound = Boolean(foundEntry);
-                        const foundProducts =
-                          foundEntry && typeof foundEntry !== 'string' && Array.isArray(foundEntry.products)
-                            ? foundEntry.products
-                            : [];
+                        return displayIngredients.map((ingredient: string, index: number) => {
+                          // Parse ingredient to get name and description
+                          const colonIndex = ingredient.indexOf(':');
+                          const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
+                          const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
 
-                        const isLast = index === (currentConcernDetails.advice?.ingredients?.length || 0) - 1;
+                          // Find entry in found_ingredients
+                          const foundEntry = concernMessageData?.found_ingredients?.find((found) => {
+                            if (typeof found === 'string') {
+                              return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                            }
+                            return found?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
+                          });
+                          const isFound = Boolean(foundEntry);
+                          const foundProducts =
+                            foundEntry && typeof foundEntry !== 'string' && Array.isArray(foundEntry.products)
+                              ? foundEntry.products
+                              : [];
 
-                        return (
-                          <TouchableOpacity
-                            key={index}
-                            style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
-                            activeOpacity={0.7}
-                            onPress={() => {
-                              const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
-                              (navigation as any).navigate('ThreadChat', {
-                                chatType: 'snapshot_feedback',
-                                initialMessage: message
-                              });
-                            }}
-                          >
-                            <View style={styles.ingredientIconContainer}>
-                              <SoapDispenserDroplet
-                                size={28}
-                                color={isFound ? "#414651" : "#D6D3D1"}
-                                strokeWidth={1.5}
-                              />
-                            </View>
-                            <View style={styles.ingredientContent}>
-                              <Text style={styles.ingredientName}>{ingredientName}</Text>
+                          const isLast = index === (displayIngredients.length || 0) - 1;
 
-                              <View style={styles.routineChip}>
-                                <View style={[styles.routineDot, { backgroundColor: isFound ? '#12B76A' : '#A9A29D' }]} />
-                                <Text style={styles.routineText}>
-                                  {isFound ? 'In your Routine' : 'Not in Routine'}
-                                </Text>
+                          return (
+                            <TouchableOpacity
+                              key={index}
+                              style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
+                              activeOpacity={0.7}
+                              onPress={() => {
+                                const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
+                                (navigation as any).navigate('ThreadChat', {
+                                  chatType: 'snapshot_feedback',
+                                  initialMessage: message
+                                });
+                              }}
+                            >
+                              <View style={styles.ingredientIconContainer}>
+                                <SoapDispenserDroplet
+                                  size={28}
+                                  color={isFound ? "#414651" : "#D6D3D1"}
+                                  strokeWidth={1.5}
+                                />
                               </View>
+                              <View style={styles.ingredientContent}>
+                                <Text style={styles.ingredientName}>{ingredientName}</Text>
 
-                              {isFound && foundProducts.length > 0 ? (
-                                <Text style={styles.productHighlight}>
-                                  {foundProducts.join(', ')}
-                                </Text>
-                              ) : (
-                                ingredientDesc ? (
-                                  <Text style={styles.ingredientDesc}>{ingredientDesc}</Text>
-                                ) : null
-                              )}
-                            </View>
-                            <ChevronRight size={18} color="#D6D3D1" />
-                          </TouchableOpacity>
-                        );
-                      })
+                                <View style={styles.routineChip}>
+                                  <View style={[styles.routineDot, { backgroundColor: isFound ? '#12B76A' : '#A9A29D' }]} />
+                                  <Text style={styles.routineText}>
+                                    {isFound ? 'In your Routine' : 'Not in Routine'}
+                                  </Text>
+                                </View>
+
+                                {isFound && foundProducts.length > 0 ? (
+                                  <Text style={styles.productHighlight}>
+                                    {foundProducts.join(', ')}
+                                  </Text>
+                                ) : (
+                                  ingredientDesc ? (
+                                    <Text style={styles.ingredientDesc}>{ingredientDesc}</Text>
+                                  ) : null
+                                )}
+                              </View>
+                              <ChevronRight size={18} color="#D6D3D1" />
+                            </TouchableOpacity>
+                          );
+                        });
+                      })()
                     )}
                   </View>
 
@@ -3063,8 +3097,8 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   metricCardRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: 'column',
+    alignItems: 'center',
     marginVertical: 16,
     marginHorizontal: 4,
     padding: 12,
@@ -3075,14 +3109,15 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 2,
-    gap: 12,
+    gap: 16,
   },
   maskContentRight: {
-    flex: 1,
+    width: '100%',
     justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#F5F5F4',
-    borderRadius: 8,
-    padding: 12,
+    borderRadius: 12,
+    padding: 16,
   },
   smartContextText: {
     fontSize: 16,
@@ -3102,7 +3137,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     paddingHorizontal: 4,
     paddingVertical: 4,
-    width: "100%",
+    // width: "100%",
     gap: 6
     // justifyContent: "space-between",
   },
@@ -3134,8 +3169,8 @@ const styles = StyleSheet.create({
   maskImageContainer: {
     alignItems: 'center',
     position: 'relative',
-    height: 150,
-    width: 150,
+    height: 250,
+    width: 250,
     borderRadius: 12,
     overflow: 'hidden',
   },
@@ -3148,8 +3183,8 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 0,
     left: 0,
-    width: 150,
-    height: 150,
+    width: 250,
+    height: 250,
     borderRadius: 12,
   },
   svgOverlay: {
@@ -3709,11 +3744,11 @@ const styles = StyleSheet.create({
   },
   // AI Insight Card (Snapshot Style)
   aiInsightCard: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
+    flexDirection: 'column',
+    alignItems: 'center',
     backgroundColor: '#EBE9FE',
     borderRadius: 18,
-    padding: 16,
+    padding: 20,
     marginVertical: 16,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
@@ -3727,25 +3762,28 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginBottom: 8,
   },
   aiAvatarIcon: {
     width: 40,
     height: 40,
   },
   aiInsightContent: {
-    flex: 1,
+    width: '100%',
+    alignItems: 'center',
   },
   aiInsightTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#404968',
     marginBottom: 4,
+    textAlign: 'center',
   },
   aiInsightSubtext: {
     fontSize: 14,
     color: '#5D6B98',
     lineHeight: 20,
+    textAlign: 'center',
   },
 
   // Ingredient Card (Routine Style)

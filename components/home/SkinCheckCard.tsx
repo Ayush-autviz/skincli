@@ -68,21 +68,25 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
       const latestComment = report.comments[0];
       const expert = report.shared_with[0];
       return (
-        <View key={report.report_id} style={[styles.commentCard, index > 0 && styles.reportSpacing]}>
-          <View style={styles.commentHeader}>
-            <View style={styles.expertInfoRow}>
-              <View style={styles.iconContainer}>
-                <MessageSquareText size={20} color="#6B7280" />
+        <View key={report.report_id} style={index > 0 && styles.reportSpacing}>
+          <View style={styles.separator} />
+          <Text style={styles.responseLabel}>SkinCheck Response</Text>
+          <View style={styles.commentCard}>
+            <View style={styles.commentHeader}>
+              <View style={styles.expertInfoRow}>
+                <View style={styles.iconContainer}>
+                  <MessageSquareText size={20} color="#6B7280" />
+                </View>
+                <View style={styles.expertNameColumn}>
+                  <Text style={styles.expertName}>From: {expert?.expert_name}</Text>
+                </View>
               </View>
-              <View style={styles.expertNameColumn}>
-                <Text style={styles.expertName}>{expert?.expert_name}</Text>
-              </View>
+              <Text style={styles.timeAgo}>{formatDistance(latestComment.created_at)}</Text>
             </View>
-            <Text style={styles.timeAgo}>{formatDistance(latestComment.created_at)}</Text>
+            <Text style={styles.commentText} numberOfLines={3}>
+              {latestComment.comment_text}
+            </Text>
           </View>
-          <Text style={styles.commentText} numberOfLines={3}>
-            {latestComment.comment_text}
-          </Text>
         </View>
       );
     }
@@ -107,7 +111,7 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
     return (
       <TouchableOpacity style={styles.container} activeOpacity={0.9} onPress={onPress}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>SkinCheck</Text>
+          <Text style={styles.title}>Request a SkinCheck</Text>
           <ChevronRight size={24} color="#D1D5DB" />
         </View>
         <Text style={styles.subtitle}>Send this scan, your scores, and your routine to your skin health professional.</Text>
@@ -119,7 +123,7 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
     <TouchableOpacity style={styles.container} activeOpacity={0.9} onPress={onPress}>
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>SkinCheck</Text>
+          <Text style={styles.title}>Request a SkinCheck</Text>
           <ChevronRight size={24} color="#D1D5DB" />
         </View>
         <Text style={styles.subtitle}>Send this scan, your scores, and your routine to your skin health professional.</Text>
@@ -233,6 +237,19 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     fontFamily: fontFamily.regular,
     lineHeight: 20,
+  },
+  responseLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#4B5563',
+    fontFamily: fontFamily.bold,
+    marginBottom: 8,
+    marginTop: 4,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#F3F4F6',
+    marginBottom: 12,
   },
 });
 

@@ -26,6 +26,7 @@ interface RouteParams {
   photoData?: string;
   maskResults?: any;
   maskImages?: any;
+  precomputedChange?: { arrow: string; value: number };
 }
 
 interface PhotoData {
@@ -1049,7 +1050,7 @@ export default function MetricDetailScreen() {
   const { user, profile, topConcerns, setTopConcerns } = useAuthStore();
 
   // Extract parameters from navigation
-  const { metricKey, metricValue, photoData } = params || {};
+  const { metricKey, metricValue, photoData, precomputedChange } = params || {};
   const paramIsTopConcern = (params as any)?.isTopConcern;
 
   // Handle toggling of top concern
@@ -1906,7 +1907,10 @@ export default function MetricDetailScreen() {
               chipDateLabel = getRelativeDayLabel(trendScores[lastIdx]?.created_at || trendScores[lastIdx]?.timestamp);
             }
 
-            if (!isCategorical && Array.isArray(trendScores) && trendScores.length >= 2) {
+            if (precomputedChange) {
+              changeArrow = precomputedChange.arrow;
+              changeAbs = precomputedChange.value;
+            } else if (!isCategorical && Array.isArray(trendScores) && trendScores.length >= 2) {
               const lastIdx = trendScores.length - 1;
               const s0 = Number(trendScores[lastIdx]?.skin_condition_score ?? trendScores[lastIdx]?.score ?? latestScore);
               const s1 = Number(trendScores[lastIdx - 1]?.skin_condition_score ?? trendScores[lastIdx - 1]?.score ?? latestScore);
@@ -2031,7 +2035,10 @@ export default function MetricDetailScreen() {
               const lastIdx = trendScores.length - 1;
               chipDateLabel = getRelativeDayLabel(trendScores[lastIdx]?.created_at || trendScores[lastIdx]?.timestamp);
             }
-            if (Array.isArray(trendScores) && trendScores.length >= 2) {
+            if (precomputedChange) {
+              changeArrow = precomputedChange.arrow;
+              changeAbs = precomputedChange.value;
+            } else if (Array.isArray(trendScores) && trendScores.length >= 2) {
               const lastIdx = trendScores.length - 1;
               const s0 = Number(trendScores[lastIdx]?.skin_condition_score ?? trendScores[lastIdx]?.score ?? latestScore);
               const s1 = Number(trendScores[lastIdx - 1]?.skin_condition_score ?? trendScores[lastIdx - 1]?.score ?? latestScore);

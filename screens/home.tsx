@@ -747,6 +747,10 @@ export default function HomeScreen(): React.JSX.Element {
                                                         metricKey: concern.metricKey,
                                                         metricValue: concern.value,
                                                         photoData: currentPhoto ? JSON.stringify(currentPhoto) : undefined,
+                                                        precomputedChange: concern.change !== undefined && concern.changeDirection && concern.changeDirection !== 'none' ? {
+                                                            arrow: concern.changeDirection === 'up' ? '↑' : '↓',
+                                                            value: Math.abs(concern.change || 0)
+                                                        } : (concern.change !== undefined ? { arrow: '→', value: 0 } : undefined)
                                                     });
                                                 }}
                                             >

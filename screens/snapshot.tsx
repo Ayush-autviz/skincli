@@ -392,11 +392,17 @@ const SnapshotScreen = (): React.JSX.Element => {
                   const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
                   return dateB.getTime() - dateA.getTime();
                 });
-                // The most recent photo that isn't this one
-                const prevPhoto = sortedPhotos.find((p: any) => {
+                // Find the index of the current photo
+                const currentIndex = sortedPhotos.findIndex((p: any) => {
                   const pImgId = p.hautUploadData?.imageId || p.id;
-                  return pImgId !== imgId && pImgId !== photoId;
+                  return pImgId === imgId || pImgId === photoId;
                 });
+                
+                // The most recent photo captured BEFORE this one (since sorted desc, it's currentIndex + 1)
+                const prevPhoto = currentIndex >= 0 && currentIndex < sortedPhotos.length - 1 
+                  ? sortedPhotos[currentIndex + 1] 
+                  : null;
+                  
                 if (prevPhoto) {
                   const prevImgId = prevPhoto.hautUploadData?.imageId || prevPhoto.id;
                   const prevResults = await getHautAnalysisResults(prevImgId);
@@ -795,7 +801,8 @@ const SnapshotScreen = (): React.JSX.Element => {
                       metricValue: item.value,
                       maskResults: photoData?.maskResults,
                       maskImages: photoData?.maskImages,
-                      photoData: JSON.stringify(photoData || metrics)
+                      photoData: JSON.stringify(photoData || metrics),
+                      precomputedChange: scoreChanges[item.key]
                     });
                   }}
                   activeOpacity={0.7}
@@ -832,7 +839,8 @@ const SnapshotScreen = (): React.JSX.Element => {
                       metricValue: item.value,
                       maskResults: photoData?.maskResults,
                       maskImages: photoData?.maskImages,
-                      photoData: JSON.stringify(photoData || metrics)
+                      photoData: JSON.stringify(photoData || metrics),
+                      precomputedChange: scoreChanges[item.key]
                     });
                   }}
                   activeOpacity={0.7}

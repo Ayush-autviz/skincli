@@ -11,6 +11,7 @@ import {
     Image,
     Dimensions,
     Alert,
+    DeviceEventEmitter,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Star, Plus, ArrowUp, ArrowDown } from 'lucide-react-native';
@@ -437,7 +438,17 @@ export default function HomeScreen(): React.JSX.Element {
         }
     };
 
-
+    // Listen for top concern changes to refetch metrics
+    useEffect(() => {
+        const subscription = DeviceEventEmitter.addListener('refreshTopConcerns', () => {
+            if (currentPhoto) {
+                // Clear the ref to force re-fetch
+                loadedConcernsPhotoIdRef.current = null;
+                loadConcernsForPhoto(currentPhoto);
+            }
+        });
+        return () => subscription.remove();
+    }, [currentPhoto, loadConcernsForPhoto]);
 
     // Navigate between dates
     const goToPrevDate = () => {

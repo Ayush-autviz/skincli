@@ -29,6 +29,8 @@ const { width } = Dimensions.get('window');
 interface ThreadChatParams {
   chatType?: string;
   initialMessage?: string;
+  draftMessage?: string;
+  hideInitial?: boolean;
   imageId?: string;
   fromJournal?: boolean;
   journalSummary?: string;
@@ -106,6 +108,8 @@ const ThreadChatScreen = (): React.JSX.Element => {
   // Extract parameters
   const chatType = params.chatType || 'snapshot_feedback';
   const initialMessage = params.initialMessage;
+  const draftMessage = params.draftMessage;
+  const hideInitial = params.hideInitial;
   const imageId = params.imageId;
   const fromJournal = params.fromJournal;
   const journalSummary = params.journalSummary;
@@ -126,10 +130,22 @@ const ThreadChatScreen = (): React.JSX.Element => {
   const [showProductSearch, setShowProductSearch] = useState<boolean>(false);
   const [showManualInput, setShowManualInput] = useState<boolean>(false);
   const [manualProductName, setManualProductName] = useState<string>('');
-
+  const [hiddenMessageIds, setHiddenMessageIds] = useState<Set<string>>(new Set());
+ 
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
+
+  // Prefill input if draftMessage is present
+  useEffect(() => {
+    if (draftMessage) {
+      setInputText(draftMessage);
+      // Auto-focus input after a short delay
+      setTimeout(() => {
+        inputRef.current?.focus();
+      }, 500);
+    }
+  }, [draftMessage]);
 
   // Initialize chat
   useEffect(() => {
@@ -205,6 +221,13 @@ const ThreadChatScreen = (): React.JSX.Element => {
         }));
 
         setMessages(formattedMessages);
+        
+        // If we should hide initial and have messages, mark the first two (usually analysis) as hidden
+        if (hideInitial && formattedMessages.length >= 2) {
+          const firstTwoIds = new Set([formattedMessages[0].id, formattedMessages[1].id]);
+          setHiddenMessageIds(firstTwoIds);
+        }
+        
         console.log('✅ Loaded existing chat history:', formattedMessages.length, 'messages');
       } else {
         // If no existing chat history, create a new thread
@@ -218,10 +241,11 @@ const ThreadChatScreen = (): React.JSX.Element => {
     }
   };
 
-  const sendInitialMessage = async (): Promise<void> => {
+  const sendInitialMessage = async (content?: string): Promise<void> => {
     try {
+      const messageContent = content || initialMessage || 'Analyze my score';
       const messageData: any = {
-        content: initialMessage || 'Analyze my score',
+        content: messageContent,
         role: 'user',
         thread_type: chatType
       };
@@ -236,7 +260,6 @@ const ThreadChatScreen = (): React.JSX.Element => {
       if ((response as any).success) {
         setThreadId((response as any).data.thread_id);
 
-        // Only use the response messages array to display chat messages
         const responseMessages = (response as any).data.messages || [];
         const formattedMessages: Message[] = responseMessages.map((msg: any, index: number) => ({
           id: `${msg.role}-${Date.now()}-${index}`,
@@ -245,28 +268,42 @@ const ThreadChatScreen = (): React.JSX.Element => {
           timestamp: msg.timestamp || msg.created_at || new Date().toISOString()
         }));
 
-        setMessages(formattedMessages);
-
-        // Check for pending item
-        if ((response as any).data.status.addItem) {
+        if (formattedMessages.length > 0) {
+          setMessages(formattedMessages);
+          
+          // If this was an automated initial message, mark these IDs as hidden
+          if (!content && hideInitial) {
+            const ids = new Set(formattedMessages.map(m => m.id));
+            setHiddenMessageIds(ids);
+          }
+        } else if (content) {
           setPendingItem((response as any).data.status.addItem);
         }
 
-        // Check for requestProductInput
         if ((response as any).data.requestProductInput) {
           setRequestProductInput((response as any).data.requestProductInput);
         } else {
           setRequestProductInput(null);
         }
+      } else {
+        throw new Error((response as any).message || 'Failed to start chat');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error sending initial message:', error);
-      setError('Failed to send initial message');
+      setError('Wait, failed to send initial message. Please try again.');
     }
   };
 
   const sendMessage = async (): Promise<void> => {
-    if (!inputText.trim() || !threadId) return;
+    if (!inputText.trim()) return;
+    
+    // Create thread if it doesn't exist
+    if (!threadId) {
+      const content = inputText.trim();
+      setInputText('');
+      await sendInitialMessage(content);
+      return;
+    }
 
     const messageToSend = inputText.trim();
 
@@ -640,9 +677,12 @@ const ThreadChatScreen = (): React.JSX.Element => {
     scrollToBottom();
   }, [scrollToBottom]);
 
-  const renderMessage = ({ item }: { item: Message }): React.JSX.Element => (
-    <MessageBubble message={item} />
-  );
+  const renderMessage = ({ item }: { item: Message }): React.JSX.Element | null => {
+    if (hiddenMessageIds.has(item.id)) {
+      return null;
+    }
+    return <MessageBubble message={item} />;
+  };
 
   const ChatSkeleton = (): React.JSX.Element => (
     <View style={styles.skeletonContainer}>

@@ -137,7 +137,8 @@ import {
   Image,
   ImageStyle,
   ActivityIndicator,
-  Dimensions
+  Dimensions,
+  DeviceEventEmitter
 } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import {
@@ -1073,6 +1074,7 @@ export default function MetricDetailScreen() {
       const response: any = await toggleTopConcern(concernName);
       if (response.success && response.data?.top_concerns) {
         setTopConcerns(response.data.top_concerns);
+        DeviceEventEmitter.emit('refreshTopConcerns');
       }
     } catch (error) {
       console.error('Failed to toggle top concern:', error);
@@ -2367,8 +2369,11 @@ export default function MetricDetailScreen() {
                               onPress={() => {
                                 const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
                                 (navigation as any).navigate('ThreadChat', {
-                                  chatType: 'snapshot_feedback',
-                                  initialMessage: message
+                                  chatType: 'ingredients_related_chat',
+                                  initialMessage: message,
+                                  draftMessage: message,
+                                  hideInitial: true,
+                                  imageId: parsedPhotoData?.id || parsedPhotoData?.imageId
                                 });
                               }}
                             >
@@ -2447,8 +2452,9 @@ export default function MetricDetailScreen() {
                       style={styles.aiInsightCard}
                       onPress={() => {
                         (navigation as any).navigate('ThreadChat', {
-                          chatType: 'ingredients_related_chat',
-                          initialMessage: concernMessageData.message
+                          chatType: 'snapshot_feedback',
+                          draftMessage: concernMessageData.message,
+                          imageId: parsedPhotoData?.id || parsedPhotoData?.imageId
                         });
                       }}
                     >

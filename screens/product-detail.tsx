@@ -19,6 +19,7 @@ import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, Trendi
 import { colors, fontSize, spacing, typography, borderRadius, shadows, fontFamily } from '../styles';
 import { searchProductByUPC, deleteRoutineItem, toggleTracking, getRoutineItems } from '../utils/newApiService';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
+import { treatmentCategories } from '../data/treatmentCategories';
 import HomeHeader from '../components/ui/HomeHeader';
 
 interface ProductDetailParams {
@@ -103,6 +104,14 @@ const ProductDetailScreen = (): React.JSX.Element => {
     is_tracking_paused: params.routineData?.is_tracking_paused
   });
   const isTreatment = routineData.type?.toLowerCase() !== 'product';
+  
+  // Find treatment data if it's a treatment
+  const currentSubcategory = isTreatment 
+    ? treatmentCategories.flatMap(c => c.subcategories).find(s => 
+        s.name.toLowerCase() === routineData.name?.toLowerCase() ||
+        s.name.toLowerCase() === routineData.extra?.subcategory?.toLowerCase()
+      )
+    : null;
 
   console.log('🔍 Product data:', productData);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
@@ -933,6 +942,38 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 <Text style={styles.noDataText}>No concerns tracked yet</Text>
               )}
             </View>
+          )}
+
+          {/* 2.5 Treatment Information (About and Concerns) - Only for treatments */}
+          {isTreatment && currentSubcategory && (
+            <>
+              {/* About section */}
+              {currentSubcategory.name !== 'Facials' && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>About {currentSubcategory.name}</Text>
+                  <View style={styles.infoCard}>
+                    <Text style={styles.infoCardDescription}>
+                      {currentSubcategory.description}
+                    </Text>
+                  </View>
+                </View>
+              )}
+
+              {/* Treatment generally addresses these concerns section */}
+              {currentSubcategory.name !== 'Facials' && currentSubcategory.concerns && currentSubcategory.concerns.length > 0 && (
+                <View style={styles.section}>
+                  <Text style={styles.sectionTitle}>This treatment generally addresses these concerns</Text>
+                  <View style={styles.infoListContainer}>
+                    {currentSubcategory.concerns.map(concern => (
+                      <View key={concern} style={styles.infoListItem}>
+                        <View style={styles.infoListDot} />
+                        <Text style={styles.infoListText}>{concern}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </>
           )}
 
           {/* 3. Product is good for */}
@@ -1969,6 +2010,44 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.05,
     shadowRadius: 8,
     elevation: 2,
+  },
+  infoCard: {
+    marginTop: spacing.sm,
+    backgroundColor: '#FAFAF9',
+    borderRadius: 12,
+    padding: 14,
+    borderWidth: 1,
+    borderColor: '#E7E5E4',
+  },
+  infoCardDescription: {
+    fontSize: 14,
+    color: '#4B5565',
+    lineHeight: 20,
+  },
+  infoListContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: spacing.sm,
+  },
+  infoListItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '50%',
+    marginBottom: 10,
+    paddingRight: 8,
+  },
+  infoListDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#0498B3',
+    marginRight: 10,
+  },
+  infoListText: {
+    fontSize: 14,
+    color: '#57534E',
+    flex: 1,
+    lineHeight: 18,
   },
 });
 

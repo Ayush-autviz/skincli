@@ -721,8 +721,10 @@ export default function HomeScreen(): React.JSX.Element {
                                 {topConcerns.map((concern) => {
                                     const isExpanded = expandedConcerns[concern.name] ?? false;
                                     const MAX_VISIBLE = 2;
-                                    const hasMore = concern.ingredients.length > MAX_VISIBLE;
-                                    const visibleIngredients = isExpanded ? concern.ingredients : concern.ingredients.slice(0, MAX_VISIBLE);
+                                    const hasAtLeastOne = concern.foundIngredients && concern.foundIngredients.length > 0;
+                                    const showToggle = hasAtLeastOne && concern.ingredients.length > MAX_VISIBLE;
+                                    const visibleIngredients = (showToggle && !isExpanded) ? concern.ingredients.slice(0, MAX_VISIBLE) : concern.ingredients;
+                                    const hasMore = showToggle;
 
                                     return (
                                         <View key={concern.name} style={styles.concernCard}>

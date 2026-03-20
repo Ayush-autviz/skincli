@@ -3744,8 +3744,8 @@ const styles = StyleSheet.create({
   },
   // AI Insight Card (Snapshot Style)
   aiInsightCard: {
-    flexDirection: 'column',
-    alignItems: 'center',
+    flexDirection: 'row',
+    alignItems: 'flex-start',
     backgroundColor: '#EBE9FE',
     borderRadius: 18,
     padding: 20,
@@ -3760,30 +3760,33 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
+    // justifyContent: 'center',
+    // alignItems: 'center',
+    // marginBottom: 8,
+    marginRight: 12
   },
   aiAvatarIcon: {
     width: 40,
     height: 40,
   },
   aiInsightContent: {
-    width: '100%',
-    alignItems: 'center',
+    // width: '100%',
+    // alignItems: 'center',
+    flex: 1,
+    flexShrink: 1
   },
   aiInsightTitle: {
     fontSize: 16,
     fontWeight: '700',
     color: '#404968',
     marginBottom: 4,
-    textAlign: 'center',
+    // textAlign: 'center',
   },
   aiInsightSubtext: {
     fontSize: 14,
     color: '#5D6B98',
     lineHeight: 20,
-    textAlign: 'center',
+    // textAlign: 'center',
   },
 
   // Ingredient Card (Routine Style)

@@ -523,9 +523,13 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
           if (!concern.advice) return null;
 
           const itemsToShow = concern.advice.ingredients || concern.whatYouCanDo || [];
+          const concernData = concernMessages[concern.keyForLookup];
+          const hasOneInRoutine = !!(concernData?.found_ingredients && concernData.found_ingredients.length > 0);
+          
           const isExpanded = expandedConcerns.has(concern.keyForLookup);
-          const visibleItems = isExpanded ? itemsToShow : itemsToShow.slice(0, 3);
-          const hasMore = itemsToShow.length > 3;
+          const showToggle = hasOneInRoutine && itemsToShow.length > 3;
+          const visibleItems = (showToggle && !isExpanded) ? itemsToShow.slice(0, 3) : itemsToShow;
+          const hasMore = showToggle; // Use showToggle as the condition for rendering the button
           const score = latestScores[concern.keyForLookup] || 0;
           const displayName = CONCERN_KEY_TO_DISPLAY_NAME[concern.keyForLookup] || concern.displayName || concern.keyForLookup;
 

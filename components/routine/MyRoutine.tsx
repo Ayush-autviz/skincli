@@ -973,7 +973,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
             Using <Text style={styles.usageBoldText}>{item.frequency} / {displayUsage}</Text> since <Text style={styles.usageBoldText}>{item.dateStarted ? new Date(item.dateStarted).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' }) : 'Jan 1, 2024'}</Text>
           </Text>
 
-          {statusText && (
+          {statusText && statusText !== 'Start tracking' && (
             <View style={styles.effectivenessContainer}>
               <Text style={styles.effectivenessText}>
                 {!(statusText === 'Ready to Review' || statusText === 'Effective' || statusText === 'Not Effective') && 'EFFECTIVENESS '}
@@ -1363,7 +1363,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           </TouchableOpacity>
         )}
 
-        <TouchableOpacity
+        {/* <TouchableOpacity
           style={styles.letsGetStartedCard}
           activeOpacity={0.85}
           onPress={handleNavigateToChat}
@@ -1381,7 +1381,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
               Chat with me here to add your current skincare routine — or fill it in manually by tapping the add button.
             </Text>
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
         <TouchableOpacity
           style={styles.mainAddButton}

@@ -27,31 +27,27 @@ interface AddProductFormParams {
     routineData?: any;
 }
 
-const measurableConcerns = [
-    'Pigmentation',
-    'Dewiness',
-    'Breakouts',
-    'Redness',
-    'Lines',
-    'Visible Pores',
-    'Eye Area',
-    'Evenness',
-    // 'Dry Skin'
-];
-
 const allConcerns = [
     'Anti-aging (eyes)',
+    'Breakouts',
+    'Dewiness',
     'Dry Skin',
     'Enlarged Pores',
+    'Evenness',
+    'Eye Area',
     'Jowls',
+    'Lines',
     'Looking Tired',
+    'Other',
+    'Pigmentation',
+    'Redness',
     'Sagging',
     'Sensitive Skin',
     'Sun Damage',
     'Under Eye Circles',
+    'Visible Pores',
     'Wrinkles',
-    'I don\'t know',
-    'Other'
+    'I don\'t know'
 ];
 
 const frequencyOptions = [
@@ -223,28 +219,8 @@ const AddProductFormScreen = (): React.JSX.Element => {
             </View>
 
             <ScrollView style={styles.content} contentContainerStyle={{ paddingTop: 40 }} showsVerticalScrollIndicator={false}>
-                <Text style={styles.sectionTitle}>Use this product for</Text>
+                <Text style={styles.sectionTitle}>Tell us why you are using this product</Text>
 
-                <Text style={styles.subTitle}>Measurable concerns</Text>
-                <View style={styles.chipsContainer}>
-                    {measurableConcerns.map((concern) => (
-                        <TouchableOpacity
-                            key={concern}
-                            style={[
-                                styles.chip,
-                                selectedConcerns.includes(concern) && styles.selectedChip
-                            ]}
-                            onPress={() => handleConcernToggle(concern)}
-                        >
-                            <Text style={[
-                                styles.chipText,
-                                selectedConcerns.includes(concern) && styles.selectedChipText
-                            ]}>{concern}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </View>
-
-                <Text style={styles.subTitle}>All Concerns</Text>
                 <View style={styles.chipsContainer}>
                     {allConcerns.map((concern) => (
                         <TouchableOpacity

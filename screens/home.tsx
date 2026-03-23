@@ -894,7 +894,14 @@ export default function HomeScreen(): React.JSX.Element {
                         if (topConcerns && topConcerns.length > 0) {
                             (navigation as any).navigate('SkinCheck');
                         } else {
-                            Alert.alert('Scan your Face', 'SkinCheck shares a scan for the current day');
+                            Alert.alert(
+                                'Take a scan to continue',
+                                'SkinCheck sends your scan, scores, and routine to a professional. Take a new scan today to continue.',
+                                [
+                                    { text: 'Cancel', style: 'cancel' },
+                                    { text: 'Take New Scan', onPress: () => (navigation as any).navigate('Camera') }
+                                ]
+                            );
                         }
                     }}
                 />

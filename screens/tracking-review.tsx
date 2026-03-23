@@ -160,7 +160,7 @@ const TrackingReviewScreen = (): React.JSX.Element => {
           </TouchableOpacity>
 
           <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>Effectiveness Dashboard</Text>
+            <Text style={styles.headerTitle} allowFontScaling={false}>Effectiveness Dashboard</Text>
           </View>
 
           <View style={styles.rightContainer} />
@@ -417,7 +417,9 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                               isEffectiveSelected && styles.toggleTextSelected,
                               isEffectiveSelected && styles.toggleTextEffective,
                               !isCompleted && styles.toggleTextDisabled
-                            ]}>
+                            ]}
+                              allowFontScaling={false}
+                            >
                               Effective
                             </Text>
                           </View>
@@ -450,7 +452,9 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                               isNotEffectiveSelected && styles.toggleTextSelected,
                               isNotEffectiveSelected && styles.toggleTextNotEffective,
                               !isCompleted && styles.toggleTextDisabled
-                            ]}>
+                            ]}
+                              allowFontScaling={false}
+                            >
                               Not Effective
                             </Text>
                           </View>

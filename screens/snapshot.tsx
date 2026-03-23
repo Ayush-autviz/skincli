@@ -398,10 +398,17 @@ const SnapshotScreen = (): React.JSX.Element => {
                   return pImgId === imgId || pImgId === photoId;
                 });
                 
-                // The most recent photo captured BEFORE this one (since sorted desc, it's currentIndex + 1)
-                const prevPhoto = currentIndex >= 0 && currentIndex < sortedPhotos.length - 1 
-                  ? sortedPhotos[currentIndex + 1] 
-                  : null;
+                // The most recent photo captured BEFORE this one
+                let prevPhoto = null;
+                if (currentIndex >= 0) {
+                  // If current photo is already in the list, get the next older one
+                  if (currentIndex < sortedPhotos.length - 1) {
+                    prevPhoto = sortedPhotos[currentIndex + 1];
+                  }
+                } else if (sortedPhotos.length > 0) {
+                  // If current photo is brand new (not in list), use the most recent existing one
+                  prevPhoto = sortedPhotos[0];
+                }
                   
                 if (prevPhoto) {
                   const prevImgId = prevPhoto.hautUploadData?.imageId || prevPhoto.id;

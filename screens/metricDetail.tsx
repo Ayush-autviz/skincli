@@ -1641,18 +1641,20 @@ export default function MetricDetailScreen() {
             <Text style={styles.headerTitle}>{getHeaderNameForMetric(metricKey)}</Text>
           </View>
           <View style={styles.rightContainer}>
-            <TouchableOpacity
-              onPress={handleToggleTopConcern}
-              disabled={isTogglingConcern}
-              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-              style={{ padding: 8, opacity: isTogglingConcern ? 0.5 : 1 }}
-            >
-              <Star
-                size={22}
-                color={isTopConcernDisplay ? "#00839B" : "#D6D3D1"}
-                fill={isTopConcernDisplay ? "#00839B" : "transparent"}
-              />
-            </TouchableOpacity>
+            {!['skinType', 'skinTone', 'perceivedAge', 'eyeAge'].includes(metricKey) && (
+              <TouchableOpacity
+                onPress={handleToggleTopConcern}
+                disabled={isTogglingConcern}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                style={{ padding: 8, opacity: isTogglingConcern ? 0.5 : 1 }}
+              >
+                <Star
+                  size={22}
+                  color={isTopConcernDisplay ? "#00839B" : "#D6D3D1"}
+                  fill={isTopConcernDisplay ? "#00839B" : "transparent"}
+                />
+              </TouchableOpacity>
+            )}
           </View>
         </View>
         <View style={styles.shadowLine} />

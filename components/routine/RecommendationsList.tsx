@@ -33,7 +33,7 @@ import { useNavigation } from '@react-navigation/native';
 import { colors, spacing, typography, fontFamily } from '../../styles';
 import useAuthStore from '../../stores/authStore';
 import { getComparison, transformComparisonData, generateConcernMessage } from '../../utils/newApiService';
-import { Camera } from 'lucide-react-native';
+import { Camera, ChevronRight } from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 
 // Import the concerns data
@@ -165,6 +165,7 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
   const [isLoadingComparison, setIsLoadingComparison] = useState<boolean>(true);
   const [lowestScoringConcerns, setLowestScoringConcerns] = useState<string[]>([]);
   const [latestScores, setLatestScores] = useState<Record<string, number>>({});
+  const [latestImageId, setLatestImageId] = useState<string | null>(null);
   const [concernMessages, setConcernMessages] = useState<Record<string, ConcernMessageData>>({});
 
   // Get all concerns from the data
@@ -287,6 +288,17 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
 
           const lowestConcerns = getLowestScoringConcerns(latestScoresData);
           setLowestScoringConcerns(lowestConcerns);
+
+          // Find the latest photo ID/imageId
+          if (transformedPhotos.length > 0) {
+            const sortedPhotos = [...transformedPhotos].sort((a, b) => {
+              const dateA = a.created_at ? new Date(a.created_at) : (a.timestamp ? new Date(a.timestamp) : new Date(0));
+              const dateB = b.created_at ? new Date(b.created_at) : (b.timestamp ? new Date(b.timestamp) : new Date(0));
+              return dateB.getTime() - dateA.getTime();
+            });
+            const latest = sortedPhotos[0];
+            setLatestImageId(latest.id || latest.hautUploadData?.imageId);
+          }
 
           resolvedConcerns = resolveFilteredConcerns(lowestConcerns, profile?.concerns);
         } else {
@@ -451,8 +463,11 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
         onPress={() => {
           const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
           (navigation as any).navigate('ThreadChat', {
-            chatType: 'snapshot_feedback',
-            initialMessage: message
+            chatType: 'ingredients_related_chat',
+            initialMessage: message,
+            draftMessage: message,
+            hideInitial: true,
+            imageId: latestImageId
           });
         }}
       >
@@ -463,6 +478,7 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
             <Text style={styles.routineText}>In your Routine</Text>
           </View>
         )}
+        <ChevronRight size={20} color="#D6D3D1" />
       </TouchableOpacity>
     );
   };

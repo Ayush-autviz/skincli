@@ -837,9 +837,19 @@ export default function HomeScreen(): React.JSX.Element {
                                                         const isLast = idx === visibleIngredients.length - 1 && !hasMore;
 
                                                         return (
-                                                            <View
+                                                            <TouchableOpacity
                                                                 key={idx}
                                                                 style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
+                                                                onPress={() => {
+                                                                    const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
+                                                                    (navigation as any).navigate('ThreadChat', {
+                                                                        chatType: 'ingredients_related_chat',
+                                                                        initialMessage: message,
+                                                                        draftMessage: message,
+                                                                        hideInitial: true,
+                                                                        imageId: currentPhotoId
+                                                                    });
+                                                                }}
                                                             >
                                                                 <Text style={styles.ingredientName}>{ingredientName}</Text>
                                                                 {isFound && (
@@ -848,7 +858,8 @@ export default function HomeScreen(): React.JSX.Element {
                                                                         <Text style={styles.routineText}>In your Routine</Text>
                                                                     </View>
                                                                 )}
-                                                            </View>
+                                                                <ChevronRight size={18} color="#D6D3D1" />
+                                                            </TouchableOpacity>
                                                         );
                                                     })}
                                                     {hasMore && (

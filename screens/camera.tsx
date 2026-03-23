@@ -371,7 +371,7 @@ const CameraScreen = (): React.JSX.Element => {
 
       // Navigate to snapshot screen immediately with photo data
       // The snapshot screen will handle Haut.ai API processing and polling for results
-      (navigation as any).navigate('Snapshot', {
+      (navigation as any).replace('Snapshot', {
         photoId,
         localUri: photo.uri,
         userId: userId,

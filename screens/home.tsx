@@ -27,6 +27,7 @@ import { getHautAnalysisResults, transformHautResults, generateConcernMessage, g
 import SkinCheckCard from '../components/home/SkinCheckCard';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
 import concernsData from '../data/concerns.json';
+import ingredientsData from '../data/Ingredients.json';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
@@ -83,6 +84,28 @@ const getConcernNameForAPI = (metricKey: string) => {
     return processedKey.replace(/([A-Z])/g, ' $1')
         .replace(/^./, str => str.toUpperCase())
         .trim();
+};
+
+// Helper function to get ingredients from Ingredients.json based on metricKey
+const getIngredientsForMetric = (metricKey: string): string[] => {
+    if (!metricKey) return [];
+
+    const mapping: Record<string, string> = {
+        'acneScore': 'Acne',
+        'pigmentationScore': 'Pigmentation',
+        'uniformnessScore': 'Uniformness',
+        'rednessScore': 'Redness',
+        'linesScore': 'Lines',
+        'poresScore': 'Pores',
+        'hydrationScore': 'Hydration',
+        'eyeAreaCondition': 'Eye Area Condition'
+    };
+
+    const concernName = mapping[metricKey] || mapping[metricKey.replace('Score', '')];
+    if (!concernName) return [];
+
+    const concern = (ingredientsData.SKIN_CONCERNS as any[]).find(c => c.name === concernName);
+    return concern ? concern.Ingredients : [];
 };
 
 // Global cache to track which images have already been loaded
@@ -374,14 +397,8 @@ export default function HomeScreen(): React.JSX.Element {
                                 previousMetrics?.[metricKey]
                             );
 
-                            // Look up ingredients from concerns.json
-                            let ingredients: string[] = [];
-                            if ((concernsData as any).skinConcerns) {
-                                const concernData = (concernsData as any).skinConcerns[metricKey];
-                                if (concernData?.advice?.ingredients) {
-                                    ingredients = concernData.advice.ingredients;
-                                }
-                            }
+                            // Look up ingredients from Ingredients.json instead of concerns.json
+                            let ingredients: string[] = getIngredientsForMetric(metricKey);
 
                             concerns.push({
                                 name: concernName,
@@ -726,8 +743,9 @@ export default function HomeScreen(): React.JSX.Element {
                             <ConcernsSkeleton />
                         ) : topConcerns.length > 0 ? (
                             <>
+                                <Text style={styles.ingredientsTitle}>Helpful Ingredients</Text>
                                 <Text style={styles.concernSubtitle}>
-                                    Dermatologists recommend using at least one of the following ingredients for your top concerns
+                                    Dermatologists recommend at least one of the following ingredients for your concerns
                                 </Text>
                                 {topConcerns.map((concern) => {
                                     const isExpanded = expandedConcerns[concern.name] ?? false;
@@ -1045,10 +1063,17 @@ const styles = StyleSheet.create({
 
     // Concerns
     concernSubtitle: {
-        fontSize: 13,
-        color: '#A8A29E',
+        fontSize: 14,
+        color: '#79716B',
+        lineHeight: 20,
         marginBottom: 16,
-        lineHeight: 18,
+    },
+    ingredientsTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        fontFamily: fontFamily.bold,
+        color: '#44403C',
+        marginBottom: 8,
     },
     concernCard: {
         backgroundColor: '#F5F5F5',

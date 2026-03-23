@@ -39,6 +39,30 @@ import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 // Import the concerns data
 
 import concernsData from '../../data/concerns.json';
+import ingredientsData from '../../data/Ingredients.json';
+
+// Helper function to get ingredients from Ingredients.json based on metricKey
+const getIngredientsForMetric = (metricKey: string): string[] => {
+  if (!metricKey) return [];
+
+  const mapping: Record<string, string> = {
+    'acneScore': 'Acne',
+    'poresScore': 'Visible Pores',
+    'rednessScore': 'Redness',
+    'pigmentationScore': 'Pigmentation',
+    'linesScore': 'Lines',
+    'hydrationScore': 'Dewiness',
+    'uniformnessScore': 'Evenness',
+    'eyeAreaCondition': 'Eye Area Condition',
+    'eyeBagsScore': 'Eye Area Condition'
+  };
+
+  const concernName = mapping[metricKey] || mapping[metricKey.replace('Score', '')];
+  if (!concernName) return [];
+
+  const concern = (ingredientsData.SKIN_CONCERNS as any[]).find(c => c.name === concernName);
+  return concern ? concern.Ingredients : [];
+};
 
 // Mapping from profile concern names to concern keys (same as MyConcerns)
 const PROFILE_TO_CONCERN_MAPPING: Record<string, string> = {
@@ -132,9 +156,6 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
   const navigation = useNavigation();
   const { user, profile } = useAuthStore();
   // const { createThread } = useThreadContext();
-
-  // State to track which concerns are expanded
-  const [expandedConcerns, setExpandedConcerns] = useState<Set<string>>(new Set());
 
   // State to track automatically selected concerns based on user profile
   const [selectedConcerns, setSelectedConcerns] = useState<Set<string>>(new Set());
@@ -355,16 +376,6 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
     return resolveFilteredConcerns(lowestScoringConcerns, profile?.concerns);
   })();
 
-  const toggleExpanded = (concernKey: string): void => {
-    const newExpanded = new Set(expandedConcerns);
-    if (newExpanded.has(concernKey)) {
-      newExpanded.delete(concernKey);
-    } else {
-      newExpanded.add(concernKey);
-    }
-    setExpandedConcerns(newExpanded);
-  };
-
   const handleRecommendationPress = async (recommendation: Recommendation): Promise<void> => {
     if (onRecommendationPress) {
       onRecommendationPress(recommendation);
@@ -518,18 +529,25 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
   return (
     <ScrollView style={styles.container} showsVerticalScrollIndicator={false}>
       <View style={styles.contentPadding}>
+        {/* Header Text */}
+        <Text style={styles.headerTitle}>Helpful Ingredients</Text>
+        <Text style={styles.headerSubtitle}>
+          Dermatologists recommend at least one of the following ingredients for your concerns
+        </Text>
+
         {/* Concern Sections */}
         {filteredConcerns.map((concern, concernIndex) => {
           if (!concern.advice) return null;
 
-          const itemsToShow = concern.advice.ingredients || concern.whatYouCanDo || [];
+          const ingredients = getIngredientsForMetric(concern.keyForLookup);
+          const itemsToShow = ingredients.length > 0 ? ingredients : (concern.advice.ingredients || concern.whatYouCanDo || []);
           const concernData = concernMessages[concern.keyForLookup];
-          const hasOneInRoutine = !!(concernData?.found_ingredients && concernData.found_ingredients.length > 0);
+          // const hasOneInRoutine = !!(concernData?.found_ingredients && concernData.found_ingredients.length > 0);
           
-          const isExpanded = expandedConcerns.has(concern.keyForLookup);
-          const showToggle = hasOneInRoutine && itemsToShow.length > 3;
-          const visibleItems = (showToggle && !isExpanded) ? itemsToShow.slice(0, 3) : itemsToShow;
-          const hasMore = showToggle; // Use showToggle as the condition for rendering the button
+          // const isExpanded = expandedConcerns.has(concern.keyForLookup);
+          // const showToggle = hasOneInRoutine && itemsToShow.length > 3;
+          const visibleItems = itemsToShow;
+          const hasMore = false; // Always show all
           const score = latestScores[concern.keyForLookup] || 0;
           const displayName = CONCERN_KEY_TO_DISPLAY_NAME[concern.keyForLookup] || concern.displayName || concern.keyForLookup;
 
@@ -556,23 +574,11 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
                       item,
                       itemIndex,
                       concern.keyForLookup,
-                      itemIndex === visibleItems.length - 1 && !hasMore
+                      itemIndex === visibleItems.length - 1
                     );
                   }
                   return null;
                 })}
-
-                {/* Show More */}
-                {hasMore && (
-                  <TouchableOpacity
-                    style={styles.showMoreButton}
-                    onPress={() => toggleExpanded(concern.keyForLookup)}
-                  >
-                    <Text style={styles.showMoreText}>
-                      {isExpanded ? 'Show less' : `Show ${itemsToShow.length - 3} more`}
-                    </Text>
-                  </TouchableOpacity>
-                )}
               </View>
             </View>
           );
@@ -594,6 +600,23 @@ const styles = StyleSheet.create({
   },
   contentPadding: {
     padding: 16,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: fontFamily.bold,
+    color: '#44403C',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  headerSubtitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
+    color: '#A8A29E',
+    marginBottom: 20,
+    lineHeight: 22,
+    textAlign: 'center',
   },
 
   // Concern Card

@@ -1967,18 +1967,7 @@ export default function MetricDetailScreen() {
                       {getSmartContextText(metricValue, metricKey, currentConcernDetails)}
                     </Text>
                     <View style={styles.scoreRowContainer}>
-                      <View style={styles.combinedScoreChip}>
-                        <View style={styles.changeInfo}>
-                          {isLoadingTrends || !chipDateLabel ? (
-                            <SkeletonPlaceholder borderRadius={8}>
-                              <SkeletonPlaceholder.Item width={80} height={14} />
-                            </SkeletonPlaceholder>
-                          ) : (
-                            <Text style={styles.changeText}>
-                              {showChange ? `${changeArrow}${changeAbs} ${chipDateLabel}` : chipDateLabel}
-                            </Text>
-                          )}
-                        </View>
+                      <View style={[styles.combinedScoreChip, { justifyContent: 'center' }]}>
                         <View style={styles.scoreInfo}>
                           <View style={[styles.analysisDot, { backgroundColor: tagColor }]} />
                           <Text style={styles.scoreText}>
@@ -2303,7 +2292,7 @@ export default function MetricDetailScreen() {
                         {/* <SoapDispenserDroplet size={20} color="#414651" /> */}
                         <Text style={styles.cardHeaderTitle}>Helpful Ingredients</Text>
                       </View>
-                      <Text style={styles.cardHeaderSubtitle}>Dermatologist approved ingredients for your concerns</Text>
+                      <Text style={styles.cardHeaderSubtitle}>Dermatologists recommend at least one of the following ingredients for your concerns</Text>
                     </View>
 
                     {concernMessageLoading ? (
@@ -3170,7 +3159,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingHorizontal: 6,
     paddingVertical: 1,
-    marginLeft: 4,
+    // marginLeft: 4,
   },
   scoreText: {
     fontSize: 16,

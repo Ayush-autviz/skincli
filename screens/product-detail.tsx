@@ -467,8 +467,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
     }
 
     Alert.alert(
-      'Remove Product',
-      'Are you sure you want to remove this product from your routine?',
+      isTreatment ? 'Remove Treatment' : 'Remove Product',
+      isTreatment
+        ? 'Are you sure you want to remove this Treatment?'
+        : 'Are you sure you want to remove this product from your routine?',
       [
         {
           text: 'Cancel',
@@ -482,8 +484,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
               setIsDeleting(true);
               await deleteRoutineItem(params.itemId!);
               Alert.alert(
-                'Product Removed',
-                'The product has been removed from your routine.',
+                isTreatment ? 'Treatment Removed' : 'Product Removed',
+                isTreatment
+                  ? 'The Treatment has been removed from your routine.'
+                  : 'The product has been removed from your routine.',
                 [
                   {
                     text: 'OK',
@@ -492,10 +496,12 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 ]
               );
             } catch (error) {
-              console.error('🔴 Error removing product:', error);
+              console.error(isTreatment ? '🔴 Error removing treatment:' : '🔴 Error removing product:', error);
               Alert.alert(
                 'Error',
-                'Failed to remove the product. Please try again.',
+                isTreatment
+                  ? 'Failed to remove the Treatment. Please try again.'
+                  : 'Failed to remove the product. Please try again.',
                 [{ text: 'OK' }]
               );
             } finally {
@@ -868,7 +874,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
                   {routineData.concern_tracking.map((tracking: any, index: number) => {
                     const weeksCompleted = tracking.weeks_completed || 0;
                     const totalWeeks = tracking.total_weeks || 0;
+                    const requiredDays = tracking.required_days || 0;
                     const weeksRemaining = Math.max(0, totalWeeks - weeksCompleted);
+                    const showDays = totalWeeks === 0 && requiredDays > 0;
                     const isCompleted = tracking.is_completed;
                     const isEffective = tracking.is_effective;
                     const canReview = isCompleted && isEffective === null;
@@ -893,7 +901,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
                               /* In Progress - Show weeks remaining */
                               <View style={styles.reviewWeeksBadge}>
                                 <Text style={styles.reviewWeeksText}>
-                                  Review in <Text style={styles.reviewWeeksBold}>{weeksRemaining} weeks</Text>
+                                  Review in <Text style={styles.reviewWeeksBold}>
+                                    {showDays ? `${requiredDays} day${requiredDays !== 1 ? 's' : ''}` : `${weeksRemaining} week${weeksRemaining !== 1 ? 's' : ''}`}
+                                  </Text>
                                 </Text>
                               </View>
                             ) : isEffective === true ? (
@@ -948,19 +958,17 @@ const ProductDetailScreen = (): React.JSX.Element => {
           {isTreatment && currentSubcategory && (
             <>
               {/* About section */}
-              {currentSubcategory.name !== 'Facials' && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>About {currentSubcategory.name}</Text>
-                  <View style={styles.infoCard}>
-                    <Text style={styles.infoCardDescription}>
-                      {currentSubcategory.description}
-                    </Text>
-                  </View>
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>About {currentSubcategory.name}</Text>
+                <View style={styles.infoCard}>
+                  <Text style={styles.infoCardDescription}>
+                    {currentSubcategory.description}
+                  </Text>
                 </View>
-              )}
+              </View>
 
               {/* Treatment generally addresses these concerns section */}
-              {currentSubcategory.name !== 'Facials' && currentSubcategory.concerns && currentSubcategory.concerns.length > 0 && (
+              {currentSubcategory.concerns && currentSubcategory.concerns.length > 0 && (
                 <View style={styles.section}>
                   <Text style={styles.sectionTitle}>This treatment generally addresses these concerns</Text>
                   <View style={styles.infoListContainer}>

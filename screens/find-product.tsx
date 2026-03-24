@@ -191,6 +191,7 @@ const FindProductScreen = (): React.JSX.Element => {
                     keyExtractor={(item) => item.toString()}
                     contentContainerStyle={styles.listContainer}
                     showsVerticalScrollIndicator={false}
+                    keyboardShouldPersistTaps="handled"
                     ItemSeparatorComponent={() => <View style={styles.separator} />}
                 />
             );
@@ -266,6 +267,7 @@ const FindProductScreen = (): React.JSX.Element => {
                         keyExtractor={(item, index) => `${item.product_name}-${index}`}
                         showsVerticalScrollIndicator={false}
                         contentContainerStyle={styles.listContainer}
+                        keyboardShouldPersistTaps="handled"
                         ItemSeparatorComponent={() => <View style={styles.separator} />}
                     />
                 ) : (

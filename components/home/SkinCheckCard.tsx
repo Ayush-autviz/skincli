@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ChevronRight, MessageSquareText } from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { colors, spacing, typography, fontFamily } from '../../styles';
-import { formatDistanceToNow, parseISO } from 'date-fns';
+import { format, parseISO, isToday } from 'date-fns';
 
 interface Expert {
   expert_name: string;
@@ -33,7 +33,6 @@ interface SkinCheckCardProps {
 }
 
 const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress }) => {
-  console.log("🔵 Reports in SkinCheckCard:", reports);
   if (loading) {
     return (
       <View style={styles.container}>
@@ -52,62 +51,42 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
     );
   }
 
-  const formatDistance = (dateString: string) => {
+  const parseUTCDate = (dateString: string) => {
+    if (!dateString) return null;
+    let normalized = dateString;
+    // Handled in other parts of the app (e.g. snapshot.tsx, threadChat.tsx)
+    // If no timezone indicator, append Z to treat it as UTC
+    if (!normalized.endsWith('Z') && !normalized.includes('+') && !normalized.includes('-', 10)) {
+      normalized = normalized + 'Z';
+    }
+    return parseISO(normalized);
+  };
+
+  const formatTime = (dateString: string) => {
     try {
-      return formatDistanceToNow(parseISO(dateString), { addSuffix: true });
+      const date = parseUTCDate(dateString);
+      return date ? format(date, 'h:mm a MMM d') : '';
     } catch (e) {
       return '';
     }
   };
 
-  const renderReport = (report: Report, index: number) => {
-    const hasComments = report.comments && report.comments.length > 0;
-    const isShared = report.shared_with && report.shared_with.length > 0;
-
-    if (hasComments) {
-      const latestComment = report.comments[0];
-      const expert = report.shared_with[0];
-      return (
-        <View key={report.report_id} style={index > 0 && styles.reportSpacing}>
-          <View style={styles.separator} />
-          <Text style={styles.responseLabel}>SkinCheck Response</Text>
-          <View style={styles.commentCard}>
-            <View style={styles.commentHeader}>
-              <View style={styles.expertInfoRow}>
-                <View style={styles.iconContainer}>
-                  <MessageSquareText size={20} color="#6B7280" />
-                </View>
-                <View style={styles.expertNameColumn}>
-                  <Text style={styles.expertName}>From: {expert?.expert_name}</Text>
-                </View>
-              </View>
-              <Text style={styles.timeAgo}>{formatDistance(latestComment.created_at)}</Text>
-            </View>
-            <Text style={styles.commentText} numberOfLines={3}>
-              {latestComment.comment_text}
-            </Text>
-          </View>
-        </View>
-      );
+  const formatRepliedTime = (dateString: string) => {
+    try {
+      const date = parseUTCDate(dateString);
+      if (!date) return '';
+      if (isToday(date)) {
+        return `Replied ${format(date, 'h:mm a')} Today`;
+      }
+      return `Replied ${format(date, 'h:mm a MMM d')}`;
+    } catch (e) {
+      return '';
     }
-
-    if (isShared) {
-      const expert = report.shared_with[0];
-      const sharedAt = expert.shared_at || report.created_at;
-      return (
-        <View key={report.report_id} style={[styles.sentStatusCard, index > 0 && styles.reportSpacing]}>
-          <Text style={styles.sentText}>Sent to {expert.expert_name || 'Expert'}</Text>
-          <Text style={styles.timeAgo}>{formatDistance(sharedAt)}</Text>
-        </View>
-      );
-    }
-
-    return null;
   };
 
-  const validReports = reports.filter(r => (r.comments && r.comments.length > 0) || (r.shared_with && r.shared_with.length > 0));
+  const report = reports && reports.length > 0 ? reports[0] : null;
 
-  if (validReports.length === 0) {
+  if (!report) {
     return (
       <TouchableOpacity style={styles.container} activeOpacity={0.9} onPress={onPress}>
         <View style={styles.titleRow}>
@@ -119,18 +98,45 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
     );
   }
 
+  const expert = report.shared_with && report.shared_with.length > 0 ? report.shared_with[0] : null;
+  const comment = report.comments && report.comments.length > 0 ? report.comments[0] : null;
+  const sentTime = expert ? (expert.shared_at || report.created_at) : report.created_at;
+
   return (
     <TouchableOpacity style={styles.container} activeOpacity={0.9} onPress={onPress}>
-      <View style={styles.header}>
-        <View style={styles.titleRow}>
-          <Text style={styles.title}>Request a SkinCheck</Text>
-          <ChevronRight size={24} color="#D1D5DB" />
-        </View>
-        <Text style={styles.subtitle}>Send this scan, your scores, and your routine to your skin health professional.</Text>
+      <View style={styles.titleRow}>
+        <Text style={styles.title}>SkinCheck</Text>
+        <ChevronRight size={24} color="#D1D5DB" />
       </View>
 
-      <View style={styles.reportsList}>
-        {validReports.map((report, index) => renderReport(report, index))}
+      <View style={styles.innerBox}>
+        {/* Sent info */}
+        <View style={styles.sentInfoRow}>
+          <Text style={styles.sentToText}>Sent to {expert?.expert_name || 'Expert'}</Text>
+          <Text style={styles.sentTimeText}>{formatTime(sentTime)}</Text>
+        </View>
+        <Text style={styles.scanDateLabel}>
+          Scan date - <Text style={styles.scanDateValue}>{formatTime(report.created_at)}</Text>
+        </Text>
+
+        {/* Reply info */}
+        {comment && (
+          <View style={styles.replySection}>
+            <View style={styles.replyHeader}>
+              <View style={styles.replyExpertRow}>
+                <View style={styles.expertIconContainer}>
+                  <MessageSquareText size={18} color="#4B5563" />
+                </View>
+                <View>
+                  <Text style={styles.replyExpertName}>{expert?.expert_name || 'Expert'}</Text>
+                  {/* <Text style={styles.replyExpertRole}>Professional</Text> */}
+                </View>
+              </View>
+              <Text style={styles.sentTimeText}>{formatRepliedTime(comment.created_at)}</Text>
+            </View>
+            <Text style={styles.commentText}>{comment.comment_text}</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -143,24 +149,21 @@ const styles = StyleSheet.create({
     padding: 20,
     marginVertical: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 10,
-    elevation: 2,
-  },
-  header: {
-    marginBottom: 16,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 12,
   },
   title: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#1C1917',
     fontFamily: fontFamily.bold,
   },
   subtitle: {
@@ -168,67 +171,74 @@ const styles = StyleSheet.create({
     color: '#6B7280',
     fontFamily: fontFamily.regular,
     lineHeight: 20,
-    paddingRight: 40,
+    paddingRight: 10,
   },
-  reportsList: {
-    marginTop: 4,
-  },
-  reportSpacing: {
-    marginTop: 12,
-  },
-  // Sent Status Style
-  sentStatusCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  innerBox: {
     backgroundColor: '#F9FAFB',
     borderRadius: 16,
     padding: 16,
-    marginTop: 8,
   },
-  sentText: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#374151',
-    fontFamily: fontFamily.semiBold,
-  },
-  // Comment Card Style
-  commentCard: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
-    padding: 16,
-    marginTop: 8,
-  },
-  commentHeader: {
+  sentInfoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 12,
-  },
-  expertInfoRow: {
-    flexDirection: 'row',
     alignItems: 'center',
+    marginBottom: 4,
   },
-  iconContainer: {
-    marginRight: 12,
-  },
-  expertNameColumn: {
-    justifyContent: 'center',
-  },
-  expertName: {
+  sentToText: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1F2937',
+    color: '#4B5563',
     fontFamily: fontFamily.bold,
   },
-  businessName: {
+  sentTimeText: {
     fontSize: 13,
     color: '#9CA3AF',
     fontFamily: fontFamily.regular,
-    marginTop: 1,
   },
-  timeAgo: {
-    fontSize: 13,
+  scanDateLabel: {
+    fontSize: 14,
+    color: '#4B5563',
+    fontFamily: fontFamily.medium,
+  },
+  scanDateValue: {
+    color: '#00839B',
+    fontFamily: fontFamily.semiBold,
+  },
+  replySection: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E5E7EB',
+  },
+  replyHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  replyExpertRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  expertIconContainer: {
+    marginRight: 10,
+    //  backgroundColor: '#E5E7EB',
+    //padding: 6,
+    borderRadius: 8,
+  },
+  replyExpertName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1C1917',
+    fontFamily: fontFamily.bold,
+  },
+  replyExpertRole: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    fontFamily: fontFamily.regular,
+  },
+  repliedTimeText: {
+    fontSize: 11,
     color: '#9CA3AF',
     fontFamily: fontFamily.regular,
   },
@@ -237,19 +247,7 @@ const styles = StyleSheet.create({
     color: '#4B5563',
     fontFamily: fontFamily.regular,
     lineHeight: 20,
-  },
-  responseLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#4B5563',
-    fontFamily: fontFamily.bold,
-    marginBottom: 8,
-    marginTop: 4,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#F3F4F6',
-    marginBottom: 12,
+    marginLeft: 30,
   },
 });
 

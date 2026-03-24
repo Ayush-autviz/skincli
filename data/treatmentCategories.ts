@@ -160,7 +160,7 @@ export const treatmentCategories: TreatmentCategory[] = [
             },
             {
                 name: 'Facials',
-                description: '',
+                description: 'Facials are a great way to care for and maintain your skin. They usually include cleansing, steam, extractions, exfoliation, masks, and hydration, helping keep your skin feeling refreshed and well cared for.',
                 concerns: [],
                 metricNames: []
             },

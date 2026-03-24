@@ -272,8 +272,7 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                 {selectedSubcategory && (
                     <>
                         {/* Info card */}
-                        {selectedSubcategory.name !== 'Facials' && (
-                            <TouchableOpacity
+                        <TouchableOpacity
                                 style={styles.infoCard}
                                 onPress={() => setExpandedInfo(!expandedInfo)}
                                 activeOpacity={0.8}
@@ -288,10 +287,9 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                                     {selectedSubcategory.description}
                                 </Text>
                             </TouchableOpacity>
-                        )}
 
                         {/* Concerns */}
-                        {selectedSubcategory.name !== 'Facials' && (
+                        {selectedSubcategory.concerns && selectedSubcategory.concerns.length > 0 && (
                             <>
                                 <Text style={styles.sectionTitle}>This treatment generally addresses these concerns</Text>
                                 <View style={styles.infoListContainer}>
@@ -306,7 +304,7 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                         )}
 
                         {/* Metric Names */}
-                        {selectedSubcategory.name !== 'Facials' && selectedSubcategory.metricNames && selectedSubcategory.metricNames.length > 0 && (
+                        {selectedSubcategory.metricNames && selectedSubcategory.metricNames.length > 0 && (
                             <>
                                 <Text style={styles.sectionTitle}>This treatment will impact these scores</Text>
                                 <View style={styles.infoListContainer}>

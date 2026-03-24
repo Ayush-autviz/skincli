@@ -47,12 +47,12 @@ const getIngredientsForMetric = (metricKey: string): string[] => {
 
   const mapping: Record<string, string> = {
     'acneScore': 'Acne',
-    'poresScore': 'Visible Pores',
+    'poresScore': 'Pores',
     'rednessScore': 'Redness',
     'pigmentationScore': 'Pigmentation',
     'linesScore': 'Lines',
-    'hydrationScore': 'Dewiness',
-    'uniformnessScore': 'Evenness',
+    'hydrationScore': 'Hydration',
+    'uniformnessScore': 'Uniformness',
     'eyeAreaCondition': 'Eye Area Condition',
     'eyeBagsScore': 'Eye Area Condition'
   };
@@ -240,8 +240,7 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
   const getLowestScoringConcerns = (latestScores: Record<string, number>): string[] => {
     const concernEntries = Object.entries(latestScores)
       .filter(([key, score]) => score > 0) // Only include concerns with data
-      .sort(([, a], [, b]) => a - b) // Sort by score (ascending - lowest first)
-      .slice(0, 3); // Take only the first 3 (lowest scores)
+      .sort(([, a], [, b]) => a - b); // Sort by score (ascending - lowest first)
 
     console.log('🔵 Lowest scoring concerns from latest image:', concernEntries);
     return concernEntries.map(([key]) => key);
@@ -317,7 +316,6 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
 
         // Now fetch concern messages in parallel before hiding the skeleton
         const concernsToFetch = resolvedConcerns
-          .slice(0, 3)
           .filter((concern) => concern.advice?.ingredients?.length);
 
         if (concernsToFetch.length > 0) {

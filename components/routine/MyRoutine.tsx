@@ -507,13 +507,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         clearPendingRequests();
 
         // Only refetch if:
-        // 1. We haven't attempted to fetch yet (first time), OR
-        // 2. We should refetch on focus AND we have no data AND we're not loading
-        // 
-        // We NEVER refetch when we already have data to prevent unnecessary re-renders
-        const shouldRefetch =
-          !hasAttemptedFetchRef.current ||
-          (shouldRefetchOnFocusRef.current && !loading && !fetchInProgressRef.current && routineItems.length === 0);
+        // Always refetch on focus to ensure data is up-to-date (e.g., after deletions or edits in other screens)
+        const shouldRefetch = !loading && !fetchInProgressRef.current;
 
         if (shouldRefetch) {
           // console.log('🔄 MyRoutine: Screen focused, refetching routines...', {
@@ -941,6 +936,12 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
       if (inProgress) {
         const weeksCompleted = inProgress.weeks_completed || 0;
         const totalWeeks = inProgress.total_weeks || 0;
+        const requiredDays = inProgress.required_days || 0;
+
+        if (totalWeeks === 0 && requiredDays > 0) {
+          return `Review in ${requiredDays} day${requiredDays !== 1 ? 's' : ''}`;
+        }
+
         const weeksRemaining = Math.max(0, totalWeeks - weeksCompleted);
         return `Review in ${weeksRemaining} week${weeksRemaining !== 1 ? 's' : ''}`;
       }

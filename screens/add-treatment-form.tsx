@@ -119,9 +119,9 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
 
     const formatFrequencyForApi = (value: string): string => {
         switch (value) {
-            case 'One-time': return 'as_needed';
+            case 'One-time': return 'one_time';
             case 'Weekly': return 'weekly';
-            case 'Monthly': return 'as_needed';
+            case 'Monthly': return 'monthly';
             case 'As Needed': return 'as_needed';
             default: return 'as_needed';
         }

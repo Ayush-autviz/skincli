@@ -593,6 +593,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
   // Format concern name for display
   const formatConcernName = (name: string) => {
     return name
+      .replace(/_/g, ' ')
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');

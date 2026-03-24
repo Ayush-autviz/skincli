@@ -552,12 +552,14 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    flexWrap: 'wrap',
     paddingHorizontal: spacing.md,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 24,
     // fontWeight: '500', 
     fontFamily: fontFamily.medium,
+    flexWrap: 'wrap',
     color: colors.textPrimary,
   },
   rightContainer: {

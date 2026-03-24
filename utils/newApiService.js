@@ -6,16 +6,29 @@ import useAuthStore from "../stores/authStore";
 
 const BASE_URL = "http://44.198.183.94:9000/api/v1";
 
+// Global retry configuration
+const MAX_RETRIES = 3;
+const RETRY_DELAY = 1000;
+
+// Helper function to determine if an error is retryable
+const shouldRetry = (error) => {
+  // Retry on network errors, timeouts, and 5xx server errors
+  return (
+    error.message === 'Network Error' ||
+    error.code === 'ECONNABORTED' ||
+    error.code === 'ECONNRESET' ||
+    error.code === 'ENOTFOUND' ||
+    (error.response && error.response.status >= 500 && error.response.status < 600)
+  );
+};
+
 // Create axios instance with enhanced configuration
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  //timeout: 45000, // Increased from 30000 to 45000ms (45 seconds)
-  // Add retry configuration
-  retry: 1,
-  retryDelay: 1000,
-  // Better error handling - only 2xx status codes are successful
+  // timeout: 45000, 
+  // Custom properties for internal retry logic
   validateStatus: function (status) {
-    return status >= 200 && status < 300; // Only 2xx status codes are successful
+    return status >= 200 && status < 300;
   },
 });
 
@@ -293,6 +306,22 @@ apiClient.interceptors.response.use(
         hasRetry: !!originalRequest?._retry,
         status: error.response.status
       });
+    }
+
+    // Global Retry Logic
+    if (originalRequest && !originalRequest._isRetry && shouldRetry(error)) {
+      originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
+      if (originalRequest._retryCount <= MAX_RETRIES) {
+        // Exponential backoff
+        const delay = RETRY_DELAY * Math.pow(2, originalRequest._retryCount - 1);
+        console.log(`🔄 API Retry: attempt ${originalRequest._retryCount}/${MAX_RETRIES} in ${delay}ms for ${originalRequest.url}`);
+
+        await new Promise(resolve => setTimeout(resolve, delay));
+
+        // Mark as retry to avoid certain interceptor logic if needed
+        // but let it be intercepted again for subsequent retries
+        return apiClient(originalRequest);
+      }
     }
 
     // Enhanced error logging with more context and null checks
@@ -998,8 +1027,7 @@ export const transformHautResults = (hautResults) => {
  * Fetches all photos of the authenticated user.
  * User ID is inferred from access token; no params required.
  */
-export const getUserPhotos = async (page = 1, limit = 10, retryCount = 0) => {
-  const MAX_RETRIES = 3;
+export const getUserPhotos = async (page = 1, limit = 10) => {
 
   try {
     // Check if user is authenticated before making API call
@@ -1011,7 +1039,7 @@ export const getUserPhotos = async (page = 1, limit = 10, retryCount = 0) => {
       throw new Error('User not authenticated');
     }
 
-    console.log("🔵 Fetching user photos - page:", page, "limit:", limit, "retry:", retryCount, "user:", user.user_id);
+    console.log("🔵 Fetching user photos - page:", page, "limit:", limit, "user:", user.user_id);
     const response = await apiClient.get(`/haut_process/?page=${page}&limit=${limit}`);
 
     if (response.data.status === 200) {
@@ -1063,19 +1091,8 @@ export const getUserPhotos = async (page = 1, limit = 10, retryCount = 0) => {
   } catch (error) {
     console.error("🔴 getUserPhotos error:", error);
 
-    // Handle specific error types with retry limit
-    if ((error.message === 'DUPLICATE_REQUEST' || error.message === 'REQUEST_IN_PROGRESS') && retryCount < MAX_RETRIES) {
-      console.log(`🔄 getUserPhotos: Request in progress, retrying after delay... (${retryCount + 1}/${MAX_RETRIES})`);
-
-      // Wait a bit and retry
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Clear any stuck pending requests
-      clearPendingRequests();
-
-      // Retry the request with incremented retry count
-      return getUserPhotos(page, limit, retryCount + 1);
-    }
+    // Error is handled by global interceptor retry
+    throw error;
 
     // Handle network errors
     if (error.code === 'ECONNABORTED') {
@@ -1465,12 +1482,9 @@ export const generateExpertReportLink = async (email) => {
 // -----------------------------------------------------------------------------
 
 // Enhanced createThread function with retry logic and better error handling
-export const createThread = async (messageData, retryCount = 0) => {
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000; // 1 second
-
+export const createThread = async (messageData) => {
   try {
-    console.log("🔵 Creating new thread:", messageData, `(attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+    console.log("🔵 Creating new thread:", messageData);
 
     // For snapshot_feedback type, include image_id if provided
     const requestData = { ...messageData };
@@ -1505,20 +1519,6 @@ export const createThread = async (messageData, retryCount = 0) => {
       console.error("🔴 No response received - server might be down");
     }
 
-    // Retry logic for network-related errors
-    if (retryCount < MAX_RETRIES && shouldRetry(error)) {
-      console.log(`🔄 Retrying createThread in ${RETRY_DELAY}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-
-      // Exponential backoff for subsequent retries
-      const nextRetryDelay = RETRY_DELAY * Math.pow(2, retryCount);
-      await new Promise(resolve => setTimeout(resolve, nextRetryDelay));
-
-      // Recursive retry
-      return createThread(messageData, retryCount + 1);
-    }
 
     // If we've exhausted retries or it's not a retryable error, throw a user-friendly error
     const userFriendlyMessage = getUserFriendlyErrorMessage(error);
@@ -1526,17 +1526,6 @@ export const createThread = async (messageData, retryCount = 0) => {
   }
 };
 
-// Helper function to determine if an error should be retried
-const shouldRetry = (error) => {
-  // Retry on network errors, timeouts, and 5xx server errors
-  return (
-    error.message === 'Network Error' ||
-    error.code === 'ECONNABORTED' ||
-    error.code === 'ECONNRESET' ||
-    error.code === 'ENOTFOUND' ||
-    (error.response && error.response.status >= 500 && error.response.status < 600)
-  );
-};
 
 // Helper function to provide user-friendly error messages
 const getUserFriendlyErrorMessage = (error) => {
@@ -1560,12 +1549,10 @@ const getUserFriendlyErrorMessage = (error) => {
 };
 
 // Enhanced sendThreadMessage function with retry logic and better error handling
-export const sendThreadMessage = async (threadId, messageData, retryCount = 0) => {
-  const MAX_RETRIES = 3;
-  const RETRY_DELAY = 1000; // 1 second
+export const sendThreadMessage = async (threadId, messageData) => {
 
   try {
-    console.log("🔵 Sending thread message:", { threadId, messageData }, `(attempt ${retryCount + 1}/${MAX_RETRIES + 1})`);
+    console.log("🔵 Sending thread message:", { threadId, messageData });
     console.log("🔵 threadId:", threadId);
     console.log("🔵 messageData:", messageData);
 
@@ -1602,20 +1589,6 @@ export const sendThreadMessage = async (threadId, messageData, retryCount = 0) =
       console.error("🔴 No response received - server might be down");
     }
 
-    // Retry logic for network-related errors
-    if (retryCount < MAX_RETRIES && shouldRetry(error)) {
-      console.log(`🔄 Retrying sendThreadMessage in ${RETRY_DELAY}ms... (attempt ${retryCount + 1}/${MAX_RETRIES})`);
-
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, RETRY_DELAY));
-
-      // Exponential backoff for subsequent retries
-      const nextRetryDelay = RETRY_DELAY * Math.pow(2, retryCount);
-      await new Promise(resolve => setTimeout(resolve, nextRetryDelay));
-
-      // Recursive retry
-      return sendThreadMessage(threadId, messageData, retryCount + 1);
-    }
 
     // If we've exhausted retries or it's not a retryable error, throw a user-friendly error
     const userFriendlyMessage = getUserFriendlyErrorMessage(error);
@@ -1740,11 +1713,10 @@ export const sendSnapshotFirstChat = async (chatData) => {
  * Get user's routine items
  * @returns {Promise<Object>} Routine items data
  */
-export const getRoutineItems = async (retryCount = 0) => {
-  const MAX_RETRIES = 3;
+export const getRoutineItems = async () => {
 
   try {
-    console.log("🔵 Fetching routine items... (retry:", retryCount, ")");
+    console.log("🔵 Fetching routine items...");
 
     const response = await apiClient.get("/routine/");
 
@@ -1760,19 +1732,6 @@ export const getRoutineItems = async (retryCount = 0) => {
   } catch (error) {
     console.error("🔴 getRoutineItems error:", error);
 
-    // Handle specific error types with retry limit
-    if ((error.message === 'DUPLICATE_REQUEST' || error.message === 'REQUEST_IN_PROGRESS') && retryCount < MAX_RETRIES) {
-      console.log(`🔄 getRoutineItems: Request in progress, retrying after delay... (${retryCount + 1}/${MAX_RETRIES})`);
-
-      // Wait a bit and retry
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // Clear any stuck pending requests
-      clearPendingRequests();
-
-      // Retry the request with incremented retry count
-      return getRoutineItems(retryCount + 1);
-    }
 
     // Handle network errors
     if (error.code === 'ECONNABORTED') {

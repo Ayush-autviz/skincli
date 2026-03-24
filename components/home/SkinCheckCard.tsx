@@ -22,6 +22,7 @@ interface Report {
   report_id: string;
   status: string;
   created_at: string;
+  scanned_date?: string; // Add optional scanned_date
   shared_with: Expert[];
   comments: Comment[];
 }
@@ -116,7 +117,7 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
           <Text style={styles.sentTimeText}>{formatTime(sentTime)}</Text>
         </View>
         <Text style={styles.scanDateLabel}>
-          Scan date - <Text style={styles.scanDateValue}>{formatTime(report.created_at)}</Text>
+          Scan date - <Text style={styles.scanDateValue}>{formatTime(report.scanned_date || report.created_at)}</Text>
         </Text>
 
         {/* Reply info */}

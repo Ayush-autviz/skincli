@@ -2116,6 +2116,8 @@ export const generateConcernMessage = async (concernName) => {
       },
     });
 
+    console.log('🔵 Response of generateConcernMessage:', response);
+
     if (response.data.status === 200) {
       console.log('✅ Concern message generated successfully');
       return {

@@ -131,6 +131,10 @@ const SkinCheckScreen = () => {
                                 <Text style={styles.footerText}>
                                     Skinchecks are performed by professionals that you know and trust. If you are sending this SkinCheck request to a professional who has not joined the SkinCheck platform, they will have to create an account to have secure access to the report you are sending them. Each professional sets their own terms for performing a SkinCheck.
                                 </Text>
+
+                                <View style={styles.developmentBanner}>
+                                    <Text style={styles.developmentBannerText}>This feature is still in development</Text>
+                                </View>
                             </View>
                         </>
                     ) : (
@@ -439,6 +443,23 @@ const styles = StyleSheet.create({
         color: '#FFFFFF',
         fontSize: 18,
         fontFamily: fontFamily.bold,
+    },
+    developmentBanner: {
+        backgroundColor: '#F8FAFC',
+        borderRadius: 12,
+        paddingVertical: 12,
+        paddingHorizontal: 16,
+        marginTop: 8,
+        alignItems: 'center',
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        borderStyle: 'dashed',
+    },
+    developmentBannerText: {
+        fontSize: 14,
+        fontWeight: '600',
+        color: '#64748B',
+        fontFamily: fontFamily.medium,
     },
 });
 

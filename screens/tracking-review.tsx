@@ -556,9 +556,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     // fontWeight: '500', 
-    fontFamily: fontFamily.medium,
+    // fontFamily: fontFamily.medium,
     flexWrap: 'wrap',
     color: colors.textPrimary,
   },

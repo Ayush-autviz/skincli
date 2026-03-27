@@ -279,6 +279,14 @@ export default function HomeScreen(): React.JSX.Element {
         }, [refreshPhotos, photos.length])
     );
 
+    // Specifically refresh when a new photo is uploaded
+    useEffect(() => {
+        const subscription = DeviceEventEmitter.addListener('photoUploaded', () => {
+            refreshPhotos();
+        });
+        return () => subscription.remove();
+    }, [refreshPhotos]);
+
     const loadReportHistory = async () => {
         try {
             setIsLoadingReports(true);

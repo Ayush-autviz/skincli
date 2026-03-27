@@ -36,7 +36,7 @@ interface ProfileData {
 interface EditForm {
   user_name: string;
   birth_date: Date | null;
-  profile_img: string | null;
+  profile_img: any | null;
 }
 
 export default function Profile(): React.JSX.Element {
@@ -134,7 +134,7 @@ export default function Profile(): React.JSX.Element {
           const asset = response.assets[0];
           setEditForm(prev => ({
             ...prev,
-            profile_img: asset.uri || null
+            profile_img: asset
           }));
         }
       });
@@ -200,7 +200,7 @@ export default function Profile(): React.JSX.Element {
     }
   };
 
-  const currentProfileImage = editForm.profile_img || (profile as any)?.profile_img;
+  const currentProfileImage = editForm.profile_img?.uri || (profile as any)?.profile_img;
 
 
 

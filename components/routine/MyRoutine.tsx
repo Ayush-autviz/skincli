@@ -433,7 +433,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
           clearPendingRequests();
           // Wait a bit and retry
           setTimeout(() => {
-            if (!loading) { // Only retry if not already loading
+            if (!fetchInProgressRef.current) { // Only retry if not already loading
               fetchRoutineItems();
             }
           }, 500);
@@ -506,28 +506,14 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>((props, ref): React.J
         // Clear any stuck pending requests first
         clearPendingRequests();
 
-        // Only refetch if:
-        // Always refetch on focus to ensure data is up-to-date (e.g., after deletions or edits in other screens)
-        const shouldRefetch = !loading && !fetchInProgressRef.current;
+        // Only refetch if not in progress
+        const shouldRefetch = !fetchInProgressRef.current;
 
         if (shouldRefetch) {
-          // console.log('🔄 MyRoutine: Screen focused, refetching routines...', {
-          //   hasAttempted: hasAttemptedFetchRef.current,
-          //   shouldRefetchOnFocus: shouldRefetchOnFocusRef.current,
-          //   hasData: routineItems.length > 0,
-          //   isLoading: loading
-          // });
           fetchRoutineItems();
-        } else {
-          // console.log('🔄 MyRoutine: Screen focused, no need to refetch', {
-          //   hasAttempted: hasAttemptedFetchRef.current,
-          //   shouldRefetchOnFocus: shouldRefetchOnFocusRef.current,
-          //   hasData: routineItems.length > 0,
-          //   isLoading: loading
-          // });
         }
       }, 300); // 300ms debounce delay for focus effect
-    }, [routineItems.length, loading])
+    }, [])
   );
 
   // Toggle logic for AM/PM usage (checkbox style)

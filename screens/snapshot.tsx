@@ -28,6 +28,7 @@ import {
   Dimensions,
   Alert,
   StatusBar,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import { ChevronLeft, ChevronRight, MoreVertical, Trash2, Sparkles, Star } from 'lucide-react-native';
@@ -477,6 +478,7 @@ const SnapshotScreen = (): React.JSX.Element => {
           if (fromScanTab) {
             refreshPhotos();
           }
+          DeviceEventEmitter.emit('photoUploaded');
           stopPolling();
         } else {
           pollingTimeoutRef.current = setTimeout(poll, 3000);

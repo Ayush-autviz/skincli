@@ -3403,7 +3403,7 @@ SPEC CHECKSUMS:
   hermes-engine: 8642d8f14a548ab718ec112e9bebdfdd154138b5
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
-  RCT-Folly: 846fda9475e61ec7bcbf8a3fe81edfcaeb090669
+  RCT-Folly: 59ec0ac1f2f39672a0c6e6cecdd39383b764646f
   RCTDeprecation: 22bf66112da540a7d40e536366ddd8557934fca1
   RCTRequired: a0ed4dc41b35f79fbb6d8ba320e06882a8c792cf
   RCTTypeSafety: 59a046ff1e602409a86b89fcd6edff367a5b14af
@@ -3439,7 +3439,10 @@ SPEC CHECKSUMS:
   react-native-blur: 981b2ec64b3084ecf98812333f2a8c6e83643a1e
   react-native-image-picker: b99d9c1f2ddbef491eb49e1103e5c2ce78b9ab37
   react-native-safe-area-context: 3e0a25a843c40ad5efdf2bef93fdd95ad7229650
+<<<<<<< HEAD
   react-native-webview: 21fdd62caca650645e429b4a84941626612616ef
+=======
+>>>>>>> 634fc4b91d2fbaa1c90235375459c103a15ec2c7
   React-NativeModulesApple: 0c8fe5b23499e2db05b4da38307694c2a0954e96
   React-oscompat: 80ca388c4831481cd03a6b45ecfc82739ca9a95e
   React-perflogger: 2e155343fa744b02ec2eab0f134639beb8fff659
@@ -3486,7 +3489,11 @@ SPEC CHECKSUMS:
   RNWorklets: daa0a3e7946a9c4042f3a962c87a12dc5bc0badd
   SocketRocket: d4aabe649be1e368d1318fdf28a022d714d65748
   VisionCamera: 2230ecfd78a1f6cddd8be0fe4e6589f21a6385e1
+<<<<<<< HEAD
   Yoga: ce55ebb197c21e22b6700cd36e3f36b7ec26e6f8
+=======
+  Yoga: 8ffc9fd0e354220664ef70f61ca792977cfb35e3
+>>>>>>> 634fc4b91d2fbaa1c90235375459c103a15ec2c7
 
 PODFILE CHECKSUM: 32c570668e5c51eece5cd4161ef0a16fec6f22c3
 

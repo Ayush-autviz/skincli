@@ -1602,6 +1602,7 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
     navigateToSnapshot({
       photoId: photo.id, // Use photo.id as the unique identifier (matches PhotoGrid pattern)
       imageId: photo.hautUploadData?.imageId || photo.id, // Use Haut.ai imageId if available, fallback to photo.id
+      hautBatchId: photo.hautUploadData?.hautBatchId || photo.hautBatchId, // Use Haut.ai batchId
       thumbnailUrl: photo.storageUrl,
       localUri: photo.storageUrl,
       fromPhotoGrid: 'true',

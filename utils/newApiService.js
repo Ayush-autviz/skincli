@@ -4,7 +4,7 @@
 import axios from "axios";
 import useAuthStore from "../stores/authStore";
 
-const BASE_URL = "http://44.198.183.94:8000/api/v1";
+const BASE_URL = "http://44.198.183.94:9000/api/v1";
 
 // Global retry configuration
 const MAX_RETRIES = 3;
@@ -853,14 +853,87 @@ export const processHautImage = async (imageUri, imageType = "front_image") => {
 };
 
 /**
+ * Processes all 3 face images captured by the face-180 LIQA preset in a single API call.
+ * Mirrors: POST /api/v1/haut_process/  with front_image, left_image, right_image fields.
+ *
+ * @param {{ front: string, left: string, right: string }} imageUris
+ *   Object containing local file URIs (or base64 data URIs) for each face side.
+ * @returns {Promise<{ hautBatchId: string, imageId: string }>}
+ */
+export const processHautImages = async ({ front, left, right }) => {
+  try {
+    console.log("🔵 [Haut.ai] Processing face-180 images (front + left + right)");
+
+    const formData = new FormData();
+
+    // Helper: append an image URI as a multipart file field
+    const appendImage = (fieldName, uri) => {
+      if (!uri) return;
+
+      if (uri.startsWith("data:")) {
+        // Base64 data URL from LIQA WebView
+        const [meta, base64Data] = uri.split(",");
+        const mimeMatch = meta.match(/data:([^;]+)/);
+        const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
+        const ext = mimeType.split("/")[1] || "jpg";
+
+        formData.append(fieldName, {
+          uri,
+          type: mimeType,
+          name: `${fieldName}.${ext}`,
+        });
+      } else {
+        // Regular local file URI
+        formData.append(fieldName, {
+          uri,
+          type: "image/jpeg",
+          name: `${fieldName}.jpg`,
+        });
+      }
+    };
+
+    appendImage("front_image", front);
+    appendImage("left_image", left);
+    appendImage("right_image", right);
+
+    const response = await apiClient.post("/haut_process/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+        accept: "application/json",
+      },
+    });
+
+    if (response.data.status === 200) {
+      const { hautBatchId, imageId } = response.data.data.result;
+      console.log("✅ [Haut.ai] Face-180 images accepted", { hautBatchId, imageId });
+      return { hautBatchId, imageId };
+    }
+
+    throw new Error(response.data.message || "Image processing failed");
+  } catch (error) {
+    console.error("🔴 [Haut.ai] processHautImages error:", error);
+
+    if (error.response?.data?.message === "User not found") {
+      throw new Error("User not found in the system. Please login again.");
+    }
+
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      "Image processing failed"
+    );
+  }
+};
+
+/**
  * Retrieves analysis results for a given image ID.
  * @param {string} imageId - Image ID returned by processHautImage
  * @returns {Promise<Array>} Raw results array
  */
-export const getHautAnalysisResults = async (imageId) => {
+export const getHautAnalysisResults = async (hautBatchId) => {
   try {
-    console.log("🔵 [Haut.ai] Fetching analysis results", { imageId });
-    const response = await apiClient.get(`/haut_process/?image_id=${imageId}`);
+    console.log("🔵 [Haut.ai] Fetching analysis results", { hautBatchId });
+    const response = await apiClient.get(`/haut_process/?haut_batch_id=${hautBatchId}`);
     console.log("🔵 response image processing:", response.data);
 
     if (response.data.status === 200) {
@@ -889,12 +962,12 @@ export const getHautAnalysisResults = async (imageId) => {
  * Retrieves mask metric values for an image.
  * @param {string} imageId - Image ID
  */
-export const getHautMaskResults = async (imageId) => {
+export const getHautMaskResults = async (hautBatchId) => {
   try {
-    console.log("�� [Haut.ai] Fetching mask results", { imageId });
+    console.log("🔵 [Haut.ai] Fetching mask results", { hautBatchId });
 
     const formData = new URLSearchParams();
-    formData.append("image_id", imageId);
+    formData.append("haut_batch_id", hautBatchId);
 
     const response = await apiClient.post("/haut_mask/", formData.toString(), {
       headers: {
@@ -921,11 +994,11 @@ export const getHautMaskResults = async (imageId) => {
 
 /**
  * Retrieves public S3 URLs for mask images.
- * @param {string} imageId - Image ID
+ * @param {string} hautBatchId - Batch ID
  */
-export const getHautMaskImages = async (imageId) => {
+export const getHautMaskImages = async (hautBatchId) => {
   try {
-    const response = await apiClient.get(`/haut_mask/?image_id=${imageId}`);
+    const response = await apiClient.get(`/haut_mask/?haut_batch_id=${hautBatchId}`);
     console.log("🔵 response mask images:", response.data);
     if (response.data.status === 200) {
       return response.data.data.result;
@@ -951,7 +1024,70 @@ export const transformHautResults = (hautResults) => {
       throw new Error("Empty Haut.ai results");
     }
 
-    const KEY_MAP = {
+    const data = hautResults[0];
+    const fm3 = data.fm3_results;
+
+    // Check if we have the new FM3 structure
+    if (fm3) {
+      console.log("🔵 [Haut.ai] Using new FM3 results structure");
+      const metrics = {
+        imageQuality: {
+          overall: fm3.quality?.front?.score || 0,
+          focus: fm3.quality?.front?.has_no_blur ? 100 : 50,
+          lighting: fm3.quality?.front?.has_good_exposure ? 100 : 50
+        },
+        topConcerns: []
+      };
+
+      const KEY_MAP = {
+        breakouts: "acneScore",
+        redness: "rednessScore",
+        pores: "poresScore",
+        age: "perceivedAge",
+        eyes_age: "eyeAge",
+        skintone: "skinTone",
+        skin_type: "skinType",
+        hydration: "hydrationScore",
+        pigmentation: "pigmentationScore",
+        lines: "linesScore",
+        uniformness: "uniformnessScore",
+        dark_circles: "eyeAreaCondition",
+      };
+
+      Object.keys(KEY_MAP).forEach(fm3Key => {
+        const uiKey = KEY_MAP[fm3Key];
+        const fm3Data = fm3[fm3Key];
+
+        if (fm3Data) {
+          // 1. Handle score-based metrics (e.g., breakouts, redness, pores)
+          if (typeof fm3Data.score === 'number') {
+            metrics[uiKey] = fm3Data.score;
+          }
+          // 2. Handle categorical metrics (e.g., skin_type, skintone)
+          else if (fm3Data.classification) {
+            metrics[uiKey] = fm3Data.classification;
+          }
+          // 3. Handle age-related metrics
+          else if (fm3Key === 'age' && typeof fm3Data.age === 'number') {
+            metrics[uiKey] = fm3Data.age;
+          }
+          else if (fm3Key === 'eyes_age' && typeof fm3Data.eyes_age === 'number') {
+            metrics[uiKey] = fm3Data.eyes_age;
+          }
+
+          // Handle top concerns if the API provides it (speculative check based on old format)
+          if (fm3Data.is_top_concern === true) {
+            metrics.topConcerns.push(uiKey);
+          }
+        }
+      });
+
+      return metrics;
+    }
+
+    // --- FALLBACK: Old loop-based results structure ---
+    console.log("🟡 [Haut.ai] Using legacy results structure");
+    const LEGACY_KEY_MAP = {
       redness_score: "rednessScore",
       uniformness_score: "uniformnessScore",
       pores_score: "poresScore",
@@ -969,12 +1105,7 @@ export const transformHautResults = (hautResults) => {
     };
 
     const metrics = { imageQuality: { overall: 0, focus: 0, lighting: 0 }, topConcerns: [] };
-
-    console.log("hautResults", hautResults);
-
-    const flat = hautResults[0]?.results ?? hautResults; // Support both wrapped and flat formats
-
-    console.log("flat", flat);
+    const flat = data.results ?? hautResults;
 
     flat.forEach((item) => {
       if (!item) return;
@@ -996,16 +1127,13 @@ export const transformHautResults = (hautResults) => {
         return;
       }
 
-      const key = KEY_MAP[tech];
+      const key = LEGACY_KEY_MAP[tech];
       if (key) {
         if (area === "face" || metrics[key] === undefined) {
           metrics[key] = value;
-          // Dynamically collect the metric keys that are top concerns
-          // 1. Check top-level item
           if (item.is_top_concern === true && !metrics.topConcerns.includes(key)) {
             metrics.topConcerns.push(key);
           }
-          // 2. Also check if ANY of its sub-metrics have is_top_concern === true
           if (Array.isArray(item.sub_metrics)) {
             const hasTopConcernSubMetric = item.sub_metrics.some((sub) => sub.is_top_concern === true);
             if (hasTopConcernSubMetric && !metrics.topConcerns.includes(key)) {
@@ -1070,7 +1198,10 @@ export const getUserPhotos = async (page = 1, limit = 10) => {
         analyzed: true,
         analyzing: false,
         metrics: {},
-        hautUploadData: { imageId: photo.image_id },
+        hautUploadData: {
+          imageId: photo.image_id,
+          hautBatchId: photo.haut_batch_id
+        },
         apiData: { ...photo },
       }));
 

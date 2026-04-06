@@ -43,8 +43,6 @@ export default function AboutMeScreen(): React.JSX.Element {
     const [isProfileLoading, setIsProfileLoading] = useState<boolean>(false);
     const [activeTab, setActiveTab] = useState<TabType>('photos');
 
-    // console.log('profile', profile);
-
     // Fetch profile on mount
     useEffect(() => {
         fetchProfile();
@@ -114,6 +112,7 @@ export default function AboutMeScreen(): React.JSX.Element {
             localUri: photo.storageUrl,
             timestamp: timestampParam,
             fromPhotoGrid: 'true',
+            hautBatchId: photo.hautUploadData?.hautBatchId || photo.hautBatchId,
             imageId: photo.hautUploadData?.imageId || photo.id,
         });
     };
@@ -196,13 +195,9 @@ export default function AboutMeScreen(): React.JSX.Element {
         return photos.filter((photo: any) => !!photo.storageUrl);
     }, [photos]);
 
-    console.log('filteredPhotos', filteredPhotos);
-
     return (
         <View style={styles.container}>
             <HomeHeader onMenuPress={() => setIsSettingsVisible(true)} title="About Me" />
-
-
 
             {/* Profile Card Section */}
             <View style={styles.profileCard}>
@@ -320,7 +315,6 @@ export default function AboutMeScreen(): React.JSX.Element {
                         showsVerticalScrollIndicator={false}
                         onEndReached={handleLoadMore}
                         onEndReachedThreshold={0.5}
-                    //ListFooterComponent={renderFooter}
                     />
                 )
             ) : (
@@ -345,27 +339,6 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
     },
-
-    // Header - Removed in favor of HomeHeader
-    headerSpacer: {
-        height: 100, // Match HomeHeader height
-    },
-    // header: {
-    //     backgroundColor: '#FFFFFF',
-    //     paddingTop: 60,
-    //     paddingBottom: 16,
-    //     alignItems: 'center',
-    //     borderBottomWidth: 1,
-    //     borderBottomColor: '#E5E5E5',
-    // },
-    // headerTitle: {
-    //     fontSize: 17,
-    //     // fontWeight: '600',
-    //     fontFamily: fontFamily.semiBold,
-    //     color: '#1C1917',
-    // },
-
-    // Profile Card
     profileCard: {
         backgroundColor: '#FFFFFF',
         marginHorizontal: spacing.md,
@@ -407,7 +380,6 @@ const styles = StyleSheet.create({
     },
     profileName: {
         fontSize: 20,
-        // fontWeight: '600',
         fontFamily: fontFamily.semiBold,
         color: '#1C1917',
         marginBottom: 4,
@@ -428,8 +400,6 @@ const styles = StyleSheet.create({
         right: 12,
         padding: 8,
     },
-
-    // Tab Bar
     tabContainer: {
         marginHorizontal: spacing.md,
         flexDirection: 'row',
@@ -440,12 +410,10 @@ const styles = StyleSheet.create({
     },
     tabBar: {
         flexDirection: 'row',
-        //marginHorizontal: spacing.md,
     },
     tab: {
         paddingVertical: 10,
         paddingHorizontal: 16,
-        // marginLeft: spacing.md,
     },
     activeTab: {
         borderBottomWidth: 3,
@@ -460,8 +428,6 @@ const styles = StyleSheet.create({
     activeTabText: {
         color: '#1C1917',
     },
-
-    // Photo Grid
     photoGrid: {
         paddingTop: 14,
         paddingHorizontal: spacing.md,
@@ -481,8 +447,6 @@ const styles = StyleSheet.create({
         paddingVertical: 20,
         alignItems: 'center',
     },
-
-    // Empty State
     emptyContainer: {
         flex: 1,
         justifyContent: 'flex-start',

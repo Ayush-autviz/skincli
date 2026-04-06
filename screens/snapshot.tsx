@@ -34,6 +34,7 @@ import { ChevronLeft, ChevronRight, MoreVertical, Trash2, Sparkles, Star } from 
 import { formatDate } from '../utils/dateUtils';
 import {
   processHautImage,
+  processHautImages,
   getHautAnalysisResults,
   getHautMaskResults,
   getHautMaskImages,
@@ -53,16 +54,22 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 interface SnapshotParams {
   photoId?: string;
   localUri?: string;
+  /** URI for the right-side capture (face-180 preset). */
+  rightUri?: string;
+  /** URI for the left-side capture (face-180 preset). */
+  leftUri?: string;
   userId?: string;
   timestamp?: string;
   fromPhotoGrid?: string;
   imageId?: string;
   fromScanTab?: boolean;
+  hautBatchId?: string;
 }
 
 interface PhotoData {
   id: string;
   imageId?: string;
+  hautBatchId?: string;
   storageUrl: string;
   timestamp: Date;
   metrics?: any;
@@ -71,6 +78,7 @@ interface PhotoData {
   status: { state: string };
   urls?: { [key: string]: string };
   masks?: { lines?: any };
+  results?: any;
 }
 
 
@@ -224,7 +232,7 @@ const SnapshotScreen = (): React.JSX.Element => {
   const insets = useSafeAreaInsets();
   const params = route.params as SnapshotParams || {};
 
-  const { photoId, localUri, userId: paramUserId, timestamp, fromPhotoGrid, imageId: passedImageId, fromScanTab } = params;
+  const { photoId, localUri, rightUri, leftUri, userId: paramUserId, timestamp, fromPhotoGrid, imageId: passedImageId, hautBatchId: passedHautBatchId, fromScanTab } = params;
 
   console.log('fromscan', fromScanTab);
 
@@ -267,12 +275,24 @@ const SnapshotScreen = (): React.JSX.Element => {
       setIsProcessing(true);
       setLoadingMicrocopy('Processing image...');
 
-      const { hautBatchId: batchId, imageId: imgId } = await processHautImage(localUri, 'front_image');
+      let result: { hautBatchId: string; imageId: string };
 
-      setHautBatchId(batchId);
-      setImageId(imgId);
+      if (rightUri && leftUri) {
+        // Face-180 preset: send all three sides in one request
+        result = await processHautImages({
+          front: localUri,
+          right: rightUri,
+          left: leftUri,
+        });
+      } else {
+        // Legacy single-image path
+        result = await processHautImage(localUri, 'front_image');
+      }
+
+      setHautBatchId(result.hautBatchId);
+      setImageId(result.imageId);
       setLoadingMicrocopy('Analyzing image...');
-      startPollingForResults(imgId);
+      startPollingForResults(result.hautBatchId);
     } catch (error: any) {
       setLoadingMicrocopy('Processing failed');
       setUiState('no_results');
@@ -281,7 +301,7 @@ const SnapshotScreen = (): React.JSX.Element => {
     }
   };
 
-  const startPollingForResults = (imgId: string): void => {
+  const startPollingForResults = (batchId: string): void => {
     mainTimeoutRef.current = setTimeout(() => {
       setLoadingMicrocopy('No metrics found');
       setUiState('no_results');
@@ -290,7 +310,7 @@ const SnapshotScreen = (): React.JSX.Element => {
 
     const poll = async (): Promise<void> => {
       try {
-        const results = await getHautAnalysisResults(imgId);
+        const results = await getHautAnalysisResults(batchId);
 
         if (results && results.length > 0) {
           if (mainTimeoutRef.current) {
@@ -309,9 +329,9 @@ const SnapshotScreen = (): React.JSX.Element => {
           let maskResults = null;
           let maskImages = null;
           try {
-            maskResults = await getHautMaskResults(imgId);
+            maskResults = await getHautMaskResults(batchId);
             try {
-              maskImages = await getHautMaskImages(imgId);
+              maskImages = await getHautMaskImages(batchId);
             } catch (maskImageError) {
               // Continue without mask images
             }
@@ -337,13 +357,15 @@ const SnapshotScreen = (): React.JSX.Element => {
 
           const photoDataObj: PhotoData = {
             id: photoId || '',
-            imageId: imgId,
+            imageId: imageId || passedImageId,
+            hautBatchId: batchId,
             storageUrl: localUri || '',
             timestamp: parsedTimestamp,
             metrics: transformedMetrics,
             maskResults: maskResults,
             maskImages: maskImages,
-            status: { state: 'complete' }
+            status: { state: 'complete' },
+            results: results
           };
 
           setPhotoData(photoDataObj);
@@ -356,14 +378,14 @@ const SnapshotScreen = (): React.JSX.Element => {
             // 1. AI Summary
             (async () => {
               try {
-                const summaryResp = await getImageChatSummary(imgId);
+                const summaryResp = await getImageChatSummary(imageId || passedImageId || batchId);
                 if (summaryResp.summary) {
                   setSummary(summaryResp.summary);
                 } else {
                   const currentUser = useAuthStore.getState().user;
                   const currentProfile = useAuthStore.getState().profile;
                   const chatData = {
-                    imageId: imgId,
+                    imageId: imageId || passedImageId || batchId,
                     firstName: currentUser?.user_name || currentProfile?.user_name || 'User',
                     age: currentProfile?.age || 25,
                     skinType: currentProfile?.skinType || 'normal',
@@ -395,7 +417,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                 // Find the index of the current photo
                 const currentIndex = sortedPhotos.findIndex((p: any) => {
                   const pImgId = p.hautUploadData?.imageId || p.id;
-                  return pImgId === imgId || pImgId === photoId;
+                  return pImgId === batchId || pImgId === imageId || pImgId === photoId;
                 });
                 
                 // The most recent photo captured BEFORE this one
@@ -411,8 +433,12 @@ const SnapshotScreen = (): React.JSX.Element => {
                 }
                   
                 if (prevPhoto) {
-                  const prevImgId = prevPhoto.hautUploadData?.imageId || prevPhoto.id;
-                  const prevResults = await getHautAnalysisResults(prevImgId);
+                  const prevHautBatchId = prevPhoto.hautUploadData?.hautBatchId;
+                  if (!prevHautBatchId) {
+                    console.log('⚠️ No previous hautBatchId found for comparison');
+                    return;
+                  }
+                  const prevResults = await getHautAnalysisResults(prevHautBatchId);
                   if (prevResults && prevResults.length > 0) {
                     const prevMetrics = transformHautResults(prevResults);
                     const changes: Record<string, { arrow: string; value: number }> = {};
@@ -499,9 +525,10 @@ const SnapshotScreen = (): React.JSX.Element => {
         };
         setPhotoData(initialPhotoData);
         setImageId(passedImageId);
+        setHautBatchId(passedHautBatchId || null);
         setLoadingMicrocopy('Loading analysis results...');
         setUiState('analyzing');
-        startPollingForResults(passedImageId);
+        startPollingForResults(passedHautBatchId || '');
       }
       hasInitializedRef.current = true;
       return;

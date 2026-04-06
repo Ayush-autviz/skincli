@@ -748,6 +748,56 @@ const metricHelpers = {
     });
   },
 
+  // Extract related metrics from FM3 results structure
+  extractFm3RelatedMetrics: (fm3Results: any, metricKey: string) => {
+    if (!fm3Results || !metricKey) return [];
+
+    const fm3Mapping: Record<string, string> = {
+      acneScore: "breakouts",
+      rednessScore: "redness",
+      poresScore: "pores",
+      perceivedAge: "age",
+      eyeAge: "eyes_age",
+      skinTone: "skintone",
+      skinType: "skin_type",
+      hydrationScore: "hydration",
+      pigmentationScore: "pigmentation",
+      linesScore: "lines",
+      uniformnessScore: "uniformness",
+      eyeAreaCondition: "dark_circles",
+    };
+
+    const fm3Key = fm3Mapping[metricKey] || metricKey;
+    const metricData = fm3Results[fm3Key];
+
+    if (!metricData) return [];
+
+    const related: any[] = [];
+
+    // 1. Add the main metric as "Overall" or "face"
+    related.push({
+      tech_name: fm3Key,
+      value: (typeof metricData.score === 'number' ? metricData.score : (metricData.age || metricData.eyes_age || metricData.classification)),
+      area_name: "face",
+      tag: metricData.tag,
+      grade: metricData.grade
+    });
+
+    // 2. Add area-specific metrics if available
+    if (metricData.areas && typeof metricData.areas === 'object') {
+      Object.keys(metricData.areas).forEach(area => {
+        related.push({
+          tech_name: `${fm3Key}_${area}`,
+          value: metricData.areas[area].score || metricData.areas[area].value,
+          area_name: area,
+          tag: metricData.areas[area].tag
+        });
+      });
+    }
+
+    return related;
+  },
+
   // Group metrics by facial region
   groupByRegion: (metrics: any[]) => {
     const regions: Record<string, any[]> = {};
@@ -1087,7 +1137,10 @@ export default function MetricDetailScreen() {
   };
 
   // Parse the photoData if it's a string
-  const parsedPhotoData = typeof photoData === 'string' ? JSON.parse(photoData) : photoData;
+  const parsedPhotoData = React.useMemo(() => {
+    if (!photoData) return null;
+    return typeof photoData === 'string' ? JSON.parse(photoData) : photoData;
+  }, [photoData]);
 
   const [backgroundImageLoading, setBackgroundImageLoading] = useState<boolean>(true);
   const [maskImages, setMaskImages] = useState<any>(null);
@@ -1114,16 +1167,18 @@ export default function MetricDetailScreen() {
   // Fetch mask images when component loads
   useEffect(() => {
     const fetchMaskImages = async () => {
-      if (!parsedPhotoData?.hautUploadData?.imageId) {
-        console.log('🔴 No imageId available for fetching mask images');
+      const batchId = parsedPhotoData?.hautUploadData?.hautBatchId || parsedPhotoData?.hautBatchId;
+      if (!batchId) {
+        console.log('🔴 No hautBatchId available for fetching mask images');
         return;
       }
 
       try {
         setMaskImagesLoading(true);
-        console.log('🔵 Fetching mask images for imageId:', parsedPhotoData.hautUploadData.imageId);
+        const batchId = parsedPhotoData.hautUploadData.hautBatchId || parsedPhotoData.hautBatchId;
+        console.log('🔵 Fetching mask images for batchId:', batchId);
 
-        const maskImagesData = await getHautMaskImages(parsedPhotoData.hautUploadData.imageId);
+        const maskImagesData = await getHautMaskImages(batchId);
         console.log('✅ Mask images fetched successfully:', maskImagesData);
 
         setMaskImages(maskImagesData);
@@ -1136,7 +1191,7 @@ export default function MetricDetailScreen() {
     };
 
     fetchMaskImages();
-  }, [parsedPhotoData?.hautUploadData?.imageId]);
+  }, [parsedPhotoData?.hautUploadData?.hautBatchId, parsedPhotoData?.hautBatchId]);
 
 
 
@@ -1376,16 +1431,22 @@ export default function MetricDetailScreen() {
       }
     }
 
-    if (!parsedPhotoData || !parsedPhotoData.results || !parsedPhotoData.results.area_results) {
-      // console.log('No area_results data available');
+    const rawResults = parsedPhotoData.results || parsedPhotoData.apiData;
+    const firstResult = Array.isArray(rawResults) ? rawResults[0] : rawResults;
+    const areaResults = firstResult?.area_results;
+    const fm3Results = firstResult?.fm3_results;
+
+    if (!areaResults && !fm3Results) {
       return;
     }
 
     // Get all metrics related to the selected metric key
-    const related = metricHelpers.getRelatedMetrics(
-      parsedPhotoData.results.area_results,
-      metricKey
-    );
+    let related = [];
+    if (areaResults) {
+      related = metricHelpers.getRelatedMetrics(areaResults, metricKey);
+    } else if (fm3Results) {
+      related = metricHelpers.extractFm3RelatedMetrics(fm3Results, metricKey);
+    }
 
     console.log(`Found ${related.length} related metrics`);
 
@@ -1396,20 +1457,28 @@ export default function MetricDetailScreen() {
 
   // Separate useEffect to calculate display info when currentConcernDetails is available
   useEffect(() => {
-    if (!parsedPhotoData || !parsedPhotoData.results || !parsedPhotoData.results.area_results) {
+    const rawResults = parsedPhotoData.results || parsedPhotoData.apiData;
+    const firstResult = Array.isArray(rawResults) ? rawResults[0] : rawResults;
+    const areaResults = firstResult?.area_results;
+    const fm3Results = firstResult?.fm3_results;
+
+    if (!areaResults && !fm3Results) {
       return;
     }
 
     // Get all metrics related to the selected metric key
-    const related = metricHelpers.getRelatedMetrics(
-      parsedPhotoData.results.area_results,
-      metricKey
-    );
+    let related = [];
+    if (areaResults) {
+      related = metricHelpers.getRelatedMetrics(areaResults, metricKey);
+    } else if (fm3Results) {
+      related = metricHelpers.extractFm3RelatedMetrics(fm3Results, metricKey);
+    }
 
     // Get primary metric for display info
     const primaryMetric = related.find(m =>
       m.area_name === 'face' ||
-      m.tech_name === metricHelpers.getMatchPattern(metricKey)
+      m.area_name === 'Overall' ||
+      m.tech_name?.includes(metricHelpers.getMatchPattern(metricKey))
     );
 
     // Set display info based on metric type

@@ -94,18 +94,6 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
   const { setSelectedSnapshot } = usePhotoContext();
   const { user } = useAuthStore();
 
-  // Prepare data - Reverse context data (newest-first) to get oldest-first for standard list
-  // const preparedData = [...photos].reverse(); // REMOVED - Use photos directly (already Oldest -> Newest)
-
-  // Scroll handling for new photos - Offset scroll effect commented out
-  /*
-  useEffect(() => {
-    if (flatListRef.current && photos.length > 0) {
-      flatListRef.current.scrollToOffset({ offset: 0, animated: true });
-    }
-  }, [photos.length]);
-  */
-
   console.log('🔵 photos from PhotoGrid:', photos);
 
   // Only scroll when new photos are added (scrollToEnd should work for non-inverted)
@@ -140,15 +128,6 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
   }, [photos?.length, initialScrollDone]);
 
 
-  // TEMPORARILY DISABLED - DO NOT DELETE
-  // const handleRefresh = async () => {
-  //   setRefreshing(true);
-  //   if (onRefresh) {
-  //     await onRefresh();
-  //   }
-  //   setRefreshing(false);
-  // };
-
   // Handle end reached for infinite scrolling
   const handleEndReached = (): void => {
     if (hasMore && !isLoadingMore && onLoadMore) {
@@ -177,6 +156,7 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
       localUri: photo.storageUrl, // Provide URI for immediate render
       timestamp: photo.apiData?.created_at || null, // Pass creation date if available
       fromPhotoGrid: 'true', // Flag to indicate we're coming from PhotoGrid
+      hautBatchId: photo.hautUploadData?.hautBatchId || photo.hautBatchId, // Pass the hautBatchId for polling
       imageId: photo.hautUploadData?.imageId || photo.id // Pass the imageId for polling
     });
   };
@@ -401,16 +381,13 @@ const styles = StyleSheet.create({
     rowGap: gutter,
     columnGap: 0,
   },
-
   gridContainer: {
     flex: 1,
     backgroundColor: '#FFF', // match app theme
   },
-
   list: {
     flex: 1,
   },
-  
   photoContainer: {
     width: photoSize,
     height: photoSize,
@@ -430,7 +407,6 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
-
   unanalyzed: {
     opacity: 0.8,
   },

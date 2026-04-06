@@ -536,6 +536,7 @@ export default function HomeScreen(): React.JSX.Element {
                 localUri: targetPhoto.storageUrl,
                 timestamp: targetPhoto.apiData?.created_at || null,
                 fromPhotoGrid: 'true',
+                hautBatchId: targetPhoto.hautUploadData?.hautBatchId || targetPhoto.hautBatchId,
                 imageId: targetPhoto.hautUploadData?.imageId || targetPhoto.id,
             });
         }
@@ -597,6 +598,7 @@ export default function HomeScreen(): React.JSX.Element {
                 localUri: item.storageUrl,
                 timestamp: item.apiData?.created_at || null,
                 fromPhotoGrid: 'true',
+                hautBatchId: item.hautUploadData?.hautBatchId || item.hautBatchId,
                 imageId: item.hautUploadData?.imageId || item.id,
             });
         }

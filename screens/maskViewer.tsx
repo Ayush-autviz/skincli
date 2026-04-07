@@ -91,7 +91,7 @@ const formatConditionName = (conditionName: string): string => {
     'none': 'Original',
     'redness': 'Redness',
     'hydration': 'Dewiness',
-    'eye_bags': 'Eye Area Condition',
+    'eye_bags': 'Dark Circles',
     'pores': 'Visible Pores',
     'acne': 'Breakouts',
     'lines': 'Lines',

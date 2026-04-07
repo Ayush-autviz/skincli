@@ -368,7 +368,7 @@ const MetricsSheet = forwardRef<MetricsSheetRef, MetricsSheetProps>(({
     const customNames: { [key: string]: string } = {
       'acneScore': 'Breakouts',
       'rednessScore': 'Redness',
-      'eyeAreaCondition': 'Eye Area Condition',
+      'eyeAreaCondition': 'Dark Circles',
       'linesScore': 'Lines',
       'pigmentationScore': 'Pigmentation',
       'poresScore': 'Visible Pores',

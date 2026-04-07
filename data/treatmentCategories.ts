@@ -31,7 +31,7 @@ export const treatmentCategories: TreatmentCategory[] = [
                 ],
                 metricNames: [
                     'Lines',
-                    'Eye Area Condition'
+                    'Dark Circles'
                 ]
             },
             {

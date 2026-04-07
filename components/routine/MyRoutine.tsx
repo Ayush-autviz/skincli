@@ -74,7 +74,7 @@ const concernsOptions = [
   'Redness',
   'Visible Pores',
   'Lines',
-  'Eye Area Condition',
+  'Dark Circles',
   'Skin Type',
   'Skin Tone',
   'Perceived Age',

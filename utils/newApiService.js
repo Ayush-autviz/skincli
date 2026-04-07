@@ -4,7 +4,7 @@
 import axios from "axios";
 import useAuthStore from "../stores/authStore";
 
-const BASE_URL = "http://44.198.183.94:9000/api/v1";
+const BASE_URL = "https://mkwhsf5b-8000.inc1.devtunnels.ms/api/v1";
 
 // Global retry configuration
 const MAX_RETRIES = 3;

@@ -206,7 +206,7 @@ const formatMetricName = (key: string): string => {
   const customNames: { [key: string]: string } = {
     'acneScore': 'Breakouts',
     'rednessScore': 'Redness',
-    'eyeAreaCondition': 'Eye Area Condition',
+    'eyeAreaCondition': 'Dark Circles',
     'linesScore': 'Lines',
     'pigmentationScore': 'Pigmentation',
     'poresScore': 'Visible Pores',
@@ -216,6 +216,8 @@ const formatMetricName = (key: string): string => {
     'perceivedAge': 'Perceived Age',
     'skinType': 'Type',
     'skinTone': 'Tone',
+    'puffinessScore': 'Puffiness',
+    'saggingScore': 'Sagging',
   };
   if (customNames[key]) return customNames[key];
   return key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim();
@@ -705,7 +707,7 @@ const SnapshotScreen = (): React.JSX.Element => {
       pigmentation: 'Pigmentation',
       uniformness: 'Evenness',
       eyeAge: 'Perceived Eye Age',
-      eyeAreaCondition: 'Eye Area Condition',
+      eyeAreaCondition: 'Dark Circles',
       perceivedAge: 'Perceived Age',
       skinTone: 'Skin Tone',
       skinType: 'Skin Type',

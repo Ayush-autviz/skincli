@@ -53,8 +53,8 @@ const getIngredientsForMetric = (metricKey: string): string[] => {
     'linesScore': 'Lines',
     'hydrationScore': 'Hydration',
     'uniformnessScore': 'Uniformness',
-    'eyeAreaCondition': 'Eye Area Condition',
-    'eyeBagsScore': 'Eye Area Condition'
+    'eyeAreaCondition': 'Dark Circles',
+    'eyeBagsScore': 'Dark Circles'
   };
 
   const concernName = mapping[metricKey] || mapping[metricKey.replace('Score', '')];
@@ -88,10 +88,10 @@ const CONCERN_KEY_TO_DISPLAY_NAME: Record<string, string> = {
   'linesScore': 'Lines',
   'hydrationScore': 'Dewiness',
   'uniformnessScore': 'Evenness',
-  'eyeBagsScore': 'Eye Area Condition',
+  'eyeBagsScore': 'Dark Circles',
   'saggingScore': 'Sagging',
   'translucencyScore': 'Translucency',
-  'eyeAreaCondition': 'Eye Area Condition'
+  'eyeAreaCondition': 'Dark Circles'
 };
 
 interface Recommendation {
@@ -220,7 +220,7 @@ const RecommendationsList = ({ recommendations = [], onRecommendationPress }: Re
       linesScore: 'Lines',
       hydrationScore: 'Hydration',
       uniformnessScore: 'Uniformness',
-      eyeAreaCondition: 'Eye Area Condition',
+      eyeAreaCondition: 'Dark Circles',
       saggingScore: 'Sagging',
       translucencyScore: 'Translucency'
     };

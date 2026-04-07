@@ -606,7 +606,7 @@ const getHeaderNameForMetric = (metricKey: string) => {
     'translucencyScore': 'Translucency',
     'pigmentationScore': 'Pigmentation',
     'uniformnessScore': 'Evenness',
-    'eyeAreaCondition': 'Eye Area Condition',
+    'eyeAreaCondition': 'Dark Circles',
     'perceivedAge': 'Perceived Age',
     'skinTone': 'Skin Tone',
     'skinType': 'Skin Type',
@@ -684,7 +684,7 @@ const getConcernNameForAPI = (metricKey: string) => {
     'pigmentation': 'Pigmentation',
     'uniformness': 'Evenness',
     'eyeAge': 'Perceived Eye Age',
-    'eyeAreaCondition': 'Eye Area Condition',
+    'eyeAreaCondition': 'Dark Circles',
     'perceivedAge': 'Perceived Age',
     'skinTone': 'Skin Tone',
     'skinType': 'Skin Type',
@@ -714,7 +714,7 @@ const getIngredientsForMetric = (metricKey: string): string[] => {
     'linesScore': 'Lines',
     'poresScore': 'Pores',
     'hydrationScore': 'Hydration',
-    'eyeAreaCondition': 'Eye Area Condition',
+    'eyeAreaCondition': 'Dark Circles',
     'puffinessScore': 'Puffiness',
     'saggingScore': 'Sagging'
   };

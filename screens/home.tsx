@@ -76,7 +76,7 @@ const getConcernNameForAPI = (metricKey: string) => {
         'translucency': 'Translucency',
         'pigmentation': 'Pigmentation',
         'uniformness': 'Evenness',
-        'eyeAreaCondition': 'Eye Area Condition',
+        'eyeAreaCondition': 'Dark Circles',
     };
     if (specialCases[processedKey]) {
         return specialCases[processedKey];
@@ -98,7 +98,7 @@ const getIngredientsForMetric = (metricKey: string): string[] => {
         'linesScore': 'Lines',
         'poresScore': 'Pores',
         'hydrationScore': 'Hydration',
-        'eyeAreaCondition': 'Eye Area Condition'
+        'eyeAreaCondition': 'Dark Circles'
     };
 
     const concernName = mapping[metricKey] || mapping[metricKey.replace('Score', '')];
@@ -391,7 +391,7 @@ export default function HomeScreen(): React.JSX.Element {
                     poresScore: 'Visible Pores',
                     linesScore: 'Lines',
                     hydrationScore: 'Dewiness',
-                    eyeAreaCondition: 'Eye Area Condition'
+                    eyeAreaCondition: 'Dark Circles'
                 };
 
                 // Extract top concerns dynamically

@@ -143,7 +143,7 @@ const METRIC_KEYS = [
 export const METRIC_LABELS = {
   acneScore: 'Breakouts',
   rednessScore: 'Redness',
-  eyeAreaCondition: 'Eye Area Condition',
+  eyeAreaCondition: 'Dark Circles',
   linesScore: 'Lines',
   pigmentationScore: 'Pigmentation',
   poresScore: 'Visible Pores',
@@ -184,7 +184,7 @@ const getConcernNameForAPI = (metricKey: string): string | null => {
     'pigmentation': 'Pigmentation',
     'uniformness': 'Evenness',
     'eyeAge': 'Perceived Eye Age',
-    'eyeAreaCondition': 'Eye Area Condition',
+    'eyeAreaCondition': 'Dark Circles',
     'perceivedAge': 'Perceived Age',
     'skinTone': 'Skin Tone',
     'skinType': 'Skin Type',

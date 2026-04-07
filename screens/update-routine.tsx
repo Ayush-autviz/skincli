@@ -80,7 +80,7 @@ const concernsOptions = [
   'Redness',
   'Visible Pores',
   'Lines',
-  'Eye Area Condition',
+  'Dark Circles',
   'Pigmentation',
   'Dewiness',
   'Anti-Aging (Face)',

@@ -1699,16 +1699,16 @@
     },
     "eyeAreaCondition": {
       "keyForLookup": "eyeAreaCondition",
-      "displayName": "Eye Area Condition",
-      "overview": "Your eye area condition score reflects the overall health of the skin around your eyes, including lines, puffiness, and dark circles. This metric provides a holistic view of the eye area's skin quality, which is often the first to show signs of aging and fatigue.",
+      "displayName": "Dark Circles",
+      "overview": "Your dark circles score reflects the overall health and appearance of the skin around your eyes. This metric focuses on pigmentation, fluid retention, and skin thickness in the delicate eye area, helping you track improvements in brightness and skin quality.",
       "maskVerbiage": ["Green zones, if any, indicate detected dark circles under the eyes", "Yellow zones, if any, indicate detected puffiness or eye bags", "White  lines, if any, indicate detected lacrimal grove areas"],
       "scoreLevels": {
-        "excellent": { "max": 100, "min": 91, "text": "Excellent eye area skin condition"},
-        "great": { "max": 90, "min": 81, "text": "Very good eye area skin condition"},
-        "good": { "max": 79, "min": 70, "text": "Moderately concerning eye area skin condition"},
-        "average": { "max": 69, "min": 50, "text": "Moderately concerning eye area skin condition"},
-        "poor": { "max": 49, "min": 30, "text": "Significant concerns regarding eye area condition; may require specialist attention"},
-        "bad": { "max": 29, "min": 0, "text": "Significant concerns regarding eye area condition; may require specialist attention"}
+        "excellent": { "max": 100, "min": 91, "text": "Excellent dark circle appearance"},
+        "great": { "max": 90, "min": 81, "text": "Very good dark circle appearance"},
+        "good": { "max": 79, "min": 70, "text": "Moderate dark circle visibility"},
+        "average": { "max": 69, "min": 50, "text": "Moderate dark circle visibility"},
+        "poor": { "max": 49, "min": 30, "text": "Significant dark circle visibility; may benefit from targeted care"},
+        "bad": { "max": 29, "min": 0, "text": "Significant dark circle visibility; may benefit from targeted care"}
       },
       "whatYouCanDo": [
         {

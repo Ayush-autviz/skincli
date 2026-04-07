@@ -609,7 +609,9 @@ const getHeaderNameForMetric = (metricKey: string) => {
     'eyeAreaCondition': 'Eye Area Condition',
     'perceivedAge': 'Perceived Age',
     'skinTone': 'Skin Tone',
-    'skinType': 'Skin Type'
+    'skinType': 'Skin Type',
+    'puffinessScore': 'Puffiness',
+    'saggingScore': 'Sagging'
   };
 
   return mapping[metricKey] || null;
@@ -629,7 +631,9 @@ const getConditionNameForMetric = (metricKey: string) => {
     'uniformnessScore': 'uniformness',
     'eyeAreaCondition': 'eye_bags',
     'skinTone': 'skin_tone',
-    'skinType': 'skin_type'
+    'skinType': 'skin_type',
+    'puffinessScore': 'puffiness',
+    'saggingScore': 'sagging'
   };
 
   return mapping[metricKey] || null;
@@ -650,7 +654,9 @@ const getSkinConditionNameForMetric = (metricKey: string) => {
     'eyeAreaCondition': 'eye_bags',
     'perceivedAge': 'age',
     'skinTone': 'skin_tone',
-    'skinType': 'skin_type'
+    'skinType': 'skin_type',
+    'puffinessScore': 'puffiness',
+    'saggingScore': 'sagging'
   };
 
   return mapping[metricKey] || null;
@@ -681,7 +687,9 @@ const getConcernNameForAPI = (metricKey: string) => {
     'eyeAreaCondition': 'Eye Area Condition',
     'perceivedAge': 'Perceived Age',
     'skinTone': 'Skin Tone',
-    'skinType': 'Skin Type'
+    'skinType': 'Skin Type',
+    'puffiness': 'Puffiness',
+    'sagging': 'Sagging'
   };
 
   if (specialCases[processedKey]) {
@@ -706,7 +714,9 @@ const getIngredientsForMetric = (metricKey: string): string[] => {
     'linesScore': 'Lines',
     'poresScore': 'Pores',
     'hydrationScore': 'Hydration',
-    'eyeAreaCondition': 'Eye Area Condition'
+    'eyeAreaCondition': 'Eye Area Condition',
+    'puffinessScore': 'Puffiness',
+    'saggingScore': 'Sagging'
   };
 
   const concernName = mapping[metricKey] || mapping[metricKey.replace('Score', '')];
@@ -2479,7 +2489,7 @@ export default function MetricDetailScreen() {
                     )}
                   </View>
 
-                  {concernMessageLoading ? (
+                  {/* {concernMessageLoading ? (
                     // Skeleton for Amber's Insight card while API loads
                     <SkeletonPlaceholder borderRadius={12}>
                       <SkeletonPlaceholder.Item
@@ -2518,11 +2528,14 @@ export default function MetricDetailScreen() {
                     <TouchableOpacity
                       style={styles.aiInsightCard}
                       onPress={() => {
+
                         (navigation as any).navigate('ThreadChat', {
-                          chatType: 'snapshot_feedback',
+                          chatType: 'ingredients_related_chat',
                           draftMessage: concernMessageData.message,
-                          imageId: parsedPhotoData?.id || parsedPhotoData?.imageId
+                          imageId: parsedPhotoData?.imageId
                         });
+
+                        console.log("parsedPhotoData", parsedPhotoData)
                       }}
                     >
                       <View style={styles.aiAvatarContainer}>
@@ -2542,7 +2555,7 @@ export default function MetricDetailScreen() {
                         <ChevronRight size={20} color="#9CA3AF" />
                       </View>
                     </TouchableOpacity>
-                  ) : null}
+                  ) : null} */}
 
                 </View>
               )}

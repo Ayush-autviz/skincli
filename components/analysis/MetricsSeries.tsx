@@ -151,7 +151,9 @@ export const METRIC_LABELS = {
   uniformnessScore: 'Evenness',
   eyeAge: 'Perceived Eye Age',
   perceivedAge: 'Perceived Age',
-  skinType: 'Skin Type'
+  skinType: 'Skin Type',
+  puffinessScore: 'Puffiness',
+  saggingScore: 'Sagging'
 };
 
 const IMAGE_QUALITY_KEYS = [
@@ -185,7 +187,9 @@ const getConcernNameForAPI = (metricKey: string): string | null => {
     'eyeAreaCondition': 'Eye Area Condition',
     'perceivedAge': 'Perceived Age',
     'skinTone': 'Skin Tone',
-    'skinType': 'Skin Type'
+    'skinType': 'Skin Type',
+    'puffiness': 'Puffiness',
+    'sagging': 'Sagging'
   };
 
   if (specialCases[processedKey]) {

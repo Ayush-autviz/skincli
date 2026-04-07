@@ -1863,6 +1863,40 @@
           "initialChatMessage": "Hot water and harsh soaps can be particularly damaging to dry skin, stripping away natural oils and worsening dryness. Lukewarm water and gentle products are much better choices. Would you like tips on adjusting your routine?"
         }
       ]
+    },
+    "puffinessScore": {
+      "keyForLookup": "puffinessScore",
+      "displayName": "Puffiness",
+      "associatedMetric": "Puffiness score <70",
+      "overview": "Puffiness around the eyes and face can be caused by various factors, including fluid retention, lack of sleep, allergies, or natural aging. It often manifests as swelling or eye bags, making the face appear tired or less vibrant.",
+      "scoreLevels": {
+        "excellent": { "max": 100, "min": 91, "text": "Your skin shows very little to no signs of puffiness. Your eye area and facial contours appear well-defined and refreshed." },
+        "great": { "max": 90, "min": 81, "text": "Minimal puffiness detected. Your skin maintains good definition, with only minor areas of concern that are easily manageable." },
+        "good": { "max": 80, "min": 71, "text": "Some mild puffiness is visible, particularly around the eye area. Targeted treatments can help improve definition and reduce swelling." },
+        "average": { "max": 70, "min": 51, "text": "Noticeable puffiness is present. Incorporating cooling treatments and improving sleep/hydration can help reduce overall swelling." },
+        "poor": { "max": 50, "min": 31, "text": "Significant puffiness detected. Consider specialized eye creams and lifestyle adjustments to address persistent swelling." },
+        "bad": { "max": 30, "min": 0, "text": "Extensive puffiness is visible. This may indicate significant fluid retention or other factors that would benefit from consistent targeted care." }
+      },
+      "whatYouCanDo": [
+        {
+          "type": "product",
+          "text": "Caffeine: Helps constrict blood vessels and reduce fluid buildup under the eyes.",
+          "icon": "droplet",
+          "initialChatMessage": "Caffeine is excellent for puffiness as it helps reduce swelling by improving circulation and constricting blood vessels. Would you like to see products with caffeine?"
+        },
+        {
+          "type": "activity",
+          "text": "Use a cold compress or cooled eye masks to soothe and reduce swelling.",
+          "icon": "wind",
+          "initialChatMessage": "Applying something cold is a quick and effective way to reduce puffiness by calming the skin. Do you have specialized cooling tools, or would you like tips?"
+        },
+        {
+          "type": "activity",
+          "text": "Prioritize 7-9 hours of quality sleep to help your body regulate fluids.",
+          "icon": "moon",
+          "initialChatMessage": "Lack of sleep is a common cause of puffiness. Ensuring you get enough rest can make a huge difference. Are you looking for ways to improve your sleep hygiene?"
+        }
+      ]
     }
   }
 }

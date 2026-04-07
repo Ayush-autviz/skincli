@@ -177,7 +177,8 @@ const FindProductScreen = (): React.JSX.Element => {
             return (
                 <View style={styles.emptyState}>
                     <Text style={styles.emptySubtitle}>
-                        Start typing a product name to search our database.
+                        Start typing a product name to search our database{"\n\n"}
+                        If your product is not found, scan it instead
                     </Text>
                 </View>
             );
@@ -200,7 +201,8 @@ const FindProductScreen = (): React.JSX.Element => {
         return (
             <View style={styles.emptyState}>
                 <Text style={styles.emptySubtitle}>
-                    Product not found in our database.
+                    Product not found in our database.{"\n"}
+                    If your product is not found, scan it instead.
                 </Text>
             </View>
         );

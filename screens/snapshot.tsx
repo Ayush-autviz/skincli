@@ -420,7 +420,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                   const pImgId = p.hautUploadData?.imageId || p.id;
                   return pImgId === batchId || pImgId === imageId || pImgId === photoId;
                 });
-                
+
                 // The most recent photo captured BEFORE this one
                 let prevPhoto = null;
                 if (currentIndex >= 0) {
@@ -432,7 +432,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                   // If current photo is brand new (not in list), use the most recent existing one
                   prevPhoto = sortedPhotos[0];
                 }
-                  
+
                 if (prevPhoto) {
                   const prevHautBatchId = prevPhoto.hautUploadData?.hautBatchId;
                   if (!prevHautBatchId) {
@@ -709,6 +709,8 @@ const SnapshotScreen = (): React.JSX.Element => {
       perceivedAge: 'Perceived Age',
       skinTone: 'Skin Tone',
       skinType: 'Skin Type',
+      puffiness: 'Puffiness',
+      sagging: 'Sagging',
     };
     if (special[processedKey]) return special[processedKey];
     return processedKey.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
@@ -725,7 +727,8 @@ const SnapshotScreen = (): React.JSX.Element => {
   // Get score metrics for the analysis section
   const scoreOrder = [
     'pigmentationScore', 'uniformnessScore', 'rednessScore',
-    'acneScore', 'hydrationScore', 'eyeAreaCondition', 'linesScore', 'poresScore'
+    'acneScore', 'hydrationScore', 'eyeAreaCondition', 'linesScore', 'poresScore',
+    'puffinessScore', 'saggingScore'
   ];
   const scoreMetrics = metrics
     ? scoreOrder
@@ -922,7 +925,7 @@ const SnapshotScreen = (): React.JSX.Element => {
         )}
 
         {/* SkinCheck Card */}
-        {uiState === 'complete' && (
+        {/* {uiState === 'complete' && (
           <TouchableOpacity
             style={styles.skinCheckCard}
             onPress={() => (navigation as any).navigate('SkinCheck')}
@@ -938,7 +941,7 @@ const SnapshotScreen = (): React.JSX.Element => {
               </Text>
             </View>
           </TouchableOpacity>
-        )}
+        )} */}
 
         {/* No Results State */}
         {uiState === 'no_results' && (

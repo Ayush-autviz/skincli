@@ -1052,6 +1052,8 @@ export const transformHautResults = (hautResults) => {
         lines: "linesScore",
         uniformness: "uniformnessScore",
         dark_circles: "eyeAreaCondition",
+        puffiness: "puffinessScore",
+        sagging: "saggingScore",
       };
 
       Object.keys(KEY_MAP).forEach(fm3Key => {

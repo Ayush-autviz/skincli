@@ -23,7 +23,7 @@ import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import useAuthStore from '../stores/authStore';
-import { getHautAnalysisResults, transformHautResults, generateConcernMessage, getReportHistory } from '../utils/newApiService';
+import { getHautAnalysisResults, transformHautResults, generateConcernMessage, getReportHistory, getUserRoutineScanMetrics } from '../utils/newApiService';
 import SkinCheckCard from '../components/home/SkinCheckCard';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
 import concernsData from '../data/concerns.json';
@@ -204,6 +204,10 @@ export default function HomeScreen(): React.JSX.Element {
     const [reports, setReports] = useState<any[]>([]);
     const [isLoadingReports, setIsLoadingReports] = useState<boolean>(true);
 
+    // User metrics state
+    const [userMetrics, setUserMetrics] = useState<{ total_routines: number; total_face_scans: number } | null>(null);
+    const [isLoadingMetrics, setIsLoadingMetrics] = useState<boolean>(true);
+
     // Toggle ingredient visibility for a concern
     const toggleConcernExpanded = (concernName: string) => {
         setExpandedConcerns(prev => ({
@@ -276,8 +280,23 @@ export default function HomeScreen(): React.JSX.Element {
                 hasInitialRefreshed.current = true;
             }
             loadReportHistory();
+            loadUserMetrics();
         }, [refreshPhotos, photos.length])
     );
+
+    const loadUserMetrics = async () => {
+        try {
+            setIsLoadingMetrics(true);
+            const response = await getUserRoutineScanMetrics() as any;
+            if (response.success && response.data) {
+                setUserMetrics(response.data);
+            }
+        } catch (error) {
+            console.error('Error loading user metrics:', error);
+        } finally {
+            setIsLoadingMetrics(false);
+        }
+    };
 
     // Specifically refresh when a new photo is uploaded
     useEffect(() => {
@@ -723,8 +742,8 @@ export default function HomeScreen(): React.JSX.Element {
                         <View style={styles.photoWrapper}>
                             <View style={styles.emptyPhotoContainer}>
                                 {/* Face Scan Icon */}
-                                <View style={{alignItems:'center',justifyContent:'center' , backgroundColor:'#F5F5F5', borderRadius:99 ,padding:15}}>
-                                <SvgXml xml={scanPlaceholderSvg} width={50} height={50} />
+                                <View style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F5F5', borderRadius: 99, padding: 15 }}>
+                                    <SvgXml xml={scanPlaceholderSvg} width={50} height={50} />
                                 </View>
                                 {/* New Scan Button */}
                                 <TouchableOpacity
@@ -740,6 +759,26 @@ export default function HomeScreen(): React.JSX.Element {
 
                     {/* No dots/indicators - using 3D carousel effect instead */}
                 </View>
+
+                {/* User Metrics Section - Requested Design */}
+                {userMetrics && (
+                    <View style={styles.metricsProfileCard}>
+                        <View style={styles.metricsProfileRow}>
+                            <View style={styles.metricsProfileItem}>
+                                <Text style={styles.metricsProfileLabel}>Facial Scans</Text>
+                                <View style={styles.metricsProfileValueContainer}>
+                                    <Text style={styles.metricsProfileValue}>{userMetrics.total_face_scans}</Text>
+                                </View>
+                            </View>
+                            <View style={styles.metricsProfileItem}>
+                                <Text style={styles.metricsProfileLabel}>Routine Items</Text>
+                                <View style={styles.metricsProfileValueContainer}>
+                                    <Text style={styles.metricsProfileValue}>{userMetrics.total_routines}</Text>
+                                </View>
+                            </View>
+                        </View>
+                    </View>
+                )}
 
                 {/* Top Concerns Section */}
                 {(isLoadingConcerns || topConcerns.length > 0) && (
@@ -1304,5 +1343,49 @@ const styles = StyleSheet.create({
     singlePhotoContainer: {
         justifyContent: 'center',
         alignItems: 'center',
+    },
+
+    // User Metrics Section Styles (Matching Snapshot's profile style)
+    metricsProfileCard: {
+        backgroundColor: '#FFFFFF',
+        borderRadius: 14,
+        padding: 10,
+        marginBottom: 12,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.05,
+        shadowRadius: 8,
+        elevation: 2,
+    },
+    metricsProfileRow: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+    },
+    metricsProfileItem: {
+        width: '48%',
+        backgroundColor: '#F5F5F5',
+        padding: 8,
+        borderRadius: 8,
+        alignItems: 'center',
+    },
+    metricsProfileLabel: {
+        fontSize: 13,
+        color: '#A9A29D',
+        marginBottom: 6,
+        fontWeight: '600',
+        fontFamily: fontFamily.semiBold,
+        textAlign: 'center',
+    },
+    metricsProfileValueContainer: {
+        width: "100%",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    metricsProfileValue: {
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#1C1917',
+        fontFamily: fontFamily.bold,
     },
 });

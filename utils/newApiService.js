@@ -4,7 +4,7 @@
 import axios from "axios";
 import useAuthStore from "../stores/authStore";
 
-const BASE_URL = "https://mkwhsf5b-8000.inc1.devtunnels.ms/api/v1";
+const BASE_URL = "http://44.198.183.94:9000/api/v1";
 
 // Global retry configuration
 const MAX_RETRIES = 3;
@@ -2482,3 +2482,29 @@ export const getReportHistory = async () => {
 };
 
 export default apiClient;
+/**
+ * Get user routine and scan metrics
+ * @returns {Promise<Object>} Metrics data (total_routines, total_face_scans)
+ */
+export const getUserRoutineScanMetrics = async () => {
+  try {
+    console.log("🔵 Fetching user routine and scan metrics...");
+    const response = await apiClient.get("/routine/user-routine-scan-metrics");
+    if (response.data.status === 200) {
+      console.log("✅ Metrics fetched successfully");
+      return {
+        success: true,
+        data: response.data.data,
+      };
+    } else {
+      throw new Error(response.data.message || "Failed to fetch metrics");
+    }
+  } catch (error) {
+    console.error("🔴 Metrics fetch error:", error);
+    throw new Error(
+      error.response?.data?.message ||
+      error.message ||
+      "Failed to fetch metrics"
+    );
+  }
+};

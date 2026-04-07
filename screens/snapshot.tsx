@@ -375,113 +375,117 @@ const SnapshotScreen = (): React.JSX.Element => {
           setAnalysisResults(results);
           setLoadingMicrocopy('Preparing results...');
 
-          // Fetch AI summary + compute score changes in parallel before showing results
-          const contextPhotos = photos || [];
-          await Promise.all([
-            // 1. AI Summary
-            (async () => {
-              try {
-                const summaryResp = await getImageChatSummary(imageId || passedImageId || batchId);
-                if (summaryResp.summary) {
-                  setSummary(summaryResp.summary);
-                } else {
-                  const currentUser = useAuthStore.getState().user;
-                  const currentProfile = useAuthStore.getState().profile;
-                  const chatData = {
-                    imageId: imageId || passedImageId || batchId,
-                    firstName: currentUser?.user_name || currentProfile?.user_name || 'User',
-                    age: currentProfile?.age || 25,
-                    skinType: currentProfile?.skinType || 'normal',
-                    skinConcerns: currentProfile?.concerns
-                      ? Object.keys(currentProfile.concerns).filter(key => currentProfile.concerns![key])
-                      : [],
-                    excludedMetrics: [],
-                    metrics: transformedMetrics || {}
-                  };
-                  try {
-                    const chatResponse: any = await sendSnapshotFirstChat(chatData);
-                    if (chatResponse.success && chatResponse.data) {
-                      setSummary(chatResponse.data.message || chatResponse.data.feedback);
-                    }
-                  } catch (_) { /* continue without summary */ }
-                }
-              } catch (_) { setSummary(null); }
-              setSummaryLoading(false);
-            })(),
-            // 2. Score changes from previous photo
-            (async () => {
-              try {
-                // Find the previous photo (not the current one) from context
-                const sortedPhotos = [...contextPhotos].sort((a: any, b: any) => {
-                  const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
-                  const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
-                  return dateB.getTime() - dateA.getTime();
-                });
-                // Find the index of the current photo
-                const currentIndex = sortedPhotos.findIndex((p: any) => {
-                  const pImgId = p.hautUploadData?.imageId || p.id;
-                  return pImgId === batchId || pImgId === imageId || pImgId === photoId;
-                });
-
-                // The most recent photo captured BEFORE this one
-                let prevPhoto = null;
-                if (currentIndex >= 0) {
-                  // If current photo is already in the list, get the next older one
-                  if (currentIndex < sortedPhotos.length - 1) {
-                    prevPhoto = sortedPhotos[currentIndex + 1];
-                  }
-                } else if (sortedPhotos.length > 0) {
-                  // If current photo is brand new (not in list), use the most recent existing one
-                  prevPhoto = sortedPhotos[0];
-                }
-
-                if (prevPhoto) {
-                  const prevHautBatchId = prevPhoto.hautUploadData?.hautBatchId;
-                  if (!prevHautBatchId) {
-                    console.log('⚠️ No previous hautBatchId found for comparison');
-                    return;
-                  }
-                  const prevResults = await getHautAnalysisResults(prevHautBatchId);
-                  if (prevResults && prevResults.length > 0) {
-                    const prevMetrics = transformHautResults(prevResults);
-                    const changes: Record<string, { arrow: string; value: number }> = {};
-                    const scoreKeys = [
-                      'pigmentationScore', 'uniformnessScore', 'rednessScore',
-                      'acneScore', 'hydrationScore', 'eyeAreaCondition', 'linesScore', 'poresScore'
-                    ];
-                    scoreKeys.forEach(key => {
-                      const curr = (transformedMetrics as any)[key];
-                      const prev = (prevMetrics as any)[key];
-                      if (curr !== undefined && prev !== undefined && typeof curr === 'number' && typeof prev === 'number') {
-                        const diff = curr - prev;
-                        changes[key] = {
-                          arrow: diff > 0 ? '↑' : diff < 0 ? '↓' : '→',
-                          value: Math.abs(Math.round(diff))
-                        };
-                      }
-                    });
-                    setScoreChanges(changes);
-                  }
-                }
-              } catch (_) { /* continue without changes */ }
-            })(),
-            // 3. Fetch user top concerns from API
-            (async () => {
-              try {
-                const resp: any = await getComparison('older_than_6_month');
-                const resultData = resp?.data?.result;
-                const tops = resultData?.user_top_concerns || [];
-                setTopConcerns(tops);
-              } catch (_) { /* ignore */ }
-            })()
-          ]);
-
+          // NEW: Transition to complete state IMMEDIATELY after primary metrics are ready
           setUiState('complete');
+          setSummaryLoading(true);
+
           if (fromScanTab) {
             refreshPhotos();
           }
           DeviceEventEmitter.emit('photoUploaded');
           stopPolling();
+
+          // Fetch secondary data (AI summary, score changes, top concerns) in background
+          const contextPhotos = photos || [];
+          (async () => {
+            try {
+              await Promise.all([
+                // 1. AI Summary
+                (async () => {
+                  try {
+                    const summaryResp = await getImageChatSummary(imageId || passedImageId || batchId);
+                    if (summaryResp.summary) {
+                      setSummary(summaryResp.summary);
+                    } else {
+                      const currentUser = useAuthStore.getState().user;
+                      const currentProfile = useAuthStore.getState().profile;
+                      const chatData = {
+                        imageId: imageId || passedImageId || batchId,
+                        firstName: currentUser?.user_name || currentProfile?.user_name || 'User',
+                        age: currentProfile?.age || 25,
+                        skinType: currentProfile?.skinType || 'normal',
+                        skinConcerns: currentProfile?.concerns
+                          ? Object.keys(currentProfile.concerns).filter(key => currentProfile.concerns![key])
+                          : [],
+                        excludedMetrics: [],
+                        metrics: transformedMetrics || {}
+                      };
+                      try {
+                        const chatResponse: any = await sendSnapshotFirstChat(chatData);
+                        if (chatResponse.success && chatResponse.data) {
+                          setSummary(chatResponse.data.message || chatResponse.data.feedback);
+                        }
+                      } catch (_) { /* continue without summary */ }
+                    }
+                  } catch (_) { setSummary(null); }
+                  setSummaryLoading(false);
+                })(),
+                // 2. Score changes from previous photo
+                (async () => {
+                  try {
+                    const sortedPhotos = [...contextPhotos].sort((a: any, b: any) => {
+                      const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
+                      const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
+                      return dateB.getTime() - dateA.getTime();
+                    });
+                    const currentIndex = sortedPhotos.findIndex((p: any) => {
+                      const pImgId = p.hautUploadData?.imageId || p.id;
+                      return pImgId === batchId || pImgId === imageId || pImgId === photoId;
+                    });
+
+                    let prevPhoto = null;
+                    if (currentIndex >= 0) {
+                      if (currentIndex < sortedPhotos.length - 1) {
+                        prevPhoto = sortedPhotos[currentIndex + 1];
+                      }
+                    } else if (sortedPhotos.length > 0) {
+                      prevPhoto = sortedPhotos[0];
+                    }
+
+                    if (prevPhoto) {
+                      const prevHautBatchId = prevPhoto.hautUploadData?.hautBatchId;
+                      if (!prevHautBatchId) return;
+                      const prevResults = await getHautAnalysisResults(prevHautBatchId);
+                      if (prevResults && prevResults.length > 0) {
+                        const prevMetrics = transformHautResults(prevResults);
+                        const changes: Record<string, { arrow: string; value: number }> = {};
+                        const scoreKeys = [
+                          'pigmentationScore', 'uniformnessScore', 'rednessScore',
+                          'acneScore', 'hydrationScore', 'eyeAreaCondition', 'linesScore', 'poresScore'
+                        ];
+                        scoreKeys.forEach(key => {
+                          const curr = (transformedMetrics as any)[key];
+                          const prev = (prevMetrics as any)[key];
+                          if (curr !== undefined && prev !== undefined && typeof curr === 'number' && typeof prev === 'number') {
+                            const diff = curr - prev;
+                            changes[key] = {
+                              arrow: diff > 0 ? '↑' : diff < 0 ? '↓' : '→',
+                              value: Math.abs(Math.round(diff))
+                            };
+                          }
+                        });
+                        setScoreChanges(changes);
+                      }
+                    }
+                  } catch (_) { /* continue without changes */ }
+                })(),
+                // 3. Fetch user top concerns from API
+                (async () => {
+                  try {
+                    const resp: any = await getComparison('older_than_6_month');
+                    const resultData = resp?.data?.result;
+                    const tops = resultData?.user_top_concerns || [];
+                    setTopConcerns(tops);
+                  } catch (_) { /* ignore */ }
+                })()
+              ]);
+            } catch (err) {
+              console.error('🔴 Background loading error:', err);
+            } finally {
+              setSummaryLoading(false);
+            }
+          })();
+
         } else {
           pollingTimeoutRef.current = setTimeout(poll, 3000);
         }

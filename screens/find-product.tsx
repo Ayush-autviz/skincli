@@ -3,30 +3,34 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    FlatList,
-    StyleSheet,
-    ActivityIndicator,
-    SafeAreaView,
-    KeyboardAvoidingView,
-    Platform,
-    Image,
-    Alert,
-    Linking,
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  FlatList,
+  StyleSheet,
+  ActivityIndicator,
+  SafeAreaView,
+  KeyboardAvoidingView,
+  Platform,
+  Image,
+  Alert,
+  Linking,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import {
-    Search,
-    ChevronLeft,
-} from 'lucide-react-native';
+import { Search, ChevronLeft } from 'lucide-react-native';
 import { SvgXml } from 'react-native-svg';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
-import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
+import {
+  colors,
+  fontSize,
+  spacing,
+  typography,
+  borderRadius,
+  shadows,
+} from '../styles';
 import { searchProducts } from '../utils/newApiService';
-// import ProductImageScannerModal from '../components/ProductImageScannerModal'; // Removed
+import ProductImageScannerModal from '../components/ProductImageScannerModal';
 // import { useCameraPermission } from 'react-native-vision-camera'; // Removed
 
 // Custom barcode/scanner icon SVG
@@ -47,411 +51,435 @@ const barcodeScannerSvg = `
 `;
 
 interface SearchResult {
-    product_name: string;
-    brand?: string;
-    upc?: string;
-    [key: string]: any;
+  product_name: string;
+  brand?: string;
+  upc?: string;
+  [key: string]: any;
 }
 
 const ProductSkeletonItem = () => (
-    <View style={styles.productItem}>
-        <SkeletonPlaceholder borderRadius={4}>
-            <SkeletonPlaceholder.Item>
-                <SkeletonPlaceholder.Item width={80} height={12} marginBottom={8} />
-                <SkeletonPlaceholder.Item width={160} height={16} />
-            </SkeletonPlaceholder.Item>
-        </SkeletonPlaceholder>
-    </View>
+  <View style={styles.productItem}>
+    <SkeletonPlaceholder borderRadius={4}>
+      <SkeletonPlaceholder.Item>
+        <SkeletonPlaceholder.Item width={80} height={12} marginBottom={8} />
+        <SkeletonPlaceholder.Item width={160} height={16} />
+      </SkeletonPlaceholder.Item>
+    </SkeletonPlaceholder>
+  </View>
 );
 
 const FindProductScreen = (): React.JSX.Element => {
-    const navigation = useNavigation();
+  const navigation = useNavigation();
 
-    const [searchQuery, setSearchQuery] = useState<string>('');
-    const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
-    const [isSearching, setIsSearching] = useState<boolean>(false);
-    const [hasSearched, setHasSearched] = useState<boolean>(false);
-    const [searchTimeoutRef] = [useRef<ReturnType<typeof setTimeout> | null>(null)];
-    const inputRef = useRef<TextInput>(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
+  const [isSearching, setIsSearching] = useState<boolean>(false);
+  const [hasSearched, setHasSearched] = useState<boolean>(false);
+  const [searchTimeoutRef] = [
+    useRef<ReturnType<typeof setTimeout> | null>(null),
+  ];
+  const inputRef = useRef<TextInput>(null);
+  const [showScannerModal, setShowScannerModal] = useState<boolean>(false);
 
-    // Handle search with debouncing
-    useEffect(() => {
-        if (searchQuery.length < 3) {
-            setSearchResults([]);
-            setHasSearched(false);
-            return;
-        }
+  // Handle search with debouncing
+  useEffect(() => {
+    if (searchQuery.length < 3) {
+      setSearchResults([]);
+      setHasSearched(false);
+      return;
+    }
 
-        // Clear previous timeout
-        if (searchTimeoutRef.current) {
-            clearTimeout(searchTimeoutRef.current);
-        }
+    // Clear previous timeout
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
 
-        // Set new timeout for debounced search
-        searchTimeoutRef.current = setTimeout(async () => {
-            await performSearch(searchQuery);
-        }, 300);
+    // Set new timeout for debounced search
+    searchTimeoutRef.current = setTimeout(async () => {
+      await performSearch(searchQuery);
+    }, 300);
 
-        return () => {
-            if (searchTimeoutRef.current) {
-                clearTimeout(searchTimeoutRef.current);
-            }
-        };
-    }, [searchQuery]);
-
-    const performSearch = async (query: string) => {
-        if (query.trim().length < 3) return;
-
-        setIsSearching(true);
-        setHasSearched(true);
-
-        try {
-            const result = await searchProducts(query);
-            console.log('🔍 Search result:', result);
-
-            if ((result as any).success && (result as any).data?.products && Array.isArray((result as any).data.products)) {
-                const limitedResults = (result as any).data.products.slice(0, 20);
-                setSearchResults(limitedResults);
-            } else {
-                setSearchResults([]);
-            }
-        } catch (error) {
-            console.error('🔴 Error searching products:', error);
-            setSearchResults([]);
-        } finally {
-            setIsSearching(false);
-        }
+    return () => {
+      if (searchTimeoutRef.current) {
+        clearTimeout(searchTimeoutRef.current);
+      }
     };
+  }, [searchQuery]);
 
-    const handleProductSelect = (product: SearchResult) => {
-        // Navigate immediately; Product Detail will fetch full data and show its own skeleton
-        (navigation as any).navigate('ProductDetail', {
-            productData: product,
-            upc: product.upc,
-            mode: 'add',
-        });
-    };
+  const performSearch = async (query: string) => {
+    if (query.trim().length < 3) return;
 
-    const handleProductScanned = async (productData: any) => {
-        // setShowScannerModal(false);
+    setIsSearching(true);
+    setHasSearched(true);
 
-        // Navigate to ProductDetail in "add" mode
-        (navigation as any).navigate('ProductDetail', {
-            productData: productData,
-            upc: productData.upc,
-            mode: 'add',
-        });
-    };
+    try {
+      const result = await searchProducts(query);
+      console.log('🔍 Search result:', result);
 
-    const handleBack = () => {
-        navigation.goBack();
-    };
+      if (
+        (result as any).success &&
+        (result as any).data?.products &&
+        Array.isArray((result as any).data.products)
+      ) {
+        const limitedResults = (result as any).data.products.slice(0, 20);
+        setSearchResults(limitedResults);
+      } else {
+        setSearchResults([]);
+      }
+    } catch (error) {
+      console.error('🔴 Error searching products:', error);
+      setSearchResults([]);
+    } finally {
+      setIsSearching(false);
+    }
+  };
 
-    /* // Removed handleCameraPress
+  const handleProductSelect = (product: SearchResult) => {
+    // Navigate immediately; Product Detail will fetch full data and show its own skeleton
+    (navigation as any).navigate('ProductDetail', {
+      productData: product,
+      upc: product.upc,
+      mode: 'add',
+    });
+  };
+
+  const handleProductScanned = async (productData: any) => {
+    setShowScannerModal(false);
+
+    // Navigate to ProductDetail in "add" mode
+    (navigation as any).navigate('ProductDetail', {
+      productData: productData,
+      upc: productData.upc,
+      mode: 'add',
+    });
+  };
+
+  const handleBack = () => {
+    navigation.goBack();
+  };
+
+  /* // Removed handleCameraPress
     const handleCameraPress = async () => {
         ...
     };
     */
 
-    const renderProductItem = ({ item }: { item: SearchResult }) => (
-        <TouchableOpacity
-            style={styles.productItem}
-            onPress={() => handleProductSelect(item)}
-            activeOpacity={0.7}
-        >
-            <View style={styles.productContent}>
-                <Text style={styles.productBrand}>
-                    {item.brand?.toUpperCase() || 'UNKNOWN BRAND'}
-                </Text>
-                <Text style={styles.productName}>
-                    {item.product_name}
-                </Text>
-            </View>
-        </TouchableOpacity>
-    );
+  const renderProductItem = ({ item }: { item: SearchResult }) => (
+    <TouchableOpacity
+      style={styles.productItem}
+      onPress={() => handleProductSelect(item)}
+      activeOpacity={0.7}
+    >
+      <View style={styles.productContent}>
+        <Text style={styles.productBrand}>
+          {item.brand?.toUpperCase() || 'UNKNOWN BRAND'}
+        </Text>
+        <Text style={styles.productName}>{item.product_name}</Text>
+      </View>
+    </TouchableOpacity>
+  );
 
+  const renderEmptyState = () => {
+    if (!hasSearched) {
+      return (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptySubtitle}>
+            Start typing a product name to search our database{'\n\n'}
+            If your product is not found,{' '}
+            <Text
+              style={styles.scanLink}
+              onPress={() => setShowScannerModal(true)}
+            >
+              scan
+            </Text>{' '}
+            it instead
+          </Text>
+        </View>
+      );
+    }
 
-
-    const renderEmptyState = () => {
-        if (!hasSearched) {
-            return (
-                <View style={styles.emptyState}>
-                    <Text style={styles.emptySubtitle}>
-                        Start typing a product name to search our database{"\n\n"}
-                        If your product is not found, scan it instead
-                    </Text>
-                </View>
-            );
-        }
-
-        if (isSearching) {
-            return (
-                <FlatList
-                    data={[1, 2, 3, 4, 5, 6, 7, 8]}
-                    renderItem={() => <ProductSkeletonItem />}
-                    keyExtractor={(item) => item.toString()}
-                    contentContainerStyle={styles.listContainer}
-                    showsVerticalScrollIndicator={false}
-                    keyboardShouldPersistTaps="handled"
-                    ItemSeparatorComponent={() => <View style={styles.separator} />}
-                />
-            );
-        }
-
-        return (
-            <View style={styles.emptyState}>
-                <Text style={styles.emptySubtitle}>
-                    Product not found in our database.{"\n"}
-                    If your product is not found, scan it instead.
-                </Text>
-            </View>
-        );
-    };
+    if (isSearching) {
+      return (
+        <FlatList
+          data={[1, 2, 3, 4, 5, 6, 7, 8]}
+          renderItem={() => <ProductSkeletonItem />}
+          keyExtractor={item => item.toString()}
+          contentContainerStyle={styles.listContainer}
+          showsVerticalScrollIndicator={false}
+          keyboardShouldPersistTaps="handled"
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
+        />
+      );
+    }
 
     return (
-        <SafeAreaView style={styles.container}>
-            {/* Header - same as Product Detail */}
-            <View style={styles.headerContainer}>
-                <View style={styles.header}>
-                    <TouchableOpacity
-                        style={styles.backButton}
-                        onPress={handleBack}
-                    >
-                        <View style={styles.iconContainer}>
-                            <ChevronLeft size={30} color={"#44403C"} />
-                        </View>
-                    </TouchableOpacity>
-
-                    <View style={styles.titleContainer}>
-                        <Text style={styles.headerTitle}>Find Product</Text>
-                    </View>
-
-                    <View style={styles.rightContainer} />
-                </View>
-                <View style={styles.shadowContainer} />
-            </View>
-
-            {/* Search Input - below fixed header */}
-            <View style={[styles.searchSection, { marginTop: 40 }]}>
-                <View style={styles.searchContainer}>
-                    <View style={styles.searchIconContainer}>
-                        {isSearching ? (
-                            <ActivityIndicator size="small" color={colors.textSecondary} />
-                        ) : (
-                            <Search size={20} color={'#A4A7AE'} />
-                        )}
-                    </View>
-                    <TextInput
-                        ref={inputRef}
-                        style={styles.searchInput}
-                        placeholder="Search products..."
-                        placeholderTextColor={colors.textTertiary}
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        autoFocus
-                        returnKeyType="search"
-                        autoCapitalize="words"
-                        autoCorrect={false}
-                    />
-                </View>
-                {/* Camera Button Removed */}
-            </View>
-
-            {/* Content */}
-            <KeyboardAvoidingView
-                style={styles.content}
-                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            >
-                {searchResults.length > 0 ? (
-                    <FlatList
-                        data={searchResults}
-                        renderItem={renderProductItem}
-                        keyExtractor={(item, index) => `${item.product_name}-${index}`}
-                        showsVerticalScrollIndicator={false}
-                        contentContainerStyle={styles.listContainer}
-                        keyboardShouldPersistTaps="handled"
-                        ItemSeparatorComponent={() => <View style={styles.separator} />}
-                    />
-                ) : (
-                    renderEmptyState()
-                )}
-            </KeyboardAvoidingView>
-
-            {/* Product Scanner Modal Removed */}
-        </SafeAreaView>
+      <View style={styles.emptyState}>
+        <Text style={styles.emptySubtitle}>
+          Product not found in our database.{'\n'}
+          If your product is not found,{' '}
+          <Text
+            style={styles.scanLink}
+            onPress={() => setShowScannerModal(true)}
+          >
+            scan
+          </Text>{' '}
+          it instead.
+        </Text>
+      </View>
     );
+  };
+
+  return (
+    <SafeAreaView style={styles.container}>
+      {/* Header - same as Product Detail */}
+      <View style={styles.headerContainer}>
+        <View style={styles.header}>
+          <TouchableOpacity style={styles.backButton} onPress={handleBack}>
+            <View style={styles.iconContainer}>
+              <ChevronLeft size={30} color={'#44403C'} />
+            </View>
+          </TouchableOpacity>
+
+          <View style={styles.titleContainer}>
+            <Text style={styles.headerTitle}>Find Product</Text>
+          </View>
+
+          <View style={styles.rightContainer} />
+        </View>
+        <View style={styles.shadowContainer} />
+      </View>
+
+      {/* Search Input - below fixed header */}
+      <View style={[styles.searchSection, { marginTop: 40 }]}>
+        <View style={styles.searchContainer}>
+          <View style={styles.searchIconContainer}>
+            {isSearching ? (
+              <ActivityIndicator size="small" color={colors.textSecondary} />
+            ) : (
+              <Search size={20} color={'#A4A7AE'} />
+            )}
+          </View>
+          <TextInput
+            ref={inputRef}
+            style={styles.searchInput}
+            placeholder="Search products..."
+            placeholderTextColor={colors.textTertiary}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            autoFocus
+            returnKeyType="search"
+            autoCapitalize="words"
+            autoCorrect={false}
+          />
+        </View>
+        {/* Camera Button Removed */}
+      </View>
+
+      {/* Content */}
+      <KeyboardAvoidingView
+        style={styles.content}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
+        {searchResults.length > 0 ? (
+          <FlatList
+            data={searchResults}
+            renderItem={renderProductItem}
+            keyExtractor={(item, index) => `${item.product_name}-${index}`}
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={styles.listContainer}
+            keyboardShouldPersistTaps="handled"
+            ItemSeparatorComponent={() => <View style={styles.separator} />}
+          />
+        ) : (
+          renderEmptyState()
+        )}
+      </KeyboardAvoidingView>
+
+      <ProductImageScannerModal
+        visible={showScannerModal}
+        onClose={() => setShowScannerModal(false)}
+        onProductScanned={handleProductScanned}
+      />
+    </SafeAreaView>
+  );
 };
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#FFF',
+  container: {
+    flex: 1,
+    backgroundColor: '#FFF',
+  },
+  headerContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 1000,
+    height: 105,
+    backgroundColor: colors.white,
+    borderBottomWidth: 0.4,
+    justifyContent: 'flex-end',
+    borderBottomColor: '#E5E5E5',
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    // paddingTop: 55,
+    paddingBottom: 10,
+    paddingHorizontal: spacing.lg,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  titleContainer: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.md,
+  },
+  headerTitle: {
+    fontSize: 20,
+    fontWeight: '500',
+    color: colors.textPrimary,
+  },
+  rightContainer: {
+    width: 44,
+    height: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  shadowContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    height: 1,
+    backgroundColor: colors.primary,
+    opacity: 0.1,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
     },
-    headerContainer: {
-        position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        zIndex: 1000,
-        height: 105,
-        backgroundColor: colors.white,
-        borderBottomWidth: 0.4,
-        justifyContent: 'flex-end',
-        borderBottomColor: '#E5E5E5',
-    },
-    header: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        // paddingTop: 55,
-        paddingBottom: 10,
-        paddingHorizontal: spacing.lg,
-    },
-    backButton: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    iconContainer: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    titleContainer: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingHorizontal: spacing.md,
-    },
-    headerTitle: {
-        fontSize: 20,
-        fontWeight: '500',
-        color: colors.textPrimary,
-    },
-    rightContainer: {
-        width: 44,
-        height: 44,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    shadowContainer: {
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 1,
-        backgroundColor: colors.primary,
-        opacity: 0.1,
-        shadowColor: '#000',
-        shadowOffset: {
-            width: 0,
-            height: 2,
-        },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    searchSection: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-        backgroundColor: '#FFFFFF',
-        // borderBottomWidth: 1,
-        // borderBottomColor: '#F5F5F4',
-    },
-    searchContainer: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 12,
-        marginRight: 12,
-        borderWidth: 1,
-        borderColor: '#D5D7DA',
-    },
-    searchIconContainer: {
-        marginRight: 8,
-    },
-    searchInput: {
-        flex: 1,
-        fontSize: 16,
-        color: '#1C1917',
-        paddingVertical: 0,
-    },
-    cameraButton: {
-        width: 58,
-        height: 48,
-        borderRadius: 8,
-        backgroundColor: '#FFFFFF',
-        alignItems: 'center',
-        justifyContent: 'center',
-        borderWidth: 1,
-        borderColor: '#D5D7DA',
-    },
-    content: {
-        flex: 1,
-    },
-    listContainer: {
-        paddingHorizontal: 16,
-        //paddingVertical: 8,
-    },
-    productItem: {
-        paddingVertical: 16,
-        borderTopWidth: 1,
-        borderTopColor: '#E9EAEB',
-        backgroundColor: '#FFFFFF',
-    },
-    productContent: {
-        flex: 1,
-    },
-    productBrand: {
-        fontSize: 12,
-        fontWeight: '600',
-        color: '#78716C',
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-        marginBottom: 4,
-    },
-    productName: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1C1917',
-    },
-    separator: {
-        height: 0,
-    },
-    emptyState: {
-        flex: 1,
-        alignItems: 'center',
-        paddingHorizontal: 32,
-        paddingTop: 40,
-    },
-    emptyTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: '#1C1917',
-        marginTop: 16,
-        textAlign: 'center',
-    },
-    emptySubtitle: {
-        fontSize: 15,
-        color: '#78716C',
-        textAlign: 'center',
-        lineHeight: 22,
-    },
-    cameraIcon: {
-        width: 30,
-        height: 30,
-    },
-    skeletonContainer: {
-        paddingHorizontal: 0,
-    },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  searchSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    backgroundColor: '#FFFFFF',
+    // borderBottomWidth: 1,
+    // borderBottomColor: '#F5F5F4',
+  },
+  searchContainer: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginRight: 12,
+    borderWidth: 1,
+    borderColor: '#D5D7DA',
+  },
+  searchIconContainer: {
+    marginRight: 8,
+  },
+  searchInput: {
+    flex: 1,
+    fontSize: 16,
+    color: '#1C1917',
+    paddingVertical: 0,
+  },
+  cameraButton: {
+    width: 58,
+    height: 48,
+    borderRadius: 8,
+    backgroundColor: '#FFFFFF',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#D5D7DA',
+  },
+  content: {
+    flex: 1,
+  },
+  listContainer: {
+    paddingHorizontal: 16,
+    //paddingVertical: 8,
+  },
+  productItem: {
+    paddingVertical: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#E9EAEB',
+    backgroundColor: '#FFFFFF',
+  },
+  productContent: {
+    flex: 1,
+  },
+  productBrand: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#78716C',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 4,
+  },
+  productName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1917',
+  },
+  separator: {
+    height: 0,
+  },
+  emptyState: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: 32,
+    paddingTop: 40,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#1C1917',
+    marginTop: 16,
+    textAlign: 'center',
+  },
+  emptySubtitle: {
+    fontSize: 15,
+    color: '#78716C',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  cameraIcon: {
+    width: 30,
+    height: 30,
+  },
+  skeletonContainer: {
+    paddingHorizontal: 0,
+  },
+  scanLink: {
+    fontSize: 15,
+    color: '#2563EB',
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+  },
 });
 
 export default FindProductScreen;

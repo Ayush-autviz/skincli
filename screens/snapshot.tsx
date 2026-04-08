@@ -31,7 +31,14 @@ import {
   DeviceEventEmitter,
 } from 'react-native';
 import { useRoute, useNavigation } from '@react-navigation/native';
-import { ChevronLeft, ChevronRight, MoreVertical, Trash2, Sparkles, Star } from 'lucide-react-native';
+import {
+  ChevronLeft,
+  ChevronRight,
+  MoreVertical,
+  Trash2,
+  Sparkles,
+  Star,
+} from 'lucide-react-native';
 import { formatDate } from '../utils/dateUtils';
 import {
   processHautImage,
@@ -51,6 +58,9 @@ import { usePhotoContext } from '../contexts/PhotoContext';
 import Modal from 'react-native-modal';
 import { ImageBackground } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SvgXml } from 'react-native-svg';
+import { Platform } from 'react-native';
+import { colors } from '../styles';
 
 interface SnapshotParams {
   photoId?: string;
@@ -82,7 +92,135 @@ interface PhotoData {
   results?: any;
 }
 
+interface PhotoData {
+  id: string;
+  imageId?: string;
+  hautBatchId?: string;
+  storageUrl: string;
+  timestamp: Date;
+  metrics?: any;
+  maskResults?: any;
+  maskImages?: any;
+  status: { state: string };
+  urls?: { [key: string]: string };
+  masks?: { lines?: any };
+  results?: any;
+}
 
+// SVG Icons for bottom tabs
+const getHomeSvg = (
+  color: string,
+) => `<svg width="32" height="32" viewBox="0 0 34 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M20.6468 28V17.3333C20.6468 16.9797 20.5018 16.6406 20.2437 16.3905C19.9855 16.1405 19.6354 16 19.2704 16H13.7646C13.3995 16 13.0494 16.1405 12.7913 16.3905C12.5331 16.6406 12.3881 16.9797 12.3881 17.3333V28M4.12939 13.3333C4.1293 12.9454 4.21657 12.5622 4.38512 12.2103C4.55367 11.8584 4.79945 11.5464 5.1053 11.296L14.7405 3.29599C15.2373 2.8892 15.8669 2.66602 16.5175 2.66602C17.168 2.66602 17.7976 2.8892 18.2945 3.29599L27.9296 11.296C28.2355 11.5464 28.4812 11.8584 28.6498 12.2103C28.8183 12.5622 28.9056 12.9454 28.9055 13.3333V25.3333C28.9055 26.0406 28.6155 26.7188 28.0992 27.2189C27.5829 27.719 26.8827 28 26.1526 28H6.8823C6.15218 28 5.45197 27.719 4.9357 27.2189C4.41943 26.7188 4.12939 26.0406 4.12939 25.3333V13.3333Z" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+const getRoutineSvg = (
+  color: string,
+) => `<svg width="32" height="32" viewBox="0 0 34 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M16.6233 6.04788C14.7973 5.2628 12.7754 5.0078 10.8028 5.31381C8.83016 5.61981 6.99158 6.47368 5.51002 7.77184C4.02845 9.07 2.96756 10.7567 2.456 12.6273C1.94445 14.498 2.00421 16.4722 2.62804 18.3106C3.25187 20.1491 4.41296 21.7726 5.97051 22.9845C7.52805 24.1963 9.41512 24.9444 11.4029 25.1379" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M13.229 9.51074V15.5107L9.09965 17.5107" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M23.5243 5.18799V8.25806M21.0808 5.18799H25.9678C26.3381 5.18799 26.6932 5.34971 26.9551 5.63759M21.7789 11.3281V9.02557C21.7789 8.82202 21.8525 8.62679 21.9834 8.48286C22.1143 8.33892 22.2919 8.25806 22.4771 8.25806H24.5715C24.7566 8.25806 24.9342 8.33892 25.0651 8.48286C25.1961 8.62679 25.2696 8.82202 25.2696 9.02557V11.3281" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M17.1533 17.7894C17.1533 14.2021 20.0614 11.2939 23.6488 11.2939V11.2939C27.2361 11.2939 30.1442 14.2021 30.1442 17.7894V26.5264H17.1533V17.7894Z" stroke="${color}" stroke-width="2" stroke-linejoin="round"/>
+<path d="M17.7407 17.6475H21.8454V22.5074H17.2847" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+</svg>`;
+
+const getScanSvg = (
+  color: string,
+) => `<svg width="34" height="33" viewBox="0 0 34 33" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g clip-path="url(#clip0_18967_10472)">
+<path d="M4 9.60872V6.94206C4 6.23481 4.28095 5.55654 4.78105 5.05644C5.28115 4.55634 5.95942 4.27539 6.66667 4.27539H9.33333M22.6667 4.27539H25.3333C26.0406 4.27539 26.7189 4.55634 27.219 5.05644C27.719 5.55654 28 6.23481 28 6.94206V9.60872M28 22.9421V25.6087C28 26.316 27.719 26.9942 27.219 27.4943C26.7189 27.9944 26.0406 28.2754 25.3333 28.2754H22.6667M9.33333 28.2754H6.66667C5.95942 28.2754 5.28115 27.9944 4.78105 27.4943C4.28095 26.9942 4 26.316 4 25.6087V22.9421" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+<path d="M4.45166 17.9941H27.3003" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+<path d="M4.45166 17.9941H27.3003" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+<mask id="mask0_18967_10472" style="mask-type:alpha" maskUnits="userSpaceOnUse" x="6" y="0" width="19" height="16">
+<rect x="6.98828" y="0.275391" width="17.6133" height="15.6943" fill="#D92F2F"/>
+</mask>
+<g mask="url(#mask0_18967_10472)">
+<path d="M15.7227 4.94507C12.2058 4.94507 10.5937 8.08505 10.2273 9.42383V12.051C9.5979 12.6206 9.26836 14.1822 10.2273 15.3012" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+<path d="M15.7241 4.94482C19.241 4.94482 20.853 8.08481 21.2194 9.42358V12.0508C21.8488 12.6203 22.1783 14.182 21.2194 15.3009" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+</g>
+<path d="M11.4316 18.5096C11.8963 19.1821 12.9498 20.6302 13.4459 21.0424C14.0659 21.5578 15.1119 22.3305 15.8868 22.3305M12.8977 20.4619C12.9622 21.3778 12.5162 23.8777 12.3353 24.6261C12.2253 25.0809 12.0165 25.501 11.7566 25.8874" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+<path d="M20.34 18.5098C19.8753 19.1823 18.8218 20.6303 18.3257 21.0426C17.7057 21.5579 16.6597 22.3307 15.8848 22.3307M18.8739 20.4621C18.8094 21.378 19.2554 23.8778 19.4363 24.6263C19.5463 25.081 19.7551 25.5012 20.015 25.8875" stroke="${color}" stroke-width="2" stroke-linecap="round"/>
+</g>
+<defs>
+<clipPath id="clip0_18967_10472">
+<rect width="32" height="32" fill="white" transform="translate(0 0.275391)"/>
+</clipPath>
+</defs>
+</svg>`;
+
+const getTrendsSvg = (
+  color: string,
+) => `<svg width="32" height="32" viewBox="0 0 34 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M4.12939 4V25.3333C4.12939 26.0406 4.41943 26.7189 4.9357 27.219C5.45197 27.719 6.15218 28 6.8823 28H28.9055M26.1526 12L19.2704 18.6667L13.7646 13.3333L9.6352 17.3333" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+const getProfileSvg = (
+  color: string,
+) => `<svg width="32" height="32" viewBox="0 0 34 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+<path d="M24.7761 26.6667C24.7761 24.5449 23.906 22.5101 22.3572 21.0098C20.8084 19.5095 18.7078 18.6667 16.5174 18.6667M16.5174 18.6667C14.3271 18.6667 12.2265 19.5095 10.6777 21.0098C9.12884 22.5101 8.25873 24.5449 8.25873 26.6667M16.5174 18.6667C19.5582 18.6667 22.0232 16.2788 22.0232 13.3333C22.0232 10.3878 19.5582 7.99999 16.5174 7.99999C13.4767 7.99999 11.0116 10.3878 11.0116 13.3333C11.0116 16.2788 13.4767 18.6667 16.5174 18.6667ZM30.2819 16C30.2819 23.3638 24.1194 29.3333 16.5174 29.3333C8.91551 29.3333 2.75293 23.3638 2.75293 16C2.75293 8.63619 8.91551 2.66666 16.5174 2.66666C24.1194 2.66666 30.2819 8.63619 30.2819 16Z" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+// Bottom Tab Bar Component
+const BottomTabBar = ({
+  navigation,
+}: {
+  navigation: any;
+}): React.JSX.Element => {
+  const handleNavigate = (screen: string) => {
+    if (screen === 'Scan') {
+      navigation.replace('Camera', { fromScanTab: true });
+    } else {
+      navigation.replace('Tabs', { screen });
+    }
+  };
+
+  return (
+    <View style={styles.tabBarContainer}>
+      <View style={styles.tabBar}>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onPress={() => handleNavigate('Home')}
+          activeOpacity={0.7}
+        >
+          <SvgXml xml={getHomeSvg(colors.textSecondary)} />
+          <Text style={styles.tabLabel}>Home</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onPress={() => handleNavigate('MyRoutine')}
+          activeOpacity={0.7}
+        >
+          <SvgXml xml={getRoutineSvg(colors.textSecondary)} />
+          <Text style={styles.tabLabel}>My Routine</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onPress={() => handleNavigate('Scan')}
+          activeOpacity={0.7}
+        >
+          <SvgXml xml={getScanSvg(colors.textSecondary)} />
+          <Text style={styles.tabLabel}>Scan</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onPress={() => handleNavigate('Progress')}
+          activeOpacity={0.7}
+        >
+          <SvgXml xml={getTrendsSvg(colors.textSecondary)} />
+          <Text style={styles.tabLabel}>Progress</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.tabItem}
+          onPress={() => handleNavigate('AboutMe')}
+          activeOpacity={0.7}
+        >
+          <SvgXml xml={getProfileSvg(colors.textSecondary)} />
+          <Text style={styles.tabLabel}>About Me</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+};
 
 // Configurations
 const ANALYSIS_TIMEOUT_SECONDS = 45;
@@ -101,16 +239,14 @@ const EllipsisMenu = ({
   const handleDelete = (): void => {
     setIsMenuVisible(false);
     Alert.alert(
-      "Delete Snapshot",
-      "Are you sure you want to delete this snapshot? This action cannot be undone.",
+      'Delete Snapshot',
+      'Are you sure you want to delete this snapshot? This action cannot be undone.',
       [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", onPress: onDelete, style: "destructive" }
-      ]
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Delete', onPress: onDelete, style: 'destructive' },
+      ],
     );
   };
-
-
 
   return (
     <>
@@ -128,13 +264,14 @@ const EllipsisMenu = ({
         backdropOpacity={0.4}
         animationIn="fadeIn"
         animationOut="fadeOut"
-        style={{ margin: 0, justifyContent: 'flex-start', alignItems: 'flex-end' }}
+        style={{
+          margin: 0,
+          justifyContent: 'flex-start',
+          alignItems: 'flex-end',
+        }}
       >
         <View style={styles.menuContainer}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={handleDelete}
-          >
+          <TouchableOpacity style={styles.menuItem} onPress={handleDelete}>
             <Trash2 size={20} color="#FF3B30" />
             <Text style={styles.menuDeleteText}>Delete</Text>
           </TouchableOpacity>
@@ -161,16 +298,24 @@ const SnapshotLoading = ({
         style={styles.fullScreenImageForBlur}
         resizeMode="cover"
       >
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: 'rgba(0,0,0,0.7)' }]}>
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            { backgroundColor: 'rgba(0,0,0,0.7)' },
+          ]}
+        >
           <View style={styles.loadingHeaderArea}>
-            <TouchableOpacity style={styles.loadingCloseButton} onPress={onClose}>
+            <TouchableOpacity
+              style={styles.loadingCloseButton}
+              onPress={onClose}
+            >
               <Text style={{ color: 'white', fontSize: 24 }}>×</Text>
             </TouchableOpacity>
           </View>
           <View style={styles.centeredLoaderContainer}>
             <ActivityIndicator size="large" color="#FFFFFF" />
             <Text style={styles.loadingMicrocopyOverlayed}>
-              {typeof microcopy === 'string' ? microcopy : "Processing..."}
+              {typeof microcopy === 'string' ? microcopy : 'Processing...'}
             </Text>
           </View>
         </View>
@@ -188,7 +333,7 @@ const SnapshotLoading = ({
       <View style={styles.centeredLoaderContainer}>
         <ActivityIndicator size="large" color="#FFFFFF" />
         <Text style={styles.loadingMicrocopyCentered}>
-          {typeof microcopy === 'string' ? microcopy : "Loading data..."}
+          {typeof microcopy === 'string' ? microcopy : 'Loading data...'}
         </Text>
       </View>
     </View>
@@ -204,27 +349,40 @@ const getMetricTag = (value: number) => {
 
 const formatMetricName = (key: string): string => {
   const customNames: { [key: string]: string } = {
-    'acneScore': 'Breakouts',
-    'rednessScore': 'Redness',
-    'eyeAreaCondition': 'Dark Circles',
-    'linesScore': 'Lines',
-    'pigmentationScore': 'Pigmentation',
-    'poresScore': 'Visible Pores',
-    'hydrationScore': 'Dewiness',
-    'uniformnessScore': 'Evenness',
-    'eyeAge': 'Eye Age',
-    'perceivedAge': 'Perceived Age',
-    'skinType': 'Type',
-    'skinTone': 'Tone',
-    'puffinessScore': 'Puffiness',
-    'saggingScore': 'Sagging',
+    acneScore: 'Breakouts',
+    rednessScore: 'Redness',
+    eyeAreaCondition: 'Dark Circles',
+    linesScore: 'Lines',
+    pigmentationScore: 'Pigmentation',
+    poresScore: 'Visible Pores',
+    hydrationScore: 'Dewiness',
+    uniformnessScore: 'Evenness',
+    eyeAge: 'Eye Age',
+    perceivedAge: 'Perceived Age',
+    skinType: 'Type',
+    skinTone: 'Tone',
+    puffinessScore: 'Puffiness',
+    saggingScore: 'Sagging',
   };
   if (customNames[key]) return customNames[key];
-  return key.charAt(0).toUpperCase() + key.slice(1).replace(/([A-Z])/g, ' $1').trim();
+  return (
+    key.charAt(0).toUpperCase() +
+    key
+      .slice(1)
+      .replace(/([A-Z])/g, ' $1')
+      .trim()
+  );
 };
 
 const isStandaloneMetric = (key: string, metrics: any): boolean => {
-  const standaloneMetrics = ['skinAge', 'skinType', 'perceivedAge', 'eyeAge', 'skinTone', 'imageQuality'];
+  const standaloneMetrics = [
+    'skinAge',
+    'skinType',
+    'perceivedAge',
+    'eyeAge',
+    'skinTone',
+    'imageQuality',
+  ];
   return standaloneMetrics.includes(key) || typeof metrics?.[key] === 'string';
 };
 
@@ -233,9 +391,20 @@ const SnapshotScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute();
   const insets = useSafeAreaInsets();
-  const params = route.params as SnapshotParams || {};
+  const params = (route.params as SnapshotParams) || {};
 
-  const { photoId, localUri, rightUri, leftUri, userId: paramUserId, timestamp, fromPhotoGrid, imageId: passedImageId, hautBatchId: passedHautBatchId, fromScanTab } = params;
+  const {
+    photoId,
+    localUri,
+    rightUri,
+    leftUri,
+    userId: paramUserId,
+    timestamp,
+    fromPhotoGrid,
+    imageId: passedImageId,
+    hautBatchId: passedHautBatchId,
+    fromScanTab,
+  } = params;
 
   console.log('fromscan', fromScanTab);
 
@@ -244,11 +413,13 @@ const SnapshotScreen = (): React.JSX.Element => {
   const userId = user?.user_id;
 
   // Contexts
-  const { selectedSnapshot, setSelectedSnapshot, refreshPhotos, photos } = usePhotoContext();
+  const { selectedSnapshot, setSelectedSnapshot, refreshPhotos, photos } =
+    usePhotoContext();
 
   // State management
   const [uiState, setUiState] = useState<string>('loading');
-  const [loadingMicrocopy, setLoadingMicrocopy] = useState<string>('Loading...');
+  const [loadingMicrocopy, setLoadingMicrocopy] =
+    useState<string>('Loading...');
   const [photoData, setPhotoData] = useState<PhotoData | null>(null);
 
   // Haut.ai API state
@@ -262,7 +433,9 @@ const SnapshotScreen = (): React.JSX.Element => {
   const [summaryLoading, setSummaryLoading] = useState(false);
 
   // Score changes state (computed from previous photo)
-  const [scoreChanges, setScoreChanges] = useState<Record<string, { arrow: string; value: number }>>({});
+  const [scoreChanges, setScoreChanges] = useState<
+    Record<string, { arrow: string; value: number }>
+  >({});
   const [isTogglingConcern, setIsTogglingConcern] = useState(false);
 
   // Refs
@@ -323,7 +496,10 @@ const SnapshotScreen = (): React.JSX.Element => {
 
           const transformedMetrics = transformHautResults(results);
 
-          if (Object.keys(transformedMetrics).length === 1 && (transformedMetrics as any).imageQuality) {
+          if (
+            Object.keys(transformedMetrics).length === 1 &&
+            (transformedMetrics as any).imageQuality
+          ) {
             setLoadingMicrocopy('No results found');
             setUiState('no_results');
             return;
@@ -347,7 +523,11 @@ const SnapshotScreen = (): React.JSX.Element => {
             const created_at = maskResults[0].created_at;
             if (typeof created_at === 'string') {
               let utcTimestamp = created_at;
-              if (!created_at.endsWith('Z') && !created_at.includes('+') && !created_at.includes('-', 10)) {
+              if (
+                !created_at.endsWith('Z') &&
+                !created_at.includes('+') &&
+                !created_at.includes('-', 10)
+              ) {
                 utcTimestamp = created_at + 'Z';
               }
               parsedTimestamp = new Date(utcTimestamp);
@@ -368,7 +548,7 @@ const SnapshotScreen = (): React.JSX.Element => {
             maskResults: maskResults,
             maskImages: maskImages,
             status: { state: 'complete' },
-            results: results
+            results: results,
           };
 
           setPhotoData(photoDataObj);
@@ -393,7 +573,9 @@ const SnapshotScreen = (): React.JSX.Element => {
                 // 1. AI Summary
                 (async () => {
                   try {
-                    const summaryResp = await getImageChatSummary(imageId || passedImageId || batchId);
+                    const summaryResp = await getImageChatSummary(
+                      imageId || passedImageId || batchId,
+                    );
                     if (summaryResp.summary) {
                       setSummary(summaryResp.summary);
                     } else {
@@ -401,36 +583,60 @@ const SnapshotScreen = (): React.JSX.Element => {
                       const currentProfile = useAuthStore.getState().profile;
                       const chatData = {
                         imageId: imageId || passedImageId || batchId,
-                        firstName: currentUser?.user_name || currentProfile?.user_name || 'User',
+                        firstName:
+                          currentUser?.user_name ||
+                          currentProfile?.user_name ||
+                          'User',
                         age: currentProfile?.age || 25,
                         skinType: currentProfile?.skinType || 'normal',
                         skinConcerns: currentProfile?.concerns
-                          ? Object.keys(currentProfile.concerns).filter(key => currentProfile.concerns![key])
+                          ? Object.keys(currentProfile.concerns).filter(
+                              key => currentProfile.concerns![key],
+                            )
                           : [],
                         excludedMetrics: [],
-                        metrics: transformedMetrics || {}
+                        metrics: transformedMetrics || {},
                       };
                       try {
-                        const chatResponse: any = await sendSnapshotFirstChat(chatData);
+                        const chatResponse: any = await sendSnapshotFirstChat(
+                          chatData,
+                        );
                         if (chatResponse.success && chatResponse.data) {
-                          setSummary(chatResponse.data.message || chatResponse.data.feedback);
+                          setSummary(
+                            chatResponse.data.message ||
+                              chatResponse.data.feedback,
+                          );
                         }
-                      } catch (_) { /* continue without summary */ }
+                      } catch (_) {
+                        /* continue without summary */
+                      }
                     }
-                  } catch (_) { setSummary(null); }
+                  } catch (_) {
+                    setSummary(null);
+                  }
                   setSummaryLoading(false);
                 })(),
                 // 2. Score changes from previous photo
                 (async () => {
                   try {
-                    const sortedPhotos = [...contextPhotos].sort((a: any, b: any) => {
-                      const dateA = a.timestamp ? new Date(a.timestamp) : new Date(0);
-                      const dateB = b.timestamp ? new Date(b.timestamp) : new Date(0);
-                      return dateB.getTime() - dateA.getTime();
-                    });
+                    const sortedPhotos = [...contextPhotos].sort(
+                      (a: any, b: any) => {
+                        const dateA = a.timestamp
+                          ? new Date(a.timestamp)
+                          : new Date(0);
+                        const dateB = b.timestamp
+                          ? new Date(b.timestamp)
+                          : new Date(0);
+                        return dateB.getTime() - dateA.getTime();
+                      },
+                    );
                     const currentIndex = sortedPhotos.findIndex((p: any) => {
                       const pImgId = p.hautUploadData?.imageId || p.id;
-                      return pImgId === batchId || pImgId === imageId || pImgId === photoId;
+                      return (
+                        pImgId === batchId ||
+                        pImgId === imageId ||
+                        pImgId === photoId
+                      );
                     });
 
                     let prevPhoto = null;
@@ -443,31 +649,50 @@ const SnapshotScreen = (): React.JSX.Element => {
                     }
 
                     if (prevPhoto) {
-                      const prevHautBatchId = prevPhoto.hautUploadData?.hautBatchId;
+                      const prevHautBatchId =
+                        prevPhoto.hautUploadData?.hautBatchId;
                       if (!prevHautBatchId) return;
-                      const prevResults = await getHautAnalysisResults(prevHautBatchId);
+                      const prevResults = await getHautAnalysisResults(
+                        prevHautBatchId,
+                      );
                       if (prevResults && prevResults.length > 0) {
                         const prevMetrics = transformHautResults(prevResults);
-                        const changes: Record<string, { arrow: string; value: number }> = {};
+                        const changes: Record<
+                          string,
+                          { arrow: string; value: number }
+                        > = {};
                         const scoreKeys = [
-                          'pigmentationScore', 'uniformnessScore', 'rednessScore',
-                          'acneScore', 'hydrationScore', 'eyeAreaCondition', 'linesScore', 'poresScore'
+                          'pigmentationScore',
+                          'uniformnessScore',
+                          'rednessScore',
+                          'acneScore',
+                          'hydrationScore',
+                          'eyeAreaCondition',
+                          'linesScore',
+                          'poresScore',
                         ];
                         scoreKeys.forEach(key => {
                           const curr = (transformedMetrics as any)[key];
                           const prev = (prevMetrics as any)[key];
-                          if (curr !== undefined && prev !== undefined && typeof curr === 'number' && typeof prev === 'number') {
+                          if (
+                            curr !== undefined &&
+                            prev !== undefined &&
+                            typeof curr === 'number' &&
+                            typeof prev === 'number'
+                          ) {
                             const diff = curr - prev;
                             changes[key] = {
                               arrow: diff > 0 ? '↑' : diff < 0 ? '↓' : '→',
-                              value: Math.abs(Math.round(diff))
+                              value: Math.abs(Math.round(diff)),
                             };
                           }
                         });
                         setScoreChanges(changes);
                       }
                     }
-                  } catch (_) { /* continue without changes */ }
+                  } catch (_) {
+                    /* continue without changes */
+                  }
                 })(),
                 // 3. Fetch user top concerns from API
                 (async () => {
@@ -476,8 +701,10 @@ const SnapshotScreen = (): React.JSX.Element => {
                     const resultData = resp?.data?.result;
                     const tops = resultData?.user_top_concerns || [];
                     setTopConcerns(tops);
-                  } catch (_) { /* ignore */ }
-                })()
+                  } catch (_) {
+                    /* ignore */
+                  }
+                })(),
               ]);
             } catch (err) {
               console.error('🔴 Background loading error:', err);
@@ -485,7 +712,6 @@ const SnapshotScreen = (): React.JSX.Element => {
               setSummaryLoading(false);
             }
           })();
-
         } else {
           pollingTimeoutRef.current = setTimeout(poll, 3000);
         }
@@ -528,8 +754,10 @@ const SnapshotScreen = (): React.JSX.Element => {
         const initialPhotoData: PhotoData = {
           id: photoId || '',
           storageUrl: photoFromContext.storageUrl,
-          timestamp: photoFromContext.apiData?.created_at ? new Date(photoFromContext.apiData.created_at) : new Date(),
-          status: { state: 'analyzing' }
+          timestamp: photoFromContext.apiData?.created_at
+            ? new Date(photoFromContext.apiData.created_at)
+            : new Date(),
+          status: { state: 'analyzing' },
         };
         setPhotoData(initialPhotoData);
         setImageId(passedImageId);
@@ -547,14 +775,14 @@ const SnapshotScreen = (): React.JSX.Element => {
         id: photoId || '',
         storageUrl: localUri,
         timestamp: timestamp ? new Date(timestamp) : new Date(),
-        status: { state: 'pending' }
+        status: { state: 'pending' },
       };
       setPhotoData(initialPhotoData);
       setSelectedSnapshot({
         id: photoId || '',
         url: localUri,
         storageUrl: localUri,
-        threadId: undefined
+        threadId: undefined,
       } as any);
       setLoadingMicrocopy('Processing image...');
       processImageWithHaut();
@@ -564,7 +792,9 @@ const SnapshotScreen = (): React.JSX.Element => {
 
   // Cleanup polling on unmount
   useEffect(() => {
-    return () => { stopPolling(); };
+    return () => {
+      stopPolling();
+    };
   }, []);
 
   // AI summary is now fetched inside startPollingForResults before uiState becomes 'complete'
@@ -587,13 +817,14 @@ const SnapshotScreen = (): React.JSX.Element => {
   const handleDelete = async (): Promise<void> => {
     try {
       const imageIdToDelete = imageId || photoData?.imageId || photoId;
-      if (!imageIdToDelete) throw new Error('No image ID available for deletion');
+      if (!imageIdToDelete)
+        throw new Error('No image ID available for deletion');
       await deletePhoto(imageIdToDelete);
       (navigation as any).navigate('Tabs');
       setSelectedSnapshot(null);
       refreshPhotos();
     } catch (error: any) {
-      Alert.alert("Error", `Failed to delete photo: ${error.message}`);
+      Alert.alert('Error', `Failed to delete photo: ${error.message}`);
     }
   };
 
@@ -640,7 +871,7 @@ const SnapshotScreen = (): React.JSX.Element => {
       (navigation as any).navigate('ThreadChat', {
         chatType: 'snapshot_feedback',
         imageId: photoData?.imageId,
-        initialMessage: summary
+        initialMessage: summary,
       });
     }
   };
@@ -676,31 +907,47 @@ const SnapshotScreen = (): React.JSX.Element => {
 
   // ===== Render Logic =====
   if (!photoId) {
-    return <SnapshotLoading microcopy="Initializing..." onClose={handleClose} />;
+    return (
+      <SnapshotLoading microcopy="Initializing..." onClose={handleClose} />
+    );
   }
 
   const showSkeletonScreen = uiState === 'loading' || uiState === 'analyzing';
   if (showSkeletonScreen) {
-    const useEffectiveLoadingBackground = localUri && (uiState === 'loading' || uiState === 'analyzing');
+    const useEffectiveLoadingBackground =
+      localUri && (uiState === 'loading' || uiState === 'analyzing');
     return (
       <SnapshotLoading
         microcopy={loadingMicrocopy}
         onClose={handleClose}
-        backgroundImageUri={useEffectiveLoadingBackground ? localUri : undefined}
+        backgroundImageUri={
+          useEffectiveLoadingBackground ? localUri : undefined
+        }
       />
     );
   }
 
   if (!photoData && uiState !== 'loading') {
-    return <SnapshotLoading microcopy={'Error loading snapshot data.'} onClose={handleClose} />;
+    return (
+      <SnapshotLoading
+        microcopy={'Error loading snapshot data.'}
+        onClose={handleClose}
+      />
+    );
   }
 
-  const rawImageUri = photoData?.urls?.['500x500'] || photoData?.urls?.['800x1200'] || photoData?.storageUrl || localUri;
+  const rawImageUri =
+    photoData?.urls?.['500x500'] ||
+    photoData?.urls?.['800x1200'] ||
+    photoData?.storageUrl ||
+    localUri;
   const imageUri = sanitizeS3Uri(rawImageUri || '');
   const metrics = photoData?.metrics;
   const getConcernNameForAPI = (metricKey: string): string | null => {
     if (!metricKey) return null;
-    let processedKey = metricKey.endsWith('Score') ? metricKey.slice(0, -'Score'.length) : metricKey;
+    let processedKey = metricKey.endsWith('Score')
+      ? metricKey.slice(0, -'Score'.length)
+      : metricKey;
     const special: Record<string, string> = {
       hydration: 'Dewiness',
       redness: 'Redness',
@@ -719,30 +966,51 @@ const SnapshotScreen = (): React.JSX.Element => {
       sagging: 'Sagging',
     };
     if (special[processedKey]) return special[processedKey];
-    return processedKey.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase()).trim();
+    return processedKey
+      .replace(/([A-Z])/g, ' $1')
+      .replace(/^./, s => s.toUpperCase())
+      .trim();
   };
 
   // Get standalone metrics for the profile row
   const profileOrder = ['skinType', 'skinTone', 'perceivedAge', 'eyeAge'];
   const profileMetrics = metrics
     ? profileOrder
-      .filter(key => metrics[key] !== undefined)
-      .map(key => ({ key, value: metrics[key], label: formatMetricName(key) }))
+        .filter(key => metrics[key] !== undefined)
+        .map(key => ({
+          key,
+          value: metrics[key],
+          label: formatMetricName(key),
+        }))
     : [];
 
   // Get score metrics for the analysis section
   const scoreOrder = [
-    'pigmentationScore', 'uniformnessScore', 'rednessScore',
-    'acneScore', 'hydrationScore', 'eyeAreaCondition', 'linesScore', 'poresScore',
-    'puffinessScore', 'saggingScore'
+    'pigmentationScore',
+    'uniformnessScore',
+    'rednessScore',
+    'acneScore',
+    'hydrationScore',
+    'eyeAreaCondition',
+    'linesScore',
+    'poresScore',
+    'puffinessScore',
+    'saggingScore',
   ];
   const scoreMetrics = metrics
     ? scoreOrder
-      .filter(key => metrics[key] !== undefined && typeof metrics[key] === 'number')
-      .map(key => ({ key, value: metrics[key], label: formatMetricName(key) }))
+        .filter(
+          key => metrics[key] !== undefined && typeof metrics[key] === 'number',
+        )
+        .map(key => ({
+          key,
+          value: metrics[key],
+          label: formatMetricName(key),
+        }))
     : [];
   const sortedScoreMetrics = (() => {
-    if (!Array.isArray(scoreMetrics) || scoreMetrics.length === 0) return scoreMetrics;
+    if (!Array.isArray(scoreMetrics) || scoreMetrics.length === 0)
+      return scoreMetrics;
     if (!topConcerns || topConcerns.length === 0) return scoreMetrics;
     const isTop = (metricKey: string) => {
       const concern = getConcernNameForAPI(metricKey) || '';
@@ -757,9 +1025,13 @@ const SnapshotScreen = (): React.JSX.Element => {
 
   console.log('from screen', fromScanTab);
 
-
   return (
-    <View style={[styles.container, { paddingTop: insets.top, backgroundColor: '#FFFFFF' }]}>
+    <View
+      style={[
+        styles.container,
+        { paddingTop: insets.top, backgroundColor: '#FFFFFF' },
+      ]}
+    >
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       {/* ===== Header ===== */}
@@ -774,7 +1046,10 @@ const SnapshotScreen = (): React.JSX.Element => {
       {/* ===== Scrollable Content ===== */}
       <ScrollView
         style={styles.scrollView}
-        contentContainerStyle={[styles.scrollContent, { paddingBottom: insets.bottom + 100 }]}
+        contentContainerStyle={[
+          styles.scrollContent,
+          { paddingBottom: insets.bottom + 100 },
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {/* Photo Card */}
@@ -784,7 +1059,7 @@ const SnapshotScreen = (): React.JSX.Element => {
             onPress={() => {
               if (photoData) {
                 (navigation as any).navigate('MaskViewer', {
-                  photoData: JSON.stringify(photoData)
+                  photoData: JSON.stringify(photoData),
                 });
               }
             }}
@@ -820,11 +1095,12 @@ const SnapshotScreen = (): React.JSX.Element => {
                 {summary
                   ? summary
                   : summaryLoading
-                    ? 'Analyzing your results...'
-                    : 'Your Dewiness has improved since your last scan! Why do you think this has improved?'}
+                  ? 'Analyzing your results...'
+                  : 'Your Dewiness has improved since your last scan! Why do you think this has improved?'}
               </Text>
               <Text style={styles.aiInsightSubtext}>
-                Your reflections help add to your journal and improve your outcomes.
+                Your reflections help add to your journal and improve your
+                outcomes.
               </Text>
             </View>
           </TouchableOpacity>
@@ -837,9 +1113,7 @@ const SnapshotScreen = (): React.JSX.Element => {
               {profileMetrics.map((item, index) => (
                 <TouchableOpacity
                   key={item.key}
-                  style={[
-                    styles.profileItem
-                  ]}
+                  style={[styles.profileItem]}
                   onPress={() => {
                     (navigation as any).navigate('MetricDetail', {
                       metricKey: item.key,
@@ -847,7 +1121,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                       maskResults: photoData?.maskResults,
                       maskImages: photoData?.maskImages,
                       photoData: JSON.stringify(photoData || metrics),
-                      precomputedChange: scoreChanges[item.key]
+                      precomputedChange: scoreChanges[item.key],
                     });
                   }}
                   activeOpacity={0.7}
@@ -876,7 +1150,8 @@ const SnapshotScreen = (): React.JSX.Element => {
                   key={item.key}
                   style={[
                     styles.analysisRow,
-                    index < sortedScoreMetrics.length && styles.analysisRowBorder,
+                    index < sortedScoreMetrics.length &&
+                      styles.analysisRowBorder,
                   ]}
                   onPress={() => {
                     (navigation as any).navigate('MetricDetail', {
@@ -885,14 +1160,14 @@ const SnapshotScreen = (): React.JSX.Element => {
                       maskResults: photoData?.maskResults,
                       maskImages: photoData?.maskImages,
                       photoData: JSON.stringify(photoData || metrics),
-                      precomputedChange: scoreChanges[item.key]
+                      precomputedChange: scoreChanges[item.key],
                     });
                   }}
                   activeOpacity={0.7}
                 >
                   <View style={styles.analysisRowLeft}>
                     <TouchableOpacity
-                      onPress={(e) => {
+                      onPress={e => {
                         handleToggleTopConcern(concernName);
                       }}
                       disabled={isTogglingConcern}
@@ -901,28 +1176,40 @@ const SnapshotScreen = (): React.JSX.Element => {
                     >
                       <Star
                         size={18}
-                        color={isTop ? "#00839B" : "#D6D3D1"}
-                        fill={isTop ? "#00839B" : "transparent"}
+                        color={isTop ? '#00839B' : '#D6D3D1'}
+                        fill={isTop ? '#00839B' : 'transparent'}
                       />
                     </TouchableOpacity>
                     <View>
-                      <Text style={styles.analysisMetricName}>{item.label}</Text>
+                      <Text style={styles.analysisMetricName}>
+                        {item.label}
+                      </Text>
                       {item.key === 'poresScore' && (
-                        <Text style={styles.analysisMicrotext}>Face a light source for best results</Text>
+                        <Text style={styles.analysisMicrotext}>
+                          Face a light source for best results
+                        </Text>
                       )}
                     </View>
                   </View>
                   <View style={styles.analysisRowRight}>
                     <Text style={styles.analysisChangeText}>
                       {scoreChanges[item.key]
-                        ? `${scoreChanges[item.key].arrow}${scoreChanges[item.key].value}`
+                        ? `${scoreChanges[item.key].arrow}${
+                            scoreChanges[item.key].value
+                          }`
                         : ''}
                     </Text>
                     <View style={styles.analysisDotContainer}>
-                      <View style={[styles.analysisDot, { backgroundColor: color }]} />
+                      <View
+                        style={[styles.analysisDot, { backgroundColor: color }]}
+                      />
                       <Text style={styles.analysisScore}>{item.value}</Text>
                     </View>
-                    <ChevronRight size={20} color="#D7D3D0" style={{ marginLeft: 4 }} />
+                    <ChevronRight
+                      size={20}
+                      color="#D7D3D0"
+                      style={{ marginLeft: 4 }}
+                    />
                   </View>
                 </TouchableOpacity>
               );
@@ -954,8 +1241,8 @@ const SnapshotScreen = (): React.JSX.Element => {
           <View style={styles.noResultsCard}>
             <Text style={styles.noResultsTitle}>No Analysis Available</Text>
             <Text style={styles.noResultsMessage}>
-              We couldn't analyze this image. This could be due to poor lighting,
-              camera angle, or network issues.
+              We couldn't analyze this image. This could be due to poor
+              lighting, camera angle, or network issues.
             </Text>
             <TouchableOpacity
               onPress={() => (navigation as any).navigate('Camera')}
@@ -966,6 +1253,9 @@ const SnapshotScreen = (): React.JSX.Element => {
           </View>
         )}
       </ScrollView>
+
+      {/* Bottom Tab Bar */}
+      <BottomTabBar navigation={navigation} />
     </View>
   );
 };
@@ -1055,7 +1345,7 @@ const styles = StyleSheet.create({
   photoImage: {
     width: 383,
     height: 383,
-    resizeMode: 'contain'
+    resizeMode: 'contain',
   },
   photoOverlayChip: {
     position: 'absolute',
@@ -1371,10 +1661,47 @@ const styles = StyleSheet.create({
   profileValueContainer: {
     // backgroundColor: '#F5F5F5',
     // borderRadius: 6,
-    width: "100%",
-    justifyContent: "center",
-    alignItems: "center",
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
     // height: 40,
+  },
+  tabBarContainer: {
+    position: 'absolute',
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'transparent',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    backgroundColor: '#FFFFFF',
+    borderTopWidth: 1,
+    borderTopColor: '#E5E5E5',
+    paddingTop: 8,
+    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+    paddingHorizontal: 8,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: -2,
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 8,
+  },
+  tabItem: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+  },
+  tabLabel: {
+    fontSize: 10,
+    fontWeight: '500',
+    marginTop: 4,
+    textAlign: 'center',
+    color: colors.textSecondary,
   },
 });
 

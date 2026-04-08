@@ -149,7 +149,7 @@ function AuthenticatedNavigator() {
               name="profile"
               component={ProfileScreen}
               options={{
-                headerShown: false
+                headerShown: false,
               }}
             />
 

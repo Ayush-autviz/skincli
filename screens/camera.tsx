@@ -1,5 +1,5 @@
 // camera.tsx
-// Camera screen with Haut.ai LIQA (triple-capture) integration
+// Camera screen with Haut.ai LIQA (single face capture) integration
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -8,7 +8,7 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Dimensions
+  Dimensions,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import useAuthStore from '../stores/authStore';
@@ -28,16 +28,15 @@ const CameraScreen = (): React.JSX.Element => {
 
     if (name === 'captures' && payload?.captures) {
       const captures = payload.captures;
-      const frontCapture = captures.find((c: any) => c.side === 'front');
-      const rightCapture = captures.find((c: any) => c.side === 'right');
-      const leftCapture  = captures.find((c: any) => c.side === 'left');
+      // For "face" preset, we only have one capture
+      const capturedImage = captures[0];
 
-      if (!frontCapture) {
-        console.error('🔴 LIQA: No front capture found');
+      if (!capturedImage) {
+        console.error('🔴 LIQA: No capture found');
         return;
       }
 
-      const userId  = user?.user_id;
+      const userId = user?.user_id;
       if (!userId) {
         Alert.alert('Error', 'User not authenticated.');
         return;
@@ -47,9 +46,7 @@ const CameraScreen = (): React.JSX.Element => {
 
       (navigation as any).replace('Snapshot', {
         photoId: `${Date.now()}`,
-        localUri:  frontCapture.base64,
-        rightUri:  rightCapture?.base64 ?? null,
-        leftUri:   leftCapture?.base64  ?? null,
+        localUri: capturedImage.base64,
         userId,
         timestamp: new Date().toISOString(),
         fromScanTab,
@@ -58,7 +55,11 @@ const CameraScreen = (): React.JSX.Element => {
 
     if (name === 'error') {
       console.error('🔴 LIQA error:', payload?.message);
-      Alert.alert('Scan Error', payload?.message || 'An error occurred during face scan. Please try again.');
+      Alert.alert(
+        'Scan Error',
+        payload?.message ||
+          'An error occurred during face scan. Please try again.',
+      );
     }
   };
 

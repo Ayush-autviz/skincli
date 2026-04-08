@@ -15,19 +15,16 @@ const HTML = `
     </style>
   </head>
   <body>
-    <hautai-liqa license="eyJpZCI6IkhBVVQtMjUwMjAxMTQtMCJ9" preset="face-180"></hautai-liqa>
+    <hautai-liqa license="eyJpZCI6IkhBVVQtMjUwMjAxMTQtMCJ9" preset="face"></hautai-liqa>
     <script>
       // Get LIQA element
-      const liqa = document.querySelector('hautai-liqa');
+    const liqa = document.querySelector('hautai-liqa');
 
-      // Face-180 side → SaaS side-ID mapping  (front=1, right=2, left=3)
-      const SIDE_ID_MAP = { front: 1, right: 2, left: 3 };
-      
       // Listen for captures event
       liqa.addEventListener('captures', async (event) => {
         try {
           // event.detail is an array of capture objects.
-          // Each capture has a .blob() method and metadata including .side
+          // For "face" preset, there's only one capture (front face)
           const captureResults = await Promise.all(
             event.detail.map(async (capture) => {
               const blob = await capture.blob();
@@ -36,12 +33,8 @@ const HTML = `
                 reader.onloadend = () => resolve(reader.result);
                 reader.readAsDataURL(blob);
               });
-              // capture.side is 'front' | 'right' | 'left' (face-180 preset)
-              const side = capture.side || 'front';
               return {
                 base64,
-                side,
-                sideId: SIDE_ID_MAP[side] ?? 1,
               };
             })
           );
@@ -77,14 +70,10 @@ const HTML = `
 </html>
 `;
 
-/** A single captured face image from the face-180 preset. */
+/** A single captured face image from the face preset. */
 export type FaceCapture = {
   /** Base64-encoded data URL of the captured image. */
   base64: string;
-  /** Logical side: 'front' | 'right' | 'left' */
-  side: 'front' | 'right' | 'left';
-  /** SaaS Side ID: front=1, right=2, left=3 */
-  sideId: 1 | 2 | 3;
 };
 
 export type Props = {
@@ -110,14 +99,14 @@ export const LiqaWebView = ({ onLiqaEvent }: Props) => {
         source={{
           html: HTML,
           // `https://` is required to get WebView camera working
-          baseUrl: "https://localhost/",
+          baseUrl: 'https://localhost/',
         }}
-        originWhitelist={["*"]}
+        originWhitelist={['*']}
         mediaPlaybackRequiresUserAction={false}
         allowsInlineMediaPlayback={true}
         onMessage={handleWebviewMessage}
         // Set the mediaCapturePermissionGrantType to "grant" to avoid repetitive permission requests, especially on iOS
-        mediaCapturePermissionGrantType={"grant"}
+        mediaCapturePermissionGrantType={'grant'}
         style={styles.webview}
       />
     </View>

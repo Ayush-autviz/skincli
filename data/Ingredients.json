@@ -79,23 +79,21 @@
                 "Caffeine: Helps reduce puffiness and dark circles by improving micro-circulation",
                 "Hyaluronic Acid (Sodium Hyaluronate, Hydrolyzed Hyaluronic Acid, Hyaluronan): Provides deep hydration to plump and smooth fine lines",
                 "Peptides: Support collagen production to improve firmness and reduce wrinkles",
-                "Green Tea Extract (Camellia Sinensis, EGCG, Epigallocatechin gallate): Potent antioxidant with anti-inflammatory properties"
+                "Green Tea Extract (Camellia Sinensis, EGCG, Epigallocatechin gallate): Antioxidant with anti-inflammatory properties that help reduce discoloration"
             ]
         },
         {
             "name": "Puffiness",
             "Ingredients": [
-                "Caffeine: Helps constrict blood vessels and reduce fluid buildup under the eyes",
-                "Green Tea Extract (Camellia Sinensis, EGCG, Epigallocatechin gallate): Antioxidant that helps reduce inflammation and swelling",
-                "Niacinamide: Can help improve skin barrier and reduce inflammation"
+                "Caffeine: Helps reduce puffiness and dark circles by improving micro-circulation",
+                "Green Tea Extract (Camellia Sinensis, EGCG, Epigallocatechin gallate): Potent antioxidant with anti-inflammatory properties that reduce swelling"
             ]
         },
         {
             "name": "Sagging",
             "Ingredients": [
-                "Peptides: Support the skin's natural collagen and elastin production to improve firmness",
-                "Retinol: Stimulates cellular turnover and collagen synthesis to improve skin structure",
-                "Vitamin C (Ascorbic Acid, L-Ascorbic Acid): Crucial for collagen synthesis and helps maintain skin elasticity"
+                "Alpha Hydroxy Acids (AHAs, glycolic acid, lactic acid, mandelic acid, citric acid, malic acid, tartaric acid): Exfoliate skin and improve texture and fine lines",
+                "Retinol: Supports collagen production and accelerates cell turnover to improve skin firmness"
             ]
         }
     ]

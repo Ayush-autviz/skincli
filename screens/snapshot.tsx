@@ -1096,7 +1096,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                   ? summary
                   : summaryLoading
                     ? 'Analyzing your results...'
-                    : 'Your skin looks glowing ! How is your skin feeling today?'}
+                    : 'Your skin looks glowing! How is your skin feeling today?'}
               </Text>
               <Text style={styles.aiInsightSubtext}>
                 Your reflections help add to your journal and improve your

@@ -807,7 +807,7 @@ const getIngredientsForMetric = (metricKey: string): string[] => {
     poresScore: 'Pores',
     hydrationScore: 'Hydration',
     eyeAreaCondition: 'Dark Circles',
-    puffinessScore: 'Eye Puffiness',
+    puffinessScore: 'Puffiness',
     saggingScore: 'Sagging',
   };
 

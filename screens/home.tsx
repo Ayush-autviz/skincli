@@ -108,27 +108,31 @@ const getIngredientsForMetric = (metricKey: string): string[] => {
     return concern ? concern.Ingredients : [];
 };
 
-// Global cache to track which images have already been loaded
-const loadedImagesCache = new Set<string>();
 
-// Image with skeleton loading component (Refactored outside to prevent re-mount flickering)
-// Image with skeleton loading component (Refactored outside to prevent re-mount flickering)
+
+// Image with skeleton loading component
+// Always shows skeleton until the image actually finishes painting.
+// Global cache to track which images have already been loaded
+// This prevents the skeleton from flashing repeatedly for images we already fetched.
 const ImageWithSkeleton = ({
     uri,
     style,
     onPress,
-    containerStyle
+    containerStyle,
+    forceLoading = false, // Allows parent to force a skeleton overlay (e.g. during pull-to-refresh)
 }: {
     uri: string;
     style: any;
     onPress: () => void;
     containerStyle?: any;
+    forceLoading?: boolean;
 }) => {
-    // Check if image was already loaded (cached)
-    // We use a key on the component to ensure this state is re-initialized correctly when URI changes
-    const [isImageLoading, setIsImageLoading] = useState(() => !loadedImagesCache.has(uri));
+    // Always start with loading true so the skeleton shows immediately.
+    // This prevents the card from appearing "empty" while the image decodes.
+    const [isImageLoading, setIsImageLoading] = useState(true);
 
-    // Handle empty URI - don't show loading forever
+    const shouldShowSkeleton = isImageLoading || forceLoading;
+
     if (!uri) {
         return (
             <TouchableOpacity
@@ -141,23 +145,14 @@ const ImageWithSkeleton = ({
         );
     }
 
-    const handleImageLoad = () => {
-        loadedImagesCache.add(uri);
-        setIsImageLoading(false);
-    };
-
-    // Never hide images that are already cached - only show skeleton/hide image for first load
-    // We check cache directly here as well to avoid flash if state update lags slightly
-    const isCached = loadedImagesCache.has(uri);
-    const shouldShowSkeleton = isImageLoading && !isCached;
-
     return (
         <TouchableOpacity
             style={containerStyle || styles.carouselItemContainer}
             onPress={onPress}
             activeOpacity={0.9}
         >
-            <View style={styles.imageContainer}>
+            <View style={[styles.imageContainer, { backgroundColor: 'transparent' }]}>
+                {/* The skeleton always renders until the image is 100% painted OR if artificially forced */}
                 {shouldShowSkeleton && (
                     <View style={[styles.imageSkeleton, { width: style.width, height: style.height }]}>
                         <SkeletonPlaceholder borderRadius={32}>
@@ -169,11 +164,13 @@ const ImageWithSkeleton = ({
                         </SkeletonPlaceholder>
                     </View>
                 )}
+                
+                {/* Image paints directly over the skeleton, then skeleton unmounts. No transparency gap. */}
                 <Image
                     source={{ uri }}
-                    style={[style, shouldShowSkeleton && styles.hiddenImage]}
+                    style={style}
                     resizeMode="cover"
-                    onLoad={handleImageLoad}
+                    onLoad={() => setIsImageLoading(false)}
                     onError={() => setIsImageLoading(false)}
                 />
             </View>
@@ -271,17 +268,12 @@ export default function HomeScreen(): React.JSX.Element {
     console.log("currentDateGroup", currentDateGroup);
 
     // Refresh photos when screen comes into focus
-    const hasInitialRefreshed = useRef(false);
     useFocusEffect(
         useCallback(() => {
-            // Only refresh if we haven't refreshed yet or if photos list is empty
-            if (!hasInitialRefreshed.current || photos.length === 0) {
-                refreshPhotos();
-                hasInitialRefreshed.current = true;
-            }
+            refreshPhotos();
             loadReportHistory();
             loadUserMetrics();
-        }, [refreshPhotos, photos.length])
+        }, [refreshPhotos])
     );
 
     const loadUserMetrics = async () => {
@@ -571,15 +563,32 @@ export default function HomeScreen(): React.JSX.Element {
 
     // Skeleton Loading Component for Photo Slider
     const PhotoSliderSkeleton = () => (
-        <SkeletonPlaceholder borderRadius={4}>
-            <SkeletonPlaceholder.Item alignItems="center">
-                <SkeletonPlaceholder.Item
-                    width={173}
-                    height={173}
-                    borderRadius={32}
-                />
-            </SkeletonPlaceholder.Item>
-        </SkeletonPlaceholder>
+        <View style={styles.carouselContainer}>
+            <Carousel
+                key="carousel-skeleton"
+                loop={false}
+                width={SCREEN_WIDTH - 36}
+                height={173}
+                style={{ width: SCREEN_WIDTH - 64, justifyContent: 'center', alignItems: 'center' }}
+                data={[1, 2, 3]}
+                mode="parallax"
+                modeConfig={{
+                    parallaxScrollingScale: 1.0,
+                    parallaxScrollingOffset: 50,
+                }}
+                renderItem={() => (
+                    <View style={styles.carouselItemContainer}>
+                        <SkeletonPlaceholder borderRadius={32}>
+                            <SkeletonPlaceholder.Item
+                                width={173}
+                                height={173}
+                                borderRadius={32}
+                            />
+                        </SkeletonPlaceholder>
+                    </View>
+                )}
+            />
+        </View>
     );
 
     // Skeleton Loading Component for Concerns
@@ -638,8 +647,9 @@ export default function HomeScreen(): React.JSX.Element {
             uri={item.storageUrl}
             style={styles.carouselImage}
             onPress={() => onCarouselItemPress(item)}
+            forceLoading={isLoading}
         />
-    ), [onCarouselItemPress]);
+    ), [onCarouselItemPress, isLoading]);
 
     const handleNewScan = () => {
         (navigation as any).navigate('Camera');
@@ -694,9 +704,7 @@ export default function HomeScreen(): React.JSX.Element {
 
                     {/* Photo Container */}
                     {isLoading && photos.length === 0 ? (
-                        <View style={styles.photoWrapper}>
-                            <PhotoSliderSkeleton />
-                        </View>
+                        <PhotoSliderSkeleton />
                     ) : hasPhotosForCurrentDate && currentDateGroup.photos.length > 1 ? (
                         /* 3D Carousel for multiple photos - 3 images visible */
                         <View style={styles.carouselContainer}>
@@ -736,6 +744,7 @@ export default function HomeScreen(): React.JSX.Element {
                                 style={styles.photo}
                                 onPress={() => handlePhotoPress()}
                                 containerStyle={styles.singlePhotoContainer}
+                                forceLoading={isLoading}
                             />
                         </View>
                     ) : (

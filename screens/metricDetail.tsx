@@ -90,16 +90,22 @@ interface ConcernDetail {
   contextText?: string;
   scoreLevels: Record<string, ScoreLevel>;
   advice?: AdviceData;
-  typeDescriptions?: Record<string, {
-    description: string;
-    characteristics: string;
-    careApproach: string;
-  }>;
-  toneDescriptions?: Record<string, {
-    description: string;
-    characteristics: string;
-    considerations: string;
-  }>;
+  typeDescriptions?: Record<
+    string,
+    {
+      description: string;
+      characteristics: string;
+      careApproach: string;
+    }
+  >;
+  toneDescriptions?: Record<
+    string,
+    {
+      description: string;
+      characteristics: string;
+      considerations: string;
+    }
+  >;
   ageGuidance?: {
     youngerThanActual: string;
     matchesActual: string;
@@ -115,15 +121,12 @@ interface ConcernDetail {
   maskVerbiage?: string[];
 }
 
-
 const dummyPhotos: PhotoData[] = [];
 
 const SKIN_TYPES: string[] = ['Dry', 'Normal', 'Combinational', 'Oily'];
 
-
 const CHART_HEIGHT = 180;
 const PADDING = 25;
-
 
 import * as React from 'react';
 const { useState, useEffect, useRef } = React;
@@ -139,7 +142,7 @@ import {
   ImageStyle,
   ActivityIndicator,
   Dimensions,
-  DeviceEventEmitter
+  DeviceEventEmitter,
 } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import {
@@ -162,7 +165,12 @@ import ListItem from '../components/ui/ListItem';
 //import FloatingTooltip from '../../components/ui/FloatingTooltip';
 import { colors, fontFamily, spacing } from '../styles';
 import useAuthStore from '../stores/authStore';
-import { getSkinTrendScores, getHautMaskImages, generateConcernMessage, toggleTopConcern } from '../utils/newApiService';
+import {
+  getSkinTrendScores,
+  getHautMaskImages,
+  generateConcernMessage,
+  toggleTopConcern,
+} from '../utils/newApiService';
 import { LineChart } from 'react-native-chart-kit';
 
 // Import the JSON data
@@ -170,11 +178,16 @@ import { LineChart } from 'react-native-chart-kit';
 import concernsData from '../data/concerns.json';
 import ingredientsData from '../data/Ingredients.json';
 import MetricsSeries_simple from '../components/analysis/MetricsSeries_simple';
-import MetricsSeries, { MetricRow, processPhotoMetrics, METRIC_LABELS } from '../components/analysis/MetricsSeries';
-
+import MetricsSeries, {
+  MetricRow,
+  processPhotoMetrics,
+  METRIC_LABELS,
+} from '../components/analysis/MetricsSeries';
 
 // Helper functions for perceived age chart
-const calculateActualAge = (birthDate: string | Date | undefined): number | null => {
+const calculateActualAge = (
+  birthDate: string | Date | undefined,
+): number | null => {
   if (!birthDate) return null;
   const birth = birthDate instanceof Date ? birthDate : new Date(birthDate);
   const today = new Date();
@@ -186,7 +199,10 @@ const calculateActualAge = (birthDate: string | Date | undefined): number | null
   return age;
 };
 
-const getAgeComparisonColor = (perceivedAge: number | null, actualAge: number | null): string => {
+const getAgeComparisonColor = (
+  perceivedAge: number | null,
+  actualAge: number | null,
+): string => {
   if (!actualAge || !perceivedAge) return '#222';
 
   const ageDifference = perceivedAge - actualAge;
@@ -211,10 +227,14 @@ const getLightColor = (hexColor: string): string => {
   if (!hexColor || hexColor === '#999999') return '#f0f0f0';
 
   switch (hexColor) {
-    case '#FF3B30': return '#FFEBEA'; // Light red
-    case '#FFB340': return '#FFF4E6'; // Light amber  
-    case '#34C759': return '#E8F5E8'; // Light green
-    default: return '#f0f0f0';
+    case '#FF3B30':
+      return '#FFEBEA'; // Light red
+    case '#FFB340':
+      return '#FFF4E6'; // Light amber
+    case '#34C759':
+      return '#E8F5E8'; // Light green
+    default:
+      return '#f0f0f0';
   }
 };
 
@@ -227,29 +247,34 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
   const scrollViewRef = useRef<ScrollView>(null);
 
   // Process photos to get perceived age data
-  const processedData: ProcessedData[] = photos.map(photo => {
-    let dateValue;
-    const ts = photo.created_at;
-    if ((ts as any)?.seconds && typeof (ts as any).seconds === 'number') {
-      dateValue = new Date((ts as any).seconds * 1000 + ((ts as any).nanoseconds ? (ts as any).nanoseconds / 1000000 : 0));
-    } else if (ts instanceof Date) {
-      dateValue = ts;
-    } else if (typeof ts === 'string' || typeof ts === 'number') {
-      dateValue = new Date(ts);
-    } else {
-      return null;
-    }
+  const processedData: ProcessedData[] = photos
+    .map(photo => {
+      let dateValue;
+      const ts = photo.created_at;
+      if ((ts as any)?.seconds && typeof (ts as any).seconds === 'number') {
+        dateValue = new Date(
+          (ts as any).seconds * 1000 +
+            ((ts as any).nanoseconds ? (ts as any).nanoseconds / 1000000 : 0),
+        );
+      } else if (ts instanceof Date) {
+        dateValue = ts;
+      } else if (typeof ts === 'string' || typeof ts === 'number') {
+        dateValue = new Date(ts);
+      } else {
+        return null;
+      }
 
-    if (!(dateValue instanceof Date && !isNaN(dateValue.getTime()))) {
-      return null;
-    }
+      if (!(dateValue instanceof Date && !isNaN(dateValue.getTime()))) {
+        return null;
+      }
 
-    return {
-      photoId: photo.skin_result_id,
-      date: dateValue,
-      score: photo.skin_condition_score ?? null,
-    };
-  }).filter(item => item !== null) as ProcessedData[];
+      return {
+        photoId: photo.skin_result_id,
+        date: dateValue,
+        score: photo.skin_condition_score ?? null,
+      };
+    })
+    .filter(item => item !== null) as ProcessedData[];
 
   // Scroll to the end (latest point) when component mounts or data changes
   useEffect(() => {
@@ -261,7 +286,11 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
   }, [processedData.length]);
 
   if (!processedData.length) {
-    return <Text style={styles.trendPlaceholderText}>No perceived age data available.</Text>;
+    return (
+      <Text style={styles.trendPlaceholderText}>
+        No perceived age data available.
+      </Text>
+    );
   }
 
   // Chart constants
@@ -276,12 +305,36 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
 
   return (
     <View style={{ height: chartHeight + 40 }}>
-      <View style={{ flexDirection: 'row', height: chartHeight, paddingTop: paddingTop }}>
+      <View
+        style={{
+          flexDirection: 'row',
+          height: chartHeight,
+          paddingTop: paddingTop,
+        }}
+      >
         {/* Y-Axis Labels - Fixed, outside ScrollView */}
-        <View style={[styles.yAxisLabelsContainerFixed, { height: effectiveChartHeight, marginLeft: -20 }]}>
-          <Text style={[styles.yAxisLabel, { position: 'absolute', top: 0 }]}>100</Text>
-          <Text style={[styles.yAxisLabel, { position: 'absolute', top: effectiveChartHeight / 2 - 6 }]}>50</Text>
-          <Text style={[styles.yAxisLabel, { position: 'absolute', bottom: 0 }]}>0</Text>
+        <View
+          style={[
+            styles.yAxisLabelsContainerFixed,
+            { height: effectiveChartHeight, marginLeft: -20 },
+          ]}
+        >
+          <Text style={[styles.yAxisLabel, { position: 'absolute', top: 0 }]}>
+            100
+          </Text>
+          <Text
+            style={[
+              styles.yAxisLabel,
+              { position: 'absolute', top: effectiveChartHeight / 2 - 6 },
+            ]}
+          >
+            50
+          </Text>
+          <Text
+            style={[styles.yAxisLabel, { position: 'absolute', bottom: 0 }]}
+          >
+            0
+          </Text>
         </View>
 
         <ScrollView
@@ -290,14 +343,29 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
           showsHorizontalScrollIndicator={false}
           style={{ flex: 1, height: effectiveChartHeight, marginLeft: 10 }}
           contentContainerStyle={{
-            paddingRight: 16
+            paddingRight: 16,
           }}
         >
-          <View style={[styles.plotArea, { width: plotAreaWidth, height: effectiveChartHeight }]}>
+          <View
+            style={[
+              styles.plotArea,
+              { width: plotAreaWidth, height: effectiveChartHeight },
+            ]}
+          >
             {/* Y-Axis Grid Lines */}
             <View style={styles.gridContainer}>
-              <View style={[styles.yAxisGridLine, { bottom: effectiveChartHeight - 1 }]} />
-              <View style={[styles.yAxisGridLine, { bottom: effectiveChartHeight / 2 }]} />
+              <View
+                style={[
+                  styles.yAxisGridLine,
+                  { bottom: effectiveChartHeight - 1 },
+                ]}
+              />
+              <View
+                style={[
+                  styles.yAxisGridLine,
+                  { bottom: effectiveChartHeight / 2 },
+                ]}
+              />
               <View style={[styles.yAxisGridLine, { bottom: 0 }]} />
             </View>
 
@@ -317,7 +385,7 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
                       {
                         left: xPosition,
                         bottom: effectiveChartHeight / 2 - 2,
-                      }
+                      },
                     ]}
                   >
                     <View style={styles.nullBar} />
@@ -331,13 +399,16 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
               const isRecent = index >= processedData.length - 3;
 
               return (
-                <View key={scoreData.photoId} style={{
-                  position: 'absolute',
-                  left: xPosition,
-                  bottom: 0,
-                  width: barSlotWidth,
-                  alignItems: 'center'
-                }}>
+                <View
+                  key={scoreData.photoId}
+                  style={{
+                    position: 'absolute',
+                    left: xPosition,
+                    bottom: 0,
+                    width: barSlotWidth,
+                    alignItems: 'center',
+                  }}
+                >
                   <View
                     style={{
                       width: barSlotWidth,
@@ -361,7 +432,7 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
                           shadowOpacity: 0.2,
                           shadowRadius: 2,
                           elevation: 2,
-                        }
+                        },
                       ]}
                     />
 
@@ -379,7 +450,7 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
                           shadowOpacity: 0.3,
                           shadowRadius: 2,
                           elevation: 3,
-                        }
+                        },
                       ]}
                     />
                   </View>
@@ -398,52 +469,62 @@ const SkinTypeTrendChart = ({ photos }: { photos: PhotoData[] }) => {
 
   // Process photos to get skin type data
 
+  console.log('🔵 photos of SkinTypeTrendChart: in metricDetail.js', photos);
 
-  console.log("🔵 photos of SkinTypeTrendChart: in metricDetail.js", photos);
+  const processedData = photos
+    .map(photo => {
+      let dateValue;
+      const ts = photo.created_at;
+      if ((ts as any)?.seconds && typeof (ts as any).seconds === 'number') {
+        dateValue = new Date(
+          (ts as any).seconds * 1000 +
+            ((ts as any).nanoseconds ? (ts as any).nanoseconds / 1000000 : 0),
+        );
+      } else if (ts instanceof Date) {
+        dateValue = ts;
+      } else if (typeof ts === 'string' || typeof ts === 'number') {
+        dateValue = new Date(ts);
+      } else {
+        return null;
+      }
 
-  const processedData = photos.map(photo => {
-    let dateValue;
-    const ts = photo.created_at;
-    if ((ts as any)?.seconds && typeof (ts as any).seconds === 'number') {
-      dateValue = new Date((ts as any).seconds * 1000 + ((ts as any).nanoseconds ? (ts as any).nanoseconds / 1000000 : 0));
-    } else if (ts instanceof Date) {
-      dateValue = ts;
-    } else if (typeof ts === 'string' || typeof ts === 'number') {
-      dateValue = new Date(ts);
-    } else {
-      return null;
-    }
+      if (!(dateValue instanceof Date && !isNaN(dateValue.getTime()))) {
+        return null;
+      }
 
-    if (!(dateValue instanceof Date && !isNaN(dateValue.getTime()))) {
-      return null;
-    }
-
-    return {
-      photoId: photo.skin_result_id,
-      date: dateValue,
-      skinType: photo.skin_condition_type || photo.skinType || null,
-    };
-  }).filter(item => item !== null) as { photoId: string; date: Date; skinType: string | null; }[];
+      return {
+        photoId: photo.skin_result_id,
+        date: dateValue,
+        skinType: photo.skin_condition_type || photo.skinType || null,
+      };
+    })
+    .filter(item => item !== null) as {
+    photoId: string;
+    date: Date;
+    skinType: string | null;
+  }[];
 
   // Scroll to the end (latest point) when component mounts or data changes
   useEffect(() => {
     if (processedData.length > 0 && scrollViewRef.current) {
-
       scrollViewRef.current?.scrollToEnd({ animated: true });
-
     }
   }, [processedData.length]);
 
   if (!processedData.length) {
-    return <Text style={styles.trendPlaceholderText}>No skin type data available.</Text>;
+    return (
+      <Text style={styles.trendPlaceholderText}>
+        No skin type data available.
+      </Text>
+    );
   }
 
   // Map skin types to numeric values for chart
   const skinTypeMap: Record<string, number> = {
-    'Oily': 1,           // bottom
-    'Combinational': 2,  // above oily
-    'Normal': 3,         // above combination
-    'Dry': 4            // top
+    Oily: 1, // bottom
+    Combinational: 2, // above oily
+    Normal: 3, // above combination
+    Dry: 4, // top
   };
 
   // Reverse the data so latest point is at the very last position
@@ -462,54 +543,66 @@ const SkinTypeTrendChart = ({ photos }: { photos: PhotoData[] }) => {
         // 👀 Real user data
         data: realData,
         color: () => `#8b7ba8`,
-        strokeWidth: 3
+        strokeWidth: 3,
       },
       {
         // 👻 Hidden scaling dataset
         data: [1, 4],
         color: () => `transparent`, // hide line
-        withDots: false,            // hide dots
-        strokeWidth: 0              // hide stroke
-      }
-    ]
+        withDots: false, // hide dots
+        strokeWidth: 0, // hide stroke
+      },
+    ],
   };
 
-  console.log("🔵 chartData of SkinTypeTrendChart: in metricDetail.js", chartData);
+  console.log(
+    '🔵 chartData of SkinTypeTrendChart: in metricDetail.js',
+    chartData,
+  );
 
   const screenWidth = Dimensions.get('window').width;
   const chartWidth = screenWidth - 32; // Account for margins
 
   const renderYAxisLabels = () => {
-    return <View style={{ flexDirection: 'column', gap: 10, paddingVertical: 7, paddingHorizontal: 4 }}>
-      {SKIN_TYPES.map((skinType, index) => {
-        // const y = PADDING + (index / (SKIN_TYPES.length - 1)) * (CHART_HEIGHT - 2 * PADDING); // This 'y' is not used for positioning in this render method
-        return (
-          <View
-            key={skinType} // Added key prop
-            style={{
-              backgroundColor: "white",
-              borderWidth: 1,
-              borderColor: "rgba(0,0,0,0.1)", // light border
-              borderRadius: 16, // makes pill shape
-              paddingHorizontal: 10,
-              paddingVertical: 7,
-              alignSelf: "flex-start", // shrink to text size
-              opacity: 0.7, // highlight active one
-            }}
-          >
-            <Text
+    return (
+      <View
+        style={{
+          flexDirection: 'column',
+          gap: 10,
+          paddingVertical: 7,
+          paddingHorizontal: 4,
+        }}
+      >
+        {SKIN_TYPES.map((skinType, index) => {
+          // const y = PADDING + (index / (SKIN_TYPES.length - 1)) * (CHART_HEIGHT - 2 * PADDING); // This 'y' is not used for positioning in this render method
+          return (
+            <View
+              key={skinType} // Added key prop
               style={{
-                fontSize: 12,
-                color: "#333",
-                fontWeight: "500",
+                backgroundColor: 'white',
+                borderWidth: 1,
+                borderColor: 'rgba(0,0,0,0.1)', // light border
+                borderRadius: 16, // makes pill shape
+                paddingHorizontal: 10,
+                paddingVertical: 7,
+                alignSelf: 'flex-start', // shrink to text size
+                opacity: 0.7, // highlight active one
               }}
             >
-              {skinType}
-            </Text>
-          </View>
-        );
-      })}
-    </View>
+              <Text
+                style={{
+                  fontSize: 12,
+                  color: '#333',
+                  fontWeight: '500',
+                }}
+              >
+                {skinType}
+              </Text>
+            </View>
+          );
+        })}
+      </View>
+    );
   };
 
   return (
@@ -531,31 +624,30 @@ const SkinTypeTrendChart = ({ photos }: { photos: PhotoData[] }) => {
             color: (opacity = 1) => `rgba(110, 70, 255, ${opacity})`,
             labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
             style: {
-              borderRadius: 16
+              borderRadius: 16,
             },
             propsForDots: {
-              r: '6',                 // dot radius
-              strokeWidth: '2',       // border thickness
-              stroke: '#fff',      // border color (purple)
-              fill: '#8b7ba8',           // inside color (white makes border pop)
+              r: '6', // dot radius
+              strokeWidth: '2', // border thickness
+              stroke: '#fff', // border color (purple)
+              fill: '#8b7ba8', // inside color (white makes border pop)
             },
             propsForBackgroundLines: {
               strokeDasharray: '',
-              stroke: '#E0E0E0'
-            }
+              stroke: '#E0E0E0',
+            },
           }}
           style={{
             marginVertical: 8,
             borderRadius: 16,
-            marginLeft: 0
+            marginLeft: 0,
           }}
           bezier
-          withVerticalLabels={false}   // ❌ removes Y-axis numbers
+          withVerticalLabels={false} // ❌ removes Y-axis numbers
           withHorizontalLabels={false} // ❌ removes X-axis numbers
-          withInnerLines={true}        // keep dashed lines if you want
-          withOuterLines={false}       // removes border lines
-
-          yLabelsOffset={0}            // no extra spacing for labels
+          withInnerLines={true} // keep dashed lines if you want
+          withOuterLines={false} // removes border lines
+          yLabelsOffset={0} // no extra spacing for labels
           withDots={true}
           withShadow={false}
           //  withInnerLines={true}
@@ -564,32 +656,28 @@ const SkinTypeTrendChart = ({ photos }: { photos: PhotoData[] }) => {
           withHorizontalLines={true}
           segments={3}
           fromZero={false}
-        // formatYLabel={(value) => {
-        //   const numValue = parseFloat(value);
-        //   if (numValue === 1) return 'Dry';
-        //   if (numValue === 2) return 'Normal';
-        //   if (numValue === 3) return 'Combination';
-        //   if (numValue === 4) return 'Oily';
-        //   return '';
-        // }}
-        // formatXLabel={(value) => {
-        //   const index = parseInt(value) - 1;
-        //   if (index >= 0 && index < processedData.length) {
-        //     const date = processedData[index].date;
-        //     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-        //   }
-        //   return value;
-        // }}
+          // formatYLabel={(value) => {
+          //   const numValue = parseFloat(value);
+          //   if (numValue === 1) return 'Dry';
+          //   if (numValue === 2) return 'Normal';
+          //   if (numValue === 3) return 'Combination';
+          //   if (numValue === 4) return 'Oily';
+          //   return '';
+          // }}
+          // formatXLabel={(value) => {
+          //   const index = parseInt(value) - 1;
+          //   if (index >= 0 && index < processedData.length) {
+          //     const date = processedData[index].date;
+          //     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+          //   }
+          //   return value;
+          // }}
         />
-
       </ScrollView>
 
-      <View style={styles.floatingYAxis}>
-        {renderYAxisLabels()}
-      </View>
+      <View style={styles.floatingYAxis}>{renderYAxisLabels()}</View>
 
       {/* Legend */}
-
     </View>
   );
 };
@@ -597,21 +685,21 @@ const SkinTypeTrendChart = ({ photos }: { photos: PhotoData[] }) => {
 // Helper function to map metric keys to condition names for mask images
 const getHeaderNameForMetric = (metricKey: string) => {
   const mapping: Record<string, string> = {
-    'rednessScore': 'Redness',
-    'hydrationScore': 'Dewiness',
-    'eyeAge': 'Perceived Eye Age',
-    'poresScore': 'Visible Pores',
-    'acneScore': 'Breakouts',
-    'linesScore': 'Lines',
-    'translucencyScore': 'Translucency',
-    'pigmentationScore': 'Pigmentation',
-    'uniformnessScore': 'Evenness',
-    'eyeAreaCondition': 'Dark Circles',
-    'perceivedAge': 'Perceived Age',
-    'skinTone': 'Skin Tone',
-    'skinType': 'Skin Type',
-    'puffinessScore': 'Puffiness',
-    'saggingScore': 'Sagging'
+    rednessScore: 'Redness',
+    hydrationScore: 'Dewiness',
+    eyeAge: 'Perceived Eye Age',
+    poresScore: 'Visible Pores',
+    acneScore: 'Breakouts',
+    linesScore: 'Lines',
+    translucencyScore: 'Translucency',
+    pigmentationScore: 'Pigmentation',
+    uniformnessScore: 'Evenness',
+    eyeAreaCondition: 'Dark Circles',
+    perceivedAge: 'Perceived Age',
+    skinTone: 'Skin Tone',
+    skinType: 'Skin Type',
+    puffinessScore: 'Eye Puffiness',
+    saggingScore: 'Sagging',
   };
 
   return mapping[metricKey] || null;
@@ -620,20 +708,20 @@ const getHeaderNameForMetric = (metricKey: string) => {
 // Helper function to map metric keys to condition names for mask images
 const getConditionNameForMetric = (metricKey: string) => {
   const mapping: Record<string, string> = {
-    'rednessScore': 'redness',
-    'hydrationScore': 'hydration',
-    'eyeAge': 'eye_bags',
-    'poresScore': 'pores',
-    'acneScore': 'acne',
-    'linesScore': 'lines',
-    'translucencyScore': 'translucency',
-    'pigmentationScore': 'pigmentation',
-    'uniformnessScore': 'uniformness',
-    'eyeAreaCondition': 'eye_bags',
-    'skinTone': 'skin_tone',
-    'skinType': 'skin_type',
-    'puffinessScore': 'puffiness',
-    'saggingScore': 'sagging'
+    rednessScore: 'redness',
+    hydrationScore: 'hydration',
+    eyeAge: 'eye_bags',
+    poresScore: 'pores',
+    acneScore: 'acne',
+    linesScore: 'lines',
+    translucencyScore: 'translucency',
+    pigmentationScore: 'pigmentation',
+    uniformnessScore: 'uniformness',
+    eyeAreaCondition: 'eye_bags',
+    skinTone: 'skin_tone',
+    skinType: 'skin_type',
+    puffinessScore: 'puffiness',
+    saggingScore: 'sagging',
   };
 
   return mapping[metricKey] || null;
@@ -642,21 +730,21 @@ const getConditionNameForMetric = (metricKey: string) => {
 // Helper function to map metric keys to skin condition names for trend API
 const getSkinConditionNameForMetric = (metricKey: string) => {
   const mapping: Record<string, string> = {
-    'rednessScore': 'redness',
-    'hydrationScore': 'hydration',
-    'eyeAge': 'eyes_age',
-    'poresScore': 'pores',
-    'acneScore': 'acne',
-    'linesScore': 'lines',
-    'translucencyScore': 'translucency',
-    'pigmentationScore': 'pigmentation',
-    'uniformnessScore': 'uniformness',
-    'eyeAreaCondition': 'eye_bags',
-    'perceivedAge': 'age',
-    'skinTone': 'skin_tone',
-    'skinType': 'skin_type',
-    'puffinessScore': 'puffiness',
-    'saggingScore': 'sagging'
+    rednessScore: 'redness',
+    hydrationScore: 'hydration',
+    eyeAge: 'eyes_age',
+    poresScore: 'pores',
+    acneScore: 'acne',
+    linesScore: 'lines',
+    translucencyScore: 'translucency',
+    pigmentationScore: 'pigmentation',
+    uniformnessScore: 'uniformness',
+    eyeAreaCondition: 'eye_bags',
+    perceivedAge: 'age',
+    skinTone: 'skin_tone',
+    skinType: 'skin_type',
+    puffinessScore: 'puffiness',
+    saggingScore: 'sagging',
   };
 
   return mapping[metricKey] || null;
@@ -669,27 +757,30 @@ const getConcernNameForAPI = (metricKey: string) => {
   // Remove "Score" suffix if present
   let processedKey = metricKey;
   if (processedKey.endsWith('Score')) {
-    processedKey = processedKey.substring(0, processedKey.length - 'Score'.length);
+    processedKey = processedKey.substring(
+      0,
+      processedKey.length - 'Score'.length,
+    );
   }
 
   // Convert camelCase to Title Case
   // Handle special cases first
   const specialCases: Record<string, string> = {
-    'hydration': 'Dewiness',
-    'redness': 'Redness',
-    'pores': 'Visible Pores',
-    'acne': 'Breakouts',
-    'lines': 'Lines',
-    'translucency': 'Translucency',
-    'pigmentation': 'Pigmentation',
-    'uniformness': 'Evenness',
-    'eyeAge': 'Perceived Eye Age',
-    'eyeAreaCondition': 'Dark Circles',
-    'perceivedAge': 'Perceived Age',
-    'skinTone': 'Skin Tone',
-    'skinType': 'Skin Type',
-    'puffiness': 'Puffiness',
-    'sagging': 'Sagging'
+    hydration: 'Dewiness',
+    redness: 'Redness',
+    pores: 'Visible Pores',
+    acne: 'Breakouts',
+    lines: 'Lines',
+    translucency: 'Translucency',
+    pigmentation: 'Pigmentation',
+    uniformness: 'Evenness',
+    eyeAge: 'Perceived Eye Age',
+    eyeAreaCondition: 'Dark Circles',
+    perceivedAge: 'Perceived Age',
+    skinTone: 'Skin Tone',
+    skinType: 'Skin Type',
+    puffiness: 'Eye Puffiness',
+    sagging: 'Sagging',
   };
 
   if (specialCases[processedKey]) {
@@ -697,7 +788,8 @@ const getConcernNameForAPI = (metricKey: string) => {
   }
 
   // Default: convert camelCase to Title Case
-  return processedKey.replace(/([A-Z])/g, ' $1')
+  return processedKey
+    .replace(/([A-Z])/g, ' $1')
     .replace(/^./, str => str.toUpperCase())
     .trim();
 };
@@ -707,22 +799,25 @@ const getIngredientsForMetric = (metricKey: string): string[] => {
   if (!metricKey) return [];
 
   const mapping: Record<string, string> = {
-    'acneScore': 'Acne',
-    'pigmentationScore': 'Pigmentation',
-    'uniformnessScore': 'Uniformness',
-    'rednessScore': 'Redness',
-    'linesScore': 'Lines',
-    'poresScore': 'Pores',
-    'hydrationScore': 'Hydration',
-    'eyeAreaCondition': 'Dark Circles',
-    'puffinessScore': 'Puffiness',
-    'saggingScore': 'Sagging'
+    acneScore: 'Acne',
+    pigmentationScore: 'Pigmentation',
+    uniformnessScore: 'Uniformness',
+    rednessScore: 'Redness',
+    linesScore: 'Lines',
+    poresScore: 'Pores',
+    hydrationScore: 'Hydration',
+    eyeAreaCondition: 'Dark Circles',
+    puffinessScore: 'Eye Puffiness',
+    saggingScore: 'Sagging',
   };
 
-  const concernName = mapping[metricKey] || mapping[metricKey.replace('Score', '')];
+  const concernName =
+    mapping[metricKey] || mapping[metricKey.replace('Score', '')];
   if (!concernName) return [];
 
-  const concern = (ingredientsData.SKIN_CONCERNS as any[]).find(c => c.name === concernName);
+  const concern = (ingredientsData.SKIN_CONCERNS as any[]).find(
+    c => c.name === concernName,
+  );
   return concern ? concern.Ingredients : [];
 };
 
@@ -749,7 +844,7 @@ const metricHelpers = {
     // console.log(`Finding metrics related to: ${techNamePattern} (base: ${baseName})`);
 
     return areaResults.filter(metric => {
-      // Match exactly by tech_name or loosely by name 
+      // Match exactly by tech_name or loosely by name
       return (
         metric.tech_name?.includes(techNamePattern) ||
         metric.tech_name?.includes(baseName) ||
@@ -763,18 +858,18 @@ const metricHelpers = {
     if (!fm3Results || !metricKey) return [];
 
     const fm3Mapping: Record<string, string> = {
-      acneScore: "breakouts",
-      rednessScore: "redness",
-      poresScore: "pores",
-      perceivedAge: "age",
-      eyeAge: "eyes_age",
-      skinTone: "skintone",
-      skinType: "skin_type",
-      hydrationScore: "hydration",
-      pigmentationScore: "pigmentation",
-      linesScore: "lines",
-      uniformnessScore: "uniformness",
-      eyeAreaCondition: "dark_circles",
+      acneScore: 'breakouts',
+      rednessScore: 'redness',
+      poresScore: 'pores',
+      perceivedAge: 'age',
+      eyeAge: 'eyes_age',
+      skinTone: 'skintone',
+      skinType: 'skin_type',
+      hydrationScore: 'hydration',
+      pigmentationScore: 'pigmentation',
+      linesScore: 'lines',
+      uniformnessScore: 'uniformness',
+      eyeAreaCondition: 'dark_circles',
     };
 
     const fm3Key = fm3Mapping[metricKey] || metricKey;
@@ -787,10 +882,13 @@ const metricHelpers = {
     // 1. Add the main metric as "Overall" or "face"
     related.push({
       tech_name: fm3Key,
-      value: (typeof metricData.score === 'number' ? metricData.score : (metricData.age || metricData.eyes_age || metricData.classification)),
-      area_name: "face",
+      value:
+        typeof metricData.score === 'number'
+          ? metricData.score
+          : metricData.age || metricData.eyes_age || metricData.classification,
+      area_name: 'face',
       tag: metricData.tag,
-      grade: metricData.grade
+      grade: metricData.grade,
     });
 
     // 2. Add area-specific metrics if available
@@ -800,7 +898,7 @@ const metricHelpers = {
           tech_name: `${fm3Key}_${area}`,
           value: metricData.areas[area].score || metricData.areas[area].value,
           area_name: area,
-          tag: metricData.areas[area].tag
+          tag: metricData.areas[area].tag,
         });
       });
     }
@@ -828,9 +926,10 @@ const metricHelpers = {
     if (metric.value === undefined) return 'N/A';
 
     // Round numerical values to 1 decimal place
-    let formattedValue = typeof metric.value === 'number'
-      ? Math.round(metric.value * 10) / 10
-      : metric.value;
+    let formattedValue =
+      typeof metric.value === 'number'
+        ? Math.round(metric.value * 10) / 10
+        : metric.value;
 
     // Add unit if available
     if (metric.unit) {
@@ -855,7 +954,10 @@ const metricHelpers = {
   },
 
   // Helper function to find the appropriate score level based on value
-  getScoreLevelForValue: (scoreLevels: Record<string, ScoreLevel>, value: number) => {
+  getScoreLevelForValue: (
+    scoreLevels: Record<string, ScoreLevel>,
+    value: number,
+  ) => {
     if (!scoreLevels || value === undefined) return null;
 
     // Find the level where value is between min and max
@@ -868,10 +970,22 @@ const metricHelpers = {
   },
 
   // Get appropriate description for a metric based on value and type
-  getMetricDescription: (metric: any, defaultKey: string, displayType: string, currentConcernDetails: ConcernDetail | null) => {
+  getMetricDescription: (
+    metric: any,
+    defaultKey: string,
+    displayType: string,
+    currentConcernDetails: ConcernDetail | null,
+  ) => {
     // First try to use the new scoreLevels structure from concerns.json
-    if (currentConcernDetails && currentConcernDetails.scoreLevels && typeof metric === 'number') {
-      const scoreLevel = metricHelpers.getScoreLevelForValue(currentConcernDetails.scoreLevels, metric);
+    if (
+      currentConcernDetails &&
+      currentConcernDetails.scoreLevels &&
+      typeof metric === 'number'
+    ) {
+      const scoreLevel = metricHelpers.getScoreLevelForValue(
+        currentConcernDetails.scoreLevels,
+        metric,
+      );
       if (scoreLevel && scoreLevel.text) {
         return scoreLevel.text;
       }
@@ -882,51 +996,59 @@ const metricHelpers = {
       hydrationScore: {
         good: 'Your skin is well-hydrated.',
         fair: 'Your skin could use more hydration.',
-        bad: 'Your skin is dehydrated.'
+        bad: 'Your skin is dehydrated.',
       },
       acneScore: {
         good: 'Your skin shows minimal acne activity.',
         fair: 'Your skin shows some acne activity.',
-        bad: 'Your skin shows significant acne activity.'
+        bad: 'Your skin shows significant acne activity.',
       },
       poresScore: {
         good: 'Your pores appear small and refined.',
         fair: 'Your pores are somewhat visible.',
-        bad: 'Your pores are enlarged and noticeable.'
+        bad: 'Your pores are enlarged and noticeable.',
       },
       rednessScore: {
         good: 'Your skin shows minimal redness.',
         fair: 'Your skin shows some areas of redness.',
-        bad: 'Your skin shows significant redness.'
+        bad: 'Your skin shows significant redness.',
       },
       pigmentationScore: {
         good: 'Your skin tone is even with minimal pigmentation issues.',
         fair: 'Your skin shows some uneven pigmentation.',
-        bad: 'Your skin shows significant pigmentation issues.'
+        bad: 'Your skin shows significant pigmentation issues.',
       },
       default: {
         good: 'Your score is excellent!',
         fair: 'Your score is average.',
-        bad: 'This metric needs improvement.'
+        bad: 'This metric needs improvement.',
       },
-      skinType: { // Description for skinType category
-        default: `Your skin is classified as {value}. Understanding your skin type helps in choosing the right products.`
+      skinType: {
+        // Description for skinType category
+        default: `Your skin is classified as {value}. Understanding your skin type helps in choosing the right products.`,
       },
-      age: { // Description for age values
-        default: `This estimates the age appearance of this feature. It is {value} years.`
+      age: {
+        // Description for age values
+        default: `This estimates the age appearance of this feature. It is {value} years.`,
       },
       translucencyScore: {
         good: 'Your skin has good translucency.',
         fair: 'Your skin has fair translucency.',
-        bad: 'Your skin has poor translucency.'
-      }
+        bad: 'Your skin has poor translucency.',
+      },
     };
 
     if (displayType === 'skinType') {
-      return descriptions.skinType.default.replace('{value}', metric?.value || defaultKey);
+      return descriptions.skinType.default.replace(
+        '{value}',
+        metric?.value || defaultKey,
+      );
     }
     if (displayType === 'age') {
-      return descriptions.age.default.replace('{value}', metric?.value || defaultKey);
+      return descriptions.age.default.replace(
+        '{value}',
+        metric?.value || defaultKey,
+      );
     }
 
     // Determine rating category based on value (for fallback descriptions)
@@ -934,7 +1056,10 @@ const metricHelpers = {
     if (typeof metric === 'number') {
       if (metric >= 70) category = 'good';
       else if (metric < 50) category = 'bad';
-    } else if (metric?.value !== undefined && typeof metric.value === 'number') {
+    } else if (
+      metric?.value !== undefined &&
+      typeof metric.value === 'number'
+    ) {
       if (metric.value >= 70) category = 'good';
       else if (metric.value < 50) category = 'bad';
     }
@@ -957,7 +1082,11 @@ const metricHelpers = {
     }
 
     // If numeric and between 0-100, likely a score
-    if (typeof metricValue === 'number' && metricValue >= 0 && metricValue <= 100) {
+    if (
+      typeof metricValue === 'number' &&
+      metricValue >= 0 &&
+      metricValue <= 100
+    ) {
       // These known metrics are NOT scores despite being 0-100
       const nonScoreMetrics = ['eyeAge', 'perceivedAge', 'age'];
       return !nonScoreMetrics.some(m => metricKey.includes(m));
@@ -967,28 +1096,39 @@ const metricHelpers = {
   },
 
   // Get the appropriate display format for a metric
-  getMetricDisplayInfo: (metricKey: string, metricValue: any, metric: any, currentConcernDetails: ConcernDetail | null) => {
+  getMetricDisplayInfo: (
+    metricKey: string,
+    metricValue: any,
+    metric: any,
+    currentConcernDetails: ConcernDetail | null,
+  ) => {
     // Determine display type: 'score', 'category' (for skinType), 'age'
     let displayType = 'score';
-    if (['skinType'].includes(metricKey)) { // Can be expanded with other categorical non-score metrics
+    if (['skinType'].includes(metricKey)) {
+      // Can be expanded with other categorical non-score metrics
       displayType = 'category';
     } else if (['eyeAge', 'perceivedAge', 'age'].includes(metricKey)) {
       displayType = 'age';
     }
 
-    const isScore = displayType === 'score' && metricHelpers.isScoreMetric(metricKey, metricValue, metric);
+    const isScore =
+      displayType === 'score' &&
+      metricHelpers.isScoreMetric(metricKey, metricValue, metric);
     let suffix = '';
     let valueDisplay = metricValue;
 
     // Handle NaN or null/undefined values
-    if (metricValue === undefined || metricValue === null ||
-      (typeof metricValue === 'number' && isNaN(metricValue))) {
+    if (
+      metricValue === undefined ||
+      metricValue === null ||
+      (typeof metricValue === 'number' && isNaN(metricValue))
+    ) {
       return {
         displayType, // Add displayType
         isScore: false,
         valueDisplay: metric?.value || 'Not Available',
         description: 'This measurement is not available for this photo.',
-        showTag: false
+        showTag: false,
       };
     }
 
@@ -999,7 +1139,12 @@ const metricHelpers = {
         displayType,
         isScore: false,
         valueDisplay: actualValue,
-        description: metricHelpers.getMetricDescription(metric, actualValue, displayType, currentConcernDetails),
+        description: metricHelpers.getMetricDescription(
+          metric,
+          actualValue,
+          displayType,
+          currentConcernDetails,
+        ),
         showTag: false,
         // options: metricKey === 'skinTone' ? ['Light', 'Intermediate', 'Dark'] : // Original skinTone options
         //          metricKey === 'skinType' ? ['Dry', 'Normal', 'Oily', 'Combination'] : null // Original skinType options
@@ -1015,21 +1160,29 @@ const metricHelpers = {
         displayType,
         isScore: false, // Age is not a 0-100 score in this context
         valueDisplay,
-        description: metricHelpers.getMetricDescription({ value: metricValue }, String(metricValue), displayType, currentConcernDetails),
-        showTag: false
+        description: metricHelpers.getMetricDescription(
+          { value: metricValue },
+          String(metricValue),
+          displayType,
+          currentConcernDetails,
+        ),
+        showTag: false,
       };
     }
 
     // For numeric count metrics
-    if (metric && metric.tech_name &&
+    if (
+      metric &&
+      metric.tech_name &&
       (metric.tech_name.includes('number') ||
-        metric.tech_name.includes('count'))) {
+        metric.tech_name.includes('count'))
+    ) {
       return {
         displayType,
         isScore: false,
         valueDisplay: metricValue,
         description: `This measurement shows a count of ${metricValue}.`,
-        showTag: false
+        showTag: false,
       };
     }
 
@@ -1039,8 +1192,13 @@ const metricHelpers = {
         displayType,
         isScore: true,
         valueDisplay: `${metricValue}/100`,
-        description: metricHelpers.getMetricDescription(metricValue, metricKey, displayType, currentConcernDetails),
-        showTag: true
+        description: metricHelpers.getMetricDescription(
+          metricValue,
+          metricKey,
+          displayType,
+          currentConcernDetails,
+        ),
+        showTag: true,
       };
     }
 
@@ -1050,8 +1208,13 @@ const metricHelpers = {
         displayType, // Add displayType
         isScore: true,
         valueDisplay: `${metricValue}/100`,
-        description: metricHelpers.getMetricDescription(metricValue, metricKey, displayType, currentConcernDetails),
-        showTag: true
+        description: metricHelpers.getMetricDescription(
+          metricValue,
+          metricKey,
+          displayType,
+          currentConcernDetails,
+        ),
+        showTag: true,
       };
     }
 
@@ -1061,12 +1224,14 @@ const metricHelpers = {
       isScore: false,
       valueDisplay: `${metricValue}`,
       description: `This measurement is ${metricValue}.`, // Generic description
-      showTag: false
+      showTag: false,
     };
-  }
+  },
 };
 
-const sanitizeS3Uri = (uriString: string | null | undefined): string | null | undefined => {
+const sanitizeS3Uri = (
+  uriString: string | null | undefined,
+): string | null | undefined => {
   if (!uriString) return uriString;
   // Only touch the query part – a cheap approach is just replacing "+" with
   // its percent-encoded form and ensuring no literal spaces remain.
@@ -1081,22 +1246,38 @@ const DetailSkeleton = () => (
       <View style={{ padding: 16 }}>
         {/* Metric Card Skeleton */}
         <SkeletonPlaceholder borderRadius={12}>
-          <SkeletonPlaceholder.Item width="100%" height={160} marginBottom={16} />
+          <SkeletonPlaceholder.Item
+            width="100%"
+            height={160}
+            marginBottom={16}
+          />
         </SkeletonPlaceholder>
 
         {/* Mask Section Skeleton */}
         <SkeletonPlaceholder borderRadius={12}>
-          <SkeletonPlaceholder.Item width="100%" height={300} marginBottom={16} />
+          <SkeletonPlaceholder.Item
+            width="100%"
+            height={300}
+            marginBottom={16}
+          />
         </SkeletonPlaceholder>
 
         {/* About Card Skeleton */}
         <SkeletonPlaceholder borderRadius={12}>
-          <SkeletonPlaceholder.Item width="100%" height={200} marginBottom={16} />
+          <SkeletonPlaceholder.Item
+            width="100%"
+            height={200}
+            marginBottom={16}
+          />
         </SkeletonPlaceholder>
 
         {/* Ingredients Card Skeleton */}
         <SkeletonPlaceholder borderRadius={12}>
-          <SkeletonPlaceholder.Item width="100%" height={250} marginBottom={16} />
+          <SkeletonPlaceholder.Item
+            width="100%"
+            height={250}
+            marginBottom={16}
+          />
         </SkeletonPlaceholder>
       </View>
     </ScrollView>
@@ -1152,10 +1333,13 @@ export default function MetricDetailScreen() {
     return typeof photoData === 'string' ? JSON.parse(photoData) : photoData;
   }, [photoData]);
 
-  const [backgroundImageLoading, setBackgroundImageLoading] = useState<boolean>(true);
+  const [backgroundImageLoading, setBackgroundImageLoading] =
+    useState<boolean>(true);
   const [maskImages, setMaskImages] = useState<any>(null);
   // Initialize to true if we have an imageId to fetch
-  const [maskImagesLoading, setMaskImagesLoading] = useState<boolean>(!!parsedPhotoData?.hautUploadData?.imageId);
+  const [maskImagesLoading, setMaskImagesLoading] = useState<boolean>(
+    !!parsedPhotoData?.hautUploadData?.imageId,
+  );
   const [maskImageLoading, setMaskImageLoading] = useState<boolean>(true);
 
   // Reset loading states when navigating to a different metric
@@ -1173,11 +1357,12 @@ export default function MetricDetailScreen() {
     return () => clearTimeout(timer);
   }, [metricKey]);
 
-
   // Fetch mask images when component loads
   useEffect(() => {
     const fetchMaskImages = async () => {
-      const batchId = parsedPhotoData?.hautUploadData?.hautBatchId || parsedPhotoData?.hautBatchId;
+      const batchId =
+        parsedPhotoData?.hautUploadData?.hautBatchId ||
+        parsedPhotoData?.hautBatchId;
       if (!batchId) {
         console.log('🔴 No hautBatchId available for fetching mask images');
         return;
@@ -1185,7 +1370,9 @@ export default function MetricDetailScreen() {
 
       try {
         setMaskImagesLoading(true);
-        const batchId = parsedPhotoData.hautUploadData.hautBatchId || parsedPhotoData.hautBatchId;
+        const batchId =
+          parsedPhotoData.hautUploadData.hautBatchId ||
+          parsedPhotoData.hautBatchId;
         console.log('🔵 Fetching mask images for batchId:', batchId);
 
         const maskImagesData = await getHautMaskImages(batchId);
@@ -1201,15 +1388,22 @@ export default function MetricDetailScreen() {
     };
 
     fetchMaskImages();
-  }, [parsedPhotoData?.hautUploadData?.hautBatchId, parsedPhotoData?.hautBatchId]);
-
-
+  }, [
+    parsedPhotoData?.hautUploadData?.hautBatchId,
+    parsedPhotoData?.hautBatchId,
+  ]);
 
   // State for whether the current concern is being tracked by the user
   // State for the detailed content of the current concern
-  const [currentConcernDetails, setCurrentConcernDetails] = useState<ConcernDetail | null>(null);
+  const [currentConcernDetails, setCurrentConcernDetails] =
+    useState<ConcernDetail | null>(null);
   // State for tooltip
-  const [tooltip, setTooltip] = useState<{ visible: boolean; x: number; y: number; content: { primary?: string; secondary?: string; }; }>({ visible: false, x: 0, y: 0, content: {} });
+  const [tooltip, setTooltip] = useState<{
+    visible: boolean;
+    x: number;
+    y: number;
+    content: { primary?: string; secondary?: string };
+  }>({ visible: false, x: 0, y: 0, content: {} });
   // State for skin trend scores
   const [trendScores, setTrendScores] = useState<any>(null);
   const [isLoadingTrends, setIsLoadingTrends] = useState<boolean>(false);
@@ -1224,21 +1418,27 @@ export default function MetricDetailScreen() {
     found_ingredients?: Array<
       | string
       | {
-        ingredient: string;
-        products?: string[];
-      }
+          ingredient: string;
+          products?: string[];
+        }
     >;
     missing_ingredients?: string[];
     has_routine?: boolean;
   } | null>(null);
-  const [concernMessageLoading, setConcernMessageLoading] = useState<boolean>(false);
-  const [concernMessageError, setConcernMessageError] = useState<string | null>(null);
+  const [concernMessageLoading, setConcernMessageLoading] =
+    useState<boolean>(false);
+  const [concernMessageError, setConcernMessageError] = useState<string | null>(
+    null,
+  );
 
   // Fetch concern message when ingredients are available
   useEffect(() => {
     const fetchConcernMessage = async () => {
       const ingredients = getIngredientsForMetric(metricKey);
-      const displayIngredients = ingredients.length > 0 ? ingredients : (currentConcernDetails?.advice?.ingredients || []);
+      const displayIngredients =
+        ingredients.length > 0
+          ? ingredients
+          : currentConcernDetails?.advice?.ingredients || [];
 
       if (displayIngredients.length === 0) {
         return;
@@ -1256,18 +1456,19 @@ export default function MetricDetailScreen() {
         setConcernMessageError(null);
         console.log('🔵 Fetching concern message for:', concernName);
 
-        const response = await generateConcernMessage(concernName) as any;
+        const response = (await generateConcernMessage(concernName)) as any;
 
         if (response && response.success) {
           setConcernMessageData(response.data);
           console.log('Amber message fetched successfully:', response.data);
-        }
-        else {
+        } else {
           throw new Error('Failed to fetch concern message');
         }
       } catch (error: any) {
         console.error('🔴 Error fetching concern message:', error);
-        setConcernMessageError(error?.message || 'Failed to fetch concern message');
+        setConcernMessageError(
+          error?.message || 'Failed to fetch concern message',
+        );
         setConcernMessageData(null);
       } finally {
         setConcernMessageLoading(false);
@@ -1275,9 +1476,12 @@ export default function MetricDetailScreen() {
     };
 
     fetchConcernMessage();
-  }, [currentConcernDetails?.advice?.ingredients, metricKey, metricValue, photoData]);
-
-
+  }, [
+    currentConcernDetails?.advice?.ingredients,
+    metricKey,
+    metricValue,
+    photoData,
+  ]);
 
   // Format the metric name for display (convert camelCase to Title Case)
   const formatMetricName = (key: string): string => {
@@ -1286,10 +1490,14 @@ export default function MetricDetailScreen() {
     let processedKey = key;
     // If the key ends with "Score", remove it for a cleaner title
     if (processedKey.endsWith('Score')) {
-      processedKey = processedKey.substring(0, processedKey.length - 'Score'.length);
+      processedKey = processedKey.substring(
+        0,
+        processedKey.length - 'Score'.length,
+      );
     }
 
-    return processedKey.replace(/([A-Z])/g, ' $1')
+    return processedKey
+      .replace(/([A-Z])/g, ' $1')
       .replace(/^./, str => str.toUpperCase())
       .trim();
   };
@@ -1297,30 +1505,59 @@ export default function MetricDetailScreen() {
   // Format date for tooltip
   const formatDateLabel = (date: any): string => {
     if (!date) return '';
-    const d = typeof date === 'object' && date.seconds
-      ? new Date(date.seconds * 1000)
-      : new Date(date);
-    return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const d =
+      typeof date === 'object' && date.seconds
+        ? new Date(date.seconds * 1000)
+        : new Date(date);
+    return d.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    });
   };
 
   const getRelativeDayLabel = (dateInput: any): string => {
     if (!dateInput) return 'Today';
-    const d = typeof dateInput === 'object' && dateInput.seconds
-      ? new Date(dateInput.seconds * 1000)
-      : new Date(dateInput);
+    const d =
+      typeof dateInput === 'object' && dateInput.seconds
+        ? new Date(dateInput.seconds * 1000)
+        : new Date(dateInput);
     const now = new Date();
-    const sameDay = d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth() && d.getDate() === now.getDate();
+    const sameDay =
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate();
     if (sameDay) return 'Today';
     const yesterday = new Date(now);
     yesterday.setDate(now.getDate() - 1);
-    const isYesterday = d.getFullYear() === yesterday.getFullYear() && d.getMonth() === yesterday.getMonth() && d.getDate() === yesterday.getDate();
+    const isYesterday =
+      d.getFullYear() === yesterday.getFullYear() &&
+      d.getMonth() === yesterday.getMonth() &&
+      d.getDate() === yesterday.getDate();
     if (isYesterday) return 'Yesterday';
-    const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const monthNames = [
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
+    ];
     return `${monthNames[d.getMonth()]} ${d.getDate()}`;
   };
 
   // Handle chart selection changes
-  const handleChartSelection = (selectionData: { visible: boolean; barIndex: number; dataPoint: { score: number; date: any; }; }) => {
+  const handleChartSelection = (selectionData: {
+    visible: boolean;
+    barIndex: number;
+    dataPoint: { score: number; date: any };
+  }) => {
     if (!selectionData.visible) {
       setTooltip({ visible: false, x: 0, y: 0, content: {} });
       return;
@@ -1332,7 +1569,8 @@ export default function MetricDetailScreen() {
     const chartLeftMargin = 50; // Approximate left margin
     const barWidth = 16; // From chart component
 
-    const x = chartLeftMargin + (selectionData.barIndex * barWidth) + (barWidth / 2);
+    const x =
+      chartLeftMargin + selectionData.barIndex * barWidth + barWidth / 2;
     const y = chartContainerY - 20; // Position above the chart
 
     setTooltip({
@@ -1341,8 +1579,11 @@ export default function MetricDetailScreen() {
       y,
       content: {
         primary: selectionData.dataPoint.score.toString(),
-        secondary: formatDateLabel(selectionData.dataPoint.date).replace(', ', '\n')
-      }
+        secondary: formatDateLabel(selectionData.dataPoint.date).replace(
+          ', ',
+          '\n',
+        ),
+      },
     });
   };
 
@@ -1367,14 +1608,20 @@ export default function MetricDetailScreen() {
   };
 
   // Helper function to get tag and colors based on metric value
-  const getMetricTag = (value: number): { tag: string; color: string; bg: string; } => {
+  const getMetricTag = (
+    value: number,
+  ): { tag: string; color: string; bg: string } => {
     if (value >= 70) return { tag: 'GOOD', color: '#2e7d32', bg: '#e6f4ea' };
     if (value < 50) return { tag: 'BAD', color: '#c62828', bg: '#fdecea' };
     return { tag: 'FAIR', color: '#f57c00', bg: '#fff8e1' };
   };
 
   // Get metric styling
-  const { tag: metricTag, color: metricColor, bg: metricBg } = getMetricTag(Number(metricValue));
+  const {
+    tag: metricTag,
+    color: metricColor,
+    bg: metricBg,
+  } = getMetricTag(Number(metricValue));
 
   const [groupedMetrics, setGroupedMetrics] = useState<Record<string, any>>({});
   const [metricDisplayInfo, setMetricDisplayInfo] = useState<{
@@ -1388,15 +1635,12 @@ export default function MetricDetailScreen() {
     isScore: true,
     valueDisplay: '',
     description: '',
-    showTag: true
+    showTag: true,
   });
 
   const { photos } = usePhotoContext();
 
-
   useEffect(() => {
-
-
     // Load concern details from JSON
     if (metricKey && concernsData) {
       // First check if this is a profile metric (non-scored)
@@ -1409,7 +1653,9 @@ export default function MetricDetailScreen() {
 
       if (isProfileMetric && concernsData.skinProfiles) {
         // Look in skinProfiles for non-scored metrics
-        details = (concernsData.skinProfiles as Record<string, any>)[metricKey] || (concernsData.skinConcerns as Record<string, any>)[metricKey];
+        details =
+          (concernsData.skinProfiles as Record<string, any>)[metricKey] ||
+          (concernsData.skinConcerns as Record<string, any>)[metricKey];
         if (details) {
           // Add a flag to indicate this is a profile metric
           details._isProfileMetric = true;
@@ -1420,13 +1666,21 @@ export default function MetricDetailScreen() {
         details = (concernsData.skinConcerns as Record<string, any>)[metricKey];
         if (!details) {
           // Try with "Score" suffix if it's not there
-          const keyWithScore = metricKey.endsWith('Score') ? metricKey : `${metricKey}Score`;
-          details = (concernsData.skinConcerns as Record<string, any>)[keyWithScore];
+          const keyWithScore = metricKey.endsWith('Score')
+            ? metricKey
+            : `${metricKey}Score`;
+          details = (concernsData.skinConcerns as Record<string, any>)[
+            keyWithScore
+          ];
 
           if (!details) {
             // Try without "Score" suffix
-            const keyWithoutScore = metricKey.endsWith('Score') ? metricKey.replace('Score', '') : metricKey;
-            details = (concernsData.skinConcerns as Record<string, any>)[keyWithoutScore];
+            const keyWithoutScore = metricKey.endsWith('Score')
+              ? metricKey.replace('Score', '')
+              : metricKey;
+            details = (concernsData.skinConcerns as Record<string, any>)[
+              keyWithoutScore
+            ];
           }
         }
       }
@@ -1435,8 +1689,14 @@ export default function MetricDetailScreen() {
         setCurrentConcernDetails(details);
       } else {
         console.warn(`No details found for metricKey: ${metricKey}`);
-        console.warn('Available score keys:', Object.keys(concernsData.skinConcerns || {}));
-        console.warn('Available profile keys:', Object.keys(concernsData.skinProfiles || {}));
+        console.warn(
+          'Available score keys:',
+          Object.keys(concernsData.skinConcerns || {}),
+        );
+        console.warn(
+          'Available profile keys:',
+          Object.keys(concernsData.skinProfiles || {}),
+        );
         setCurrentConcernDetails(null);
       }
     }
@@ -1485,15 +1745,21 @@ export default function MetricDetailScreen() {
     }
 
     // Get primary metric for display info
-    const primaryMetric = related.find(m =>
-      m.area_name === 'face' ||
-      m.area_name === 'Overall' ||
-      m.tech_name?.includes(metricHelpers.getMatchPattern(metricKey))
+    const primaryMetric = related.find(
+      m =>
+        m.area_name === 'face' ||
+        m.area_name === 'Overall' ||
+        m.tech_name?.includes(metricHelpers.getMatchPattern(metricKey)),
     );
 
     // Set display info based on metric type
     setMetricDisplayInfo(
-      metricHelpers.getMetricDisplayInfo(metricKey, Number(metricValue), primaryMetric, currentConcernDetails)
+      metricHelpers.getMetricDisplayInfo(
+        metricKey,
+        Number(metricValue),
+        primaryMetric,
+        currentConcernDetails,
+      ),
     );
   }, [metricKey, metricValue, parsedPhotoData, currentConcernDetails]);
 
@@ -1504,17 +1770,20 @@ export default function MetricDetailScreen() {
 
       const skinConditionName = getSkinConditionNameForMetric(metricKey);
       if (!skinConditionName) {
-        console.log('⚠️ No skin condition mapping found for metric:', metricKey);
+        console.log(
+          '⚠️ No skin condition mapping found for metric:',
+          metricKey,
+        );
         return;
       }
 
       setIsLoadingTrends(true);
       try {
         console.log('🔵 Fetching trend scores for:', skinConditionName);
-        const response = await getSkinTrendScores({
+        const response = (await getSkinTrendScores({
           skin_condition_name: skinConditionName,
-          sort_order: 'desc'
-        }) as any;
+          sort_order: 'desc',
+        })) as any;
 
         console.log('🔵 response of getSkinTrendScores:', response);
 
@@ -1535,7 +1804,11 @@ export default function MetricDetailScreen() {
 
   // Auto-select last point and scroll to end when trendScores data is loaded (similar to Progress screen)
   useEffect(() => {
-    if (!trendScores || !Array.isArray(trendScores) || trendScores.length === 0) {
+    if (
+      !trendScores ||
+      !Array.isArray(trendScores) ||
+      trendScores.length === 0
+    ) {
       return;
     }
 
@@ -1545,16 +1818,22 @@ export default function MetricDetailScreen() {
       created_at: item.created_at,
       timestamp: item.created_at,
       metrics: {
-        [metricKey]: metricKey === 'skinType'
-          ? (item.skin_condition_type || item.skinType || null)
-          : (item.skin_condition_score || item.score || null)
-      }
+        [metricKey]:
+          metricKey === 'skinType'
+            ? item.skin_condition_type || item.skinType || null
+            : item.skin_condition_score || item.score || null,
+      },
     }));
 
     const { timestamps, metrics } = processPhotoMetrics(transformedPhotos);
     const currentMetric = metrics.find(m => m.metricName === metricKey);
 
-    if (!initialSelectionDoneRef.current && timestamps && timestamps.length > 0 && currentMetric) {
+    if (
+      !initialSelectionDoneRef.current &&
+      timestamps &&
+      timestamps.length > 0 &&
+      currentMetric
+    ) {
       const timer = setTimeout(() => {
         const lastIndex = timestamps.length - 1;
         if (lastIndex >= 0) {
@@ -1566,7 +1845,10 @@ export default function MetricDetailScreen() {
           const rightPadding = 120;
           const { width: screenWidth } = Dimensions.get('window');
           const totalContentWidth = plotAreaWidth + rightPadding;
-          const maxScrollPosition = Math.max(0, totalContentWidth - screenWidth);
+          const maxScrollPosition = Math.max(
+            0,
+            totalContentWidth - screenWidth,
+          );
 
           // Set scroll position and force sync
           setTimeout(() => {
@@ -1587,26 +1869,46 @@ export default function MetricDetailScreen() {
   }, [trendScores, metricKey]);
 
   // Helper function to get smart context text using scoreLevels when available
-  const getSmartContextText = (metricValue: string | number, metricKey: string, currentConcernDetails: ConcernDetail | null): string => {
+  const getSmartContextText = (
+    metricValue: string | number,
+    metricKey: string,
+    currentConcernDetails: ConcernDetail | null,
+  ): string => {
     // Special handling for categorical metrics
     if (metricKey === 'skinType' || metricKey === 'skinTone') {
       if (currentConcernDetails) {
         // Try scoreLevels first (consistent with new structure)
-        if (currentConcernDetails.scoreLevels && (currentConcernDetails.scoreLevels as any)[metricValue]) {
+        if (
+          currentConcernDetails.scoreLevels &&
+          (currentConcernDetails.scoreLevels as any)[metricValue]
+        ) {
           return (currentConcernDetails.scoreLevels as any)[metricValue].text;
         }
 
         // Fallback to typeDescriptions for skinType
-        if (metricKey === 'skinType' && (currentConcernDetails as any).typeDescriptions && (currentConcernDetails as any).typeDescriptions[metricValue]) {
-          return (currentConcernDetails as any).typeDescriptions[metricValue].description;
+        if (
+          metricKey === 'skinType' &&
+          (currentConcernDetails as any).typeDescriptions &&
+          (currentConcernDetails as any).typeDescriptions[metricValue]
+        ) {
+          return (currentConcernDetails as any).typeDescriptions[metricValue]
+            .description;
         }
 
         // Fallback to toneDescriptions for skinTone
-        if (metricKey === 'skinTone' && (currentConcernDetails as any).toneDescriptions && (currentConcernDetails as any).toneDescriptions[metricValue]) {
-          return (currentConcernDetails as any).toneDescriptions[metricValue].description;
+        if (
+          metricKey === 'skinTone' &&
+          (currentConcernDetails as any).toneDescriptions &&
+          (currentConcernDetails as any).toneDescriptions[metricValue]
+        ) {
+          return (currentConcernDetails as any).toneDescriptions[metricValue]
+            .description;
         }
       }
-      return currentConcernDetails?.contextText || `Your skin is classified as ${metricValue}.`;
+      return (
+        currentConcernDetails?.contextText ||
+        `Your skin is classified as ${metricValue}.`
+      );
     }
 
     if (!Number.isFinite(Number(metricValue))) {
@@ -1617,7 +1919,10 @@ export default function MetricDetailScreen() {
 
     // Try to use scoreLevels for more specific context
     if (currentConcernDetails && currentConcernDetails.scoreLevels) {
-      const scoreLevel = metricHelpers.getScoreLevelForValue(currentConcernDetails.scoreLevels, numericValue);
+      const scoreLevel = metricHelpers.getScoreLevelForValue(
+        currentConcernDetails.scoreLevels,
+        numericValue,
+      );
 
       if (scoreLevel && scoreLevel.text) {
         return scoreLevel.text;
@@ -1625,35 +1930,51 @@ export default function MetricDetailScreen() {
     }
 
     // Fallback to generic template
-    const level = numericValue >= 70 ? 'good' : numericValue >= 50 ? 'fair' : 'poor';
-    return `Your ${formatMetricName(metricKey).toLowerCase()} score of ${numericValue} indicates ${level} skin health in this area.`;
+    const level =
+      numericValue >= 70 ? 'good' : numericValue >= 50 ? 'fair' : 'poor';
+    return `Your ${formatMetricName(
+      metricKey,
+    ).toLowerCase()} score of ${numericValue} indicates ${level} skin health in this area.`;
   };
 
   // Helper function to get the level name and styling from scoreLevels
-  const getScoreLevelInfo = (metricValue: string | number, currentConcernDetails: ConcernDetail | null): { levelName: string; color: string; bg: string; } => {
+  const getScoreLevelInfo = (
+    metricValue: string | number,
+    currentConcernDetails: ConcernDetail | null,
+  ): { levelName: string; color: string; bg: string } => {
     if (!currentConcernDetails || !currentConcernDetails.scoreLevels) {
       return { levelName: 'Unknown', color: '#666', bg: '#f5f5f5' };
     }
 
     // Check if it's a categorical value in scoreLevels
-    if (typeof metricValue === 'string' && (currentConcernDetails.scoreLevels as any)[metricValue]) {
+    if (
+      typeof metricValue === 'string' &&
+      (currentConcernDetails.scoreLevels as any)[metricValue]
+    ) {
       const levelData = (currentConcernDetails.scoreLevels as any)[metricValue];
-      let color = '#666', bg = '#f5f5f5';
+      let color = '#666',
+        bg = '#f5f5f5';
       const lowerValue = metricValue.toLowerCase();
 
       // Assign colors based on common skin type/tone categories
       if (lowerValue.includes('normal') || lowerValue.includes('balanced')) {
-        color = '#2e7d32'; bg = '#e6f4ea';
+        color = '#2e7d32';
+        bg = '#e6f4ea';
       } else if (lowerValue.includes('oily') || lowerValue.includes('dry')) {
-        color = '#f57c00'; bg = '#fff8e1';
-      } else if (lowerValue.includes('combination') || lowerValue.includes('sensitive')) {
-        color = '#d84315'; bg = '#ffebe9';
+        color = '#f57c00';
+        bg = '#fff8e1';
+      } else if (
+        lowerValue.includes('combination') ||
+        lowerValue.includes('sensitive')
+      ) {
+        color = '#d84315';
+        bg = '#ffebe9';
       }
 
       return {
         levelName: metricValue,
         color,
-        bg
+        bg,
       };
     }
 
@@ -1665,30 +1986,44 @@ export default function MetricDetailScreen() {
     const numericValue = Number(metricValue);
 
     // Find the level where value falls within min/max range
-    for (const [levelName, levelData] of Object.entries(currentConcernDetails.scoreLevels)) {
-      if (numericValue >= (levelData.min ?? 0) && numericValue <= (levelData.max ?? 100)) {
+    for (const [levelName, levelData] of Object.entries(
+      currentConcernDetails.scoreLevels,
+    )) {
+      if (
+        numericValue >= (levelData.min ?? 0) &&
+        numericValue <= (levelData.max ?? 100)
+      ) {
         // Determine colors based on level name
         let color, bg;
         const lowerName = levelName.toLowerCase();
         if (lowerName.includes('excellent') || lowerName.includes('great')) {
-          color = '#2e7d32'; bg = '#e6f4ea'; // Green
+          color = '#2e7d32';
+          bg = '#e6f4ea'; // Green
         } else if (lowerName.includes('good')) {
-          color = '#388e3c'; bg = '#e8f5e8'; // Slightly different green
-        } else if (lowerName.includes('average') || lowerName.includes('fair')) {
-          color = '#f57c00'; bg = '#fff8e1'; // Orange
+          color = '#388e3c';
+          bg = '#e8f5e8'; // Slightly different green
+        } else if (
+          lowerName.includes('average') ||
+          lowerName.includes('fair')
+        ) {
+          color = '#f57c00';
+          bg = '#fff8e1'; // Orange
         } else if (lowerName.includes('poor')) {
-          color = '#d84315'; bg = '#ffebe9'; // Red-orange
+          color = '#d84315';
+          bg = '#ffebe9'; // Red-orange
         } else if (lowerName.includes('bad')) {
-          color = '#c62828'; bg = '#fdecea'; // Red
+          color = '#c62828';
+          bg = '#fdecea'; // Red
         } else {
           // Default colors
-          color = '#666'; bg = '#f5f5f5';
+          color = '#666';
+          bg = '#f5f5f5';
         }
 
         return {
           levelName: levelName.charAt(0).toUpperCase() + levelName.slice(1), // Capitalize first letter
           color,
-          bg
+          bg,
         };
       }
     }
@@ -1717,10 +2052,14 @@ export default function MetricDetailScreen() {
             </View>
           </TouchableOpacity>
           <View style={styles.titleContainer}>
-            <Text style={styles.headerTitle}>{getHeaderNameForMetric(metricKey)}</Text>
+            <Text style={styles.headerTitle}>
+              {getHeaderNameForMetric(metricKey)}
+            </Text>
           </View>
           <View style={styles.rightContainer}>
-            {!['skinType', 'skinTone', 'perceivedAge', 'eyeAge'].includes(metricKey) && (
+            {!['skinType', 'skinTone', 'perceivedAge', 'eyeAge'].includes(
+              metricKey,
+            ) && (
               <TouchableOpacity
                 onPress={handleToggleTopConcern}
                 disabled={isTogglingConcern}
@@ -1729,8 +2068,8 @@ export default function MetricDetailScreen() {
               >
                 <Star
                   size={22}
-                  color={isTopConcernDisplay ? "#00839B" : "#D6D3D1"}
-                  fill={isTopConcernDisplay ? "#00839B" : "transparent"}
+                  color={isTopConcernDisplay ? '#00839B' : '#D6D3D1'}
+                  fill={isTopConcernDisplay ? '#00839B' : 'transparent'}
                 />
               </TouchableOpacity>
             )}
@@ -1741,7 +2080,6 @@ export default function MetricDetailScreen() {
 
       {/* Content */}
       <ScrollView style={styles.scrollContainer}>
-
         {/* <View style={{ marginHorizontal: 16 }}>
 
           <View style={styles.metricCard}>
@@ -1951,33 +2289,55 @@ export default function MetricDetailScreen() {
           const conditionName = getConditionNameForMetric(metricKey);
 
           // Header with description only for age metrics and profile metrics - no image
-          if (metricKey === 'eyeAge' || metricKey === 'perceivedAge' || metricKey === 'skinType' || metricKey === 'skinTone') {
-            const isCategorical = metricKey === 'skinType' || metricKey === 'skinTone';
+          if (
+            metricKey === 'eyeAge' ||
+            metricKey === 'perceivedAge' ||
+            metricKey === 'skinType' ||
+            metricKey === 'skinTone'
+          ) {
+            const isCategorical =
+              metricKey === 'skinType' || metricKey === 'skinTone';
             const actualAge = calculateActualAge(profile?.birth_date);
-            const latestScore = isCategorical ? metricValue : Number(metricValue);
+            const latestScore = isCategorical
+              ? metricValue
+              : Number(metricValue);
 
             // Resolve display value for categorical metrics (skinType/skinTone)
-            const profileFieldKey = metricKey === 'skinTone' ? 'skinTone' : 'skinType';
+            const profileFieldKey =
+              metricKey === 'skinTone' ? 'skinTone' : 'skinType';
             let displayValue: string | null = null;
             if (isCategorical) {
-              const providedVal = typeof metricValue === 'string' && metricValue.trim() ? metricValue.trim() : null;
+              const providedVal =
+                typeof metricValue === 'string' && metricValue.trim()
+                  ? metricValue.trim()
+                  : null;
               let trendVal: string | null = null;
               if (Array.isArray(trendScores) && trendScores.length > 0) {
                 const lastIdx = trendScores.length - 1;
-                trendVal = (trendScores[lastIdx]?.skin_condition_type
-                  || trendScores[lastIdx]?.skinType
-                  || trendScores[lastIdx]?.type
-                  || null);
+                trendVal =
+                  trendScores[lastIdx]?.skin_condition_type ||
+                  trendScores[lastIdx]?.skinType ||
+                  trendScores[lastIdx]?.type ||
+                  null;
               }
-              const parsedMetricsVal = parsedPhotoData?.metrics?.[profileFieldKey] || null;
+              const parsedMetricsVal =
+                parsedPhotoData?.metrics?.[profileFieldKey] || null;
               const profileVal = (profile as any)?.[profileFieldKey] || null;
-              displayValue = providedVal || trendVal || parsedMetricsVal || profileVal;
+              displayValue =
+                providedVal || trendVal || parsedMetricsVal || profileVal;
             }
 
             // Get color and level info
-            const valueForLevel = isCategorical ? (displayValue ?? '--') : metricValue;
-            const scoreLevelInfo = getScoreLevelInfo(valueForLevel as any, currentConcernDetails);
-            const tagColor = isCategorical ? scoreLevelInfo.color : getAgeComparisonColor(Number(latestScore), actualAge);
+            const valueForLevel = isCategorical
+              ? displayValue ?? '--'
+              : metricValue;
+            const scoreLevelInfo = getScoreLevelInfo(
+              valueForLevel as any,
+              currentConcernDetails,
+            );
+            const tagColor = isCategorical
+              ? scoreLevelInfo.color
+              : getAgeComparisonColor(Number(latestScore), actualAge);
 
             let changeArrow = '→';
             let changeAbs = 0;
@@ -1985,16 +2345,31 @@ export default function MetricDetailScreen() {
             let chipDateLabel: string | null = null;
             if (Array.isArray(trendScores) && trendScores.length >= 1) {
               const lastIdx = trendScores.length - 1;
-              chipDateLabel = getRelativeDayLabel(trendScores[lastIdx]?.created_at || trendScores[lastIdx]?.timestamp);
+              chipDateLabel = getRelativeDayLabel(
+                trendScores[lastIdx]?.created_at ||
+                  trendScores[lastIdx]?.timestamp,
+              );
             }
 
             if (precomputedChange) {
               changeArrow = precomputedChange.arrow;
               changeAbs = precomputedChange.value;
-            } else if (!isCategorical && Array.isArray(trendScores) && trendScores.length >= 2) {
+            } else if (
+              !isCategorical &&
+              Array.isArray(trendScores) &&
+              trendScores.length >= 2
+            ) {
               const lastIdx = trendScores.length - 1;
-              const s0 = Number(trendScores[lastIdx]?.skin_condition_score ?? trendScores[lastIdx]?.score ?? latestScore);
-              const s1 = Number(trendScores[lastIdx - 1]?.skin_condition_score ?? trendScores[lastIdx - 1]?.score ?? latestScore);
+              const s0 = Number(
+                trendScores[lastIdx]?.skin_condition_score ??
+                  trendScores[lastIdx]?.score ??
+                  latestScore,
+              );
+              const s1 = Number(
+                trendScores[lastIdx - 1]?.skin_condition_score ??
+                  trendScores[lastIdx - 1]?.score ??
+                  latestScore,
+              );
               const diff = s0 - s1;
               changeAbs = Math.abs(Math.round(diff));
               changeArrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
@@ -2003,7 +2378,8 @@ export default function MetricDetailScreen() {
             // Determine if everything related to the image is loaded
             const backgroundImageUri = parsedPhotoData?.storageUrl;
             const hasBackgroundImage = !!backgroundImageUri;
-            const baseImageReady = !hasBackgroundImage || !backgroundImageLoading;
+            const baseImageReady =
+              !hasBackgroundImage || !backgroundImageLoading;
             const everythingLoaded = baseImageReady;
 
             return (
@@ -2011,10 +2387,12 @@ export default function MetricDetailScreen() {
                 <View style={styles.metricCardRow}>
                   <View style={styles.maskImageContainer}>
                     <Image
-                      source={{ uri: sanitizeS3Uri(backgroundImageUri) as string }}
+                      source={{
+                        uri: sanitizeS3Uri(backgroundImageUri) as string,
+                      }}
                       style={[
                         styles.backgroundImage as any,
-                        { opacity: everythingLoaded ? 1 : 0 }
+                        { opacity: everythingLoaded ? 1 : 0 },
                       ]}
                       resizeMode="cover"
                       onLoadEnd={() => setBackgroundImageLoading(false)}
@@ -2032,27 +2410,47 @@ export default function MetricDetailScreen() {
                       onPress={() => {
                         const photoDataWithMasks = {
                           ...parsedPhotoData,
-                          maskImages: maskImages ?? parsedPhotoData?.maskImages
+                          maskImages: maskImages ?? parsedPhotoData?.maskImages,
                         };
                         (navigation as any).navigate('MaskViewer', {
                           photoData: JSON.stringify(photoDataWithMasks),
-                          initialConditionName: conditionName
+                          initialConditionName: conditionName,
                         });
                       }}
                     >
-                      <Text style={styles.photoOverlayChipText}>+ Zoom / Masks</Text>
+                      <Text style={styles.photoOverlayChipText}>
+                        + Zoom / Masks
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   <View style={styles.maskContentRight}>
                     <Text style={styles.smartContextText}>
-                      {getSmartContextText(metricValue, metricKey, currentConcernDetails)}
+                      {getSmartContextText(
+                        metricValue,
+                        metricKey,
+                        currentConcernDetails,
+                      )}
                     </Text>
                     <View style={styles.scoreRowContainer}>
-                      <View style={[styles.combinedScoreChip, { justifyContent: 'center' }]}>
+                      <View
+                        style={[
+                          styles.combinedScoreChip,
+                          { justifyContent: 'center' },
+                        ]}
+                      >
                         <View style={styles.scoreInfo}>
-                          <View style={[styles.analysisDot, { backgroundColor: tagColor }]} />
+                          <View
+                            style={[
+                              styles.analysisDot,
+                              { backgroundColor: tagColor },
+                            ]}
+                          />
                           <Text style={styles.scoreText}>
-                            {isCategorical ? (displayValue ?? '--') : (metricValue ? String(metricValue) : '--')}
+                            {isCategorical
+                              ? displayValue ?? '--'
+                              : metricValue
+                              ? String(metricValue)
+                              : '--'}
                           </Text>
                         </View>
                       </View>
@@ -2068,7 +2466,9 @@ export default function MetricDetailScreen() {
 
           // First try to use the fetched mask images
           if (maskImages && Array.isArray(maskImages)) {
-            maskImageData = maskImages.find((image: any) => image.skin_condition_name === conditionName);
+            maskImageData = maskImages.find(
+              (image: any) => image.skin_condition_name === conditionName,
+            );
             // If not found, try to find any mask image
             if (!maskImageData && maskImages.length > 0) {
               maskImageData = maskImages[0];
@@ -2078,12 +2478,16 @@ export default function MetricDetailScreen() {
           // Fallback to photo data if no fetched mask images
           if (!maskImageData) {
             if (parsedPhotoData?.maskImages) {
-              maskImageData = parsedPhotoData.maskImages.filter((image: any) => image.skin_condition_name === conditionName)[0];
+              maskImageData = parsedPhotoData.maskImages.filter(
+                (image: any) => image.skin_condition_name === conditionName,
+              )[0];
               if (!maskImageData && parsedPhotoData.maskImages.length > 0) {
                 maskImageData = parsedPhotoData.maskImages[0];
               }
             } else if (parsedPhotoData?.maskResults) {
-              maskImageData = parsedPhotoData.maskResults.find((result: any) => result.skin_condition_name === conditionName);
+              maskImageData = parsedPhotoData.maskResults.find(
+                (result: any) => result.skin_condition_name === conditionName,
+              );
               if (!maskImageData && parsedPhotoData.maskResults.length > 0) {
                 maskImageData = parsedPhotoData.maskResults[0];
               }
@@ -2092,26 +2496,45 @@ export default function MetricDetailScreen() {
 
           console.log('🔵 maskImageData:', maskImageData);
           console.log('🔵 conditionName:', conditionName);
-          console.log("trendScores:", trendScores);
+          console.log('trendScores:', trendScores);
 
           // If no mask data, show the original photo instead
-          if (conditionName && (maskImageData?.mask_img_url || parsedPhotoData?.storageUrl)) {
+          if (
+            conditionName &&
+            (maskImageData?.mask_img_url || parsedPhotoData?.storageUrl)
+          ) {
             const latestScore = Number(metricValue);
-            const tagColor = latestScore >= 70 ? '#22C55E' : latestScore < 50 ? '#EF4444' : '#F59E0B';
+            const tagColor =
+              latestScore >= 70
+                ? '#22C55E'
+                : latestScore < 50
+                ? '#EF4444'
+                : '#F59E0B';
             let changeArrow = '→';
             let changeAbs = 0;
             let chipDateLabel: string | null = null;
             if (Array.isArray(trendScores) && trendScores.length >= 1) {
               const lastIdx = trendScores.length - 1;
-              chipDateLabel = getRelativeDayLabel(trendScores[lastIdx]?.created_at || trendScores[lastIdx]?.timestamp);
+              chipDateLabel = getRelativeDayLabel(
+                trendScores[lastIdx]?.created_at ||
+                  trendScores[lastIdx]?.timestamp,
+              );
             }
             if (precomputedChange) {
               changeArrow = precomputedChange.arrow;
               changeAbs = precomputedChange.value;
             } else if (Array.isArray(trendScores) && trendScores.length >= 2) {
               const lastIdx = trendScores.length - 1;
-              const s0 = Number(trendScores[lastIdx]?.skin_condition_score ?? trendScores[lastIdx]?.score ?? latestScore);
-              const s1 = Number(trendScores[lastIdx - 1]?.skin_condition_score ?? trendScores[lastIdx - 1]?.score ?? latestScore);
+              const s0 = Number(
+                trendScores[lastIdx]?.skin_condition_score ??
+                  trendScores[lastIdx]?.score ??
+                  latestScore,
+              );
+              const s1 = Number(
+                trendScores[lastIdx - 1]?.skin_condition_score ??
+                  trendScores[lastIdx - 1]?.score ??
+                  latestScore,
+              );
               console.log('🔵 s0:', s0);
               console.log('🔵 s1:', s1);
               const diff = s0 - s1;
@@ -2125,27 +2548,32 @@ export default function MetricDetailScreen() {
 
             // Determine if everything related to the image is loaded
             const hasMaskOverlay = !!maskImageData?.mask_img_url;
-            const backgroundImageUri = maskImageData?.image_url || parsedPhotoData?.storageUrl;
+            const backgroundImageUri =
+              maskImageData?.image_url || parsedPhotoData?.storageUrl;
             const hasBackgroundImage = !!backgroundImageUri;
 
             // The content is "ready" only when:
             // 1. Data has been fetched from API (maskImagesLoading is false)
             // 2. IF there's a background image, it has finished loading (backgroundImageLoading is false)
             // 3. IF there's a mask overlay, it has finished loading (maskImageLoading is false)
-            const baseImageReady = !hasBackgroundImage || !backgroundImageLoading;
+            const baseImageReady =
+              !hasBackgroundImage || !backgroundImageLoading;
             const maskOverlayReady = !hasMaskOverlay || !maskImageLoading;
 
-            const everythingLoaded = !maskImagesLoading && baseImageReady && maskOverlayReady;
+            const everythingLoaded =
+              !maskImagesLoading && baseImageReady && maskOverlayReady;
 
             return (
               <View style={{ marginHorizontal: 16, marginTop: spacing.xxl }}>
                 <View style={styles.metricCardRow}>
                   <View style={styles.maskImageContainer}>
                     <Image
-                      source={{ uri: sanitizeS3Uri(backgroundImageUri) as string }}
+                      source={{
+                        uri: sanitizeS3Uri(backgroundImageUri) as string,
+                      }}
                       style={[
                         styles.backgroundImage as any,
-                        { opacity: everythingLoaded ? 1 : 0 }
+                        { opacity: everythingLoaded ? 1 : 0 },
                       ]}
                       resizeMode="cover"
                       onLoadEnd={() => setBackgroundImageLoading(false)}
@@ -2158,9 +2586,16 @@ export default function MetricDetailScreen() {
                       </View>
                     )}
                     {hasMaskOverlay && (
-                      <View style={[styles.svgOverlay, { opacity: everythingLoaded ? 1 : 0 }]}>
+                      <View
+                        style={[
+                          styles.svgOverlay,
+                          { opacity: everythingLoaded ? 1 : 0 },
+                        ]}
+                      >
                         <ConditionalImage
-                          source={sanitizeS3Uri(maskImageData.mask_img_url) as string}
+                          source={
+                            sanitizeS3Uri(maskImageData.mask_img_url) as string
+                          }
                           style={styles.svgOverlay as any}
                           resizeMode="contain"
                           width="100%"
@@ -2176,36 +2611,56 @@ export default function MetricDetailScreen() {
                       onPress={() => {
                         const photoDataWithMasks = {
                           ...parsedPhotoData,
-                          maskImages: maskImages ?? parsedPhotoData?.maskImages
+                          maskImages: maskImages ?? parsedPhotoData?.maskImages,
                         };
                         (navigation as any).navigate('MaskViewer', {
                           photoData: JSON.stringify(photoDataWithMasks),
-                          initialConditionName: conditionName
+                          initialConditionName: conditionName,
                         });
                       }}
                     >
-                      <Text style={styles.photoOverlayChipText}>+ Zoom / Masks</Text>
+                      <Text style={styles.photoOverlayChipText}>
+                        + Zoom / Masks
+                      </Text>
                     </TouchableOpacity>
                   </View>
                   <View style={styles.maskContentRight}>
                     <Text style={styles.smartContextText}>
-                      {getSmartContextText(metricValue, metricKey, currentConcernDetails)}
+                      {getSmartContextText(
+                        metricValue,
+                        metricKey,
+                        currentConcernDetails,
+                      )}
                     </Text>
                     <View style={styles.scoreRowContainer}>
                       <View style={styles.combinedScoreChip}>
                         <View style={styles.changeInfo}>
                           {isLoadingTrends || !chipDateLabel ? (
                             <SkeletonPlaceholder borderRadius={8}>
-                              <SkeletonPlaceholder.Item width={25} height={15} />
+                              <SkeletonPlaceholder.Item
+                                width={25}
+                                height={15}
+                              />
                             </SkeletonPlaceholder>
                           ) : (
                             // <Text style={styles.changeText}>{`${changeArrow}${changeAbs} ${chipDateLabel}`}</Text>
-                            <Text style={styles.changeText}>{`${changeArrow}${changeAbs}`}</Text>
+                            <Text
+                              style={styles.changeText}
+                            >{`${changeArrow}${changeAbs}`}</Text>
                           )}
                         </View>
                         <View style={styles.scoreInfo}>
-                          <View style={[styles.analysisDot, { backgroundColor: tagColor }]} />
-                          <Text style={styles.scoreText}>{Number.isFinite(Number(metricValue)) ? Number(metricValue) : '--'}</Text>
+                          <View
+                            style={[
+                              styles.analysisDot,
+                              { backgroundColor: tagColor },
+                            ]}
+                          />
+                          <Text style={styles.scoreText}>
+                            {Number.isFinite(Number(metricValue))
+                              ? Number(metricValue)
+                              : '--'}
+                          </Text>
                         </View>
                       </View>
                     </View>
@@ -2219,13 +2674,40 @@ export default function MetricDetailScreen() {
             return (
               <View style={{ marginHorizontal: 16, marginTop: spacing.xxl }}>
                 <SkeletonPlaceholder borderRadius={12}>
-                  <SkeletonPlaceholder.Item flexDirection="column" alignItems="center">
-                    <SkeletonPlaceholder.Item width={250} height={250} borderRadius={12} marginBottom={16} />
+                  <SkeletonPlaceholder.Item
+                    flexDirection="column"
+                    alignItems="center"
+                  >
+                    <SkeletonPlaceholder.Item
+                      width={250}
+                      height={250}
+                      borderRadius={12}
+                      marginBottom={16}
+                    />
                     <SkeletonPlaceholder.Item width="100%" alignItems="center">
-                      <SkeletonPlaceholder.Item width="80%" height={14} borderRadius={4} marginBottom={8} />
-                      <SkeletonPlaceholder.Item width="90%" height={14} borderRadius={4} marginBottom={8} />
-                      <SkeletonPlaceholder.Item width="60%" height={14} borderRadius={4} marginBottom={16} />
-                      <SkeletonPlaceholder.Item width={90} height={32} borderRadius={16} />
+                      <SkeletonPlaceholder.Item
+                        width="80%"
+                        height={14}
+                        borderRadius={4}
+                        marginBottom={8}
+                      />
+                      <SkeletonPlaceholder.Item
+                        width="90%"
+                        height={14}
+                        borderRadius={4}
+                        marginBottom={8}
+                      />
+                      <SkeletonPlaceholder.Item
+                        width="60%"
+                        height={14}
+                        borderRadius={4}
+                        marginBottom={16}
+                      />
+                      <SkeletonPlaceholder.Item
+                        width={90}
+                        height={32}
+                        borderRadius={16}
+                      />
                     </SkeletonPlaceholder.Item>
                   </SkeletonPlaceholder.Item>
                 </SkeletonPlaceholder>
@@ -2235,8 +2717,6 @@ export default function MetricDetailScreen() {
 
           return null;
         })()}
-
-
 
         {/* Content Section: Overview or Age Guidance */}
         {/* <View style={styles.contentSectionContainer}>
@@ -2301,86 +2781,118 @@ export default function MetricDetailScreen() {
         )} */}
 
         {/* Skin Tone Details Section */}
-        {metricKey === 'skinTone' && currentConcernDetails?.toneDescriptions && (
-          <View style={styles.contentSectionContainer}>
-            <Text style={styles.contentSectionTitle}>Skin Tone Details</Text>
-            <View style={styles.descriptionCard}>
-              {currentConcernDetails?.toneDescriptions[metricValue] && (
-                <>
-                  <View style={styles.descriptionHeader}>
-                    {/* <View style={styles.descriptionIconContainer}>
+        {metricKey === 'skinTone' &&
+          currentConcernDetails?.toneDescriptions && (
+            <View style={styles.contentSectionContainer}>
+              <Text style={styles.contentSectionTitle}>Skin Tone Details</Text>
+              <View style={styles.descriptionCard}>
+                {currentConcernDetails?.toneDescriptions[metricValue] && (
+                  <>
+                    <View style={styles.descriptionHeader}>
+                      {/* <View style={styles.descriptionIconContainer}>
                       <Palette size={20} color={colors.primary} />
                     </View> */}
-                    <Text style={styles.descriptionTitle}>{metricValue}</Text>
-                  </View>
-                  {/* <Text style={styles.descriptionText}>
+                      <Text style={styles.descriptionTitle}>{metricValue}</Text>
+                    </View>
+                    {/* <Text style={styles.descriptionText}>
                     {currentConcernDetails?.toneDescriptions[metricValue]?.description}
                   </Text> */}
-                  {currentConcernDetails?.toneDescriptions[metricValue]?.characteristics && (
-                    <View style={styles.characteristicsContainer}>
-                      <Text style={styles.characteristicsTitle}>Key Characteristics:</Text>
-                      {Array.isArray(currentConcernDetails?.toneDescriptions[metricValue as string]?.characteristics) ? (
-                        (currentConcernDetails!.toneDescriptions[metricValue as string].characteristics as unknown as string[]).map((char: string, index: number) => (
-                          <View key={index} style={styles.characteristicItem}>
+                    {currentConcernDetails?.toneDescriptions[metricValue]
+                      ?.characteristics && (
+                      <View style={styles.characteristicsContainer}>
+                        <Text style={styles.characteristicsTitle}>
+                          Key Characteristics:
+                        </Text>
+                        {Array.isArray(
+                          currentConcernDetails?.toneDescriptions[
+                            metricValue as string
+                          ]?.characteristics,
+                        ) ? (
+                          (
+                            currentConcernDetails!.toneDescriptions[
+                              metricValue as string
+                            ].characteristics as unknown as string[]
+                          ).map((char: string, index: number) => (
+                            <View key={index} style={styles.characteristicItem}>
+                              <View style={styles.characteristicBullet} />
+                              <Text style={styles.characteristicText}>
+                                {char}
+                              </Text>
+                            </View>
+                          ))
+                        ) : (
+                          <View style={styles.characteristicItem}>
                             <View style={styles.characteristicBullet} />
-                            <Text style={styles.characteristicText}>{char}</Text>
+                            <Text style={styles.characteristicText}>
+                              {
+                                currentConcernDetails?.toneDescriptions[
+                                  metricValue as string
+                                ]?.characteristics as string
+                              }
+                            </Text>
                           </View>
-                        ))
-                      ) : (
-                        <View style={styles.characteristicItem}>
-                          <View style={styles.characteristicBullet} />
-                          <Text style={styles.characteristicText}>
-                            {currentConcernDetails?.toneDescriptions[metricValue as string]?.characteristics as string}
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  )}
-                  {currentConcernDetails?.toneDescriptions[metricValue]?.considerations && (
-                    <View style={styles.considerationsContainer}>
-                      <Text style={styles.considerationsTitle}>Special Considerations:</Text>
-                      <Text style={styles.considerationsText}>
-                        {currentConcernDetails.toneDescriptions[metricValue].considerations}
-                      </Text>
-                    </View>
-                  )}
-                </>
-              )}
+                        )}
+                      </View>
+                    )}
+                    {currentConcernDetails?.toneDescriptions[metricValue]
+                      ?.considerations && (
+                      <View style={styles.considerationsContainer}>
+                        <Text style={styles.considerationsTitle}>
+                          Special Considerations:
+                        </Text>
+                        <Text style={styles.considerationsText}>
+                          {
+                            currentConcernDetails.toneDescriptions[metricValue]
+                              .considerations
+                          }
+                        </Text>
+                      </View>
+                    )}
+                  </>
+                )}
+              </View>
             </View>
-          </View>
-        )}
-
+          )}
 
         {/* Advice Details Section */}
         {(() => {
           const patienceNote = currentConcernDetails?.advice?.Behavior?.find(
-            (b: string) => b.toLowerCase().includes('patient') || b.toLowerCase().includes('patience') || b.toLowerCase().includes('consistency matters')
+            (b: string) =>
+              b.toLowerCase().includes('patient') ||
+              b.toLowerCase().includes('patience') ||
+              b.toLowerCase().includes('consistency matters'),
           );
 
           const ingredients = getIngredientsForMetric(metricKey);
-          const hasIngredients = ingredients.length > 0 || (currentConcernDetails?.advice?.ingredients && currentConcernDetails.advice.ingredients.length > 0);
+          const hasIngredients =
+            ingredients.length > 0 ||
+            (currentConcernDetails?.advice?.ingredients &&
+              currentConcernDetails.advice.ingredients.length > 0);
 
           return (
             <>
               {/* Ingredients */}
               {hasIngredients && (
                 <View style={styles.adviceItem}>
-
-
                   <View style={styles.ingredientCard}>
                     <View style={styles.cardHeader}>
                       <View style={styles.cardHeaderRow}>
                         {/* <SoapDispenserDroplet size={20} color="#414651" /> */}
-                        <Text style={styles.cardHeaderTitle}>Helpful Ingredients</Text>
+                        <Text style={styles.cardHeaderTitle}>
+                          Helpful Ingredients
+                        </Text>
                       </View>
-                      <Text style={styles.cardHeaderSubtitle}>Dermatologists recommend at least one of the following ingredients for your concerns</Text>
+                      <Text style={styles.cardHeaderSubtitle}>
+                        Dermatologists recommend at least one of the following
+                        ingredients for your concerns
+                      </Text>
                     </View>
 
                     {concernMessageLoading ? (
                       // Skeleton rows while routine-match API loads
                       <SkeletonPlaceholder borderRadius={8}>
                         <SkeletonPlaceholder.Item>
-                          {[0, 1, 2].map((i) => (
+                          {[0, 1, 2].map(i => (
                             <SkeletonPlaceholder.Item
                               key={i}
                               flexDirection="row"
@@ -2415,76 +2927,117 @@ export default function MetricDetailScreen() {
                     ) : (
                       (() => {
                         const ingredients = getIngredientsForMetric(metricKey);
-                        const displayIngredients = ingredients.length > 0 ? ingredients : (currentConcernDetails.advice?.ingredients || []);
+                        const displayIngredients =
+                          ingredients.length > 0
+                            ? ingredients
+                            : currentConcernDetails.advice?.ingredients || [];
 
-                        return displayIngredients.map((ingredient: string, index: number) => {
-                          // Parse ingredient to get name and description
-                          const colonIndex = ingredient.indexOf(':');
-                          const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
-                          const ingredientDesc = colonIndex > 0 ? ingredient.substring(colonIndex + 1).trim() : '';
+                        return displayIngredients.map(
+                          (ingredient: string, index: number) => {
+                            // Parse ingredient to get name and description
+                            const colonIndex = ingredient.indexOf(':');
+                            const ingredientName =
+                              colonIndex > 0
+                                ? ingredient.substring(0, colonIndex).trim()
+                                : ingredient.trim();
+                            const ingredientDesc =
+                              colonIndex > 0
+                                ? ingredient.substring(colonIndex + 1).trim()
+                                : '';
 
-                          // Find entry in found_ingredients
-                          const foundEntry = concernMessageData?.found_ingredients?.find((found) => {
-                            if (typeof found === 'string') {
-                              return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-                            }
-                            return found?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-                          });
-                          const isFound = Boolean(foundEntry);
-                          const foundProducts =
-                            foundEntry && typeof foundEntry !== 'string' && Array.isArray(foundEntry.products)
-                              ? foundEntry.products
-                              : [];
+                            // Find entry in found_ingredients
+                            const foundEntry =
+                              concernMessageData?.found_ingredients?.find(
+                                found => {
+                                  if (typeof found === 'string') {
+                                    return (
+                                      found.toLowerCase().trim() ===
+                                      ingredientName.toLowerCase().trim()
+                                    );
+                                  }
+                                  return (
+                                    found?.ingredient?.toLowerCase().trim() ===
+                                    ingredientName.toLowerCase().trim()
+                                  );
+                                },
+                              );
+                            const isFound = Boolean(foundEntry);
+                            const foundProducts =
+                              foundEntry &&
+                              typeof foundEntry !== 'string' &&
+                              Array.isArray(foundEntry.products)
+                                ? foundEntry.products
+                                : [];
 
-                          const isLast = index === (displayIngredients.length || 0) - 1;
+                            const isLast =
+                              index === (displayIngredients.length || 0) - 1;
 
-                          return (
-                            <TouchableOpacity
-                              key={index}
-                              style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
-                              activeOpacity={0.7}
-                              onPress={() => {
-                                const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
-                                (navigation as any).navigate('ThreadChat', {
-                                  chatType: 'ingredients_related_chat',
-                                  initialMessage: message,
-                                  draftMessage: message,
-                                  hideInitial: true,
-                                  imageId: parsedPhotoData?.id || parsedPhotoData?.imageId
-                                });
-                              }}
-                            >
-                              <View style={styles.ingredientIconContainer}>
-                                <SoapDispenserDroplet
-                                  size={28}
-                                  color={isFound ? "#414651" : "#D6D3D1"}
-                                  strokeWidth={1.5}
-                                />
-                              </View>
-                              <View style={styles.ingredientContent}>
-                                <Text style={styles.ingredientName}>{ingredientName}</Text>
-
-                                <View style={styles.routineChip}>
-                                  <View style={[styles.routineDot, { backgroundColor: isFound ? '#12B76A' : '#A9A29D' }]} />
-                                  <Text style={styles.routineText}>
-                                    {isFound ? 'In your Routine' : 'Not in Routine'}
-                                  </Text>
+                            return (
+                              <TouchableOpacity
+                                key={index}
+                                style={[
+                                  styles.ingredientRow,
+                                  !isLast && styles.ingredientRowBorder,
+                                ]}
+                                activeOpacity={0.7}
+                                onPress={() => {
+                                  const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
+                                  (navigation as any).navigate('ThreadChat', {
+                                    chatType: 'ingredients_related_chat',
+                                    initialMessage: message,
+                                    draftMessage: message,
+                                    hideInitial: true,
+                                    imageId:
+                                      parsedPhotoData?.id ||
+                                      parsedPhotoData?.imageId,
+                                  });
+                                }}
+                              >
+                                <View style={styles.ingredientIconContainer}>
+                                  <SoapDispenserDroplet
+                                    size={28}
+                                    color={isFound ? '#414651' : '#D6D3D1'}
+                                    strokeWidth={1.5}
+                                  />
                                 </View>
-
-                                {isFound && foundProducts.length > 0 ? (
-                                  <Text style={styles.productHighlight}>
-                                    {foundProducts.join(', ')}
+                                <View style={styles.ingredientContent}>
+                                  <Text style={styles.ingredientName}>
+                                    {ingredientName}
                                   </Text>
-                                ) : (
-                                  ingredientDesc ? (
-                                    <Text style={styles.ingredientDesc}>{ingredientDesc}</Text>
-                                  ) : null
-                                )}
-                              </View>
-                              <ChevronRight size={18} color="#D6D3D1" />
-                            </TouchableOpacity>
-                          );
-                        });
+
+                                  <View style={styles.routineChip}>
+                                    <View
+                                      style={[
+                                        styles.routineDot,
+                                        {
+                                          backgroundColor: isFound
+                                            ? '#12B76A'
+                                            : '#A9A29D',
+                                        },
+                                      ]}
+                                    />
+                                    <Text style={styles.routineText}>
+                                      {isFound
+                                        ? 'In your Routine'
+                                        : 'Not in Routine'}
+                                    </Text>
+                                  </View>
+
+                                  {isFound && foundProducts.length > 0 ? (
+                                    <Text style={styles.productHighlight}>
+                                      {foundProducts.join(', ')}
+                                    </Text>
+                                  ) : ingredientDesc ? (
+                                    <Text style={styles.ingredientDesc}>
+                                      {ingredientDesc}
+                                    </Text>
+                                  ) : null}
+                                </View>
+                                <ChevronRight size={18} color="#D6D3D1" />
+                              </TouchableOpacity>
+                            );
+                          },
+                        );
                       })()
                     )}
                   </View>
@@ -2556,23 +3109,34 @@ export default function MetricDetailScreen() {
                       </View>
                     </TouchableOpacity>
                   ) : null} */}
-
                 </View>
               )}
             </>
           );
         })()}
 
-        < View style={[styles.ingredientCard, { marginHorizontal: 20 }]}>
-          <Text style={styles.cardHeaderTitle}>About {getHeaderNameForMetric(metricKey)}</Text>
-          <Text style={[styles.cardHeaderSubtitle, { marginTop: spacing.sm, marginBottom: spacing.md }]}>
-            {currentConcernDetails ? currentConcernDetails.overview : 'Loading overview...'}
+        <View style={[styles.ingredientCard, { marginHorizontal: 20 }]}>
+          <Text style={styles.cardHeaderTitle}>
+            About {getHeaderNameForMetric(metricKey)}
+          </Text>
+          <Text
+            style={[
+              styles.cardHeaderSubtitle,
+              { marginTop: spacing.sm, marginBottom: spacing.md },
+            ]}
+          >
+            {currentConcernDetails
+              ? currentConcernDetails.overview
+              : 'Loading overview...'}
           </Text>
 
           {/* Patience Note Box */}
           {(() => {
             const patienceNote = currentConcernDetails?.advice?.Behavior?.find(
-              (b: string) => b.toLowerCase().includes('patient') || b.toLowerCase().includes('patience') || b.toLowerCase().includes('consistency matters')
+              (b: string) =>
+                b.toLowerCase().includes('patient') ||
+                b.toLowerCase().includes('patience') ||
+                b.toLowerCase().includes('consistency matters'),
             );
 
             if (!patienceNote) return null;
@@ -2593,7 +3157,9 @@ export default function MetricDetailScreen() {
               <View style={styles.medicalIconContainer}>
                 <ShieldPlus size={18} color="#5D6B98" />
               </View>
-              <Text style={styles.medicalText}>{currentConcernDetails.advice.disclaimer}</Text>
+              <Text style={styles.medicalText}>
+                {currentConcernDetails.advice.disclaimer}
+              </Text>
             </View>
           )}
         </View>
@@ -2609,7 +3175,7 @@ export default function MetricDetailScreen() {
         y={tooltip.y}
         content={tooltip.content}
       /> */}
-    </SafeAreaView >
+    </SafeAreaView>
   );
 }
 
@@ -3117,7 +3683,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9f9f9', // Slight background for item
     borderRadius: 6,
   },
-  recommendationItemContent: { // Wrapper for icon and text
+  recommendationItemContent: {
+    // Wrapper for icon and text
     flexDirection: 'row',
     alignItems: 'flex-start',
     flex: 1, // Allow this part to take up available space
@@ -3224,7 +3791,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 4,
     paddingVertical: 4,
     // width: "100%",
-    gap: 6
+    gap: 6,
     // justifyContent: "space-between",
   },
   changeInfo: {
@@ -3583,7 +4150,6 @@ const styles = StyleSheet.create({
     color: '#999',
     fontWeight: '500',
     // textAlign: 'right',
-
   },
   nullBarContainer: {
     position: 'absolute',
@@ -3849,7 +4415,7 @@ const styles = StyleSheet.create({
     // justifyContent: 'center',
     // alignItems: 'center',
     // marginBottom: 8,
-    marginRight: 12
+    marginRight: 12,
   },
   aiAvatarIcon: {
     width: 40,
@@ -3859,7 +4425,7 @@ const styles = StyleSheet.create({
     // width: '100%',
     // alignItems: 'center',
     flex: 1,
-    flexShrink: 1
+    flexShrink: 1,
   },
   aiInsightTitle: {
     fontSize: 16,
@@ -4035,5 +4601,4 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#333',
   },
-
 });

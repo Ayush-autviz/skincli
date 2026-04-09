@@ -109,13 +109,39 @@ DATA MODEL IN USERS/PHOTOS:
 
 ------------------------------------------------------*/
 
-import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef, useMemo } from 'react';
-import { View, Text, StyleSheet, ScrollView, Dimensions, TouchableOpacity, FlatList, Animated, ActivityIndicator, Image } from 'react-native';
+import React, {
+  useState,
+  useRef,
+  useEffect,
+  useImperativeHandle,
+  forwardRef,
+  useMemo,
+} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+  TouchableOpacity,
+  FlatList,
+  Animated,
+  ActivityIndicator,
+  Image,
+} from 'react-native';
 import Popover from 'react-native-popover-view';
 import { usePhotoContext } from '../../contexts/PhotoContext'; // Import photo context
 import { useNavigation } from '@react-navigation/native'; // Import navigation
 import { colors, shadows, fontFamily } from '../../styles';
-import { Expand, Flag, NotebookPen, Book, FlagIcon, Star, ChevronRight as ChevronRightIcon } from 'lucide-react-native';
+import {
+  Expand,
+  Flag,
+  NotebookPen,
+  Book,
+  FlagIcon,
+  Star,
+  ChevronRight as ChevronRightIcon,
+} from 'lucide-react-native';
 import useAuthStore from '../../stores/authStore';
 import { toggleTopConcern } from '../../utils/newApiService';
 import { LineChart } from 'react-native-chart-kit';
@@ -135,9 +161,11 @@ const METRIC_KEYS = [
   'poresScore',
   'hydrationScore',
   'uniformnessScore',
+  'puffinessScore',
+  'saggingScore',
   'eyeAge',
   'perceivedAge',
-  'skinType'
+  'skinType',
 ];
 
 export const METRIC_LABELS = {
@@ -152,15 +180,11 @@ export const METRIC_LABELS = {
   eyeAge: 'Perceived Eye Age',
   perceivedAge: 'Perceived Age',
   skinType: 'Skin Type',
-  puffinessScore: 'Puffiness',
-  saggingScore: 'Sagging'
+  puffinessScore: 'Eye Puffiness',
+  saggingScore: 'Sagging',
 };
 
-const IMAGE_QUALITY_KEYS = [
-  'focus',
-  'lighting',
-  'overall'
-];
+const IMAGE_QUALITY_KEYS = ['focus', 'lighting', 'overall'];
 
 // Helper function to convert metricKey to concern name for API
 const getConcernNameForAPI = (metricKey: string): string | null => {
@@ -169,27 +193,30 @@ const getConcernNameForAPI = (metricKey: string): string | null => {
   // Remove "Score" suffix if present
   let processedKey = metricKey;
   if (processedKey.endsWith('Score')) {
-    processedKey = processedKey.substring(0, processedKey.length - 'Score'.length);
+    processedKey = processedKey.substring(
+      0,
+      processedKey.length - 'Score'.length,
+    );
   }
 
   // Convert camelCase to Title Case
   // Handle special cases first
   const specialCases: Record<string, string> = {
-    'hydration': 'Dewiness',
-    'redness': 'Redness',
-    'pores': 'Visible Pores',
-    'acne': 'Breakouts',
-    'lines': 'Lines',
-    'translucency': 'Translucency',
-    'pigmentation': 'Pigmentation',
-    'uniformness': 'Evenness',
-    'eyeAge': 'Perceived Eye Age',
-    'eyeAreaCondition': 'Dark Circles',
-    'perceivedAge': 'Perceived Age',
-    'skinTone': 'Skin Tone',
-    'skinType': 'Skin Type',
-    'puffiness': 'Puffiness',
-    'sagging': 'Sagging'
+    hydration: 'Dewiness',
+    redness: 'Redness',
+    pores: 'Visible Pores',
+    acne: 'Breakouts',
+    lines: 'Lines',
+    translucency: 'Translucency',
+    pigmentation: 'Pigmentation',
+    uniformness: 'Evenness',
+    eyeAge: 'Perceived Eye Age',
+    eyeAreaCondition: 'Dark Circles',
+    perceivedAge: 'Perceived Age',
+    skinTone: 'Skin Tone',
+    skinType: 'Skin Type',
+    puffiness: 'Eye Puffiness',
+    sagging: 'Sagging',
   };
 
   if (specialCases[processedKey]) {
@@ -197,34 +224,42 @@ const getConcernNameForAPI = (metricKey: string): string | null => {
   }
 
   // Default: convert camelCase to Title Case
-  return processedKey.replace(/([A-Z])/g, ' $1')
+  return processedKey
+    .replace(/([A-Z])/g, ' $1')
     .replace(/^./, (str: string) => str.toUpperCase())
     .trim();
 };
 
-export const processPhotoMetrics = (photos) => {
+export const processPhotoMetrics = photos => {
   if (!photos?.length) return { metrics: [], timestamps: [] };
 
   // Refined timestamp extraction - prioritize created_at field from API
-  const timestamps = photos.map(photo => {
-    let dateValue;
+  const timestamps = photos
+    .map(photo => {
+      let dateValue;
 
-    // Prioritize created_at field from API response
-    if (photo.created_at) {
-      dateValue = new Date(photo.created_at);
-    } else {
-      // Fallback to timestamp for backward compatibility
-      const ts = photo.timestamp;
-      if (ts?.seconds && typeof ts.seconds === 'number') { // Firestore Timestamp
-        dateValue = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
-      } else if (ts instanceof Date) { // Already a JS Date
-        dateValue = ts;
-      } else { // Attempt conversion from string/number
-        dateValue = new Date(ts);
+      // Prioritize created_at field from API response
+      if (photo.created_at) {
+        dateValue = new Date(photo.created_at);
+      } else {
+        // Fallback to timestamp for backward compatibility
+        const ts = photo.timestamp;
+        if (ts?.seconds && typeof ts.seconds === 'number') {
+          // Firestore Timestamp
+          dateValue = new Date(
+            ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0),
+          );
+        } else if (ts instanceof Date) {
+          // Already a JS Date
+          dateValue = ts;
+        } else {
+          // Attempt conversion from string/number
+          dateValue = new Date(ts);
+        }
       }
-    }
-    return dateValue; // Return the Date object (or Invalid Date)
-  }).filter(date => date instanceof Date && !isNaN(date.getTime())); // Filter out invalid dates
+      return dateValue; // Return the Date object (or Invalid Date)
+    })
+    .filter(date => date instanceof Date && !isNaN(date.getTime())); // Filter out invalid dates
 
   // Create array of metric objects with scores array
   const processedMetrics = METRIC_KEYS.map(metricKey => ({
@@ -240,7 +275,9 @@ export const processPhotoMetrics = (photos) => {
         // Fallback to timestamp for backward compatibility
         const ts = photo.timestamp;
         if (ts?.seconds && typeof ts.seconds === 'number') {
-          timestamp = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
+          timestamp = new Date(
+            ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0),
+          );
         } else if (ts instanceof Date) {
           timestamp = ts;
         } else {
@@ -249,34 +286,36 @@ export const processPhotoMetrics = (photos) => {
       }
 
       // Format the date only if it's valid
-      const formattedDate = timestamp instanceof Date && !isNaN(timestamp.getTime())
-        ? timestamp.toLocaleString('en-US', {
-          month: 'short',
-          day: 'numeric',
-          year: 'numeric',
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true
-        })
-        : 'Invalid Date';
+      const formattedDate =
+        timestamp instanceof Date && !isNaN(timestamp.getTime())
+          ? timestamp.toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            })
+          : 'Invalid Date';
 
       // For skin_type, store the string value instead of numeric score
-      const value = metricKey === 'skinType'
-        ? photo.metrics?.[metricKey] ?? null
-        : photo.metrics?.[metricKey] ?? null;
+      const value =
+        metricKey === 'skinType'
+          ? photo.metrics?.[metricKey] ?? null
+          : photo.metrics?.[metricKey] ?? null;
 
       return {
         photoId: photo.id,
         score: value, // This will be the skin type string for skinType metric
         timestamp: timestamp, // Store the actual Date object
-        date: formattedDate // Store the formatted string
+        date: formattedDate, // Store the formatted string
       };
-    })
+    }),
   }));
 
   return {
     metrics: processedMetrics,
-    timestamps: timestamps  // These are now valid Date objects, sorted if input `photos` was sorted
+    timestamps: timestamps, // These are now valid Date objects, sorted if input `photos` was sorted
   };
 };
 
@@ -306,7 +345,7 @@ const PhotoThumbCard = ({
     if (index !== selectedIndex) {
       onPress(); // select image
     } else {
-      setIsTooltipOpen((prev) => !prev); // toggle tooltip
+      setIsTooltipOpen(prev => !prev); // toggle tooltip
     }
   };
 
@@ -319,7 +358,9 @@ const PhotoThumbCard = ({
     // Fallback to timestamp for backward compatibility
     const ts = photo.timestamp;
     if (ts?.seconds && typeof ts.seconds === 'number') {
-      date = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
+      date = new Date(
+        ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0),
+      );
     } else if (ts instanceof Date) {
       date = ts;
     } else {
@@ -339,7 +380,7 @@ const PhotoThumbCard = ({
         onPress={onPress}
         style={[
           styles.photoThumbCard,
-          isSelected && styles.selectedPhotoThumbCard
+          isSelected && styles.selectedPhotoThumbCard,
         ]}
         activeOpacity={0.8}
       >
@@ -354,7 +395,7 @@ const PhotoThumbCard = ({
           {isSelected && (
             <TouchableOpacity
               style={styles.thumbMaximizeButton}
-              onPress={(e) => {
+              onPress={e => {
                 e.stopPropagation();
                 onMaximize?.(photo, index);
               }}
@@ -369,7 +410,12 @@ const PhotoThumbCard = ({
       {/* Date pill + icons row below the photo */}
       <View ref={iconsRef} style={styles.dateIconsRow}>
         <View style={[styles.datePill, isSelected && styles.selectedDatePill]}>
-          <Text style={[styles.datePillText, isSelected && styles.selectedDatePillText]}>
+          <Text
+            style={[
+              styles.datePillText,
+              isSelected && styles.selectedDatePillText,
+            ]}
+          >
             {date.toLocaleString('default', { month: 'short', day: 'numeric' })}
           </Text>
         </View>
@@ -384,8 +430,8 @@ const PhotoThumbCard = ({
               routineFlagLoading
                 ? '#A9A29D'
                 : photo.apiData.image.routine_flag
-                  ? '#79716B'
-                  : '#A9A29D'
+                ? '#79716B'
+                : '#A9A29D'
             }
             strokeWidth={2.5}
           />
@@ -401,8 +447,8 @@ const PhotoThumbCard = ({
               summaryLoading
                 ? '#A9A29D'
                 : photo.apiData.image.summary
-                  ? '#79716B'
-                  : '#A9A29D'
+                ? '#79716B'
+                : '#A9A29D'
             }
             strokeWidth={2.5}
           />
@@ -431,7 +477,7 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
       summaryLoading,
       routineFlagLoading,
     },
-    ref
+    ref,
   ) => {
     const flatListRef = useRef(null);
     const [iconsContainerRef, setIconsContainerRef] = useState(null);
@@ -448,21 +494,34 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
     // }, [photos, selectedIndex]);
 
     // Expose scrollToIndex via ref
-    useImperativeHandle(ref, () => ({
-      scrollToIndex: (index) => {
-        // Validate index against the photos array length
-        if (flatListRef.current && photos && index >= 0 && index < photos.length) {
-          console.log(`[TimeSelector] Scrolling to center index ${index} (List length: ${photos.length})`);
-          flatListRef.current.scrollToIndex({
-            index,
-            animated: true,
-            viewPosition: 0.45 // Center the item in the viewport
-          });
-        } else {
-          console.warn(`[TimeSelector] scrollToIndex failed: Invalid index ${index}. List length: ${photos?.length}. SelectedIndex prop: ${selectedIndex}.`);
-        }
-      },
-    }), [photos, selectedIndex]); // Depend on photos, selectedIndex
+    useImperativeHandle(
+      ref,
+      () => ({
+        scrollToIndex: index => {
+          // Validate index against the photos array length
+          if (
+            flatListRef.current &&
+            photos &&
+            index >= 0 &&
+            index < photos.length
+          ) {
+            console.log(
+              `[TimeSelector] Scrolling to center index ${index} (List length: ${photos.length})`,
+            );
+            flatListRef.current.scrollToIndex({
+              index,
+              animated: true,
+              viewPosition: 0.45, // Center the item in the viewport
+            });
+          } else {
+            console.warn(
+              `[TimeSelector] scrollToIndex failed: Invalid index ${index}. List length: ${photos?.length}. SelectedIndex prop: ${selectedIndex}.`,
+            );
+          }
+        },
+      }),
+      [photos, selectedIndex],
+    ); // Depend on photos, selectedIndex
 
     const renderPhotoThumb = ({ item, index }) => {
       // Log the item being rendered by FlatList
@@ -493,11 +552,19 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
     // Effect to scroll when selectedIndex prop changes from outside
     useEffect(() => {
       // Check if selectedIndex is a valid number and within bounds
-      if (selectedIndex !== null && typeof selectedIndex === 'number' && selectedIndex >= 0 && photos && selectedIndex < photos.length) {
+      if (
+        selectedIndex !== null &&
+        typeof selectedIndex === 'number' &&
+        selectedIndex >= 0 &&
+        photos &&
+        selectedIndex < photos.length
+      ) {
         // Add a small delay to allow FlatList to potentially render before scrolling
         const timer = setTimeout(() => {
           if (flatListRef.current) {
-            console.log(`[TimeSelector useEffect] Scrolling to center selectedIndex: ${selectedIndex}`);
+            console.log(
+              `[TimeSelector useEffect] Scrolling to center selectedIndex: ${selectedIndex}`,
+            );
             flatListRef.current.scrollToIndex({
               index: selectedIndex,
               animated: true,
@@ -507,7 +574,9 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
         }, 50); // 50ms delay
         return () => clearTimeout(timer); // Cleanup timer
       } else if (selectedIndex !== null) {
-        console.warn(`[TimeSelector useEffect] Invalid selectedIndex for scroll: ${selectedIndex}. List length: ${photos?.length}`);
+        console.warn(
+          `[TimeSelector useEffect] Invalid selectedIndex for scroll: ${selectedIndex}. List length: ${photos?.length}`,
+        );
       }
     }, [selectedIndex, photos]); // Depend on selectedIndex and photos
 
@@ -542,7 +611,11 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
       const summaryText = formatDisplayText(summary);
 
       let routineFlagUpdatedAt = null;
-      if (routineFlag && typeof routineFlag === 'object' && routineFlag?.updated_at) {
+      if (
+        routineFlag &&
+        typeof routineFlag === 'object' &&
+        routineFlag?.updated_at
+      ) {
         const parsed = new Date(routineFlag.updated_at);
         routineFlagUpdatedAt = isNaN(parsed.getTime())
           ? routineFlag.updated_at
@@ -550,7 +623,7 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
       }
 
       return (
-        <View style={{ alignItems: "center" }}>
+        <View style={{ alignItems: 'center' }}>
           {/* Arrow pointing up */}
           <View
             style={{
@@ -559,11 +632,11 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
               borderLeftWidth: 12,
               borderRightWidth: 12,
               borderBottomWidth: 12,
-              borderLeftColor: "transparent",
-              borderRightColor: "transparent",
-              borderBottomColor: "white",
+              borderLeftColor: 'transparent',
+              borderRightColor: 'transparent',
+              borderBottomColor: 'white',
               marginBottom: -1,
-              shadowColor: "#000",
+              shadowColor: '#000',
               shadowOpacity: 0.1,
               shadowRadius: 2,
               shadowOffset: { width: 0, height: 1 },
@@ -572,16 +645,16 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
           />
           <View
             style={{
-              backgroundColor: "white",
+              backgroundColor: 'white',
               borderRadius: 12,
               padding: 16,
-              shadowColor: "#000",
+              shadowColor: '#000',
               shadowOpacity: 0.15,
               shadowRadius: 8,
               shadowOffset: { width: 0, height: 4 },
               elevation: 8,
               borderWidth: 1,
-              borderColor: "#E8E8E8",
+              borderColor: '#E8E8E8',
               maxWidth: 340,
               minWidth: 300,
             }}
@@ -589,14 +662,14 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
             {(routineFlagLoading || summaryLoading) && (
               <View
                 style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  justifyContent: "center",
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   paddingVertical: 8,
                 }}
               >
                 <ActivityIndicator size="small" color="#8B7355" />
-                <Text style={{ color: "#666", marginLeft: 8, fontSize: 14 }}>
+                <Text style={{ color: '#666', marginLeft: 8, fontSize: 14 }}>
                   Loading...
                 </Text>
               </View>
@@ -604,16 +677,16 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
             {!routineFlagLoading && routineFlagText && (
               <View
                 style={{
-                  flexDirection: "row",
-                  alignItems: "flex-start",
+                  flexDirection: 'row',
+                  alignItems: 'flex-start',
                   marginBottom: 8,
                 }}
               >
                 <Flag size={16} color="#8B7355" style={{ marginRight: 6 }} />
                 <View style={{ flex: 1 }}>
-                  <Text style={{ color: "#333" }}>{routineFlagText}</Text>
+                  <Text style={{ color: '#333' }}>{routineFlagText}</Text>
                   {routineFlagUpdatedAt && (
-                    <Text style={{ color: "#777", fontSize: 12, marginTop: 2 }}>
+                    <Text style={{ color: '#777', fontSize: 12, marginTop: 2 }}>
                       Updated: {routineFlagUpdatedAt}
                     </Text>
                   )}
@@ -621,21 +694,25 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
               </View>
             )}
             {!summaryLoading && summaryText && (
-              <View style={{ flexDirection: "row", alignItems: "flex-start" }}>
-                <NotebookPen size={16} color="#8B7355" style={{ marginRight: 6 }} />
-                <Text style={{ color: "#333", flex: 1 }}>{summaryText}</Text>
+              <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>
+                <NotebookPen
+                  size={16}
+                  color="#8B7355"
+                  style={{ marginRight: 6 }}
+                />
+                <Text style={{ color: '#333', flex: 1 }}>{summaryText}</Text>
               </View>
             )}
             {!routineFlagLoading &&
               !summaryLoading &&
               !routineFlagText &&
               !summaryText && (
-                <View style={{ alignItems: "center", paddingVertical: 8 }}>
+                <View style={{ alignItems: 'center', paddingVertical: 8 }}>
                   <Text
                     style={{
-                      color: "#999",
+                      color: '#999',
                       fontSize: 14,
-                      fontStyle: "italic",
+                      fontStyle: 'italic',
                     }}
                   >
                     No data available
@@ -652,29 +729,26 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
         <FlatList
           ref={flatListRef}
           data={photos} // Use photos array directly as data
-          renderItem={(props) => (
-            <View key={props.item.id}>
-              {renderPhotoThumb(props)}
-            </View>
+          renderItem={props => (
+            <View key={props.item.id}>{renderPhotoThumb(props)}</View>
           )}
-          keyExtractor={(item) => item.id} // Use unique photo ID as key
+          keyExtractor={item => item.id} // Use unique photo ID as key
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.timeScrollContent}
-          snapToInterval={DATE_CARD_WIDTH + (DATE_CARD_MARGIN * 2)}
+          snapToInterval={DATE_CARD_WIDTH + DATE_CARD_MARGIN * 2}
           decelerationRate="fast"
           getItemLayout={(data, index) => ({
-            length: DATE_CARD_WIDTH + (DATE_CARD_MARGIN * 2),
-            offset: (DATE_CARD_WIDTH + (DATE_CARD_MARGIN * 2)) * index,
+            length: DATE_CARD_WIDTH + DATE_CARD_MARGIN * 2,
+            offset: (DATE_CARD_WIDTH + DATE_CARD_MARGIN * 2) * index,
             index,
           })}
-          onScrollToIndexFailed={(info) => {
-            console.error("[TimeSelector] onScrollToIndexFailed:", info);
+          onScrollToIndexFailed={info => {
+            console.error('[TimeSelector] onScrollToIndexFailed:', info);
           }}
           centerContent={false} // Disable centerContent to allow proper centering with viewPosition
         />
         {/* Note text INSIDE the grey container, below the FlatList */}
-
 
         {/* <Text style={styles.noteInsideCarouselArea}>
           {noteText || ' '}
@@ -686,10 +760,10 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
           from={iconsContainerRef}
           placement="bottom"
           onRequestClose={() => setIsTooltipOpen(false)}
-          popoverStyle={{ backgroundColor: "transparent" }}
+          popoverStyle={{ backgroundColor: 'transparent' }}
           overlayStyle={{
-            backgroundColor: "rgba(0, 0, 0, 0.7)",
-            opacity: 0.7
+            backgroundColor: 'rgba(0, 0, 0, 0.7)',
+            opacity: 0.7,
           }}
         >
           <TooltipContent
@@ -700,10 +774,11 @@ const TimeSelector = forwardRef<any, TimeSelectorProps>(
         </Popover>
       </View>
     );
-  });
+  },
+);
 
 // Chart palette: red (low), mid (medium), green (high) only
-const getColorForScore = (score) => {
+const getColorForScore = score => {
   if (score <= 40) return '#F97066'; // Red
   if (score <= 70) return '#F79009'; // Mid
   return '#17B26A'; // Rich green
@@ -716,7 +791,7 @@ const normalizeMetricValue = (value, metricName = null, profile = null) => {
     return {
       value: 50, // Center position
       color: '#999999', // Grey color
-      isNullValue: true
+      isNullValue: true,
     };
   }
 
@@ -727,7 +802,7 @@ const normalizeMetricValue = (value, metricName = null, profile = null) => {
     return {
       value,
       color: ageComparisonColor,
-      isNullValue: false
+      isNullValue: false,
     };
   }
 
@@ -738,7 +813,7 @@ const normalizeMetricValue = (value, metricName = null, profile = null) => {
     return {
       value,
       color: eyeAgeComparisonColor,
-      isNullValue: false
+      isNullValue: false,
     };
   }
 
@@ -746,16 +821,22 @@ const normalizeMetricValue = (value, metricName = null, profile = null) => {
   return {
     value,
     color: getColorForScore(value),
-    isNullValue: false
+    isNullValue: false,
   };
 };
 
 // Helper to calculate percentage change from first to most recent measurement
-const calculatePercentageChange = (scores) => {
+const calculatePercentageChange = scores => {
   if (!scores || scores.length < 2) return null;
 
   // Find first and last valid scores
-  const validScores = scores.filter(s => s.score !== null && s.score !== undefined && !isNaN(s.score) && s.score !== 0);
+  const validScores = scores.filter(
+    s =>
+      s.score !== null &&
+      s.score !== undefined &&
+      !isNaN(s.score) &&
+      s.score !== 0,
+  );
   if (validScores.length < 2) return null;
 
   const firstScore = validScores[0].score;
@@ -768,18 +849,22 @@ const calculatePercentageChange = (scores) => {
 };
 
 // Bar background colors for chart palette only
-const getLightColor = (hexColor) => {
+const getLightColor = hexColor => {
   if (!hexColor || hexColor === '#999999') return '#f0f0f0'; // Grey for null values
   switch (hexColor) {
-    case '#F97066': return '#FEE4E2'; // Red bar background
-    case '#F79009': return '#FEF0C7'; // Mid bar background
-    case '#17B26A': return '#DCFAE6'; // Rich green bar background
-    default: return '#f0f0f0';
+    case '#F97066':
+      return '#FEE4E2'; // Red bar background
+    case '#F79009':
+      return '#FEF0C7'; // Mid bar background
+    case '#17B26A':
+      return '#DCFAE6'; // Rich green bar background
+    default:
+      return '#f0f0f0';
   }
 };
 
 // Calculate user's actual age from birth date
-const calculateActualAge = (birthDate) => {
+const calculateActualAge = birthDate => {
   if (!birthDate) return null;
   const birth = birthDate instanceof Date ? birthDate : new Date(birthDate);
   const today = new Date();
@@ -822,16 +907,15 @@ const SkinTypeTrendChart = ({
 
   // Process photos
   const processedData = photos
-    .map((photo) => {
+    .map(photo => {
       let dateValue;
       if (photo.created_at) {
         dateValue = new Date(photo.created_at);
       } else {
         const ts = photo.timestamp;
-        if (ts?.seconds && typeof ts.seconds === "number") {
+        if (ts?.seconds && typeof ts.seconds === 'number') {
           dateValue = new Date(
-            ts.seconds * 1000 +
-            (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0)
+            ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0),
           );
         } else if (ts instanceof Date) {
           dateValue = ts;
@@ -850,11 +934,11 @@ const SkinTypeTrendChart = ({
         skinType: photo.metrics?.skinType || null,
       };
     })
-    .filter((item) => item !== null);
+    .filter(item => item !== null);
 
   if (!processedData.length) {
     return (
-      <Text style={{ textAlign: "center", marginTop: 20 }}>
+      <Text style={{ textAlign: 'center', marginTop: 20 }}>
         No skin type data available.
       </Text>
     );
@@ -868,14 +952,17 @@ const SkinTypeTrendChart = ({
     Dry: 4,
   };
 
-  const SKIN_TYPES = ["Dry", "Normal", "Combinational", "Oily"];
+  const SKIN_TYPES = ['Dry', 'Normal', 'Combinational', 'Oily'];
 
-  const realData = processedData.map((item) => {
-    if (!item.skinType || item.skinType === "Unknown") return 2;
+  const realData = processedData.map(item => {
+    if (!item.skinType || item.skinType === 'Unknown') return 2;
     return skinTypeMap[item.skinType] || 2;
   });
 
-  console.log("🔵 realData of SkinTypeTrendChart: in MetricsSeries.js", realData);
+  console.log(
+    '🔵 realData of SkinTypeTrendChart: in MetricsSeries.js',
+    realData,
+  );
 
   const chartData = {
     labels: processedData.map((_, index) => `${index + 1}`),
@@ -893,11 +980,17 @@ const SkinTypeTrendChart = ({
       },
     ],
   };
-  console.log("processedData of SkinTypeTrendChart: in MetricsSeries.js", processedData.length);
+  console.log(
+    'processedData of SkinTypeTrendChart: in MetricsSeries.js',
+    processedData.length,
+  );
 
-  const screenWidth = Dimensions.get("window").width;
+  const screenWidth = Dimensions.get('window').width;
   const POINT_SPACING = 16;
-  const chartWidth = Math.max(processedData.length * POINT_SPACING, screenWidth - 32);
+  const chartWidth = Math.max(
+    processedData.length * POINT_SPACING,
+    screenWidth - 32,
+  );
   const CHART_HEIGHT = 160;
 
   // Sync scroll position
@@ -913,21 +1006,18 @@ const SkinTypeTrendChart = ({
       const rightPadding = 120;
       const totalContentWidth = chartWidth + rightPadding;
       const viewportWidth = screenWidth;
-      const maxScrollPosition = Math.max(
-        0,
-        totalContentWidth - viewportWidth
-      );
-      const boundedScrollPosition = Math.min(
-        scrollPosition,
-        maxScrollPosition
-      );
+      const maxScrollPosition = Math.max(0, totalContentWidth - viewportWidth);
+      const boundedScrollPosition = Math.min(scrollPosition, maxScrollPosition);
 
-      setTimeout(() => {
-        scrollViewRef.current.scrollTo({
-          x: boundedScrollPosition,
-          animated: !forceScrollSyncRef?.current,
-        });
-      }, forceScrollSyncRef?.current ? 0 : 50);
+      setTimeout(
+        () => {
+          scrollViewRef.current.scrollTo({
+            x: boundedScrollPosition,
+            animated: !forceScrollSyncRef?.current,
+          });
+        },
+        forceScrollSyncRef?.current ? 0 : 50,
+      );
     }
   }, [scrollPosition, selectedIndex, processedData.length, chartWidth]);
 
@@ -935,7 +1025,7 @@ const SkinTypeTrendChart = ({
     if (forceScrollSyncRef?.current) {
       const timer = setTimeout(() => {
         if (forceScrollSyncRef) {
-          console.log("[SkinTypeTrendChart] Clearing force scroll flag");
+          console.log('[SkinTypeTrendChart] Clearing force scroll flag');
           forceScrollSyncRef.current = false;
         }
       }, 500);
@@ -945,15 +1035,23 @@ const SkinTypeTrendChart = ({
 
   // Record dot positions
   const renderDotContent = ({ x, y, index }) => {
-    console.log("🔵 renderDotContent of SkinTypeTrendChart: in MetricsSeries.js", x, y, index);
-    setDotPositions((prev) => {
+    console.log(
+      '🔵 renderDotContent of SkinTypeTrendChart: in MetricsSeries.js',
+      x,
+      y,
+      index,
+    );
+    setDotPositions(prev => {
       if (prev[index]) return prev;
       return { ...prev, [index]: { x, y } };
     });
     return null;
   };
 
-  console.log("🔵 dotPositions of SkinTypeTrendChart: in MetricsSeries.js", dotPositions);
+  console.log(
+    '🔵 dotPositions of SkinTypeTrendChart: in MetricsSeries.js',
+    dotPositions,
+  );
 
   // Decorator for line + enlarged dot
   const decorator = () => {
@@ -961,7 +1059,11 @@ const SkinTypeTrendChart = ({
 
     const { x, y } = dotPositions[selectedIndex];
 
-    console.log("🔵 decorator of SkinTypeTrendChart: in MetricsSeries.js", x, y);
+    console.log(
+      '🔵 decorator of SkinTypeTrendChart: in MetricsSeries.js',
+      x,
+      y,
+    );
 
     return (
       <Svg>
@@ -991,26 +1093,26 @@ const SkinTypeTrendChart = ({
   const renderYAxisLabels = () => (
     <View
       style={{
-        flexDirection: "column",
+        flexDirection: 'column',
         gap: 10,
         paddingHorizontal: 4,
       }}
     >
-      {SKIN_TYPES.map((skinType) => (
+      {SKIN_TYPES.map(skinType => (
         <View
           key={skinType}
           style={{
-            backgroundColor: "white",
+            backgroundColor: 'white',
             borderWidth: 1,
-            borderColor: "rgba(0,0,0,0.1)",
+            borderColor: 'rgba(0,0,0,0.1)',
             borderRadius: 16,
             paddingHorizontal: 10,
             paddingVertical: 7,
-            alignSelf: "flex-start",
+            alignSelf: 'flex-start',
             opacity: 0.7,
           }}
         >
-          <Text style={{ fontSize: 12, color: "#333", fontWeight: "500" }}>
+          <Text style={{ fontSize: 12, color: '#333', fontWeight: '500' }}>
             {skinType}
           </Text>
         </View>
@@ -1049,21 +1151,21 @@ const SkinTypeTrendChart = ({
           width={chartWidth}
           height={CHART_HEIGHT}
           chartConfig={{
-            backgroundColor: "#fff",
-            backgroundGradientFrom: "#fff",
-            backgroundGradientTo: "#fff",
+            backgroundColor: '#fff',
+            backgroundGradientFrom: '#fff',
+            backgroundGradientTo: '#fff',
             decimalPlaces: 0,
             color: (opacity = 1) => `rgba(110, 70, 255, ${opacity})`,
             labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
             propsForDots: {
-              r: "6",
-              strokeWidth: "2",
-              stroke: "#fff",
-              fill: "#8b7ba8",
+              r: '6',
+              strokeWidth: '2',
+              stroke: '#fff',
+              fill: '#8b7ba8',
             },
             propsForBackgroundLines: {
-              strokeDasharray: "",
-              stroke: "#E0E0E0",
+              strokeDasharray: '',
+              stroke: '#E0E0E0',
             },
           }}
           bezier
@@ -1081,20 +1183,33 @@ const SkinTypeTrendChart = ({
           yAxisInterval={1}
           decorator={decorator}
           renderDotContent={renderDotContent}
-          onDataPointClick={(data) => {
+          onDataPointClick={data => {
             if (onDataPointClick) onDataPointClick(data.index);
           }}
         />
       </ScrollView>
 
-      <View style={{ position: "absolute", left: 0, top: 0 }}>
+      <View style={{ position: 'absolute', left: 0, top: 0 }}>
         {renderYAxisLabels()}
       </View>
     </View>
   );
 };
 
-export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, forceScrollSyncRef, photos, profile, navigateToSnapshot, navigateToMetricDetail, hideNavigation = false, apiTopConcerns = [], setApiTopConcerns }: any) => {
+export const MetricRow = ({
+  metric,
+  selectedIndex,
+  onDotPress,
+  scrollPosition,
+  forceScrollSyncRef,
+  photos,
+  profile,
+  navigateToSnapshot,
+  navigateToMetricDetail,
+  hideNavigation = false,
+  apiTopConcerns = [],
+  setApiTopConcerns,
+}: any) => {
   if (!metric?.scores?.length) return null;
 
   const scrollViewRef = useRef(null);
@@ -1131,7 +1246,11 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
 
   // Sync scroll position when it changes or when forced
   useEffect(() => {
-    if (scrollViewRef.current && scrollPosition !== undefined && scrollPosition >= 0) {
+    if (
+      scrollViewRef.current &&
+      scrollPosition !== undefined &&
+      scrollPosition >= 0
+    ) {
       // Calculate dimensions for debugging
       const plotAreaWidth = metric.scores.length * 16; // barSlotWidth = 16
       const rightPadding = 120; // Match the contentContainerStyle paddingRight
@@ -1152,7 +1271,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
           scrollViewRef.current.scrollTo({
             x: boundedScrollPosition,
             animated: shouldAnimate,
-            duration: shouldAnimate ? 200 : 0
+            duration: shouldAnimate ? 200 : 0,
           });
         }
       }, staggerDelay);
@@ -1192,7 +1311,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                 metricKey: metric.metricName,
                 metricValue: metric.scores[selectedIndex]?.score,
                 photoData: JSON.stringify(selectedPhoto),
-                isTopConcern: isTopConcern
+                isTopConcern: isTopConcern,
               });
             } else {
               const firstPhoto = photos[0];
@@ -1203,7 +1322,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                   metricKey: metric.metricName,
                   metricValue: metric.scores[0]?.score,
                   photoData: JSON.stringify(firstPhoto),
-                  isTopConcern: isTopConcern
+                  isTopConcern: isTopConcern,
                 });
               }
             }
@@ -1214,25 +1333,35 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
           <View style={styles.cardHeaderLeft}>
             {isTopConcern && (
               <TouchableOpacity
-                onPress={(e) => { e.stopPropagation(); handleToggleTopConcern(); }}
+                onPress={e => {
+                  e.stopPropagation();
+                  handleToggleTopConcern();
+                }}
                 disabled={isTogglingConcern}
                 hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={{ paddingRight: 4, opacity: isTogglingConcern ? 0.5 : 1 }}
+                style={{
+                  paddingRight: 4,
+                  opacity: isTogglingConcern ? 0.5 : 1,
+                }}
               >
-                <Star
-                  size={18}
-                  color={"#00839B"}
-                  fill={"#00839B"}
-                />
+                <Star size={18} color={'#00839B'} fill={'#00839B'} />
               </TouchableOpacity>
             )}
-            <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName as keyof typeof METRIC_LABELS] || metric.metricName}</Text>
+            <Text style={styles.categoryText}>
+              {METRIC_LABELS[metric.metricName as keyof typeof METRIC_LABELS] ||
+                metric.metricName}
+            </Text>
           </View>
           {!hideNavigation && <ChevronRightIcon size={18} color="#D6D3D1" />}
         </TouchableOpacity>
 
         {/* Skin Type Chart */}
-        <View style={[styles.dataSection, { backgroundColor: 'transparent', height: 'auto' }]}>
+        <View
+          style={[
+            styles.dataSection,
+            { backgroundColor: 'transparent', height: 'auto' },
+          ]}
+        >
           <SkinTypeTrendChart
             photos={photos}
             selectedIndex={selectedIndex}
@@ -1248,18 +1377,32 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
   const percentChange = calculatePercentageChange(metric.scores);
 
   // Average calculation
-  const validScores = metric.scores.filter(s => s.score !== null && s.score !== undefined && !isNaN(s.score) && s.score !== 0);
-  const mockAverage = validScores.length > 0
-    ? Math.round(validScores.reduce((sum, s) => sum + s.score, 0) / validScores.length)
-    : null;
+  const validScores = metric.scores.filter(
+    s =>
+      s.score !== null &&
+      s.score !== undefined &&
+      !isNaN(s.score) &&
+      s.score !== 0,
+  );
+  const mockAverage =
+    validScores.length > 0
+      ? Math.round(
+          validScores.reduce((sum, s) => sum + s.score, 0) / validScores.length,
+        )
+      : null;
 
   // Current score (selected photo or latest)
-  const currentScore = selectedIndex !== null && metric.scores[selectedIndex]
-    ? metric.scores[selectedIndex].score
-    : metric.scores[metric.scores.length - 1]?.score;
-  const displayScore = currentScore !== null && currentScore !== undefined && !isNaN(currentScore) && currentScore !== 0
-    ? Math.round(currentScore)
-    : null;
+  const currentScore =
+    selectedIndex !== null && metric.scores[selectedIndex]
+      ? metric.scores[selectedIndex].score
+      : metric.scores[metric.scores.length - 1]?.score;
+  const displayScore =
+    currentScore !== null &&
+    currentScore !== undefined &&
+    !isNaN(currentScore) &&
+    currentScore !== 0
+      ? Math.round(currentScore)
+      : null;
 
   // Bar chart constants (from simple series)
   const barWidth = 10;
@@ -1278,7 +1421,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
         metricKey: metric.metricName,
         metricValue: metric.scores[selectedIndex]?.score,
         photoData: JSON.stringify(selectedPhoto),
-        isTopConcern: isTopConcern
+        isTopConcern: isTopConcern,
       });
     } else {
       const firstPhoto = photos[0];
@@ -1289,7 +1432,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
           metricKey: metric.metricName,
           metricValue: metric.scores[0]?.score,
           photoData: JSON.stringify(firstPhoto),
-          isTopConcern: isTopConcern
+          isTopConcern: isTopConcern,
         });
       }
     }
@@ -1307,19 +1450,20 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
         <View style={styles.cardHeaderLeft}>
           {isTopConcern && (
             <TouchableOpacity
-              onPress={(e) => { e.stopPropagation(); handleToggleTopConcern(); }}
+              onPress={e => {
+                e.stopPropagation();
+                handleToggleTopConcern();
+              }}
               disabled={isTogglingConcern}
               hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               style={{ paddingRight: 4, opacity: isTogglingConcern ? 0.5 : 1 }}
             >
-              <Star
-                size={18}
-                color={"#00839B"}
-                fill={"#00839B"}
-              />
+              <Star size={18} color={'#00839B'} fill={'#00839B'} />
             </TouchableOpacity>
           )}
-          <Text style={styles.categoryText}>{METRIC_LABELS[metric.metricName] || metric.metricName}</Text>
+          <Text style={styles.categoryText}>
+            {METRIC_LABELS[metric.metricName] || metric.metricName}
+          </Text>
         </View>
         {!hideNavigation && <ChevronRightIcon size={18} color="#D6D3D1" />}
       </TouchableOpacity>
@@ -1334,7 +1478,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
         {mockAverage !== null && (
           <View style={styles.averageContainer}>
             <Text style={styles.averageScore}>{mockAverage}</Text>
-            <Text style={styles.averageLabel}>  Average</Text>
+            <Text style={styles.averageLabel}> Average</Text>
           </View>
         )}
       </View>
@@ -1355,32 +1499,52 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
           style={styles.barScrollView}
           contentContainerStyle={{
             paddingTop: 40,
-            paddingRight: 16 // Add right padding so selected items can be properly visible
+            paddingRight: 16, // Add right padding so selected items can be properly visible
           }}
         >
-          <View style={[styles.plotArea, { width: plotAreaWidth, height: chartHeight }]}>
+          <View
+            style={[
+              styles.plotArea,
+              { width: plotAreaWidth, height: chartHeight },
+            ]}
+          >
             {/* Y-Axis Grid Lines */}
             <View style={styles.gridContainer}>
-              <View style={[styles.yAxisGridLine, { bottom: chartHeight - 1 }]} />
-              <View style={[styles.yAxisGridLine, { bottom: chartHeight / 2 }]} />
+              <View
+                style={[styles.yAxisGridLine, { bottom: chartHeight - 1 }]}
+              />
+              <View
+                style={[styles.yAxisGridLine, { bottom: chartHeight / 2 }]}
+              />
               <View style={[styles.yAxisGridLine, { bottom: 0 }]} />
             </View>
 
             {/* Selected Value Indicator */}
             {selectedIndex !== null && metric.scores[selectedIndex] && (
-              <View style={[
-                styles.selectedIndicator,
-                { left: selectedIndex * barSlotWidth + (barSlotWidth / 2) - 0.5 }
-              ]}>
+              <View
+                style={[
+                  styles.selectedIndicator,
+                  {
+                    left: selectedIndex * barSlotWidth + barSlotWidth / 2 - 0.5,
+                  },
+                ]}
+              >
                 <Text style={styles.selectedValue}>
-                  {metric.scores[selectedIndex].score === 0 || metric.scores[selectedIndex].score === null ? 'No Data' : `${metric.scores[selectedIndex].score}/100`}
+                  {metric.scores[selectedIndex].score === 0 ||
+                  metric.scores[selectedIndex].score === null
+                    ? 'No Data'
+                    : `${metric.scores[selectedIndex].score}/100`}
                 </Text>
               </View>
             )}
 
             {/* Bars */}
             {metric.scores.map((scoreData, index) => {
-              const normalizedMetric = normalizeMetricValue(scoreData.score, metric.metricName, profile);
+              const normalizedMetric = normalizeMetricValue(
+                scoreData.score,
+                metric.metricName,
+                profile,
+              );
 
               if (normalizedMetric.isNullValue) {
                 // Render null data indicator at center
@@ -1394,7 +1558,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                       {
                         left: xPosition,
                         bottom: chartHeight / 2 - 2,
-                      }
+                      },
                     ]}
                   >
                     <View style={styles.nullBar} />
@@ -1413,13 +1577,16 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
               const lightColor = getLightColor(normalizedMetric.color);
 
               return (
-                <View key={scoreData.photoId} style={{
-                  position: 'absolute',
-                  left: xPosition,
-                  bottom: 0,
-                  width: barSlotWidth,
-                  alignItems: 'center'
-                }}>
+                <View
+                  key={scoreData.photoId}
+                  style={{
+                    position: 'absolute',
+                    left: xPosition,
+                    bottom: 0,
+                    width: barSlotWidth,
+                    alignItems: 'center',
+                  }}
+                >
                   <TouchableOpacity
                     onPress={() => onDotPress(index)}
                     style={{
@@ -1440,7 +1607,7 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                           borderRadius: barRadius,
                           backgroundColor: lightColor,
                           opacity: isRecent ? 1 : 0.7,
-                        }
+                        },
                       ]}
                     />
 
@@ -1453,8 +1620,11 @@ export const MetricRow = ({ metric, selectedIndex, onDotPress, scrollPosition, f
                           backgroundColor: darkColor,
                           opacity: isRecent ? 1 : 0.7,
                           position: 'absolute',
-                          bottom: Math.max(barHeight - (isSelected ? 4 : 3), isSelected ? -2 : -1),
-                        }
+                          bottom: Math.max(
+                            barHeight - (isSelected ? 4 : 3),
+                            isSelected ? -2 : -1,
+                          ),
+                        },
                       ]}
                     />
                   </TouchableOpacity>
@@ -1475,7 +1645,12 @@ interface MetricsSeriesProps {
   setApiTopConcerns?: React.Dispatch<React.SetStateAction<string[]>>;
 }
 
-const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, apiTopConcerns = [], setApiTopConcerns }) => {
+const MetricsSeries: React.FC<MetricsSeriesProps> = ({
+  photos,
+  initialPhotoId,
+  apiTopConcerns = [],
+  setApiTopConcerns,
+}) => {
   const navigation = useNavigation();
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const [summary, setSummary] = useState(null);
@@ -1526,7 +1701,8 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
     // Calculate position to center the selected bar in the viewport
     const selectedBarPosition = selectedIndex * barSlotWidth;
     const viewportWidth = width;
-    const targetPosition = selectedBarPosition - (viewportWidth / 2) + (barSlotWidth / 2);
+    const targetPosition =
+      selectedBarPosition - viewportWidth / 2 + barSlotWidth / 2;
 
     // Calculate max scroll position accounting for right padding
     const plotAreaWidth = metrics[0]?.scores?.length * barSlotWidth || 0;
@@ -1535,7 +1711,10 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
     const maxScrollPosition = Math.max(0, totalContentWidth - viewportWidth);
 
     // Clamp to valid scroll range: [0, maxScrollPosition]
-    const boundedPosition = Math.max(0, Math.min(targetPosition, maxScrollPosition));
+    const boundedPosition = Math.max(
+      0,
+      Math.min(targetPosition, maxScrollPosition),
+    );
 
     // console.log(`[MetricsSeries] Scroll calc: selectedIndex=${selectedIndex}, barPos=${selectedBarPosition}, centered=${targetPosition.toFixed(1)}, bounded=${boundedPosition.toFixed(1)}, max=${maxScrollPosition.toFixed(1)}, plotWidth=${plotAreaWidth}, totalWidth=${totalContentWidth}`);
     return boundedPosition;
@@ -1544,12 +1723,14 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
   // Log timestamps order after processing
   useEffect(() => {
     if (timestamps && timestamps.length > 0) {
-      const formattedTimestamps = timestamps.map(ts => ts instanceof Date ? ts.toISOString() : String(ts));
+      const formattedTimestamps = timestamps.map(ts =>
+        ts instanceof Date ? ts.toISOString() : String(ts),
+      );
       // console.log('[MetricsSeries] Timestamps order passed to TimeSelector:', JSON.stringify(formattedTimestamps, null, 2));
     }
   }, [timestamps]); // Log when timestamps change
 
-  const handleDotPress = (index) => {
+  const handleDotPress = index => {
     // Simple debounce to prevent rapid-fire taps
     const now = Date.now();
     if (now - lastTapTimeRef.current < 50) return; //  debounce
@@ -1557,7 +1738,7 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
 
     // console.log(`[MetricsSeries] Dot press detected for index ${index}`);
     // Always keep one image selected - don't allow deselecting
-    setSelectedIndex(prevIndex => prevIndex === index ? prevIndex : index);
+    setSelectedIndex(prevIndex => (prevIndex === index ? prevIndex : index));
   };
 
   const handleMaximize = (photo, index) => {
@@ -1573,7 +1754,9 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
 
       if (ts?.seconds && typeof ts.seconds === 'number') {
         // Firestore Timestamp
-        dateObj = new Date(ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0));
+        dateObj = new Date(
+          ts.seconds * 1000 + (ts.nanoseconds ? ts.nanoseconds / 1000000 : 0),
+        );
       } else if (ts instanceof Date) {
         // Already a JS Date
         dateObj = ts;
@@ -1595,10 +1778,9 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
       storageUrl: photo.storageUrl,
       threadId: photo.threadId,
       apiData: {
-        created_at: timestampParam // Add the timestamp as created_at to match PhotoGrid structure
-      }
+        created_at: timestampParam, // Add the timestamp as created_at to match PhotoGrid structure
+      },
     });
-
 
     console.log('🔵 photoId from MetricsSeries:', photo);
 
@@ -1610,7 +1792,7 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
       thumbnailUrl: photo.storageUrl,
       localUri: photo.storageUrl,
       fromPhotoGrid: 'true',
-      timestamp: timestampParam // Use the properly formatted ISO string
+      timestamp: timestampParam, // Use the properly formatted ISO string
     });
   };
 
@@ -1633,9 +1815,10 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
 
             // If initialPhotoId is provided, find its index in the current photos array
             if (initialPhotoId) {
-              const foundIndex = photos.findIndex(p =>
-                p.id === initialPhotoId ||
-                p.hautUploadData?.imageId === initialPhotoId
+              const foundIndex = photos.findIndex(
+                p =>
+                  p.id === initialPhotoId ||
+                  p.hautUploadData?.imageId === initialPhotoId,
               );
               if (foundIndex !== -1) {
                 selectionIndex = foundIndex;
@@ -1674,7 +1857,7 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
   useEffect(() => {
     if (selectedIndex !== null && photos[selectedIndex]) {
       const selectedPhoto = photos[selectedIndex];
-      console.log("🔵 selectedPhoto: in MetricsSeries", selectedPhoto);
+      console.log('🔵 selectedPhoto: in MetricsSeries', selectedPhoto);
 
       // Summary and routine flag are already available in the photo data
       // No loading states needed since data is already loaded
@@ -1705,7 +1888,9 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
     return (
       <View style={styles.noDataContainer}>
         <Text style={styles.noDataText}>No photos available</Text>
-        <Text style={styles.noDataSubtext}>Take some photos to see your progress</Text>
+        <Text style={styles.noDataSubtext}>
+          Take some photos to see your progress
+        </Text>
       </View>
     );
   }
@@ -1715,13 +1900,18 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({ photos, initialPhotoId, a
     return (
       <View style={styles.noDataContainer}>
         <Text style={styles.noDataText}>No metrics data available yet</Text>
-        <Text style={styles.noDataSubtext}>Take more photos to see your trends</Text>
+        <Text style={styles.noDataSubtext}>
+          Take more photos to see your trends
+        </Text>
       </View>
     );
   }
 
   // Determine the note text based on the current thread summary
-  const noteText = selectedIndex !== null && photos[selectedIndex] ? photos[selectedIndex].summary || "" : "";
+  const noteText =
+    selectedIndex !== null && photos[selectedIndex]
+      ? photos[selectedIndex].summary || ''
+      : '';
 
   const sortedMetrics = React.useMemo(() => {
     if (!metrics || metrics.length === 0) return [];
@@ -1897,27 +2087,27 @@ const styles = StyleSheet.create({
     borderColor: '#00000010',
   },
   historyDot: {
-    opacity: 0.4,  // More transparent for historical dots
+    opacity: 0.4, // More transparent for historical dots
   },
   recentDot: {
-    opacity: 1,    // Full opacity for recent dots
+    opacity: 1, // Full opacity for recent dots
   },
   selectedIndicator: {
     position: 'absolute',
-    top: 0,           // Start from top of container
-    bottom: 0,        // End at bottom of container
+    top: 0, // Start from top of container
+    bottom: 0, // End at bottom of container
     transform: [{ translateX: -0.5 }], // Center the 1px line
     alignItems: 'center',
-    width: 1,         // Make it just the width of the line
+    width: 1, // Make it just the width of the line
     backgroundColor: '#ccc',
     zIndex: 1,
   },
   selectedValue: {
     position: 'absolute',
-    top: -28,         // Moved up by 10 pixels from -18
-    left: -30,        // Center the text (60px wide)
+    top: -28, // Moved up by 10 pixels from -18
+    left: -30, // Center the text (60px wide)
     width: 60,
-    fontSize: 11,     // Slightly smaller font
+    fontSize: 11, // Slightly smaller font
     color: '#333',
     fontWeight: '500',
     textAlign: 'center',
@@ -1989,7 +2179,7 @@ const styles = StyleSheet.create({
   },
   selectedDateCard: {
     backgroundColor: '#333',
-    transform: [{ scale: 1.00 }],
+    transform: [{ scale: 1.0 }],
   },
   dateMonth: {
     fontSize: 14,
@@ -2015,7 +2205,7 @@ const styles = StyleSheet.create({
     paddingTop: 16,
     paddingBottom: 20,
     backgroundColor: '#FAFAFA',
-    zIndex: 5
+    zIndex: 5,
   },
   noDataContainer: {
     flex: 1,
@@ -2093,9 +2283,9 @@ const styles = StyleSheet.create({
     color: colors.primary, // Changed to white for dark background
     textAlign: 'center',
     paddingHorizontal: 16, // Horizontal padding
-    paddingTop: 4,       // Requested top padding (pushes note down from thumbs)
-    paddingBottom: 16,    // Bottom padding within the grey area
-    width: '100%',         // Full width within the container
+    paddingTop: 4, // Requested top padding (pushes note down from thumbs)
+    paddingBottom: 16, // Bottom padding within the grey area
+    width: '100%', // Full width within the container
     // backgroundColor: '#f5f5f0', // No background needed, inherits from container
   },
   titleRow: {

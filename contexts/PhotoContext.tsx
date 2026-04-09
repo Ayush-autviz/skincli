@@ -258,6 +258,8 @@ export function PhotoProvider({ children }: PhotoProviderProps): React.JSX.Eleme
   // Refresh photos function - force refresh without cache
   const refreshPhotos = useCallback((): void => {
     console.log('🔵 PHOTO_CONTEXT: Refreshing photos...');
+    // Do NOT clear photos here. Clearing them forces the entire Carousel to unmount
+    // and remount, which causes the layout flash/blink.
     fetchPhotos(false, 1); // Don't use cache when refreshing, start from page 1
   }, [fetchPhotos]);
 

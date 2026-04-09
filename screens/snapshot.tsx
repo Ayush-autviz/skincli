@@ -361,7 +361,7 @@ const formatMetricName = (key: string): string => {
     perceivedAge: 'Perceived Age',
     skinType: 'Type',
     skinTone: 'Tone',
-    puffinessScore: 'Puffiness',
+    puffinessScore: 'Eye Puffiness',
     saggingScore: 'Sagging',
   };
   if (customNames[key]) return customNames[key];
@@ -962,7 +962,7 @@ const SnapshotScreen = (): React.JSX.Element => {
       perceivedAge: 'Perceived Age',
       skinTone: 'Skin Tone',
       skinType: 'Skin Type',
-      puffiness: 'Puffiness',
+      puffiness: 'Eye Puffiness',
       sagging: 'Sagging',
     };
     if (special[processedKey]) return special[processedKey];

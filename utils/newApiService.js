@@ -1,31 +1,33 @@
 // newApiService.js
 // API service for new authentication system with token management
 
-import axios from "axios";
-import useAuthStore from "../stores/authStore";
+import axios from 'axios';
+import useAuthStore from '../stores/authStore';
 
-const BASE_URL = "http://44.198.183.94:9000/api/v1";
+const BASE_URL = 'http://44.198.183.94:9000/api/v1';
 
 // Global retry configuration
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000;
 
 // Helper function to determine if an error is retryable
-const shouldRetry = (error) => {
+const shouldRetry = error => {
   // Retry on network errors, timeouts, and 5xx server errors
   return (
     error.message === 'Network Error' ||
     error.code === 'ECONNABORTED' ||
     error.code === 'ECONNRESET' ||
     error.code === 'ENOTFOUND' ||
-    (error.response && error.response.status >= 500 && error.response.status < 600)
+    (error.response &&
+      error.response.status >= 500 &&
+      error.response.status < 600)
   );
 };
 
 // Create axios instance with enhanced configuration
 const apiClient = axios.create({
   baseURL: BASE_URL,
-  // timeout: 45000, 
+  // timeout: 45000,
   // Custom properties for internal retry logic
   validateStatus: function (status) {
     return status >= 200 && status < 300;
@@ -40,21 +42,21 @@ const pendingRequests = new Map();
 
 // Function to clear all pending requests (useful for cleanup)
 export const clearPendingRequests = () => {
-  console.log("🧹 Clearing all pending requests");
+  console.log('🧹 Clearing all pending requests');
   pendingRequests.clear();
 };
 
 // Function to clear specific pending request
-export const clearPendingRequest = (requestKey) => {
+export const clearPendingRequest = requestKey => {
   if (pendingRequests.has(requestKey)) {
-    console.log("🧹 Clearing pending request:", requestKey);
+    console.log('🧹 Clearing pending request:', requestKey);
     pendingRequests.delete(requestKey);
   }
 };
 
 // Function to force clear all stuck requests (useful for debugging)
 export const forceClearAllRequests = () => {
-  console.log("🧹 Force clearing all pending requests");
+  console.log('🧹 Force clearing all pending requests');
   pendingRequests.clear();
 };
 
@@ -74,10 +76,10 @@ const createRequestKey = (method, url, data) => {
 
 // Enhanced request interceptor with deduplication
 apiClient.interceptors.request.use(
-  (config) => {
+  config => {
     // Safety check - ensure config exists
     if (!config) {
-      console.error("🔴 Request interceptor: config is undefined");
+      console.error('🔴 Request interceptor: config is undefined');
       return Promise.reject(new Error('Invalid request configuration'));
     }
 
@@ -134,21 +136,21 @@ apiClient.interceptors.request.use(
     //   }
     // }, 30000);
 
-    console.log("🔵 API Request:", config.method?.toUpperCase(), config.url);
+    console.log('🔵 API Request:', config.method?.toUpperCase(), config.url);
     return config;
   },
-  (error) => {
-    console.error("🔴 Request Error:", error);
+  error => {
+    console.error('🔴 Request Error:', error);
     return Promise.reject(error);
-  }
+  },
 );
 
 // Enhanced response interceptor for better error handling
 apiClient.interceptors.response.use(
-  (response) => {
+  response => {
     // Safety check - ensure response and config exist
     if (!response || !response.config) {
-      console.error("🔴 Response interceptor: response or config is undefined");
+      console.error('🔴 Response interceptor: response or config is undefined');
       return response;
     }
 
@@ -157,18 +159,18 @@ apiClient.interceptors.response.use(
       pendingRequests.delete(response.config.metadata.requestKey);
     }
 
-    console.log("✅ API Response:", response.status, response.config.url);
+    console.log('✅ API Response:', response.status, response.config.url);
     return response;
   },
-  async (error) => {
-    console.log("🔴 Response interceptor error triggered:", {
+  async error => {
+    console.log('🔴 Response interceptor error triggered:', {
       message: error?.message,
       status: error?.response?.status,
       url: error?.config?.url,
       method: error?.config?.method,
       hasConfig: !!error?.config,
       hasResponse: !!error?.response,
-      hasRequest: !!error?.request
+      hasRequest: !!error?.request,
     });
 
     // Clean up pending request on error (with safety check)
@@ -178,12 +180,18 @@ apiClient.interceptors.response.use(
 
     // Handle duplicate request errors - instead of rejecting, wait for the existing request
     if (error.message === 'DUPLICATE_REQUEST') {
-      console.log("🔄 Duplicate request detected - waiting for existing request to complete");
+      console.log(
+        '🔄 Duplicate request detected - waiting for existing request to complete',
+      );
 
       // Only proceed if we have config data
       if (error?.config) {
         // Try to get the existing request result
-        const requestKey = createRequestKey(error.config.method, error.config.url, error.config.data);
+        const requestKey = createRequestKey(
+          error.config.method,
+          error.config.url,
+          error.config.data,
+        );
         const pending = pendingRequests.get(requestKey);
 
         if (pending) {
@@ -196,13 +204,15 @@ apiClient.interceptors.response.use(
 
             // If still pending after additional wait, reject
             if (pendingRequests.has(requestKey)) {
-              console.log("⏰ Request still pending after wait, rejecting with REQUEST_IN_PROGRESS");
+              console.log(
+                '⏰ Request still pending after wait, rejecting with REQUEST_IN_PROGRESS',
+              );
               return Promise.reject(new Error('REQUEST_IN_PROGRESS'));
             }
           }
 
           // If we get here, the request completed, so we should retry the original request
-          console.log("✅ Original request completed, retrying...");
+          console.log('✅ Original request completed, retrying...');
           return apiClient(error.config);
         }
       }
@@ -215,64 +225,97 @@ apiClient.interceptors.response.use(
 
     // Enhanced error logging with null checks
     if (error?.code === 'ECONNABORTED') {
-      console.error("🔴 Request timeout:", error?.config?.url || 'unknown URL', "after", error?.config?.timeout || 'unknown timeout', "ms");
+      console.error(
+        '🔴 Request timeout:',
+        error?.config?.url || 'unknown URL',
+        'after',
+        error?.config?.timeout || 'unknown timeout',
+        'ms',
+      );
     } else if (error?.message === 'Network Error') {
-      console.error("🔴 Network error:", error?.config?.url || 'unknown URL', "- check internet connection");
+      console.error(
+        '🔴 Network error:',
+        error?.config?.url || 'unknown URL',
+        '- check internet connection',
+      );
     } else if (error?.code === 'ECONNRESET') {
-      console.error("🔴 Connection reset:", error?.config?.url || 'unknown URL');
+      console.error(
+        '🔴 Connection reset:',
+        error?.config?.url || 'unknown URL',
+      );
     } else if (error?.code === 'ENOTFOUND') {
-      console.error("🔴 Server not found:", error?.config?.url || 'unknown URL');
+      console.error(
+        '🔴 Server not found:',
+        error?.config?.url || 'unknown URL',
+      );
     } else if (error?.response) {
-      console.error("🔴 Server error:", error.response.status, error.response.statusText, error?.config?.url || 'unknown URL');
+      console.error(
+        '🔴 Server error:',
+        error.response.status,
+        error.response.statusText,
+        error?.config?.url || 'unknown URL',
+      );
     } else if (error?.request) {
-      console.error("🔴 No response received:", error?.config?.url || 'unknown URL', "- server might be down");
+      console.error(
+        '🔴 No response received:',
+        error?.config?.url || 'unknown URL',
+        '- server might be down',
+      );
     }
 
     // Handle token refresh for 401 errors (only if we have config)
-    console.log("🔍 Checking 401 error handling conditions:", {
+    console.log('🔍 Checking 401 error handling conditions:', {
       hasError: !!error,
       hasResponse: !!error?.response,
       status: error?.response?.status,
       hasOriginalRequest: !!originalRequest,
       hasRetry: !!originalRequest?._retry,
       errorKeys: error ? Object.keys(error) : 'no error object',
-      responseKeys: error?.response ? Object.keys(error.response) : 'no response object'
+      responseKeys: error?.response
+        ? Object.keys(error.response)
+        : 'no response object',
     });
 
-    if (error?.response?.status === 401 && originalRequest && !originalRequest._retry) {
-      console.log("🔄 401 Unauthorized detected - starting token refresh process...");
-      console.log("🔍 Original request details:", {
+    if (
+      error?.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry
+    ) {
+      console.log(
+        '🔄 401 Unauthorized detected - starting token refresh process...',
+      );
+      console.log('🔍 Original request details:', {
         url: originalRequest.url,
         method: originalRequest.method,
         hasHeaders: !!originalRequest.headers,
-        hasRetry: !!originalRequest._retry
+        hasRetry: !!originalRequest._retry,
       });
 
       originalRequest._retry = true;
 
       try {
         const authState = useAuthStore.getState();
-        console.log("🔍 Auth store state:", {
+        console.log('🔍 Auth store state:', {
           hasUser: !!authState.user,
           hasAccessToken: !!authState.accessToken,
           hasRefreshToken: !!authState.refreshToken,
-          storeKeys: authState ? Object.keys(authState) : 'no store state'
+          storeKeys: authState ? Object.keys(authState) : 'no store state',
         });
 
         const { refreshToken } = authState;
-        console.log("🔍 Refresh token available:", !!refreshToken);
+        console.log('🔍 Refresh token available:', !!refreshToken);
 
         if (refreshToken) {
-          console.log("🔄 Attempting token refresh...");
+          console.log('🔄 Attempting token refresh...');
           const newTokens = await refreshAccessToken(refreshToken);
-          console.log("✅ Token refresh successful, updating store...");
+          console.log('✅ Token refresh successful, updating store...');
 
           useAuthStore
             .getState()
             .setTokens(newTokens.access_token, newTokens.refresh_token);
 
           // Retry original request with new token
-          console.log("🔄 Retrying original request with new token...");
+          console.log('🔄 Retrying original request with new token...');
 
           // Ensure headers exist
           if (!originalRequest.headers) {
@@ -280,31 +323,31 @@ apiClient.interceptors.response.use(
           }
 
           originalRequest.headers.Authorization = `Bearer ${newTokens.access_token}`;
-          console.log("🔍 Retry request headers:", originalRequest.headers);
+          console.log('🔍 Retry request headers:', originalRequest.headers);
 
           const retryResponse = await apiClient(originalRequest);
-          console.log("✅ Retry successful:", retryResponse.status);
+          console.log('✅ Retry successful:', retryResponse.status);
           return retryResponse;
         } else {
-          console.log("🔴 No refresh token available, logging out user");
+          console.log('🔴 No refresh token available, logging out user');
           useAuthStore.getState().logout();
         }
       } catch (refreshError) {
-        console.error("🔴 Token refresh failed:", refreshError);
-        console.log("🔍 Refresh error details:", {
+        console.error('🔴 Token refresh failed:', refreshError);
+        console.log('🔍 Refresh error details:', {
           message: refreshError.message,
           response: refreshError.response?.status,
-          data: refreshError.response?.data
+          data: refreshError.response?.data,
         });
 
         // Logout user if refresh fails
         useAuthStore.getState().logout();
       }
     } else if (error?.response?.status === 401) {
-      console.log("🔴 401 error but not handling refresh:", {
+      console.log('🔴 401 error but not handling refresh:', {
         hasOriginalRequest: !!originalRequest,
         hasRetry: !!originalRequest?._retry,
-        status: error.response.status
+        status: error.response.status,
       });
     }
 
@@ -313,8 +356,11 @@ apiClient.interceptors.response.use(
       originalRequest._retryCount = (originalRequest._retryCount || 0) + 1;
       if (originalRequest._retryCount <= MAX_RETRIES) {
         // Exponential backoff
-        const delay = RETRY_DELAY * Math.pow(2, originalRequest._retryCount - 1);
-        console.log(`🔄 API Retry: attempt ${originalRequest._retryCount}/${MAX_RETRIES} in ${delay}ms for ${originalRequest.url}`);
+        const delay =
+          RETRY_DELAY * Math.pow(2, originalRequest._retryCount - 1);
+        console.log(
+          `🔄 API Retry: attempt ${originalRequest._retryCount}/${MAX_RETRIES} in ${delay}ms for ${originalRequest.url}`,
+        );
 
         await new Promise(resolve => setTimeout(resolve, delay));
 
@@ -325,24 +371,21 @@ apiClient.interceptors.response.use(
     }
 
     // Enhanced error logging with more context and null checks
-    console.error(
-      "🔴 API Error Details:",
-      {
-        url: error?.config?.url || 'unknown',
-        method: error?.config?.method?.toUpperCase() || 'unknown',
-        status: error?.response?.status || 'unknown',
-        statusText: error?.response?.statusText || 'unknown',
-        message: error?.message || 'unknown',
-        code: error?.code || 'unknown',
-        responseData: error?.response?.data || 'none',
-        hasConfig: !!error?.config,
-        hasResponse: !!error?.response,
-        hasRequest: !!error?.request
-      }
-    );
+    console.error('🔴 API Error Details:', {
+      url: error?.config?.url || 'unknown',
+      method: error?.config?.method?.toUpperCase() || 'unknown',
+      status: error?.response?.status || 'unknown',
+      statusText: error?.response?.statusText || 'unknown',
+      message: error?.message || 'unknown',
+      code: error?.code || 'unknown',
+      responseData: error?.response?.data || 'none',
+      hasConfig: !!error?.config,
+      hasResponse: !!error?.response,
+      hasRequest: !!error?.request,
+    });
 
     return Promise.reject(error);
-  }
+  },
 );
 
 // Auth API Functions
@@ -355,18 +398,18 @@ apiClient.interceptors.response.use(
  * @param {string} userData.name - User name
  * @returns {Promise<Object>} User data without tokens (OTP will be sent)
  */
-export const signUp = async (userData) => {
+export const signUp = async userData => {
   try {
-    console.log("🔵 Signing up user:", userData.email);
+    console.log('🔵 Signing up user:', userData.email);
 
-    const response = await apiClient.post("/user/", {
+    const response = await apiClient.post('/user/', {
       email: userData.email,
       password: userData.password,
       name: userData.name,
     });
 
     if (response.data.status === 201) {
-      console.log("✅ User signed up successfully, OTP sent to email");
+      console.log('✅ User signed up successfully, OTP sent to email');
       return {
         success: true,
         message: response.data.message,
@@ -379,21 +422,21 @@ export const signUp = async (userData) => {
         },
       };
     } else {
-      throw new Error(response.data.message || "Signup failed");
+      throw new Error(response.data.message || 'Signup failed');
     }
   } catch (error) {
-    console.error("🔴 Signup error:", error);
+    console.error('🔴 Signup error:', error);
 
     if (error.response?.data?.status === 400) {
       // User already exists
       throw new Error(
         error.response.data.message ||
-        "User already exists. Please try to login."
+        'User already exists. Please try to login.',
       );
     }
 
     throw new Error(
-      error.response?.data?.message || error.message || "Signup failed"
+      error.response?.data?.message || error.message || 'Signup failed',
     );
   }
 };
@@ -406,37 +449,37 @@ export const signUp = async (userData) => {
  * @param {string} otpData.otp - OTP code
  * @returns {Promise<Object>} Verification result
  */
-export const verifyOtp = async (otpData) => {
+export const verifyOtp = async otpData => {
   try {
-    console.log("🔵 Verifying OTP for:", otpData.email);
+    console.log('🔵 Verifying OTP for:', otpData.email);
 
-    const response = await apiClient.post("/user/verify-otp", {
+    const response = await apiClient.post('/user/verify-otp', {
       signup: otpData.signup,
       email: otpData.email,
       otp: otpData.otp,
     });
 
     if (response.data.status === 200) {
-      console.log("✅ OTP verified successfully");
+      console.log('✅ OTP verified successfully');
       return {
         success: true,
         message: response.data.message,
         reset_token: response.data.data.reset_token, // Only present for forgot password flow
       };
     } else {
-      throw new Error(response.data.message || "OTP verification failed");
+      throw new Error(response.data.message || 'OTP verification failed');
     }
   } catch (error) {
-    console.error("🔴 OTP verification error:", error);
+    console.error('🔴 OTP verification error:', error);
 
     if (error.response?.data?.status === 400) {
-      throw new Error(error.response.data.message || "Invalid OTP.");
+      throw new Error(error.response.data.message || 'Invalid OTP.');
     }
 
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "OTP verification failed"
+      'OTP verification failed',
     );
   }
 };
@@ -446,29 +489,29 @@ export const verifyOtp = async (otpData) => {
  * @param {string} email - User email
  * @returns {Promise<Object>} Success response
  */
-export const forgotPassword = async (email) => {
+export const forgotPassword = async email => {
   try {
-    console.log("🔵 Sending forgot password OTP to:", email);
+    console.log('🔵 Sending forgot password OTP to:', email);
 
-    const response = await apiClient.post("/user/forgot-password", {
+    const response = await apiClient.post('/user/forgot-password', {
       email: email,
     });
 
     if (response.data.status === 200) {
-      console.log("✅ Forgot password OTP sent successfully");
+      console.log('✅ Forgot password OTP sent successfully');
       return {
         success: true,
         message: response.data.message,
       };
     } else {
-      throw new Error(response.data.message || "Failed to send reset OTP");
+      throw new Error(response.data.message || 'Failed to send reset OTP');
     }
   } catch (error) {
-    console.error("🔴 Forgot password error:", error);
+    console.error('🔴 Forgot password error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to send reset OTP"
+      'Failed to send reset OTP',
     );
   }
 };
@@ -481,31 +524,31 @@ export const forgotPassword = async (email) => {
  * @param {string} passwordData.reset_token - Reset token from OTP verification
  * @returns {Promise<Object>} Success response
  */
-export const newPassword = async (passwordData) => {
+export const newPassword = async passwordData => {
   try {
-    console.log("🔵 Setting new password for:", passwordData.email);
+    console.log('🔵 Setting new password for:', passwordData.email);
 
-    const response = await apiClient.post("/user/new-password", {
+    const response = await apiClient.post('/user/new-password', {
       email: passwordData.email,
       password: passwordData.password,
       reset_token: passwordData.reset_token,
     });
 
     if (response.data.status === 200) {
-      console.log("✅ Password changed successfully");
+      console.log('✅ Password changed successfully');
       return {
         success: true,
         message: response.data.message,
       };
     } else {
-      throw new Error(response.data.message || "Failed to change password");
+      throw new Error(response.data.message || 'Failed to change password');
     }
   } catch (error) {
-    console.error("🔴 New password error:", error);
+    console.error('🔴 New password error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to change password"
+      'Failed to change password',
     );
   }
 };
@@ -515,27 +558,27 @@ export const newPassword = async (passwordData) => {
  * @param {string} email - User email
  * @returns {Promise<Object>} Success response
  */
-export const resendOtp = async (email) => {
+export const resendOtp = async email => {
   try {
-    console.log("🔵 Resending signup OTP to:", email);
+    console.log('🔵 Resending signup OTP to:', email);
 
-    const response = await apiClient.post("/user/resend-otp", {
+    const response = await apiClient.post('/user/resend-otp', {
       email: email,
     });
 
     if (response.data.status === 200) {
-      console.log("✅ Signup OTP resent successfully");
+      console.log('✅ Signup OTP resent successfully');
       return {
         success: true,
         message: response.data.message,
       };
     } else {
-      throw new Error(response.data.message || "Failed to resend OTP");
+      throw new Error(response.data.message || 'Failed to resend OTP');
     }
   } catch (error) {
-    console.error("🔴 Resend OTP error:", error);
+    console.error('🔴 Resend OTP error:', error);
     throw new Error(
-      error.response?.data?.message || error.message || "Failed to resend OTP"
+      error.response?.data?.message || error.message || 'Failed to resend OTP',
     );
   }
 };
@@ -545,27 +588,27 @@ export const resendOtp = async (email) => {
  * @param {string} email - User email
  * @returns {Promise<Object>} Success response
  */
-export const resendOtpForgotPassword = async (email) => {
+export const resendOtpForgotPassword = async email => {
   try {
-    console.log("🔵 Resending forgot password OTP to:", email);
+    console.log('🔵 Resending forgot password OTP to:', email);
 
-    const response = await apiClient.post("/user/resend-otp-forgot-password", {
+    const response = await apiClient.post('/user/resend-otp-forgot-password', {
       email: email,
     });
 
     if (response.data.status === 200) {
-      console.log("✅ Forgot password OTP resent successfully");
+      console.log('✅ Forgot password OTP resent successfully');
       return {
         success: true,
         message: response.data.message,
       };
     } else {
-      throw new Error(response.data.message || "Failed to resend OTP");
+      throw new Error(response.data.message || 'Failed to resend OTP');
     }
   } catch (error) {
-    console.error("🔴 Resend forgot password OTP error:", error);
+    console.error('🔴 Resend forgot password OTP error:', error);
     throw new Error(
-      error.response?.data?.message || error.message || "Failed to resend OTP"
+      error.response?.data?.message || error.message || 'Failed to resend OTP',
     );
   }
 };
@@ -577,25 +620,24 @@ export const resendOtpForgotPassword = async (email) => {
  * @param {string} credentials.password - User password
  * @returns {Promise<Object>} User data with tokens
  */
-export const signIn = async (credentials) => {
+export const signIn = async credentials => {
   try {
-    console.log("🔵 Signing in user:", credentials);
+    console.log('🔵 Signing in user:', credentials);
 
     // Create form data as API expects application/x-www-form-urlencoded
     const formData = new URLSearchParams();
-    formData.append("grant_type", "");
-    formData.append("username", credentials.email); // API uses username field for email
-    formData.append("password", credentials.password);
+    formData.append('grant_type', '');
+    formData.append('username', credentials.email); // API uses username field for email
+    formData.append('password', credentials.password);
 
-    const response = await apiClient.post("/user/login", formData.toString(), {
+    const response = await apiClient.post('/user/login', formData.toString(), {
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
-    }
-    );
+    });
 
     if (response.data.status === 200) {
-      console.log("✅ User signed in successfully");
+      console.log('✅ User signed in successfully');
       return {
         success: true,
         user: {
@@ -609,19 +651,19 @@ export const signIn = async (credentials) => {
         profile_status: response.data.profile_status,
       };
     } else {
-      throw new Error(response.data.message || "Login failed");
+      throw new Error(response.data.message || 'Login failed');
     }
   } catch (error) {
-    console.error("🔴 Login error:", error);
+    console.error('🔴 Login error:', error);
 
     if (error.response?.data?.status === 401) {
       throw new Error(
-        error.response.data.message || "Incorrect email or password"
+        error.response.data.message || 'Incorrect email or password',
       );
     }
 
     throw new Error(
-      error.response?.data?.message || error.message || "Login failed"
+      error.response?.data?.message || error.message || 'Login failed',
     );
   }
 };
@@ -631,9 +673,9 @@ export const signIn = async (credentials) => {
  * @param {string} refreshToken - Refresh token
  * @returns {Promise<Object>} New tokens
  */
-export const refreshAccessToken = async (refreshToken) => {
+export const refreshAccessToken = async refreshToken => {
   try {
-    console.log("🔵 Refreshing access token...");
+    console.log('🔵 Refreshing access token...');
 
     const response = await axios.post(
       `${BASE_URL}/user/refresh-token`,
@@ -642,30 +684,30 @@ export const refreshAccessToken = async (refreshToken) => {
       },
       {
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-      }
+      },
     );
 
     if (response.data.status === 201) {
-      console.log("✅ Token refreshed successfully");
+      console.log('✅ Token refreshed successfully');
       return {
         access_token: response.data.data.access_token,
         refresh_token: response.data.data.refresh_token,
         token_type: response.data.data.token_type,
       };
     } else {
-      throw new Error(response.data.message || "Token refresh failed");
+      throw new Error(response.data.message || 'Token refresh failed');
     }
   } catch (error) {
-    console.error("🔴 Token refresh error:", error);
+    console.error('🔴 Token refresh error:', error);
 
     if (error.response?.data?.status === 401) {
-      throw new Error("Invalid refresh token");
+      throw new Error('Invalid refresh token');
     }
 
     throw new Error(
-      error.response?.data?.message || error.message || "Token refresh failed"
+      error.response?.data?.message || error.message || 'Token refresh failed',
     );
   }
 };
@@ -679,42 +721,42 @@ export const refreshAccessToken = async (refreshToken) => {
  * @param {string} profileData.birth_date - Birth date (YYYY-MM-DD format)
  * @returns {Promise<Object>} Success response
  */
-export const createProfile = async (profileData) => {
+export const createProfile = async profileData => {
   try {
-    console.log("🔵 Creating user profile...");
+    console.log('🔵 Creating user profile...');
 
     const formData = new FormData();
 
     if (profileData.profile_img) {
-      formData.append("profile_img", {
+      formData.append('profile_img', {
         uri: profileData.profile_img.uri,
-        type: profileData.profile_img.type || "image/jpeg",
-        name: profileData.profile_img.fileName || "profile.jpg",
+        type: profileData.profile_img.type || 'image/jpeg',
+        name: profileData.profile_img.fileName || 'profile.jpg',
       });
     }
 
     if (profileData.birth_date) {
-      formData.append("birth_date", profileData.birth_date);
+      formData.append('birth_date', profileData.birth_date);
     }
 
-    const response = await apiClient.post("/profile/", formData, {
+    const response = await apiClient.post('/profile/', formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        'Content-Type': 'multipart/form-data',
       },
     });
 
     if (response.data.status === 200) {
-      console.log("✅ Profile created successfully");
+      console.log('✅ Profile created successfully');
       return { success: true };
     } else {
-      throw new Error(response.data.message || "Profile creation failed");
+      throw new Error(response.data.message || 'Profile creation failed');
     }
   } catch (error) {
-    console.error("🔴 Profile creation error:", error);
+    console.error('🔴 Profile creation error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Profile creation failed"
+      'Profile creation failed',
     );
   }
 };
@@ -727,44 +769,44 @@ export const createProfile = async (profileData) => {
  * @param {string} [profileData.user_name] - User name (optional)
  * @returns {Promise<Object>} Success response
  */
-export const updateProfile = async (profileData) => {
+export const updateProfile = async profileData => {
   try {
-    console.log("🔵 Updating user profile...");
+    console.log('🔵 Updating user profile...');
 
     const formData = new FormData();
 
     if (profileData.profile_img) {
-      formData.append("profile_img", {
+      formData.append('profile_img', {
         uri: profileData.profile_img.uri,
-        type: profileData.profile_img.type || "image/jpeg",
-        name: profileData.profile_img.fileName || "profile.jpg",
+        type: profileData.profile_img.type || 'image/jpeg',
+        name: profileData.profile_img.fileName || 'profile.jpg',
       });
     }
 
     if (profileData.birth_date) {
-      formData.append("birth_date", profileData.birth_date);
+      formData.append('birth_date', profileData.birth_date);
     }
 
     if (profileData.user_name) {
-      formData.append("user_name", profileData.user_name);
+      formData.append('user_name', profileData.user_name);
     }
 
-    const response = await apiClient.patch("/profile/", formData, {
+    const response = await apiClient.patch('/profile/', formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
+        'Content-Type': 'multipart/form-data',
       },
     });
 
     if (response.data.status === 200) {
-      console.log("✅ Profile updated successfully");
+      console.log('✅ Profile updated successfully');
       return { success: true };
     } else {
-      throw new Error(response.data.message || "Profile update failed");
+      throw new Error(response.data.message || 'Profile update failed');
     }
   } catch (error) {
-    console.error("🔴 Profile update error:", error);
+    console.error('🔴 Profile update error:', error);
     throw new Error(
-      error.response?.data?.message || error.message || "Profile update failed"
+      error.response?.data?.message || error.message || 'Profile update failed',
     );
   }
 };
@@ -775,25 +817,25 @@ export const updateProfile = async (profileData) => {
  */
 export const getProfile = async () => {
   try {
-    console.log("🔵 Fetching user profile...");
+    console.log('🔵 Fetching user profile...');
 
-    const response = await apiClient.get("/profile/");
+    const response = await apiClient.get('/profile/');
 
     if (response.data.status === 200) {
-      console.log("✅ Profile fetched successfully");
+      console.log('✅ Profile fetched successfully');
       return {
         success: true,
         profile: response.data.data.result,
       };
     } else {
-      throw new Error(response.data.message || "Failed to fetch profile");
+      throw new Error(response.data.message || 'Failed to fetch profile');
     }
   } catch (error) {
-    console.error("🔴 Profile fetch error:", error);
+    console.error('🔴 Profile fetch error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch profile"
+      'Failed to fetch profile',
     );
   }
 };
@@ -808,46 +850,46 @@ export const getProfile = async () => {
  * @param {string} [imageType='front_image'] - Field name for the image (front_image, left_image, right_image)
  * @returns {Promise<{hautBatchId: string, imageId: string}>}
  */
-export const processHautImage = async (imageUri, imageType = "front_image") => {
+export const processHautImage = async (imageUri, imageType = 'front_image') => {
   try {
-    console.log("🔵 [Haut.ai] Processing image", { imageType, imageUri });
+    console.log('🔵 [Haut.ai] Processing image', { imageType, imageUri });
 
     const formData = new FormData();
     formData.append(imageType, {
       uri: imageUri,
-      type: "image/jpeg",
+      type: 'image/jpeg',
       name: `${imageType}.jpg`,
     });
 
     // Add empty placeholders for the other image fields so backend accepts the request
-    if (imageType !== "left_image") formData.append("left_image", "");
-    if (imageType !== "right_image") formData.append("right_image", "");
+    if (imageType !== 'left_image') formData.append('left_image', '');
+    if (imageType !== 'right_image') formData.append('right_image', '');
 
-    const response = await apiClient.post("/haut_process/", formData, {
+    const response = await apiClient.post('/haut_process/', formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
-        accept: "application/json",
+        'Content-Type': 'multipart/form-data',
+        accept: 'application/json',
       },
     });
 
     if (response.data.status === 200) {
       const { hautBatchId, imageId } = response.data.data.result;
-      console.log("✅ [Haut.ai] Image accepted", { hautBatchId, imageId });
+      console.log('✅ [Haut.ai] Image accepted', { hautBatchId, imageId });
       return { hautBatchId, imageId };
     }
 
-    throw new Error(response.data.message || "Image processing failed");
+    throw new Error(response.data.message || 'Image processing failed');
   } catch (error) {
-    console.error("🔴 [Haut.ai] processHautImage error:", error);
+    console.error('🔴 [Haut.ai] processHautImage error:', error);
 
-    if (error.response?.data?.message === "User not found") {
-      throw new Error("User not found in the system. Please login again.");
+    if (error.response?.data?.message === 'User not found') {
+      throw new Error('User not found in the system. Please login again.');
     }
 
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Image processing failed"
+      'Image processing failed',
     );
   }
 };
@@ -862,7 +904,9 @@ export const processHautImage = async (imageUri, imageType = "front_image") => {
  */
 export const processHautImages = async ({ front, left, right }) => {
   try {
-    console.log("🔵 [Haut.ai] Processing face-180 images (front + left + right)");
+    console.log(
+      '🔵 [Haut.ai] Processing face-180 images (front + left + right)',
+    );
 
     const formData = new FormData();
 
@@ -870,12 +914,12 @@ export const processHautImages = async ({ front, left, right }) => {
     const appendImage = (fieldName, uri) => {
       if (!uri) return;
 
-      if (uri.startsWith("data:")) {
+      if (uri.startsWith('data:')) {
         // Base64 data URL from LIQA WebView
-        const [meta, base64Data] = uri.split(",");
+        const [meta, base64Data] = uri.split(',');
         const mimeMatch = meta.match(/data:([^;]+)/);
-        const mimeType = mimeMatch ? mimeMatch[1] : "image/jpeg";
-        const ext = mimeType.split("/")[1] || "jpg";
+        const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+        const ext = mimeType.split('/')[1] || 'jpg';
 
         formData.append(fieldName, {
           uri,
@@ -886,41 +930,44 @@ export const processHautImages = async ({ front, left, right }) => {
         // Regular local file URI
         formData.append(fieldName, {
           uri,
-          type: "image/jpeg",
+          type: 'image/jpeg',
           name: `${fieldName}.jpg`,
         });
       }
     };
 
-    appendImage("front_image", front);
-    appendImage("left_image", left);
-    appendImage("right_image", right);
+    appendImage('front_image', front);
+    appendImage('left_image', left);
+    appendImage('right_image', right);
 
-    const response = await apiClient.post("/haut_process/", formData, {
+    const response = await apiClient.post('/haut_process/', formData, {
       headers: {
-        "Content-Type": "multipart/form-data",
-        accept: "application/json",
+        'Content-Type': 'multipart/form-data',
+        accept: 'application/json',
       },
     });
 
     if (response.data.status === 200) {
       const { hautBatchId, imageId } = response.data.data.result;
-      console.log("✅ [Haut.ai] Face-180 images accepted", { hautBatchId, imageId });
+      console.log('✅ [Haut.ai] Face-180 images accepted', {
+        hautBatchId,
+        imageId,
+      });
       return { hautBatchId, imageId };
     }
 
-    throw new Error(response.data.message || "Image processing failed");
+    throw new Error(response.data.message || 'Image processing failed');
   } catch (error) {
-    console.error("🔴 [Haut.ai] processHautImages error:", error);
+    console.error('🔴 [Haut.ai] processHautImages error:', error);
 
-    if (error.response?.data?.message === "User not found") {
-      throw new Error("User not found in the system. Please login again.");
+    if (error.response?.data?.message === 'User not found') {
+      throw new Error('User not found in the system. Please login again.');
     }
 
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Image processing failed"
+      'Image processing failed',
     );
   }
 };
@@ -930,30 +977,32 @@ export const processHautImages = async ({ front, left, right }) => {
  * @param {string} imageId - Image ID returned by processHautImage
  * @returns {Promise<Array>} Raw results array
  */
-export const getHautAnalysisResults = async (hautBatchId) => {
+export const getHautAnalysisResults = async hautBatchId => {
   try {
-    console.log("🔵 [Haut.ai] Fetching analysis results", { hautBatchId });
-    const response = await apiClient.get(`/haut_process/?haut_batch_id=${hautBatchId}`);
-    console.log("🔵 response image processing:", response.data);
+    console.log('🔵 [Haut.ai] Fetching analysis results', { hautBatchId });
+    const response = await apiClient.get(
+      `/haut_process/?haut_batch_id=${hautBatchId}`,
+    );
+    console.log('🔵 response image processing:', response.data);
 
     if (response.data.status === 200) {
       return response.data.data.result;
     }
 
     throw new Error(
-      response.data.message || "Failed to fetch analysis results"
+      response.data.message || 'Failed to fetch analysis results',
     );
   } catch (error) {
-    console.error("🔴 [Haut.ai] getHautAnalysisResults error:", error);
+    console.error('🔴 [Haut.ai] getHautAnalysisResults error:', error);
 
-    if (error.response?.data?.message === "image metric is not found") {
-      throw new Error("Analysis not ready yet");
+    if (error.response?.data?.message === 'image metric is not found') {
+      throw new Error('Analysis not ready yet');
     }
 
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch analysis results"
+      'Failed to fetch analysis results',
     );
   }
 };
@@ -962,32 +1011,32 @@ export const getHautAnalysisResults = async (hautBatchId) => {
  * Retrieves mask metric values for an image.
  * @param {string} imageId - Image ID
  */
-export const getHautMaskResults = async (hautBatchId) => {
+export const getHautMaskResults = async hautBatchId => {
   try {
-    console.log("🔵 [Haut.ai] Fetching mask results", { hautBatchId });
+    console.log('🔵 [Haut.ai] Fetching mask results', { hautBatchId });
 
     const formData = new URLSearchParams();
-    formData.append("haut_batch_id", hautBatchId);
+    formData.append('haut_batch_id', hautBatchId);
 
-    const response = await apiClient.post("/haut_mask/", formData.toString(), {
+    const response = await apiClient.post('/haut_mask/', formData.toString(), {
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
     });
 
-    console.log("🔵 response mask results:", response.data);
+    console.log('🔵 response mask results:', response.data);
 
     if (response.data.status === 201 || response.data.status === 200) {
       return response.data.data.result.mask_result;
     }
 
-    throw new Error(response.data.message || "Failed to fetch mask results");
+    throw new Error(response.data.message || 'Failed to fetch mask results');
   } catch (error) {
-    console.error("🔴 [Haut.ai] getHautMaskResults error:", error);
+    console.error('🔴 [Haut.ai] getHautMaskResults error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch mask results"
+      'Failed to fetch mask results',
     );
   }
 };
@@ -996,20 +1045,22 @@ export const getHautMaskResults = async (hautBatchId) => {
  * Retrieves public S3 URLs for mask images.
  * @param {string} hautBatchId - Batch ID
  */
-export const getHautMaskImages = async (hautBatchId) => {
+export const getHautMaskImages = async hautBatchId => {
   try {
-    const response = await apiClient.get(`/haut_mask/?haut_batch_id=${hautBatchId}`);
-    console.log("🔵 response mask images:", response.data);
+    const response = await apiClient.get(
+      `/haut_mask/?haut_batch_id=${hautBatchId}`,
+    );
+    console.log('🔵 response mask images:', response.data);
     if (response.data.status === 200) {
       return response.data.data.result;
     }
-    throw new Error(response.data.message || "Failed to fetch mask images");
+    throw new Error(response.data.message || 'Failed to fetch mask images');
   } catch (error) {
-    console.error("🔴 [Haut.ai] getHautMaskImages error:", error);
+    console.error('🔴 [Haut.ai] getHautMaskImages error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch mask images"
+      'Failed to fetch mask images',
     );
   }
 };
@@ -1018,10 +1069,10 @@ export const getHautMaskImages = async (hautBatchId) => {
  * Converts Haut.ai raw results array into the metrics object expected by the UI.
  * @param {Array} hautResults - Raw array from API
  */
-export const transformHautResults = (hautResults) => {
+export const transformHautResults = hautResults => {
   try {
     if (!Array.isArray(hautResults) || hautResults.length === 0) {
-      throw new Error("Empty Haut.ai results");
+      throw new Error('Empty Haut.ai results');
     }
 
     const data = hautResults[0];
@@ -1029,31 +1080,31 @@ export const transformHautResults = (hautResults) => {
 
     // Check if we have the new FM3 structure
     if (fm3) {
-      console.log("🔵 [Haut.ai] Using new FM3 results structure");
+      console.log('🔵 [Haut.ai] Using new FM3 results structure');
       const metrics = {
         imageQuality: {
           overall: fm3.quality?.front?.score || 0,
           focus: fm3.quality?.front?.has_no_blur ? 100 : 50,
-          lighting: fm3.quality?.front?.has_good_exposure ? 100 : 50
+          lighting: fm3.quality?.front?.has_good_exposure ? 100 : 50,
         },
-        topConcerns: []
+        topConcerns: [],
       };
 
       const KEY_MAP = {
-        breakouts: "acneScore",
-        redness: "rednessScore",
-        pores: "poresScore",
-        age: "perceivedAge",
-        eyes_age: "eyeAge",
-        skintone: "skinTone",
-        skin_type: "skinType",
-        hydration: "hydrationScore",
-        pigmentation: "pigmentationScore",
-        lines: "linesScore",
-        uniformness: "uniformnessScore",
-        dark_circles: "eyeAreaCondition",
-        puffiness: "puffinessScore",
-        sagging: "saggingScore",
+        breakouts: 'acneScore',
+        redness: 'rednessScore',
+        pores: 'poresScore',
+        age: 'perceivedAge',
+        eyes_age: 'eyeAge',
+        skintone: 'skinTone',
+        skin_type: 'skinType',
+        hydration: 'hydrationScore',
+        pigmentation: 'pigmentationScore',
+        lines: 'linesScore',
+        uniformness: 'uniformnessScore',
+        dark_circles: 'eyeAreaCondition',
+        puffiness: 'puffinessScore',
+        sagging: 'saggingScore',
       };
 
       Object.keys(KEY_MAP).forEach(fm3Key => {
@@ -1072,8 +1123,10 @@ export const transformHautResults = (hautResults) => {
           // 3. Handle age-related metrics
           else if (fm3Key === 'age' && typeof fm3Data.age === 'number') {
             metrics[uiKey] = fm3Data.age;
-          }
-          else if (fm3Key === 'eyes_age' && typeof fm3Data.eyes_age === 'number') {
+          } else if (
+            fm3Key === 'eyes_age' &&
+            typeof fm3Data.eyes_age === 'number'
+          ) {
             metrics[uiKey] = fm3Data.eyes_age;
           }
 
@@ -1088,41 +1141,44 @@ export const transformHautResults = (hautResults) => {
     }
 
     // --- FALLBACK: Old loop-based results structure ---
-    console.log("🟡 [Haut.ai] Using legacy results structure");
+    console.log('🟡 [Haut.ai] Using legacy results structure');
     const LEGACY_KEY_MAP = {
-      redness_score: "rednessScore",
-      uniformness_score: "uniformnessScore",
-      pores_score: "poresScore",
-      perceived_age: "perceivedAge",
-      eye_age: "eyeAge",
-      eye_area_condition: "eyeAreaCondition",
-      skintone_class: "skinTone",
-      face_skin_type_class: "skinType",
-      hydration_score: "hydrationScore",
-      pigmentation_score: "pigmentationScore",
-      translucency_score: "translucencyScore",
-      lines_score: "linesScore",
-      acne_score: "acneScore",
-      image_quality_score: "imageQualityOverall",
+      redness_score: 'rednessScore',
+      uniformness_score: 'uniformnessScore',
+      pores_score: 'poresScore',
+      perceived_age: 'perceivedAge',
+      eye_age: 'eyeAge',
+      eye_area_condition: 'eyeAreaCondition',
+      skintone_class: 'skinTone',
+      face_skin_type_class: 'skinType',
+      hydration_score: 'hydrationScore',
+      pigmentation_score: 'pigmentationScore',
+      translucency_score: 'translucencyScore',
+      lines_score: 'linesScore',
+      acne_score: 'acneScore',
+      image_quality_score: 'imageQualityOverall',
     };
 
-    const metrics = { imageQuality: { overall: 0, focus: 0, lighting: 0 }, topConcerns: [] };
+    const metrics = {
+      imageQuality: { overall: 0, focus: 0, lighting: 0 },
+      topConcerns: [],
+    };
     const flat = data.results ?? hautResults;
 
-    flat.forEach((item) => {
+    flat.forEach(item => {
       if (!item) return;
-      const tech = (item.tech_name || "").toLowerCase();
-      const area = (item.area_name || "").toLowerCase();
+      const tech = (item.tech_name || '').toLowerCase();
+      const area = (item.area_name || '').toLowerCase();
       const value = item.value;
 
-      if (tech === "image_quality_score") {
+      if (tech === 'image_quality_score') {
         metrics.imageQuality.overall = value;
-        (item.sub_metrics || []).forEach((sub) => {
+        (item.sub_metrics || []).forEach(sub => {
           const subTech = sub.tech_name?.toLowerCase();
-          if (subTech === "focus_score" || subTech === "raw_sharpness") {
+          if (subTech === 'focus_score' || subTech === 'raw_sharpness') {
             metrics.imageQuality.focus = sub.value;
           }
-          if (subTech === "lightness_score" || subTech === "intensity") {
+          if (subTech === 'lightness_score' || subTech === 'intensity') {
             metrics.imageQuality.lighting = sub.value;
           }
         });
@@ -1131,13 +1187,18 @@ export const transformHautResults = (hautResults) => {
 
       const key = LEGACY_KEY_MAP[tech];
       if (key) {
-        if (area === "face" || metrics[key] === undefined) {
+        if (area === 'face' || metrics[key] === undefined) {
           metrics[key] = value;
-          if (item.is_top_concern === true && !metrics.topConcerns.includes(key)) {
+          if (
+            item.is_top_concern === true &&
+            !metrics.topConcerns.includes(key)
+          ) {
             metrics.topConcerns.push(key);
           }
           if (Array.isArray(item.sub_metrics)) {
-            const hasTopConcernSubMetric = item.sub_metrics.some((sub) => sub.is_top_concern === true);
+            const hasTopConcernSubMetric = item.sub_metrics.some(
+              sub => sub.is_top_concern === true,
+            );
             if (hasTopConcernSubMetric && !metrics.topConcerns.includes(key)) {
               metrics.topConcerns.push(key);
             }
@@ -1148,7 +1209,7 @@ export const transformHautResults = (hautResults) => {
 
     return metrics;
   } catch (error) {
-    console.error("🔴 transformHautResults error:", error);
+    console.error('🔴 transformHautResults error:', error);
     return {};
   }
 };
@@ -1158,19 +1219,29 @@ export const transformHautResults = (hautResults) => {
  * User ID is inferred from access token; no params required.
  */
 export const getUserPhotos = async (page = 1, limit = 10) => {
-
   try {
     // Check if user is authenticated before making API call
     const authStore = require('../stores/authStore').default;
     const { user, isAuthenticated } = authStore.getState();
 
     if (!isAuthenticated || !user?.user_id) {
-      console.log("🔴 getUserPhotos: User not authenticated, skipping API call");
+      console.log(
+        '🔴 getUserPhotos: User not authenticated, skipping API call',
+      );
       throw new Error('User not authenticated');
     }
 
-    console.log("🔵 Fetching user photos - page:", page, "limit:", limit, "user:", user.user_id);
-    const response = await apiClient.get(`/haut_process/?page=${page}&limit=${limit}`);
+    console.log(
+      '🔵 Fetching user photos - page:',
+      page,
+      'limit:',
+      limit,
+      'user:',
+      user.user_id,
+    );
+    const response = await apiClient.get(
+      `/haut_process/?page=${page}&limit=${limit}`,
+    );
 
     if (response.data.status === 200) {
       const apiData = response.data.data;
@@ -1179,7 +1250,7 @@ export const getUserPhotos = async (page = 1, limit = 10) => {
         !Array.isArray(apiData.result) ||
         apiData.result.length === 0
       ) {
-        console.log("ℹ️ No photos found for user");
+        console.log('ℹ️ No photos found for user');
         return {
           photos: [],
           pagination: {
@@ -1188,12 +1259,12 @@ export const getUserPhotos = async (page = 1, limit = 10) => {
             limit: limit,
             pages: 0,
             has_next: false,
-            has_prev: false
-          }
+            has_prev: false,
+          },
         };
       }
 
-      const photos = apiData.result.map((photo) => ({
+      const photos = apiData.result.map(photo => ({
         id: photo.image_id,
         storageUrl: photo.front_image,
         timestamp: new Date(photo.created_at),
@@ -1202,7 +1273,7 @@ export const getUserPhotos = async (page = 1, limit = 10) => {
         metrics: {},
         hautUploadData: {
           imageId: photo.image_id,
-          hautBatchId: photo.haut_batch_id
+          hautBatchId: photo.haut_batch_id,
         },
         apiData: { ...photo },
       }));
@@ -1215,14 +1286,14 @@ export const getUserPhotos = async (page = 1, limit = 10) => {
           limit: limit,
           pages: 1,
           has_next: false,
-          has_prev: false
-        }
+          has_prev: false,
+        },
       };
     }
 
-    throw new Error(response.data.message || "Failed to fetch photos");
+    throw new Error(response.data.message || 'Failed to fetch photos');
   } catch (error) {
-    console.error("🔴 getUserPhotos error:", error);
+    console.error('🔴 getUserPhotos error:', error);
 
     // Error is handled by global interceptor retry
     throw error;
@@ -1239,7 +1310,7 @@ export const getUserPhotos = async (page = 1, limit = 10) => {
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch photos"
+      'Failed to fetch photos',
     );
   }
 };
@@ -1249,27 +1320,29 @@ export const getUserPhotos = async (page = 1, limit = 10) => {
  * @param {string} imageId - Image ID to delete
  * @returns {Promise<Object>} Success response
  */
-export const deletePhoto = async (imageId) => {
+export const deletePhoto = async imageId => {
   try {
-    console.log("🔵 Deleting photo with ID:", imageId);
+    console.log('🔵 Deleting photo with ID:', imageId);
 
     const response = await apiClient.delete(
-      `/haut_process/?image_id=${imageId}`
+      `/haut_process/?image_id=${imageId}`,
     );
 
     if (response.data.status === 200) {
-      console.log("✅ Photo deleted successfully");
+      console.log('✅ Photo deleted successfully');
       return {
         success: true,
-        message: response.data.message || "Photo deleted successfully",
+        message: response.data.message || 'Photo deleted successfully',
       };
     } else {
-      throw new Error(response.data.message || "Failed to delete photo");
+      throw new Error(response.data.message || 'Failed to delete photo');
     }
   } catch (error) {
-    console.error("🔴 deletePhoto error:", error);
+    console.error('🔴 deletePhoto error:', error);
     throw new Error(
-      error.response?.data?.message || error.message || "Failed to delete photo"
+      error.response?.data?.message ||
+      error.message ||
+      'Failed to delete photo',
     );
   }
 };
@@ -1286,33 +1359,33 @@ export const deletePhoto = async (imageId) => {
  * @param {string} dateFilter - Date filter (default: 'older_than_6_months')
  * @returns {Promise<Object>} Comparison data with processed photo metrics
  */
-export const getComparison = async (dateFilter = "older_than_6_months") => {
+export const getComparison = async (dateFilter = 'older_than_6_months') => {
   try {
-    console.log("🔵 Fetching comparison data with filter:", dateFilter);
+    console.log('🔵 Fetching comparison data with filter:', dateFilter);
 
     const response = await apiClient.get(
-      `/comparison/?date_filter=${dateFilter}`
+      `/comparison/?date_filter=${dateFilter}`,
     );
 
-    console.log("🔵 response of getComparison: in apiService", response.data);
+    console.log('🔵 response of getComparison: in apiService', response.data);
 
     if (response.data.status === 200) {
-      console.log("✅ Comparison data fetched successfully");
+      console.log('✅ Comparison data fetched successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
       throw new Error(
-        response.data.message || "Failed to fetch comparison data"
+        response.data.message || 'Failed to fetch comparison data',
       );
     }
   } catch (error) {
-    console.error("🔴 getComparison error:", error);
+    console.error('🔴 getComparison error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch comparison data"
+      'Failed to fetch comparison data',
     );
   }
 };
@@ -1322,45 +1395,44 @@ export const getComparison = async (dateFilter = "older_than_6_months") => {
  * @param {string} concern - The concern name to toggle (e.g., "Breakouts")
  * @returns {Promise<Object>} Success response with updated top concerns
  */
-export const toggleTopConcern = async (concern) => {
+export const toggleTopConcern = async concern => {
   try {
-    console.log("🔵 Toggling top concern:", concern);
+    console.log('🔵 Toggling top concern:', concern);
 
     const response = await apiClient.patch(
-      "/haut_process/top-concerns/toggle",
-      { concern: concern }
+      '/haut_process/top-concerns/toggle',
+      { concern: concern },
     );
 
     if (response.data.status === 200 || response.status === 200) {
-      console.log("✅ Top concern toggled successfully", response.data.data);
+      console.log('✅ Top concern toggled successfully', response.data.data);
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to toggle top concern");
+      throw new Error(response.data.message || 'Failed to toggle top concern');
     }
   } catch (error) {
-    console.error("🔴 toggleTopConcern error:", error);
+    console.error('🔴 toggleTopConcern error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to toggle top concern"
+      'Failed to toggle top concern',
     );
   }
 };
-
 
 /**
  * Transforms comparison API response into photo format expected by MetricsSeries
  * @param {Object} comparisonData - Raw comparison data from API
  * @returns {Array} Array of photo objects with metrics for MetricsSeries
  */
-export const transformComparisonData = (comparisonData) => {
-  console.log("🔵 comparisonData:", comparisonData);
+export const transformComparisonData = comparisonData => {
+  console.log('🔵 comparisonData:', comparisonData);
   try {
     if (!comparisonData?.result?.score_img_data) {
-      console.log("ℹ️ No score image data found in comparison response");
+      console.log('ℹ️ No score image data found in comparison response');
       return [];
     }
 
@@ -1377,30 +1449,36 @@ export const transformComparisonData = (comparisonData) => {
 
         // Map API condition names to MetricsSeries expected metric keys
         const conditionMapping = {
-          acne: "acneScore",
-          age: "perceivedAge",
-          eyes_age: "eyeAge",
-          eye_bags: "eyeAreaCondition",
-          hydration: "hydrationScore",
-          lines: "linesScore",
-          pigmentation: "pigmentationScore",
-          pores: "poresScore",
-          redness: "rednessScore",
-          translucency: "translucencyScore",
-          uniformness: "uniformnessScore",
-          skin_type: "skinType",
+          acne: 'acneScore',
+          breakouts: 'acneScore',
+          age: 'perceivedAge',
+          eyes_age: 'eyeAge',
+          eye_bags: 'eyeAreaCondition',
+          dark_circles: 'eyeAreaCondition',
+          hydration: 'hydrationScore',
+          lines: 'linesScore',
+          pigmentation: 'pigmentationScore',
+          pores: 'poresScore',
+          redness: 'rednessScore',
+          translucency: 'translucencyScore',
+          uniformness: 'uniformnessScore',
+          skin_type: 'skinType',
+          skintone: 'skinTone',
+          puffiness: 'puffinessScore',
+          sagging: 'saggingScore',
+          quality: 'imageQuality',
         };
 
         console.log(conditions, 'conditions from transformComparisonData');
         console.log(photoData, 'photoData from transformComparisonData');
 
         // Convert conditions array to metrics object
-        conditions.forEach((condition) => {
+        conditions.forEach(condition => {
           const metricKey = conditionMapping[condition.skin_condition_name];
           if (metricKey) {
             // For skin_type, store the skin_condition_type instead of score
-            if (metricKey === "skinType") {
-              console.log("skin type in progress");
+            if (metricKey === 'skinType') {
+              console.log('skin type in progress');
               metrics[metricKey] = condition.skin_condition_type;
             } else {
               metrics[metricKey] = condition.skin_condition_score;
@@ -1427,15 +1505,15 @@ export const transformComparisonData = (comparisonData) => {
           },
           apiData: photoData,
         };
-      }
+      },
     );
 
     console.log(
-      `✅ Transformed ${transformedPhotos.length} photos from comparison data`
+      `✅ Transformed ${transformedPhotos.length} photos from comparison data`,
     );
     return transformedPhotos;
   } catch (error) {
-    console.error("🔴 transformComparisonData error:", error);
+    console.error('🔴 transformComparisonData error:', error);
     return [];
   }
 };
@@ -1447,16 +1525,31 @@ export const transformComparisonData = (comparisonData) => {
  * @param {string} params.sort_order - Sort order ('asc' or 'desc'), defaults to 'desc'
  * @returns {Promise<Object>} Skin trend scores data
  */
-export const getSkinTrendScores = async ({ skin_condition_name, sort_order = 'desc' }) => {
+export const getSkinTrendScores = async ({
+  skin_condition_name,
+  sort_order = 'desc',
+}) => {
   const allowedConditions = [
-    'hydration', 'uniformness', 'redness', 'translucency', 'lines',
-    'eye_bags', 'pores', 'skin_tone', 'pigmentation', 'acne',
-    'eyes_age', 'age', 'skin_type'
+    'hydration',
+    'uniformness',
+    'redness',
+    'translucency',
+    'lines',
+    'eye_bags',
+    'pores',
+    'skin_tone',
+    'pigmentation',
+    'acne',
+    'eyes_age',
+    'age',
+    'skin_type',
   ];
 
   if (!allowedConditions.includes(skin_condition_name)) {
     throw new Error(
-      `Invalid skin_condition_name: ${skin_condition_name}. Must be one of ${allowedConditions.join(", ")}`
+      `Invalid skin_condition_name: ${skin_condition_name}. Must be one of ${allowedConditions.join(
+        ', ',
+      )}`,
     );
   }
 
@@ -1465,30 +1558,38 @@ export const getSkinTrendScores = async ({ skin_condition_name, sort_order = 'de
   }
 
   try {
-    console.log("🔵 Fetching skin trend scores:", { skin_condition_name, sort_order });
-    const response = await apiClient.get("/haut_mask/skin-trend-scores", {
+    console.log('🔵 Fetching skin trend scores:', {
+      skin_condition_name,
+      sort_order,
+    });
+    const response = await apiClient.get('/haut_mask/skin-trend-scores', {
       params: { skin_condition_name, sort_order },
     });
 
-    console.log('🔵 response of getSkinTrendScores: in apiService', response.status);
+    console.log(
+      '🔵 response of getSkinTrendScores: in apiService',
+      response.status,
+    );
 
     if (response.status === 200) {
-      console.log("✅ Skin trend scores fetched successfully");
+      console.log('✅ Skin trend scores fetched successfully');
       return {
         success: true,
         data: response.data,
       };
     } else {
-      console.log("in else block of getSkinTrendScores");
+      console.log('in else block of getSkinTrendScores');
 
-      throw new Error(response.data.message || "Failed to fetch skin trend scores");
+      throw new Error(
+        response.data.message || 'Failed to fetch skin trend scores',
+      );
     }
   } catch (error) {
-    console.error("🔴 getSkinTrendScores error:", error);
+    console.error('🔴 getSkinTrendScores error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch skin trend scores"
+      'Failed to fetch skin trend scores',
     );
   }
 };
@@ -1502,35 +1603,35 @@ export const getSkinTrendScores = async ({ skin_condition_name, sort_order = 'de
  */
 export const getChatHistory = async ({ type, image_id }) => {
   const allowedTypes = [
-    "motivational",
-    "routine_check",
-    "snapshot_feedback",
-    "product_recommendation",
-    "weather_alert",
+    'motivational',
+    'routine_check',
+    'snapshot_feedback',
+    'product_recommendation',
+    'weather_alert',
   ];
   if (!allowedTypes.includes(type)) {
     throw new Error(
-      `Invalid type: ${type}. Must be one of ${allowedTypes.join(", ")}`
+      `Invalid type: ${type}. Must be one of ${allowedTypes.join(', ')}`,
     );
   }
   if (!image_id) {
-    throw new Error("image_id is required");
+    throw new Error('image_id is required');
   }
   try {
-    console.log("🔵 Fetching chat history:", { type, image_id });
-    const response = await apiClient.get("/chat/", {
+    console.log('🔵 Fetching chat history:', { type, image_id });
+    const response = await apiClient.get('/chat/', {
       params: { type, image_id },
     });
     if (response.data.status === 200) {
       return response.data;
     }
-    throw new Error(response.data.message || "Failed to fetch chat history");
+    throw new Error(response.data.message || 'Failed to fetch chat history');
   } catch (error) {
-    console.error("🔴 getChatHistory error:", error);
+    console.error('🔴 getChatHistory error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch chat history"
+      'Failed to fetch chat history',
     );
   }
 };
@@ -1547,35 +1648,35 @@ export const getChatHistory = async ({ type, image_id }) => {
  * @param {Array} body.excludedMetrics - Array of excluded metrics
  * @returns {Promise<Object>} Chat response
  */
-export const postChatMessage = async (body) => {
+export const postChatMessage = async body => {
   const allowedTypes = [
-    "motivational",
-    "routine_check",
-    "snapshot_feedback",
-    "product_recommendation",
-    "weather_alert",
+    'motivational',
+    'routine_check',
+    'snapshot_feedback',
+    'product_recommendation',
+    'weather_alert',
   ];
   if (!allowedTypes.includes(body.type)) {
     throw new Error(
-      `Invalid type: ${body.type}. Must be one of ${allowedTypes.join(", ")}`
+      `Invalid type: ${body.type}. Must be one of ${allowedTypes.join(', ')}`,
     );
   }
   if (!body.image_id) {
-    throw new Error("image_id is required");
+    throw new Error('image_id is required');
   }
   try {
-    console.log("🔵 Posting chat message:", body);
-    const response = await apiClient.post("/chat/", body);
+    console.log('🔵 Posting chat message:', body);
+    const response = await apiClient.post('/chat/', body);
     if (response.data.status === 200) {
       return response.data;
     }
-    throw new Error(response.data.message || "Failed to post chat message");
+    throw new Error(response.data.message || 'Failed to post chat message');
   } catch (error) {
-    console.error("🔴 postChatMessage error:", error);
+    console.error('🔴 postChatMessage error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to post chat message"
+      'Failed to post chat message',
     );
   }
 };
@@ -1588,10 +1689,10 @@ export const postChatMessage = async (body) => {
  * @param {string} email - Expert's email
  * @returns {Promise<Object>} Response data
  */
-export const generateExpertReportLink = async (email) => {
+export const generateExpertReportLink = async email => {
   try {
-    console.log("🔵 Generating expert report link for:", email);
-    const response = await apiClient.post("/expert-view/generate-report-link", {
+    console.log('🔵 Generating expert report link for:', email);
+    const response = await apiClient.post('/expert-view/generate-report-link', {
       expert_email: email,
     });
 
@@ -1599,13 +1700,13 @@ export const generateExpertReportLink = async (email) => {
       return response.data;
     }
 
-    throw new Error(response.data.message || "Failed to generate report link");
+    throw new Error(response.data.message || 'Failed to generate report link');
   } catch (error) {
-    console.error("🔴 generateExpertReportLink error:", error);
+    console.error('🔴 generateExpertReportLink error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to generate report link"
+      'Failed to generate report link',
     );
   }
 };
@@ -1615,43 +1716,51 @@ export const generateExpertReportLink = async (email) => {
 // -----------------------------------------------------------------------------
 
 // Enhanced createThread function with retry logic and better error handling
-export const createThread = async (messageData) => {
+export const createThread = async messageData => {
   try {
-    console.log("🔵 Creating new thread:", messageData);
+    console.log('🔵 Creating new thread:', messageData);
 
     // For snapshot_feedback type, include image_id if provided
     const requestData = { ...messageData };
-    if (messageData.thread_type === 'snapshot_feedback' && messageData.image_id) {
+    if (
+      messageData.thread_type === 'snapshot_feedback' &&
+      messageData.image_id
+    ) {
       requestData.image_id = messageData.image_id;
     }
 
-    console.log(requestData, 'rqust dtat')
+    console.log(requestData, 'rqust dtat');
 
-    const response = await apiClient.post("/thread/message", requestData);
+    const response = await apiClient.post('/thread/message', requestData);
 
     if (response.data.status === 200) {
-      console.log("✅ Thread created successfully");
+      console.log('✅ Thread created successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to create thread");
+      throw new Error(response.data.message || 'Failed to create thread');
     }
   } catch (error) {
-    console.error("🔴 createThread error:", error);
+    console.error('🔴 createThread error:', error);
 
     // Enhanced error logging
     if (error.code === 'ECONNABORTED') {
-      console.error("🔴 Request timeout - server took too long to respond");
+      console.error('🔴 Request timeout - server took too long to respond');
     } else if (error.message === 'Network Error') {
-      console.error("🔴 Network error - check internet connection or server availability");
+      console.error(
+        '🔴 Network error - check internet connection or server availability',
+      );
     } else if (error.response) {
-      console.error("🔴 Server error:", error.response.status, error.response.data);
+      console.error(
+        '🔴 Server error:',
+        error.response.status,
+        error.response.data,
+      );
     } else if (error.request) {
-      console.error("🔴 No response received - server might be down");
+      console.error('🔴 No response received - server might be down');
     }
-
 
     // If we've exhausted retries or it's not a retryable error, throw a user-friendly error
     const userFriendlyMessage = getUserFriendlyErrorMessage(error);
@@ -1659,9 +1768,8 @@ export const createThread = async (messageData) => {
   }
 };
 
-
 // Helper function to provide user-friendly error messages
-const getUserFriendlyErrorMessage = (error) => {
+const getUserFriendlyErrorMessage = error => {
   if (error.message === 'Network Error') {
     return 'Network connection issue. Please check your internet connection and try again.';
   } else if (error.code === 'ECONNABORTED') {
@@ -1683,45 +1791,58 @@ const getUserFriendlyErrorMessage = (error) => {
 
 // Enhanced sendThreadMessage function with retry logic and better error handling
 export const sendThreadMessage = async (threadId, messageData) => {
-
   try {
-    console.log("🔵 Sending thread message:", { threadId, messageData });
-    console.log("🔵 threadId:", threadId);
-    console.log("🔵 messageData:", messageData);
+    console.log('🔵 Sending thread message:', { threadId, messageData });
+    console.log('🔵 threadId:', threadId);
+    console.log('🔵 messageData:', messageData);
 
     // For snapshot_feedback type, include image_id if provided
     const requestData = { ...messageData };
-    if (messageData.thread_type === 'snapshot_feedback' && messageData.image_id) {
+    if (
+      messageData.thread_type === 'snapshot_feedback' &&
+      messageData.image_id
+    ) {
       requestData.image_id = messageData.image_id;
     }
 
-    const response = await apiClient.post(`/thread/message/${threadId}`, requestData);
-    console.log("🔵 response of sendThreadMessage: in apiService", response);
+    const response = await apiClient.post(
+      `/thread/message/${threadId}`,
+      requestData,
+    );
+    console.log('🔵 response of sendThreadMessage: in apiService', response);
 
     if (response.data.status === 200) {
-      console.log("✅ Thread message sent successfully");
-      console.log("🔵 response of sendThreadMessage: in apiService", response.data);
+      console.log('✅ Thread message sent successfully');
+      console.log(
+        '🔵 response of sendThreadMessage: in apiService',
+        response.data,
+      );
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to send thread message");
+      throw new Error(response.data.message || 'Failed to send thread message');
     }
   } catch (error) {
-    console.error("🔴 sendThreadMessage error:", error);
+    console.error('🔴 sendThreadMessage error:', error);
 
     // Enhanced error logging
     if (error.code === 'ECONNABORTED') {
-      console.error("🔴 Request timeout - server took too long to respond");
+      console.error('🔴 Request timeout - server took too long to respond');
     } else if (error.message === 'Network Error') {
-      console.error("🔴 Network error - check internet connection or server availability");
+      console.error(
+        '🔴 Network error - check internet connection or server availability',
+      );
     } else if (error.response) {
-      console.error("🔴 Server error:", error.response.status, error.response.data);
+      console.error(
+        '🔴 Server error:',
+        error.response.status,
+        error.response.data,
+      );
     } else if (error.request) {
-      console.error("🔴 No response received - server might be down");
+      console.error('🔴 No response received - server might be down');
     }
-
 
     // If we've exhausted retries or it's not a retryable error, throw a user-friendly error
     const userFriendlyMessage = getUserFriendlyErrorMessage(error);
@@ -1737,27 +1858,30 @@ export const sendThreadMessage = async (threadId, messageData) => {
  */
 export const confirmThreadItem = async (threadId, item, bool) => {
   try {
-    console.log("🔵 Confirming thread item:", { threadId, item });
+    console.log('🔵 Confirming thread item:', { threadId, item });
 
-    const response = await apiClient.post(`/thread/thread/${threadId}/confirm-item?user_decline=${bool}`, {
-      item
-    });
+    const response = await apiClient.post(
+      `/thread/thread/${threadId}/confirm-item?user_decline=${bool}`,
+      {
+        item,
+      },
+    );
 
     if (response.data.status === 200) {
-      console.log("✅ Thread item confirmed successfully");
+      console.log('✅ Thread item confirmed successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to confirm thread item");
+      throw new Error(response.data.message || 'Failed to confirm thread item');
     }
   } catch (error) {
-    console.error("🔴 confirmThreadItem error:", error);
+    console.error('🔴 confirmThreadItem error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to confirm thread item"
+      'Failed to confirm thread item',
     );
   }
 };
@@ -1767,28 +1891,33 @@ export const confirmThreadItem = async (threadId, item, bool) => {
  * @param {string} imageId - Image ID
  * @returns {Promise<Object>} Chat history data
  */
-export const getChatHistoryByImageId = async (imageId) => {
+export const getChatHistoryByImageId = async imageId => {
   try {
-    console.log("🔵 Fetching chat history for image_id:", imageId);
+    console.log('🔵 Fetching chat history for image_id:', imageId);
 
-    const response = await apiClient.get(`/thread/get-latest-chat?image_id=${imageId}`);
+    const response = await apiClient.get(
+      `/thread/get-latest-chat?image_id=${imageId}`,
+    );
 
     if (response.data.status === 200) {
-      console.log("🔵 response of getChatHistoryByImageId: in apiService", response.data);
-      console.log("✅ Chat history fetched successfully");
+      console.log(
+        '🔵 response of getChatHistoryByImageId: in apiService',
+        response.data,
+      );
+      console.log('✅ Chat history fetched successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to fetch chat history");
+      throw new Error(response.data.message || 'Failed to fetch chat history');
     }
   } catch (error) {
-    console.error("🔴 getChatHistoryByImageId error:", error);
+    console.error('🔴 getChatHistoryByImageId error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch chat history"
+      'Failed to fetch chat history',
     );
   }
 };
@@ -1805,11 +1934,11 @@ export const getChatHistoryByImageId = async (imageId) => {
  * @param {Object} chatData.metrics - Metrics object
  * @returns {Promise<Object>} Chat response
  */
-export const sendSnapshotFirstChat = async (chatData) => {
+export const sendSnapshotFirstChat = async chatData => {
   try {
-    console.log("🔵 Sending snapshot first chat:", chatData);
+    console.log('🔵 Sending snapshot first chat:', chatData);
 
-    const response = await apiClient.post("/thread/snapshot-first-chat", {
+    const response = await apiClient.post('/thread/snapshot-first-chat', {
       imageId: chatData.imageId,
       firstName: chatData.firstName,
       age: chatData.age,
@@ -1820,20 +1949,22 @@ export const sendSnapshotFirstChat = async (chatData) => {
     });
 
     if (response.data.status === 200) {
-      console.log("✅ Snapshot first chat sent successfully");
+      console.log('✅ Snapshot first chat sent successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to send snapshot first chat");
+      throw new Error(
+        response.data.message || 'Failed to send snapshot first chat',
+      );
     }
   } catch (error) {
-    console.error("🔴 sendSnapshotFirstChat error:", error);
+    console.error('🔴 sendSnapshotFirstChat error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to send snapshot first chat"
+      'Failed to send snapshot first chat',
     );
   }
 };
@@ -1847,24 +1978,22 @@ export const sendSnapshotFirstChat = async (chatData) => {
  * @returns {Promise<Object>} Routine items data
  */
 export const getRoutineItems = async () => {
-
   try {
-    console.log("🔵 Fetching routine items...");
+    console.log('🔵 Fetching routine items...');
 
-    const response = await apiClient.get("/routine/");
+    const response = await apiClient.get('/routine/');
 
     if (response.data.status === 200) {
-      console.log("✅ Routine items fetched successfully");
+      console.log('✅ Routine items fetched successfully');
       return {
         success: true,
         data: response.data.data || [],
       };
     } else {
-      throw new Error(response.data.message || "Failed to fetch routine items");
+      throw new Error(response.data.message || 'Failed to fetch routine items');
     }
   } catch (error) {
-    console.error("🔴 getRoutineItems error:", error);
-
+    console.error('🔴 getRoutineItems error:', error);
 
     // Handle network errors
     if (error.code === 'ECONNABORTED') {
@@ -1878,7 +2007,7 @@ export const getRoutineItems = async () => {
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch routine items"
+      'Failed to fetch routine items',
     );
   }
 };
@@ -1894,84 +2023,86 @@ export const getRoutineItems = async () => {
  * @param {Object} [itemData.extra] - Additional data (optional)
  * @returns {Promise<Object>} Created item response
  */
-export const createRoutineItem = async (itemData) => {
+export const createRoutineItem = async itemData => {
   try {
-    console.log("🔵 Creating routine item:", itemData);
+    console.log('🔵 Creating routine item:', itemData);
 
     // Create form data as API expects application/x-www-form-urlencoded
     const formData = new URLSearchParams();
-    formData.append("name", itemData.name);
-    formData.append("type", itemData.type?.toLowerCase() || '');
+    formData.append('name', itemData.name);
+    formData.append('type', itemData.type?.toLowerCase() || '');
 
     // Only add usage and frequency for non-treatment types
     if (itemData.usage) {
-      formData.append("usage", itemData.usage.toLowerCase());
+      formData.append('usage', itemData.usage.toLowerCase());
     }
     if (itemData.frequency) {
-      formData.append("frequency", itemData.frequency.toLowerCase().replace(" ", "_"));
+      formData.append(
+        'frequency',
+        itemData.frequency.toLowerCase().replace(' ', '_'),
+      );
     }
 
     // Add UPC code if provided (for scanned products)
     if (itemData.upc) {
-      formData.append("upc", itemData.upc);
+      formData.append('upc', itemData.upc);
     }
 
     // Add brand if provided
     if (itemData.brand_name) {
-      formData.append("brand_name", itemData.brand_name);
+      formData.append('brand_name', itemData.brand_name);
     }
 
     // Add image_url if provided
     if (itemData.image_url) {
-      formData.append("image_url", itemData.image_url);
+      formData.append('image_url', itemData.image_url);
     }
 
     // Add new fields for updated API
     if (itemData.concern && Array.isArray(itemData.concern)) {
-      formData.append("concern", JSON.stringify(itemData.concern));
+      formData.append('concern', JSON.stringify(itemData.concern));
     }
 
     // Handle treatment types differently - use treatment_date instead of start_date/end_date
-    const isTreatmentType = itemData.type && (
-      itemData.type.toLowerCase() !== 'product'
-    );
+    const isTreatmentType =
+      itemData.type && itemData.type.toLowerCase() !== 'product';
 
     if (isTreatmentType) {
       if (itemData.treatment_date) {
-        formData.append("treatment_date", itemData.treatment_date);
+        formData.append('treatment_date', itemData.treatment_date);
       }
     } else {
       if (itemData.start_date) {
-        formData.append("start_date", itemData.start_date);
+        formData.append('start_date', itemData.start_date);
       }
       if (itemData.end_date) {
-        formData.append("end_date", itemData.end_date);
+        formData.append('end_date', itemData.end_date);
       }
     }
 
-    formData.append("extra", JSON.stringify(itemData.extra || {}));
+    formData.append('extra', JSON.stringify(itemData.extra || {}));
 
-    const response = await apiClient.post("/routine/", formData.toString(), {
+    const response = await apiClient.post('/routine/', formData.toString(), {
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+        'Content-Type': 'application/x-www-form-urlencoded',
       },
     });
 
     if (response.data.status === 201 || response.data.status === 200) {
-      console.log("✅ Routine item created successfully");
+      console.log('✅ Routine item created successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to create routine item");
+      throw new Error(response.data.message || 'Failed to create routine item');
     }
   } catch (error) {
-    console.error("🔴 createRoutineItem error:", error);
+    console.error('🔴 createRoutineItem error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to create routine item"
+      'Failed to create routine item',
     );
   }
 };
@@ -1989,69 +2120,75 @@ export const createRoutineItem = async (itemData) => {
  */
 export const updateRoutineItem = async (itemId, itemData) => {
   try {
-    console.log("🔵 Updating routine item:", itemId, itemData);
+    console.log('🔵 Updating routine item:', itemId, itemData);
 
     // Create form data as API expects application/x-www-form-urlencoded
     const formData = new URLSearchParams();
-    formData.append("type", itemData.type?.toLowerCase() || '');
-    if (itemData.upc) formData.append("upc", itemData.upc);
-    if (itemData.brand_name) formData.append("brand_name", itemData.brand_name);
-    if (itemData.image_url) formData.append("image_url", itemData.image_url);
+    formData.append('type', itemData.type?.toLowerCase() || '');
+    if (itemData.upc) formData.append('upc', itemData.upc);
+    if (itemData.brand_name) formData.append('brand_name', itemData.brand_name);
+    if (itemData.image_url) formData.append('image_url', itemData.image_url);
 
     // Only add usage and frequency if they exist (for non-treatment types)
     if (itemData.usage) {
-      formData.append("usage", itemData.usage.toLowerCase());
+      formData.append('usage', itemData.usage.toLowerCase());
     }
     if (itemData.frequency) {
-      formData.append("frequency", itemData.frequency.toLowerCase().replace(" ", "_"));
+      formData.append(
+        'frequency',
+        itemData.frequency.toLowerCase().replace(' ', '_'),
+      );
     }
 
     // Add new fields for updated API
     if (itemData.concern && Array.isArray(itemData.concern)) {
-      formData.append("concern", JSON.stringify(itemData.concern));
+      formData.append('concern', JSON.stringify(itemData.concern));
     }
 
     // Handle treatment types differently - use treatment_date instead of start_date/end_date
-    const isTreatmentType = itemData.type && (
-      itemData.type.toLowerCase() !== 'product'
-    );
+    const isTreatmentType =
+      itemData.type && itemData.type.toLowerCase() !== 'product';
 
     if (isTreatmentType) {
       if (itemData.treatment_date) {
-        formData.append("treatment_date", itemData.treatment_date);
+        formData.append('treatment_date', itemData.treatment_date);
       }
     } else {
       if (itemData.start_date) {
-        formData.append("start_date", itemData.start_date);
+        formData.append('start_date', itemData.start_date);
       }
       if (itemData.end_date) {
-        formData.append("end_date", itemData.end_date);
+        formData.append('end_date', itemData.end_date);
       }
     }
 
-    formData.append("extra", JSON.stringify(itemData.extra || {}));
+    formData.append('extra', JSON.stringify(itemData.extra || {}));
 
-    const response = await apiClient.patch(`/routine/${itemId}`, formData.toString(), {
-      headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
+    const response = await apiClient.patch(
+      `/routine/${itemId}`,
+      formData.toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       },
-    });
+    );
 
     if (response.data.status === 200) {
-      console.log("✅ Routine item updated successfully");
+      console.log('✅ Routine item updated successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to update routine item");
+      throw new Error(response.data.message || 'Failed to update routine item');
     }
   } catch (error) {
-    console.error("🔴 updateRoutineItem error:", error);
+    console.error('🔴 updateRoutineItem error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to update routine item"
+      'Failed to update routine item',
     );
   }
 };
@@ -2064,35 +2201,39 @@ export const updateRoutineItem = async (itemId, itemData) => {
  */
 export const rateEffectiveness = async (routineItemId, ratings) => {
   try {
-    console.log("🔵 Rating effectiveness for routine item:", routineItemId, ratings);
+    console.log(
+      '🔵 Rating effectiveness for routine item:',
+      routineItemId,
+      ratings,
+    );
 
     const response = await apiClient.patch(
       `/routine/${routineItemId}/rate-effectiveness`,
       {
-        ratings: ratings
+        ratings: ratings,
       },
       {
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-      }
+      },
     );
 
     if (response.data.status === 200 || response.status === 200) {
-      console.log("✅ Effectiveness rated successfully");
+      console.log('✅ Effectiveness rated successfully');
       return {
         success: true,
         data: response.data.data || response.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to rate effectiveness");
+      throw new Error(response.data.message || 'Failed to rate effectiveness');
     }
   } catch (error) {
-    console.error("🔴 rateEffectiveness error:", error);
+    console.error('🔴 rateEffectiveness error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to rate effectiveness"
+      'Failed to rate effectiveness',
     );
   }
 };
@@ -2105,35 +2246,39 @@ export const rateEffectiveness = async (routineItemId, ratings) => {
  */
 export const toggleTracking = async (routineItemId, action) => {
   try {
-    console.log("🔵 Toggling tracking for routine item:", routineItemId, action);
+    console.log(
+      '🔵 Toggling tracking for routine item:',
+      routineItemId,
+      action,
+    );
 
     const response = await apiClient.patch(
       `/routine/${routineItemId}/toggle-tracking`,
       {
-        action: action
+        action: action,
       },
       {
         headers: {
-          "Content-Type": "application/json",
+          'Content-Type': 'application/json',
         },
-      }
+      },
     );
 
     if (response.data.status === 200 || response.status === 200) {
-      console.log("✅ Tracking toggled successfully");
+      console.log('✅ Tracking toggled successfully');
       return {
         success: true,
         data: response.data.data || response.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to toggle tracking");
+      throw new Error(response.data.message || 'Failed to toggle tracking');
     }
   } catch (error) {
-    console.error("🔴 toggleTracking error:", error);
+    console.error('🔴 toggleTracking error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to toggle tracking"
+      'Failed to toggle tracking',
     );
   }
 };
@@ -2143,36 +2288,38 @@ export const toggleTracking = async (routineItemId, action) => {
  * @param {string} itemId - Item ID to delete
  * @returns {Promise<Object>} Delete response
  */
-export const deleteRoutineItem = async (itemId) => {
+export const deleteRoutineItem = async itemId => {
   try {
-    console.log("🔵 Deleting routine item:", itemId);
+    console.log('🔵 Deleting routine item:', itemId);
 
     const response = await apiClient.delete(`/routine/${itemId}`);
 
     if (response.data.status === 200) {
-      console.log("✅ Routine item deleted successfully");
+      console.log('✅ Routine item deleted successfully');
       return {
         success: true,
-        message: response.data.message || "Item deleted successfully",
+        message: response.data.message || 'Item deleted successfully',
       };
     } else {
-      throw new Error(response.data.message || "Failed to delete routine item");
+      throw new Error(response.data.message || 'Failed to delete routine item');
     }
   } catch (error) {
-    console.error("🔴 deleteRoutineItem error:", error);
+    console.error('🔴 deleteRoutineItem error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to delete routine item"
+      'Failed to delete routine item',
     );
   }
 };
 
-export const getImageChatSummary = async (image_id) => {
+export const getImageChatSummary = async image_id => {
   try {
     console.log('🔵 Fetching image chat summary:', { image_id });
 
-    const response = await apiClient.get(`/thread/get-image-chat-summary?image_id=${image_id}`);
+    const response = await apiClient.get(
+      `/thread/get-image-chat-summary?image_id=${image_id}`,
+    );
 
     console.log('🔵 Response of getImageChatSummary:', response);
 
@@ -2181,10 +2328,12 @@ export const getImageChatSummary = async (image_id) => {
       return {
         success: true,
         summary: response.data.data.result?.summary || null,
-        data: response.data
+        data: response.data,
       };
     } else {
-      throw new Error(response.data.message || 'Failed to fetch image chat summary');
+      throw new Error(
+        response.data.message || 'Failed to fetch image chat summary',
+      );
     }
   } catch (error) {
     console.error('🔴 Error fetching image chat summary:', error);
@@ -2208,21 +2357,24 @@ export const getComparisonSummaries = async () => {
 
     if (response.data.status === 200) {
       console.log('✅ Comparison summaries fetched successfully');
-      const summaries = (response.data.data && response.data.data.summaries) || [];
+      const summaries =
+        (response.data.data && response.data.data.summaries) || [];
       console.log('🔵 Summaries:', summaries);
       return {
         success: true,
         data: summaries,
       };
     } else {
-      throw new Error(response.data.message || 'Failed to fetch comparison summaries');
+      throw new Error(
+        response.data.message || 'Failed to fetch comparison summaries',
+      );
     }
   } catch (error) {
     console.error('🔴 getComparisonSummaries error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      'Failed to fetch comparison summaries'
+      'Failed to fetch comparison summaries',
     );
   }
 };
@@ -2236,18 +2388,22 @@ export const getComparisonSummaries = async () => {
  * @param {string} concernName - The name of the concern (e.g., "Hydration", "Redness")
  * @returns {Promise<Object>} Response with message, has_routine, found_ingredients, missing_ingredients
  */
-export const generateConcernMessage = async (concernName) => {
+export const generateConcernMessage = async concernName => {
   try {
     console.log('🔵 Generating concern message for:', concernName);
 
     const formData = new URLSearchParams();
     formData.append('concern_name', concernName);
 
-    const response = await apiClient.post('/routine/generate-concern-message', formData.toString(), {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+    const response = await apiClient.post(
+      '/routine/generate-concern-message',
+      formData.toString(),
+      {
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
       },
-    });
+    );
 
     console.log('🔵 Response of generateConcernMessage:', response);
 
@@ -2258,14 +2414,16 @@ export const generateConcernMessage = async (concernName) => {
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || 'Failed to generate concern message');
+      throw new Error(
+        response.data.message || 'Failed to generate concern message',
+      );
     }
   } catch (error) {
     console.error('🔴 generateConcernMessage error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      'Failed to generate concern message'
+      'Failed to generate concern message',
     );
   }
 };
@@ -2279,11 +2437,13 @@ export const generateConcernMessage = async (concernName) => {
  * @param {string} fcmToken - FCM token to register
  * @returns {Promise<Object>} Registration response
  */
-export const registerFCMToken = async (fcmToken) => {
+export const registerFCMToken = async fcmToken => {
   try {
     console.log('🔵 Registering FCM token:', fcmToken.substring(0, 20) + '...');
 
-    const response = await apiClient.post(`/notifications/register-token?fcm_token=${encodeURIComponent(fcmToken)}`);
+    const response = await apiClient.post(
+      `/notifications/register-token?fcm_token=${encodeURIComponent(fcmToken)}`,
+    );
 
     if (response.data.status === 200) {
       console.log('✅ FCM token registered successfully');
@@ -2299,7 +2459,7 @@ export const registerFCMToken = async (fcmToken) => {
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      'Failed to register FCM token'
+      'Failed to register FCM token',
     );
   }
 };
@@ -2316,25 +2476,29 @@ export const registerFCMToken = async (fcmToken) => {
  */
 export const searchProducts = async (query, limit = 20) => {
   try {
-    console.log("🔵 Searching products by query:", query);
+    console.log('🔵 Searching products by query:', query);
 
-    const response = await apiClient.get(`/product_search/search-products?query=${encodeURIComponent(query)}&limit=${limit}`);
+    const response = await apiClient.get(
+      `/product_search/search-products?query=${encodeURIComponent(
+        query,
+      )}&limit=${limit}`,
+    );
 
     if (response.data.status === 200) {
-      console.log("✅ Products found successfully");
+      console.log('✅ Products found successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "No products found");
+      throw new Error(response.data.message || 'No products found');
     }
   } catch (error) {
-    console.error("🔴 searchProducts error:", error);
+    console.error('🔴 searchProducts error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to search products"
+      'Failed to search products',
     );
   }
 };
@@ -2344,27 +2508,29 @@ export const searchProducts = async (query, limit = 20) => {
  * @param {string} upc - UPC code to search for
  * @returns {Promise<Object>} Product details including ingredients and good_for
  */
-export const searchProductByUPC = async (upc) => {
+export const searchProductByUPC = async upc => {
   try {
-    console.log("🔵 Searching product by UPC:", upc);
+    console.log('🔵 Searching product by UPC:', upc);
 
-    const response = await apiClient.get(`/product_search/ingredients?upc=${upc}`);
+    const response = await apiClient.get(
+      `/product_search/ingredients?upc=${upc}`,
+    );
 
     if (response.data.status === 200) {
-      console.log("✅ Product found successfully");
+      console.log('✅ Product found successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Product not found");
+      throw new Error(response.data.message || 'Product not found');
     }
   } catch (error) {
-    console.error("🔴 searchProductByUPC error:", error);
+    console.error('🔴 searchProductByUPC error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to search product"
+      'Failed to search product',
     );
   }
 };
@@ -2374,9 +2540,9 @@ export const searchProductByUPC = async (upc) => {
  * @param {string} imageUri - Local URI of the product image
  * @returns {Promise<Object>} Product details including name, brand, and UPC
  */
-export const extractProductFromImage = async (imageUri) => {
+export const extractProductFromImage = async imageUri => {
   try {
-    console.log("🔵 Extracting product from image:", imageUri);
+    console.log('🔵 Extracting product from image:', imageUri);
 
     // Create form data for multipart upload
     const formData = new FormData();
@@ -2400,24 +2566,30 @@ export const extractProductFromImage = async (imageUri) => {
       name: `product_image.${fileExtension}`,
     });
 
-    const response = await apiClient.post('/product_search/extract-product', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
+    const response = await apiClient.post(
+      '/product_search/extract-product',
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+        // timeout: 60000, // 60 second timeout for image processing
       },
-      // timeout: 60000, // 60 second timeout for image processing
-    });
+    );
 
-    console.log("🔵 Response of extractProductFromImage:", response);
+    console.log('🔵 Response of extractProductFromImage:', response);
 
     if (response.data.status === 200) {
-      console.log("✅ Product extracted successfully:", response.data.data);
+      console.log('✅ Product extracted successfully:', response.data.data);
 
       // Transform response to match expected format
       const productData = response.data.data;
       return {
         success: true,
         data: {
-          product_name: productData.product?.cleaned_product_name || productData.search_product_name,
+          product_name:
+            productData.product?.cleaned_product_name ||
+            productData.search_product_name,
           brand: productData.product?.brand || productData.search_brand_name,
           upc: productData.product?.upc || '',
           original_product_name: productData.product?.product_name,
@@ -2427,17 +2599,20 @@ export const extractProductFromImage = async (imageUri) => {
         },
       };
     } else {
-      console.log("⚠️ Product not found in image");
+      console.log('⚠️ Product not found in image');
       return {
         success: false,
-        message: response.data.message || "Product not found in image",
+        message: response.data.message || 'Product not found in image',
       };
     }
   } catch (error) {
-    console.error("🔴 extractProductFromImage error:", error);
+    console.error('🔴 extractProductFromImage error:', error);
     return {
       success: false,
-      message: error.response?.data?.message || error.message || "Failed to extract product from image",
+      message:
+        error.response?.data?.message ||
+        error.message ||
+        'Failed to extract product from image',
     };
   }
 };
@@ -2456,27 +2631,29 @@ export const extractProductFromImage = async (imageUri) => {
  */
 export const getReportHistory = async () => {
   try {
-    console.log("🔵 Fetching report history...");
-    const response = await apiClient.get("/expert-view/my-reports/history");
+    console.log('🔵 Fetching report history...');
+    const response = await apiClient.get('/expert-view/my-reports/history');
 
-    console.log("🔵 Response of getReportHistory:", response.data.data.reports);
+    console.log('🔵 Response of getReportHistory:', response.data.data.reports);
 
     if (response.data.status === 200) {
-      console.log("✅ Report history fetched successfully");
+      console.log('✅ Report history fetched successfully');
       return {
         success: true,
         reports: response.data.data.reports || [],
         total: response.data.data.total || 0,
       };
     } else {
-      throw new Error(response.data.message || "Failed to fetch report history");
+      throw new Error(
+        response.data.message || 'Failed to fetch report history',
+      );
     }
   } catch (error) {
-    console.error("🔴 Report history fetch error:", error);
+    console.error('🔴 Report history fetch error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch report history"
+      'Failed to fetch report history',
     );
   }
 };
@@ -2488,23 +2665,23 @@ export default apiClient;
  */
 export const getUserRoutineScanMetrics = async () => {
   try {
-    console.log("🔵 Fetching user routine and scan metrics...");
-    const response = await apiClient.get("/routine/user-routine-scan-metrics");
+    console.log('🔵 Fetching user routine and scan metrics...');
+    const response = await apiClient.get('/routine/user-routine-scan-metrics');
     if (response.data.status === 200) {
-      console.log("✅ Metrics fetched successfully");
+      console.log('✅ Metrics fetched successfully');
       return {
         success: true,
         data: response.data.data,
       };
     } else {
-      throw new Error(response.data.message || "Failed to fetch metrics");
+      throw new Error(response.data.message || 'Failed to fetch metrics');
     }
   } catch (error) {
-    console.error("🔴 Metrics fetch error:", error);
+    console.error('🔴 Metrics fetch error:', error);
     throw new Error(
       error.response?.data?.message ||
       error.message ||
-      "Failed to fetch metrics"
+      'Failed to fetch metrics',
     );
   }
 };

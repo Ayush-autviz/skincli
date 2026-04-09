@@ -19,7 +19,7 @@
     },
     "algorithms-used": [
       "acne, pores, uniformness, pigmentation, redness, hydration, lines (active)",
-      "eye-area-condition: dark circles, eye bags, eye lines/lacrimal grooves (active)", 
+      "eye-area-condition: dark circles, eye bags, eye lines/lacrimal grooves (active)",
       "translucency, sagging (deprecated but still displayed)",
       "skin-type, perceived-age, eye-age, skin-tone (profile metrics - descriptive only)"
     ],
@@ -322,7 +322,9 @@
       "displayName": "Acne",
       "associatedMetric": "Acne score <90",
       "overview": "Breakouts occur when pores get clogged by oil and dead skin cells, allowing bacteria to thrive and cause inflammation. This complex issue is influenced by hormones, genetics, diet, and stress, requiring a multi‑faceted approach to manage effectively.",
-      "maskVerbiage": ["The highlighted zones, if any, indicate areas with detected acne"],
+      "maskVerbiage": [
+        "The highlighted zones, if any, indicate areas with detected acne"
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -446,7 +448,9 @@
       "displayName": "Pigmentation",
       "associatedMetric": "Pigmentation quality <90",
       "overview": "Pigmented spots, or hyperpigmentation, result from excess melanin production, often triggered by sun exposure, hormonal shifts, or skin inflammation. These can manifest as sun spots, age spots, or melasma, affecting the skin's evenness.",
-      "maskVerbiage": ["The highlighted zones, if any, indicate detected pigmentation spots"],
+      "maskVerbiage": [
+        "The highlighted zones, if any, indicate detected pigmentation spots"
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -538,16 +542,16 @@
       "advice": {
         "disclaimer": "Remember, Magic Mirror does not provide medical advice and in light of failure to diagnose skin cancer (melanoma) in cases of persistent pigmentation, do consult a Dermatologist to be safe",
         "ingredients": [
-         "Vitamin C (Ascorbic Acid): Antioxidant can help fade the appearance of pigmentation.",
-         "Niacinamide: can help manage the appearance of pigmentation, inflammation, and support collagen",
-         "Azelaic acid:  can help manage the appearance of pigmentation",
-         "Alpha hydroxy acids, such as lactic acid and glycolic acid",
-         "Maintain consistent, year‑round broad spectrum  sun protection (SPF 30+)."
+          "Vitamin C (Ascorbic Acid): Antioxidant can help fade the appearance of pigmentation.",
+          "Niacinamide: can help manage the appearance of pigmentation, inflammation, and support collagen",
+          "Azelaic acid:  can help manage the appearance of pigmentation",
+          "Alpha hydroxy acids, such as lactic acid and glycolic acid",
+          "Maintain consistent, year‑round broad spectrum  sun protection (SPF 30+)."
         ],
         "Behavior": [
-         "Consider professional treatments like chemical peels or laser therapy for persistent spots.",
-         "Monitor patterns with Magic Mirror imaging to identify triggers and treatment efficacy.",
-         "Be patient, as fading pigmentation can take several months.  Consistency matters."
+          "Consider professional treatments like chemical peels or laser therapy for persistent spots.",
+          "Monitor patterns with Magic Mirror imaging to identify triggers and treatment efficacy.",
+          "Be patient, as fading pigmentation can take several months.  Consistency matters."
         ]
       }
     },
@@ -556,7 +560,9 @@
       "displayName": "Uniformness",
       "associatedMetric": "Skin uniformness <90",
       "overview": "Skin evenness refers to the evenness of skin texture, tone, and overall appearance. Factors like sun damage, aging, acne scarring, and uneven pigmentation can affect skin uniformness, making targeted treatments beneficial.",
-      "maskVerbiage": ["The highlighted zones, if any, indicate areas of skin texture irregularities"],
+      "maskVerbiage": [
+        "The highlighted zones, if any, indicate areas of skin texture irregularities"
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -665,7 +671,9 @@
       "displayName": "Redness",
       "associatedMetric": "Redness score <80",
       "overview": "Skin redness often signals a compromised barrier, leading to sensitivity and irritation from external factors; it can also indicate conditions like rosacea. Maintaining a healthy skin microbiome and using calming ingredients are key to managing redness.",
-      "maskVerbiage": ["The highlighted zones, if any, indicate areas with high redness"],
+      "maskVerbiage": [
+        "The highlighted zones, if any, indicate areas with high redness"
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -757,12 +765,12 @@
       "advice": {
         "disclaimer": "Remember, Magic Mirror does not provide medical advice",
         "ingredients": [
-         "Niacinamide: Inhibits melanin transfer and has anti‑inflammatory properties.",
-         "Ceramides: Restore barrier function to protect and retain moisture.",
-         "Azelaic Acid: Reduces redness through anti-inflammatory and antimicrobial actions.",
-         "Allantoin: Antiinflammatory effects to help manage redness",
-         "Centella Asiatica: Calms inflammation and supports healing.",
-         "Green Tea Extract: Potent antioxidant with anti-inflammatory properties."
+          "Niacinamide: Inhibits melanin transfer and has anti‑inflammatory properties.",
+          "Ceramides: Restore barrier function to protect and retain moisture.",
+          "Azelaic Acid: Reduces redness through anti-inflammatory and antimicrobial actions.",
+          "Allantoin: Antiinflammatory effects to help manage redness",
+          "Centella Asiatica: Calms inflammation and supports healing.",
+          "Green Tea Extract: Potent antioxidant with anti-inflammatory properties."
         ],
         "Behavior": [
           "Simplify your routine during flare-ups as they may be caused by products you are using and should cease using. Adding new ingredients should be a subsequent step so look for products with minimal ingredients, avoiding fragrance and alcohol.",
@@ -779,7 +787,11 @@
       "displayName": "Lines",
       "associatedMetric": "Lines score <75",
       "overview": "Wrinkles are visible lines or creases that form due to aging, sun damage, and repeated facial expressions, resulting from the loss of collagen and elastin. Addressing wrinkles involves protecting the skin and using ingredients that support skin structure and renewal.",
-      "maskVerbiage": ["Red lines, if any, indicate deep wrinkle lines", "Green lines, if any, indicate fine wrinkle lines", "Yellow  lines, if any, indicate sagging contours"],
+      "maskVerbiage": [
+        "Red lines, if any, indicate deep wrinkle lines",
+        "Green lines, if any, indicate fine wrinkle lines",
+        "Yellow  lines, if any, indicate sagging contours"
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -1254,7 +1266,9 @@
       "displayName": "Pores",
       "associatedMetric": "Pores quality <90",
       "overview": "Visible pores are a natural part of skin texture, but enlarged or prominent pores can be influenced by genetics, oil production, aging, and sun damage. Understanding your pore condition helps guide appropriate treatments and skincare routines.",
-      "maskVerbiage": ["Blue zones, if any, indicate areas with visible presence of pores"],
+      "maskVerbiage": [
+        "Blue zones, if any, indicate areas with visible presence of pores"
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -1597,7 +1611,9 @@
       "displayName": "Hydration",
       "associatedMetric": "Hydration score <70",
       "overview": "Dewiness refers to the skin's ability to retain and balance moisture, which is essential for maintaining a healthy, resilient barrier. Well-moisturized skin appears plump, smooth, and radiant, while dryness can lead to dullness, rough texture, increased sensitivity, and the appearance of fine lines. Factors such as climate, skincare habits, diet, and age can all impact your skin's hydration levels.",
-      "maskVerbiage": ["The highlighted zones, if any, indicate areas of low moisture"],
+      "maskVerbiage": [
+        "The highlighted zones, if any, indicate areas of low moisture"
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -1683,17 +1699,16 @@
       "advice": {
         "disclaimer": "Remember, Magic Mirror does not provide medical advice",
         "ingredients": [
-         "Hyaluronic Acid: Attracts and retains water in the skin, providing deep hydration.",
-         "Glycerin: A powerful humectant that draws moisture into the skin and helps maintain softness.",
-         "Look for ceramides and fatty acids in moisturizers to strengthen the skin barrier.",
-         "Layer hydrating serums under your moisturizer for an extra boost, especially in dry weather."
+          "Hyaluronic Acid: Attracts and retains water in the skin, providing deep hydration.",
+          "Glycerin: A powerful humectant that draws moisture into the skin and helps maintain softness.",
+          "Look for ceramides and fatty acids in moisturizers to strengthen the skin barrier.",
+          "Layer hydrating serums under your moisturizer for an extra boost, especially in dry weather."
         ],
         "Behavior": [
           "Drink adequate water throughout the day to support skin hydration from within.",
           "Use a humidifier in dry environments to prevent moisture loss.",
           "Avoid over-cleansing or using harsh soaps, which can strip the skin's natural moisture.",
           "Apply moisturizer immediately after cleansing to lock in moisture."
-
         ]
       }
     },
@@ -1701,14 +1716,42 @@
       "keyForLookup": "eyeAreaCondition",
       "displayName": "Dark Circles",
       "overview": "Your dark circles score reflects the overall health and appearance of the skin around your eyes. This metric focuses on pigmentation, fluid retention, and skin thickness in the delicate eye area, helping you track improvements in brightness and skin quality.",
-      "maskVerbiage": ["Green zones, if any, indicate detected dark circles under the eyes", "Yellow zones, if any, indicate detected puffiness or eye bags", "White  lines, if any, indicate detected lacrimal grove areas"],
+      "maskVerbiage": [
+        "Green zones, if any, indicate detected dark circles under the eyes",
+        "Yellow zones, if any, indicate detected puffiness or eye bags",
+        "White  lines, if any, indicate detected lacrimal grove areas"
+      ],
       "scoreLevels": {
-        "excellent": { "max": 100, "min": 91, "text": "Excellent dark circle appearance"},
-        "great": { "max": 90, "min": 81, "text": "Very good dark circle appearance"},
-        "good": { "max": 79, "min": 70, "text": "Moderate dark circle visibility"},
-        "average": { "max": 69, "min": 50, "text": "Moderate dark circle visibility"},
-        "poor": { "max": 49, "min": 30, "text": "Significant dark circle visibility; may benefit from targeted care"},
-        "bad": { "max": 29, "min": 0, "text": "Significant dark circle visibility; may benefit from targeted care"}
+        "excellent": {
+          "max": 100,
+          "min": 91,
+          "text": "Excellent dark circle appearance"
+        },
+        "great": {
+          "max": 90,
+          "min": 81,
+          "text": "Very good dark circle appearance"
+        },
+        "good": {
+          "max": 79,
+          "min": 70,
+          "text": "Moderate dark circle visibility"
+        },
+        "average": {
+          "max": 69,
+          "min": 50,
+          "text": "Moderate dark circle visibility"
+        },
+        "poor": {
+          "max": 49,
+          "min": 30,
+          "text": "Significant dark circle visibility; may benefit from targeted care"
+        },
+        "bad": {
+          "max": 29,
+          "min": 0,
+          "text": "Significant dark circle visibility; may benefit from targeted care"
+        }
       },
       "whatYouCanDo": [
         {
@@ -1751,8 +1794,8 @@
       "advice": {
         "disclaimer": "Remember, Magic Mirror does not provide medical advice",
         "ingredients": [
-         "Use gentle eye creams and daily sun protection.",
-         "Look for ingredients like peptides, hyaluronic acid, and caffeine in eye products."
+          "Use gentle eye creams and daily sun protection.",
+          "Look for ingredients like peptides, hyaluronic acid, and caffeine in eye products."
         ],
         "Behavior": [
           "Prioritize adequate sleep and hydration.",
@@ -1866,16 +1909,40 @@
     },
     "puffinessScore": {
       "keyForLookup": "puffinessScore",
-      "displayName": "Puffiness",
+      "displayName": "Eye Puffiness",
       "associatedMetric": "Puffiness score <70",
       "overview": "Puffiness around the eyes and face can be caused by various factors, including fluid retention, lack of sleep, allergies, or natural aging. It often manifests as swelling or eye bags, making the face appear tired or less vibrant.",
       "scoreLevels": {
-        "excellent": { "max": 100, "min": 91, "text": "Your skin shows very little to no signs of puffiness. Your eye area and facial contours appear well-defined and refreshed." },
-        "great": { "max": 90, "min": 81, "text": "Minimal puffiness detected. Your skin maintains good definition, with only minor areas of concern that are easily manageable." },
-        "good": { "max": 80, "min": 71, "text": "Some mild puffiness is visible, particularly around the eye area. Targeted treatments can help improve definition and reduce swelling." },
-        "average": { "max": 70, "min": 51, "text": "Noticeable puffiness is present. Incorporating cooling treatments and improving sleep/hydration can help reduce overall swelling." },
-        "poor": { "max": 50, "min": 31, "text": "Significant puffiness detected. Consider specialized eye creams and lifestyle adjustments to address persistent swelling." },
-        "bad": { "max": 30, "min": 0, "text": "Extensive puffiness is visible. This may indicate significant fluid retention or other factors that would benefit from consistent targeted care." }
+        "excellent": {
+          "max": 100,
+          "min": 91,
+          "text": "Your skin shows very little to no signs of puffiness. Your eye area and facial contours appear well-defined and refreshed."
+        },
+        "great": {
+          "max": 90,
+          "min": 81,
+          "text": "Minimal puffiness detected. Your skin maintains good definition, with only minor areas of concern that are easily manageable."
+        },
+        "good": {
+          "max": 80,
+          "min": 71,
+          "text": "Some mild puffiness is visible, particularly around the eye area. Targeted treatments can help improve definition and reduce swelling."
+        },
+        "average": {
+          "max": 70,
+          "min": 51,
+          "text": "Noticeable puffiness is present. Incorporating cooling treatments and improving sleep/hydration can help reduce overall swelling."
+        },
+        "poor": {
+          "max": 50,
+          "min": 31,
+          "text": "Significant puffiness detected. Consider specialized eye creams and lifestyle adjustments to address persistent swelling."
+        },
+        "bad": {
+          "max": 30,
+          "min": 0,
+          "text": "Extensive puffiness is visible. This may indicate significant fluid retention or other factors that would benefit from consistent targeted care."
+        }
       },
       "whatYouCanDo": [
         {

@@ -901,7 +901,7 @@
       "keyForLookup": "saggingScore",
       "displayName": "Sagging",
       "associatedMetric": "Sagging score (submetric of lines score) < 70",
-      "overview": "Skin sagging occurs from the loss of collagen, elastin, and underlying facial volume, influenced by gravity and aging. While topical treatments can improve appearance, managing sagging involves supporting skin structure and realistic expectations.",
+      "overview": "Skin sagging occurs from the loss of collagen, elastin, and underlying facial volume, influenced by loss of bony structure, gravity and aging. While topical treatments can improve appearance, managing sagging involves supporting skin structure and realistic expectations.",
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -983,7 +983,16 @@
           "icon": "eye",
           "initialChatMessage": "Tracking changes in skin sagging with consistent imaging angles is important for accurately assessing the effectiveness of your routine or treatments. Would you like tips on how to take useful photos for monitoring sagging?"
         }
-      ]
+      ],
+      "advice": {
+        "disclaimer": "Remember, Magic Mirror does not provide medical advice",
+        "Behavior": [
+          "Approach sagging with realistic expectations; topicals improve appearance but don't match procedural interventions..",
+          "Consider professional treatments such as lasers and devices for deeper remodeling.",
+          "Maintain healthy body weight, note it’s normal after weight loss to see sagging in your facial contours",
+          "Maintain consistent, year-round sun protection (SPF 30+)."
+        ]
+      }
     },
     "eyeLinesScore": {
       "keyForLookup": "eyeLinesScore",
@@ -1171,7 +1180,15 @@
           "icon": "edit-3",
           "initialChatMessage": "While skincare works on improving dark circles over time, concealers can offer immediate cosmetic improvement by color-correcting and brightening the under-eye area. Are you interested in tips for choosing and applying concealer for dark circles?"
         }
-      ]
+      ],
+      "advice": {
+        "disclaimer": "Remember, Magic Mirror does not provide medical advice",
+        "Behavior": [
+          "Try to identify the primary cause of your dark circles if possible. Some triggers may not be amenable to skin care products, i.e. genetic predisposition.",
+          "Get adequate sleep.",
+          "Consider the role that allergies can play; rubbing eyes can aggravate dark circles."
+        ]
+      }
     },
     "eyeBagsScore": {
       "keyForLookup": "eyeBagsScore",
@@ -1259,7 +1276,16 @@
           "icon": "shield",
           "initialChatMessage": "Effectively managing allergies can be key to reducing under-eye puffiness, as allergic reactions often cause inflammation and fluid buildup in this area. Are allergies a concern for you?"
         }
-      ]
+      ],
+      "advice": {
+        "disclaimer": "Remember, Magic Mirror does not provide medical advice",
+        "Behavior": [
+          "Try to identify the primary cause of your under eye puffiness if possible. Some triggers may not be amenable to skin care products.",
+          "For persistent swelling, applying cool compresses or gentle massage to the area can promote drainage.",
+          "Get adequate sleep.",
+          "Consider the role that allergies can play; rubbing eyes can aggravate under eye puffiness."
+        ]
+      }
     },
     "poresScore": {
       "keyForLookup": "poresScore",

@@ -159,7 +159,6 @@ const METRIC_KEYS = [
   'linesScore',
   'pigmentationScore',
   'poresScore',
-  'hydrationScore',
   'uniformnessScore',
   'puffinessScore',
   'saggingScore',
@@ -175,7 +174,6 @@ export const METRIC_LABELS = {
   linesScore: 'Lines',
   pigmentationScore: 'Pigmentation',
   poresScore: 'Visible Pores',
-  hydrationScore: 'Dewiness',
   uniformnessScore: 'Evenness',
   eyeAge: 'Perceived Eye Age',
   perceivedAge: 'Perceived Age',
@@ -202,7 +200,6 @@ const getConcernNameForAPI = (metricKey: string): string | null => {
   // Convert camelCase to Title Case
   // Handle special cases first
   const specialCases: Record<string, string> = {
-    hydration: 'Dewiness',
     redness: 'Redness',
     pores: 'Visible Pores',
     acne: 'Breakouts',

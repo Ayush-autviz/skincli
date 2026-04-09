@@ -1543,6 +1543,10 @@ export const getSkinTrendScores = async ({
     'eyes_age',
     'age',
     'skin_type',
+    'puffiness',
+    'sagging',
+    'dark_circles',
+
   ];
 
   if (!allowedConditions.includes(skin_condition_name)) {

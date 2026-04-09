@@ -254,7 +254,7 @@ const PerceivedAgeChart: React.FC<PerceivedAgeChartProps> = ({ photos }) => {
       if ((ts as any)?.seconds && typeof (ts as any).seconds === 'number') {
         dateValue = new Date(
           (ts as any).seconds * 1000 +
-            ((ts as any).nanoseconds ? (ts as any).nanoseconds / 1000000 : 0),
+          ((ts as any).nanoseconds ? (ts as any).nanoseconds / 1000000 : 0),
         );
       } else if (ts instanceof Date) {
         dateValue = ts;
@@ -478,7 +478,7 @@ const SkinTypeTrendChart = ({ photos }: { photos: PhotoData[] }) => {
       if ((ts as any)?.seconds && typeof (ts as any).seconds === 'number') {
         dateValue = new Date(
           (ts as any).seconds * 1000 +
-            ((ts as any).nanoseconds ? (ts as any).nanoseconds / 1000000 : 0),
+          ((ts as any).nanoseconds ? (ts as any).nanoseconds / 1000000 : 0),
         );
       } else if (ts instanceof Date) {
         dateValue = ts;
@@ -499,10 +499,10 @@ const SkinTypeTrendChart = ({ photos }: { photos: PhotoData[] }) => {
       };
     })
     .filter(item => item !== null) as {
-    photoId: string;
-    date: Date;
-    skinType: string | null;
-  }[];
+      photoId: string;
+      date: Date;
+      skinType: string | null;
+    }[];
 
   // Scroll to the end (latest point) when component mounts or data changes
   useEffect(() => {
@@ -656,22 +656,22 @@ const SkinTypeTrendChart = ({ photos }: { photos: PhotoData[] }) => {
           withHorizontalLines={true}
           segments={3}
           fromZero={false}
-          // formatYLabel={(value) => {
-          //   const numValue = parseFloat(value);
-          //   if (numValue === 1) return 'Dry';
-          //   if (numValue === 2) return 'Normal';
-          //   if (numValue === 3) return 'Combination';
-          //   if (numValue === 4) return 'Oily';
-          //   return '';
-          // }}
-          // formatXLabel={(value) => {
-          //   const index = parseInt(value) - 1;
-          //   if (index >= 0 && index < processedData.length) {
-          //     const date = processedData[index].date;
-          //     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-          //   }
-          //   return value;
-          // }}
+        // formatYLabel={(value) => {
+        //   const numValue = parseFloat(value);
+        //   if (numValue === 1) return 'Dry';
+        //   if (numValue === 2) return 'Normal';
+        //   if (numValue === 3) return 'Combination';
+        //   if (numValue === 4) return 'Oily';
+        //   return '';
+        // }}
+        // formatXLabel={(value) => {
+        //   const index = parseInt(value) - 1;
+        //   if (index >= 0 && index < processedData.length) {
+        //     const date = processedData[index].date;
+        //     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+        //   }
+        //   return value;
+        // }}
         />
       </ScrollView>
 
@@ -722,6 +722,8 @@ const getConditionNameForMetric = (metricKey: string) => {
     skinType: 'skin_type',
     puffinessScore: 'puffiness',
     saggingScore: 'sagging',
+    darkCirclesScore: 'dark_circles',
+    eyebags: 'dark_circles'
   };
 
   return mapping[metricKey] || null;
@@ -1418,9 +1420,9 @@ export default function MetricDetailScreen() {
     found_ingredients?: Array<
       | string
       | {
-          ingredient: string;
-          products?: string[];
-        }
+        ingredient: string;
+        products?: string[];
+      }
     >;
     missing_ingredients?: string[];
     has_routine?: boolean;
@@ -2060,19 +2062,19 @@ export default function MetricDetailScreen() {
             {!['skinType', 'skinTone', 'perceivedAge', 'eyeAge'].includes(
               metricKey,
             ) && (
-              <TouchableOpacity
-                onPress={handleToggleTopConcern}
-                disabled={isTogglingConcern}
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
-                style={{ padding: 8, opacity: isTogglingConcern ? 0.5 : 1 }}
-              >
-                <Star
-                  size={22}
-                  color={isTopConcernDisplay ? '#00839B' : '#D6D3D1'}
-                  fill={isTopConcernDisplay ? '#00839B' : 'transparent'}
-                />
-              </TouchableOpacity>
-            )}
+                <TouchableOpacity
+                  onPress={handleToggleTopConcern}
+                  disabled={isTogglingConcern}
+                  hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                  style={{ padding: 8, opacity: isTogglingConcern ? 0.5 : 1 }}
+                >
+                  <Star
+                    size={22}
+                    color={isTopConcernDisplay ? '#00839B' : '#D6D3D1'}
+                    fill={isTopConcernDisplay ? '#00839B' : 'transparent'}
+                  />
+                </TouchableOpacity>
+              )}
           </View>
         </View>
         <View style={styles.shadowLine} />
@@ -2347,7 +2349,7 @@ export default function MetricDetailScreen() {
               const lastIdx = trendScores.length - 1;
               chipDateLabel = getRelativeDayLabel(
                 trendScores[lastIdx]?.created_at ||
-                  trendScores[lastIdx]?.timestamp,
+                trendScores[lastIdx]?.timestamp,
               );
             }
 
@@ -2362,13 +2364,13 @@ export default function MetricDetailScreen() {
               const lastIdx = trendScores.length - 1;
               const s0 = Number(
                 trendScores[lastIdx]?.skin_condition_score ??
-                  trendScores[lastIdx]?.score ??
-                  latestScore,
+                trendScores[lastIdx]?.score ??
+                latestScore,
               );
               const s1 = Number(
                 trendScores[lastIdx - 1]?.skin_condition_score ??
-                  trendScores[lastIdx - 1]?.score ??
-                  latestScore,
+                trendScores[lastIdx - 1]?.score ??
+                latestScore,
               );
               const diff = s0 - s1;
               changeAbs = Math.abs(Math.round(diff));
@@ -2449,8 +2451,8 @@ export default function MetricDetailScreen() {
                             {isCategorical
                               ? displayValue ?? '--'
                               : metricValue
-                              ? String(metricValue)
-                              : '--'}
+                                ? String(metricValue)
+                                : '--'}
                           </Text>
                         </View>
                       </View>
@@ -2508,8 +2510,8 @@ export default function MetricDetailScreen() {
               latestScore >= 70
                 ? '#22C55E'
                 : latestScore < 50
-                ? '#EF4444'
-                : '#F59E0B';
+                  ? '#EF4444'
+                  : '#F59E0B';
             let changeArrow = '→';
             let changeAbs = 0;
             let chipDateLabel: string | null = null;
@@ -2517,7 +2519,7 @@ export default function MetricDetailScreen() {
               const lastIdx = trendScores.length - 1;
               chipDateLabel = getRelativeDayLabel(
                 trendScores[lastIdx]?.created_at ||
-                  trendScores[lastIdx]?.timestamp,
+                trendScores[lastIdx]?.timestamp,
               );
             }
             if (precomputedChange) {
@@ -2527,13 +2529,13 @@ export default function MetricDetailScreen() {
               const lastIdx = trendScores.length - 1;
               const s0 = Number(
                 trendScores[lastIdx]?.skin_condition_score ??
-                  trendScores[lastIdx]?.score ??
-                  latestScore,
+                trendScores[lastIdx]?.score ??
+                latestScore,
               );
               const s1 = Number(
                 trendScores[lastIdx - 1]?.skin_condition_score ??
-                  trendScores[lastIdx - 1]?.score ??
-                  latestScore,
+                trendScores[lastIdx - 1]?.score ??
+                latestScore,
               );
               console.log('🔵 s0:', s0);
               console.log('🔵 s1:', s1);
@@ -2799,55 +2801,55 @@ export default function MetricDetailScreen() {
                   </Text> */}
                     {currentConcernDetails?.toneDescriptions[metricValue]
                       ?.characteristics && (
-                      <View style={styles.characteristicsContainer}>
-                        <Text style={styles.characteristicsTitle}>
-                          Key Characteristics:
-                        </Text>
-                        {Array.isArray(
-                          currentConcernDetails?.toneDescriptions[
-                            metricValue as string
-                          ]?.characteristics,
-                        ) ? (
-                          (
-                            currentConcernDetails!.toneDescriptions[
+                        <View style={styles.characteristicsContainer}>
+                          <Text style={styles.characteristicsTitle}>
+                            Key Characteristics:
+                          </Text>
+                          {Array.isArray(
+                            currentConcernDetails?.toneDescriptions[
                               metricValue as string
-                            ].characteristics as unknown as string[]
-                          ).map((char: string, index: number) => (
-                            <View key={index} style={styles.characteristicItem}>
+                            ]?.characteristics,
+                          ) ? (
+                            (
+                              currentConcernDetails!.toneDescriptions[
+                                metricValue as string
+                              ].characteristics as unknown as string[]
+                            ).map((char: string, index: number) => (
+                              <View key={index} style={styles.characteristicItem}>
+                                <View style={styles.characteristicBullet} />
+                                <Text style={styles.characteristicText}>
+                                  {char}
+                                </Text>
+                              </View>
+                            ))
+                          ) : (
+                            <View style={styles.characteristicItem}>
                               <View style={styles.characteristicBullet} />
                               <Text style={styles.characteristicText}>
-                                {char}
+                                {
+                                  currentConcernDetails?.toneDescriptions[
+                                    metricValue as string
+                                  ]?.characteristics as string
+                                }
                               </Text>
                             </View>
-                          ))
-                        ) : (
-                          <View style={styles.characteristicItem}>
-                            <View style={styles.characteristicBullet} />
-                            <Text style={styles.characteristicText}>
-                              {
-                                currentConcernDetails?.toneDescriptions[
-                                  metricValue as string
-                                ]?.characteristics as string
-                              }
-                            </Text>
-                          </View>
-                        )}
-                      </View>
-                    )}
+                          )}
+                        </View>
+                      )}
                     {currentConcernDetails?.toneDescriptions[metricValue]
                       ?.considerations && (
-                      <View style={styles.considerationsContainer}>
-                        <Text style={styles.considerationsTitle}>
-                          Special Considerations:
-                        </Text>
-                        <Text style={styles.considerationsText}>
-                          {
-                            currentConcernDetails.toneDescriptions[metricValue]
-                              .considerations
-                          }
-                        </Text>
-                      </View>
-                    )}
+                        <View style={styles.considerationsContainer}>
+                          <Text style={styles.considerationsTitle}>
+                            Special Considerations:
+                          </Text>
+                          <Text style={styles.considerationsText}>
+                            {
+                              currentConcernDetails.toneDescriptions[metricValue]
+                                .considerations
+                            }
+                          </Text>
+                        </View>
+                      )}
                   </>
                 )}
               </View>
@@ -2964,8 +2966,8 @@ export default function MetricDetailScreen() {
                             const isFound = Boolean(foundEntry);
                             const foundProducts =
                               foundEntry &&
-                              typeof foundEntry !== 'string' &&
-                              Array.isArray(foundEntry.products)
+                                typeof foundEntry !== 'string' &&
+                                Array.isArray(foundEntry.products)
                                 ? foundEntry.products
                                 : [];
 

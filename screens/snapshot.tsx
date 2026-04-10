@@ -590,8 +590,8 @@ const SnapshotScreen = (): React.JSX.Element => {
                         skinType: currentProfile?.skinType || 'normal',
                         skinConcerns: currentProfile?.concerns
                           ? Object.keys(currentProfile.concerns).filter(
-                            key => currentProfile.concerns![key],
-                          )
+                              key => currentProfile.concerns![key],
+                            )
                           : [],
                         excludedMetrics: [],
                         metrics: transformedMetrics || {},
@@ -603,7 +603,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                         if (chatResponse.success && chatResponse.data) {
                           setSummary(
                             chatResponse.data.message ||
-                            chatResponse.data.feedback,
+                              chatResponse.data.feedback,
                           );
                         }
                       } catch (_) {
@@ -974,12 +974,18 @@ const SnapshotScreen = (): React.JSX.Element => {
   const profileOrder = ['skinType', 'skinTone', 'perceivedAge', 'eyeAge'];
   const profileMetrics = metrics
     ? profileOrder
-      .filter(key => metrics[key] !== undefined)
-      .map(key => ({
-        key,
-        value: metrics[key],
-        label: formatMetricName(key),
-      }))
+        .filter(key => metrics[key] !== undefined)
+        .map(key => ({
+          key,
+          value:
+            key === 'skinType' || key === 'skinTone'
+              ? typeof metrics[key] === 'string'
+                ? metrics[key].charAt(0).toUpperCase() +
+                  metrics[key].slice(1).toLowerCase()
+                : metrics[key]
+              : metrics[key],
+          label: formatMetricName(key),
+        }))
     : [];
 
   // Get score metrics for the analysis section
@@ -996,14 +1002,14 @@ const SnapshotScreen = (): React.JSX.Element => {
   ];
   const scoreMetrics = metrics
     ? scoreOrder
-      .filter(
-        key => metrics[key] !== undefined && typeof metrics[key] === 'number',
-      )
-      .map(key => ({
-        key,
-        value: metrics[key],
-        label: formatMetricName(key),
-      }))
+        .filter(
+          key => metrics[key] !== undefined && typeof metrics[key] === 'number',
+        )
+        .map(key => ({
+          key,
+          value: metrics[key],
+          label: formatMetricName(key),
+        }))
     : [];
   const sortedScoreMetrics = (() => {
     if (!Array.isArray(scoreMetrics) || scoreMetrics.length === 0)
@@ -1092,8 +1098,8 @@ const SnapshotScreen = (): React.JSX.Element => {
                 {summary
                   ? summary
                   : summaryLoading
-                    ? 'Analyzing your results...'
-                    : 'Your skin looks glowing! How is your skin feeling today?'}
+                  ? 'Analyzing your results...'
+                  : 'Your skin looks glowing! How is your skin feeling today?'}
               </Text>
               <Text style={styles.aiInsightSubtext}>
                 Your reflections help add to your journal and improve your
@@ -1148,7 +1154,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                   style={[
                     styles.analysisRow,
                     index < sortedScoreMetrics.length &&
-                    styles.analysisRowBorder,
+                      styles.analysisRowBorder,
                   ]}
                   onPress={() => {
                     (navigation as any).navigate('MetricDetail', {
@@ -1181,18 +1187,19 @@ const SnapshotScreen = (): React.JSX.Element => {
                       <Text style={styles.analysisMetricName}>
                         {item.label}
                       </Text>
-                      {item.key === 'poresScore' && (
+                      {/* {item.key === 'poresScore' && (
                         <Text style={styles.analysisMicrotext}>
                           Face a light source for best results
                         </Text>
-                      )}
+                      )} */}
                     </View>
                   </View>
                   <View style={styles.analysisRowRight}>
                     <Text style={styles.analysisChangeText}>
                       {scoreChanges[item.key]
-                        ? `${scoreChanges[item.key].arrow}${scoreChanges[item.key].value
-                        }`
+                        ? `${scoreChanges[item.key].arrow}${
+                            scoreChanges[item.key].value
+                          }`
                         : ''}
                     </Text>
                     <View style={styles.analysisDotContainer}>

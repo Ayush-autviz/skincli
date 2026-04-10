@@ -1989,7 +1989,16 @@
           "icon": "moon",
           "initialChatMessage": "Lack of sleep is a common cause of puffiness. Ensuring you get enough rest can make a huge difference. Are you looking for ways to improve your sleep hygiene?"
         }
-      ]
+      ],
+      "advice": {
+        "disclaimer": "Remember, Magic Mirror does not provide medical advice",
+        "Behavior": [
+          "Prioritize 7-9 hours of quality sleep to help regulate fluids and reduce puffiness.",
+          "Use cold compresses or cooled eye masks to soothe and reduce swelling.",
+          "Stay hydrated and limit salt intake, especially before bedtime.",
+          "Consider elevation during sleep to prevent fluid accumulation around the eyes."
+        ]
+      }
     }
   }
 }

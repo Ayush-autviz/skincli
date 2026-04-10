@@ -1,20 +1,35 @@
 // home.tsx
 // New Home screen with photo slider, Top Concerns, and Routine Score
 
-import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useRef,
+} from 'react';
 import {
-    View,
-    Text,
-    StyleSheet,
-    ScrollView,
-    TouchableOpacity,
-    Image,
-    Dimensions,
-    Alert,
-    DeviceEventEmitter,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+  Alert,
+  DeviceEventEmitter,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, Star, Plus, ArrowUp, ArrowDown } from 'lucide-react-native';
+import {
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  Star,
+  Plus,
+  ArrowUp,
+  ArrowDown,
+} from 'lucide-react-native';
 import { SvgXml } from 'react-native-svg';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import Carousel, { ICarouselInstance } from 'react-native-reanimated-carousel';
@@ -23,7 +38,13 @@ import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import useAuthStore from '../stores/authStore';
-import { getHautAnalysisResults, transformHautResults, generateConcernMessage, getReportHistory, getUserRoutineScanMetrics } from '../utils/newApiService';
+import {
+  getHautAnalysisResults,
+  transformHautResults,
+  generateConcernMessage,
+  getReportHistory,
+  getUserRoutineScanMetrics,
+} from '../utils/newApiService';
 import SkinCheckCard from '../components/home/SkinCheckCard';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
 import concernsData from '../data/concerns.json';
@@ -49,1352 +70,1553 @@ const scanPlaceholderSvg = `<svg width="36" height="36" viewBox="0 0 39 39" fill
 `;
 
 interface TopConcern {
-    name: string;
-    metricKey: string;
-    value: number;
-    change: number | null; // positive = improved, negative = worsened
-    changeText: string;
-    changeDirection: 'up' | 'down' | 'none'; // up arrow, down arrow, or no change
-    ingredients: string[]; // from concerns.json advice.ingredients
-    foundIngredients: Array<string | { ingredient: string; products?: string[] }>;
-    ingredientsLoading: boolean;
+  name: string;
+  metricKey: string;
+  value: number;
+  change: number | null; // positive = improved, negative = worsened
+  changeText: string;
+  changeDirection: 'up' | 'down' | 'none'; // up arrow, down arrow, or no change
+  ingredients: string[]; // from concerns.json advice.ingredients
+  foundIngredients: Array<string | { ingredient: string; products?: string[] }>;
+  ingredientsLoading: boolean;
 }
 
 // Helper function to convert metricKey to concern name for API
 const getConcernNameForAPI = (metricKey: string) => {
-    if (!metricKey) return null;
-    let processedKey = metricKey;
-    if (processedKey.endsWith('Score')) {
-        processedKey = processedKey.substring(0, processedKey.length - 'Score'.length);
-    }
-    const specialCases: Record<string, string> = {
-        'hydration': 'Dewiness',
-        'redness': 'Redness',
-        'pores': 'Visible Pores',
-        'acne': 'Breakouts',
-        'lines': 'Lines',
-        'translucency': 'Translucency',
-        'pigmentation': 'Pigmentation',
-        'uniformness': 'Evenness',
-        'eyeAreaCondition': 'Dark Circles',
-    };
-    if (specialCases[processedKey]) {
-        return specialCases[processedKey];
-    }
-    return processedKey.replace(/([A-Z])/g, ' $1')
-        .replace(/^./, str => str.toUpperCase())
-        .trim();
+  if (!metricKey) return null;
+  let processedKey = metricKey;
+  if (processedKey.endsWith('Score')) {
+    processedKey = processedKey.substring(
+      0,
+      processedKey.length - 'Score'.length,
+    );
+  }
+  const specialCases: Record<string, string> = {
+    hydration: 'Dewiness',
+    redness: 'Redness',
+    pores: 'Visible Pores',
+    acne: 'Breakouts',
+    lines: 'Lines',
+    translucency: 'Translucency',
+    pigmentation: 'Pigmentation',
+    uniformness: 'Evenness',
+    eyeAreaCondition: 'Dark Circles',
+  };
+  if (specialCases[processedKey]) {
+    return specialCases[processedKey];
+  }
+  return processedKey
+    .replace(/([A-Z])/g, ' $1')
+    .replace(/^./, str => str.toUpperCase())
+    .trim();
 };
 
 // Helper function to get ingredients from Ingredients.json based on metricKey
 const getIngredientsForMetric = (metricKey: string): string[] => {
-    if (!metricKey) return [];
+  if (!metricKey) return [];
 
-    const mapping: Record<string, string> = {
-        'acneScore': 'Acne',
-        'pigmentationScore': 'Pigmentation',
-        'uniformnessScore': 'Uniformness',
-        'rednessScore': 'Redness',
-        'linesScore': 'Lines',
-        'poresScore': 'Pores',
-        'hydrationScore': 'Hydration',
-        'eyeAreaCondition': 'Dark Circles'
-    };
+  const mapping: Record<string, string> = {
+    acneScore: 'Acne',
+    pigmentationScore: 'Pigmentation',
+    uniformnessScore: 'Uniformness',
+    rednessScore: 'Redness',
+    linesScore: 'Lines',
+    poresScore: 'Pores',
+    hydrationScore: 'Hydration',
+    eyeAreaCondition: 'Dark Circles',
+    puffinessScore: 'Puffiness',
+  };
 
-    const concernName = mapping[metricKey] || mapping[metricKey.replace('Score', '')];
-    if (!concernName) return [];
+  const concernName =
+    mapping[metricKey] || mapping[metricKey.replace('Score', '')];
+  if (!concernName) return [];
 
-    const concern = (ingredientsData.SKIN_CONCERNS as any[]).find(c => c.name === concernName);
-    return concern ? concern.Ingredients : [];
+  const concern = (ingredientsData.SKIN_CONCERNS as any[]).find(
+    c => c.name === concernName,
+  );
+  return concern ? concern.Ingredients : [];
 };
-
-
 
 // Image with skeleton loading component
 // Always shows skeleton until the image actually finishes painting.
 // Global cache to track which images have already been loaded
 // This prevents the skeleton from flashing repeatedly for images we already fetched.
 const ImageWithSkeleton = ({
-    uri,
-    style,
-    onPress,
-    containerStyle,
-    forceLoading = false, // Allows parent to force a skeleton overlay (e.g. during pull-to-refresh)
+  uri,
+  style,
+  onPress,
+  containerStyle,
+  forceLoading = false, // Allows parent to force a skeleton overlay (e.g. during pull-to-refresh)
 }: {
-    uri: string;
-    style: any;
-    onPress: () => void;
-    containerStyle?: any;
-    forceLoading?: boolean;
+  uri: string;
+  style: any;
+  onPress: () => void;
+  containerStyle?: any;
+  forceLoading?: boolean;
 }) => {
-    // Always start with loading true so the skeleton shows immediately.
-    // This prevents the card from appearing "empty" while the image decodes.
-    const [isImageLoading, setIsImageLoading] = useState(true);
+  // Always start with loading true so the skeleton shows immediately.
+  // This prevents the card from appearing "empty" while the image decodes.
+  const [isImageLoading, setIsImageLoading] = useState(true);
 
-    const shouldShowSkeleton = isImageLoading || forceLoading;
+  const shouldShowSkeleton = isImageLoading || forceLoading;
 
-    if (!uri) {
-        return (
-            <TouchableOpacity
-                style={containerStyle || styles.carouselItemContainer}
-                onPress={onPress}
-                activeOpacity={0.9}
-            >
-                <View style={[style, styles.emptyPhotoContainer]} />
-            </TouchableOpacity>
-        );
-    }
-
+  if (!uri) {
     return (
-        <TouchableOpacity
-            style={containerStyle || styles.carouselItemContainer}
-            onPress={onPress}
-            activeOpacity={0.9}
-        >
-            <View style={[styles.imageContainer, { backgroundColor: 'transparent' }]}>
-                {/* The skeleton always renders until the image is 100% painted OR if artificially forced */}
-                {shouldShowSkeleton && (
-                    <View style={[styles.imageSkeleton, { width: style.width, height: style.height }]}>
-                        <SkeletonPlaceholder borderRadius={32}>
-                            <SkeletonPlaceholder.Item
-                                width={style.width || 173}
-                                height={style.height || 173}
-                                borderRadius={32}
-                            />
-                        </SkeletonPlaceholder>
-                    </View>
-                )}
-                
-                {/* Image paints directly over the skeleton, then skeleton unmounts. No transparency gap. */}
-                <Image
-                    source={{ uri }}
-                    style={style}
-                    resizeMode="cover"
-                    onLoad={() => setIsImageLoading(false)}
-                    onError={() => setIsImageLoading(false)}
-                />
-            </View>
-        </TouchableOpacity>
+      <TouchableOpacity
+        style={containerStyle || styles.carouselItemContainer}
+        onPress={onPress}
+        activeOpacity={0.9}
+      >
+        <View style={[style, styles.emptyPhotoContainer]} />
+      </TouchableOpacity>
     );
+  }
+
+  return (
+    <TouchableOpacity
+      style={containerStyle || styles.carouselItemContainer}
+      onPress={onPress}
+      activeOpacity={0.9}
+    >
+      <View style={[styles.imageContainer, { backgroundColor: 'transparent' }]}>
+        {/* The skeleton always renders until the image is 100% painted OR if artificially forced */}
+        {shouldShowSkeleton && (
+          <View
+            style={[
+              styles.imageSkeleton,
+              { width: style.width, height: style.height },
+            ]}
+          >
+            <SkeletonPlaceholder borderRadius={32}>
+              <SkeletonPlaceholder.Item
+                width={style.width || 173}
+                height={style.height || 173}
+                borderRadius={32}
+              />
+            </SkeletonPlaceholder>
+          </View>
+        )}
+
+        {/* Image paints directly over the skeleton, then skeleton unmounts. No transparency gap. */}
+        <Image
+          source={{ uri }}
+          style={style}
+          resizeMode="cover"
+          onLoad={() => setIsImageLoading(false)}
+          onError={() => setIsImageLoading(false)}
+        />
+      </View>
+    </TouchableOpacity>
+  );
 };
 
 export default function HomeScreen(): React.JSX.Element {
-    const navigation = useNavigation();
-    const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
-    const { photos, isLoading, refreshPhotos, loadMorePhotos, pagination, isLoadingMore, setSelectedSnapshot } = usePhotoContext();
-    const { user, profile } = useAuthStore();
+  const navigation = useNavigation();
+  const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
+  const {
+    photos,
+    isLoading,
+    refreshPhotos,
+    loadMorePhotos,
+    pagination,
+    isLoadingMore,
+    setSelectedSnapshot,
+  } = usePhotoContext();
+  const { user, profile } = useAuthStore();
 
-    // Date group navigation state
-    const [currentDateIndex, setCurrentDateIndex] = useState<number>(0);
-    const [currentPhotoInDate, setCurrentPhotoInDate] = useState<number>(0);
+  // Date group navigation state
+  const [currentDateIndex, setCurrentDateIndex] = useState<number>(0);
+  const [currentPhotoInDate, setCurrentPhotoInDate] = useState<number>(0);
 
-    // Carousel ref
-    const carouselRef = useRef<ICarouselInstance>(null);
+  // Carousel ref
+  const carouselRef = useRef<ICarouselInstance>(null);
 
-    // Top concerns state
-    const [topConcerns, setTopConcerns] = useState<TopConcern[]>([]);
-    const [isLoadingConcerns, setIsLoadingConcerns] = useState<boolean>(false);
-    const loadedConcernsPhotoIdRef = useRef<string | null>(null);
-    const [expandedConcerns, setExpandedConcerns] = useState<Record<string, boolean>>({});
+  // Top concerns state
+  const [topConcerns, setTopConcerns] = useState<TopConcern[]>([]);
+  const [isLoadingConcerns, setIsLoadingConcerns] = useState<boolean>(false);
+  const loadedConcernsPhotoIdRef = useRef<string | null>(null);
+  const [expandedConcerns, setExpandedConcerns] = useState<
+    Record<string, boolean>
+  >({});
 
-    // Skin Check reports state
-    const [reports, setReports] = useState<any[]>([]);
-    const [isLoadingReports, setIsLoadingReports] = useState<boolean>(true);
+  // Skin Check reports state
+  const [reports, setReports] = useState<any[]>([]);
+  const [isLoadingReports, setIsLoadingReports] = useState<boolean>(true);
 
-    // User metrics state
-    const [userMetrics, setUserMetrics] = useState<{ total_routines: number; total_face_scans: number } | null>(null);
-    const [isLoadingMetrics, setIsLoadingMetrics] = useState<boolean>(true);
+  // User metrics state
+  const [userMetrics, setUserMetrics] = useState<{
+    total_routines: number;
+    total_face_scans: number;
+  } | null>(null);
+  const [isLoadingMetrics, setIsLoadingMetrics] = useState<boolean>(true);
 
-    // Toggle ingredient visibility for a concern
-    const toggleConcernExpanded = (concernName: string) => {
-        setExpandedConcerns(prev => ({
-            ...prev,
-            [concernName]: !prev[concernName],
-        }));
-    };
+  // Toggle ingredient visibility for a concern
+  const toggleConcernExpanded = (concernName: string) => {
+    setExpandedConcerns(prev => ({
+      ...prev,
+      [concernName]: !prev[concernName],
+    }));
+  };
 
-    // Group photos by date
-    const dateGroups = useMemo(() => {
-        const groups: { date: string; dateLabel: string; photos: any[] }[] = [];
-        const today = new Date();
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
+  // Group photos by date
+  const dateGroups = useMemo(() => {
+    const groups: { date: string; dateLabel: string; photos: any[] }[] = [];
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
 
-        // Always include "today" as first option (even if no photos)
+    // Always include "today" as first option (even if no photos)
+    groups.push({
+      date: format(today, 'yyyy-MM-dd'),
+      dateLabel: 'TODAY',
+      photos: [],
+    });
+
+    // Group existing photos by date
+    photos.forEach((photo: any) => {
+      // Skip photos with empty storageUrl
+      if (!photo.storageUrl) return;
+
+      const photoDate = photo.timestamp
+        ? new Date(photo.timestamp)
+        : new Date();
+      const dateKey = format(photoDate, 'yyyy-MM-dd');
+      let dateLabel = format(photoDate, 'MMM d').toUpperCase();
+
+      if (isToday(photoDate)) {
+        dateLabel = 'TODAY';
+      } else if (isYesterday(photoDate)) {
+        dateLabel = 'YESTERDAY';
+      }
+
+      const existingGroup = groups.find(g => g.date === dateKey);
+      if (existingGroup) {
+        existingGroup.photos.push(photo);
+      } else {
         groups.push({
-            date: format(today, 'yyyy-MM-dd'),
-            dateLabel: 'TODAY',
-            photos: [],
+          date: dateKey,
+          dateLabel,
+          photos: [photo],
         });
+      }
+    });
 
-        // Group existing photos by date
-        photos.forEach((photo: any) => {
-            // Skip photos with empty storageUrl
-            if (!photo.storageUrl) return;
+    // Sort by date descending (newest first)
+    groups.sort((a, b) => b.date.localeCompare(a.date));
+    return groups;
+  }, [photos]);
 
-            const photoDate = photo.timestamp ? new Date(photo.timestamp) : new Date();
-            const dateKey = format(photoDate, 'yyyy-MM-dd');
-            let dateLabel = format(photoDate, 'MMM d').toUpperCase();
+  // Current date group and photo
+  const currentDateGroup = dateGroups[currentDateIndex] || dateGroups[0];
+  const currentPhoto = currentDateGroup?.photos[currentPhotoInDate];
+  const hasPhotosForCurrentDate = currentDateGroup?.photos.length > 0;
 
-            if (isToday(photoDate)) {
-                dateLabel = 'TODAY';
-            } else if (isYesterday(photoDate)) {
-                dateLabel = 'YESTERDAY';
+  // console.log("currentPhoto", currentPhoto);
+  console.log('currentDateGroup', currentDateGroup);
+
+  // Refresh photos when screen comes into focus
+  useFocusEffect(
+    useCallback(() => {
+      refreshPhotos();
+      loadReportHistory();
+      loadUserMetrics();
+    }, [refreshPhotos]),
+  );
+
+  const loadUserMetrics = async () => {
+    try {
+      setIsLoadingMetrics(true);
+      const response = (await getUserRoutineScanMetrics()) as any;
+      if (response.success && response.data) {
+        setUserMetrics(response.data);
+      }
+    } catch (error) {
+      console.error('Error loading user metrics:', error);
+    } finally {
+      setIsLoadingMetrics(false);
+    }
+  };
+
+  // Specifically refresh when a new photo is uploaded
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener('photoUploaded', () => {
+      refreshPhotos();
+    });
+    return () => subscription.remove();
+  }, [refreshPhotos]);
+
+  const loadReportHistory = async () => {
+    try {
+      setIsLoadingReports(true);
+      const response = (await getReportHistory()) as any;
+      if (response.success) {
+        setReports(
+          response.reports && response.reports.length > 0
+            ? [response.reports[0]]
+            : [],
+        );
+      }
+    } catch (error) {
+      console.error('Error loading report history:', error);
+    } finally {
+      setIsLoadingReports(false);
+    }
+  };
+
+  // Load concerns for current photo when it changes (skip if same photo)
+  const currentPhotoId =
+    currentPhoto?.id || currentPhoto?.hautUploadData?.imageId || null;
+  useEffect(() => {
+    if (currentPhoto) {
+      const photoId = currentPhoto.id || currentPhoto.hautUploadData?.imageId;
+      if (photoId && photoId === loadedConcernsPhotoIdRef.current) {
+        return; // Already loaded concerns for this photo
+      }
+      loadConcernsForPhoto(currentPhoto);
+    } else {
+      loadedConcernsPhotoIdRef.current = null;
+      setTopConcerns([]);
+    }
+  }, [currentPhotoId]);
+
+  // Load concerns for the current photo
+  const loadConcernsForPhoto = async (photo: any) => {
+    if (!photo?.id && !photo?.hautUploadData?.imageId) return;
+
+    const imageId = photo.hautUploadData?.imageId || photo.id;
+    const hautBatchId = photo.hautUploadData?.hautBatchId || photo.hautBatchId;
+    loadedConcernsPhotoIdRef.current = photo.id || imageId;
+    setIsLoadingConcerns(true);
+
+    try {
+      // Get current photo results - use hautBatchId for API call
+      const results = await getHautAnalysisResults(hautBatchId || imageId);
+
+      // Find previous photo to compare (in the current date group or earlier)
+      let previousMetrics: any = null;
+
+      // Look for previous photo in same date group first
+      if (
+        currentPhotoInDate > 0 &&
+        currentDateGroup?.photos[currentPhotoInDate - 1]
+      ) {
+        const prevPhoto = currentDateGroup.photos[currentPhotoInDate - 1];
+        const prevHautBatchId =
+          prevPhoto.hautUploadData?.hautBatchId ||
+          prevPhoto.hautBatchId ||
+          prevPhoto.id;
+        try {
+          const prevResults = await getHautAnalysisResults(prevHautBatchId);
+          if (prevResults && prevResults.length > 0) {
+            previousMetrics = transformHautResults(prevResults) as any;
+          }
+        } catch (e) {
+          // console.log('Could not load previous photo metrics');
+        }
+      }
+      // If no previous in same date, look in previous date group
+      else if (currentDateIndex < dateGroups.length - 1) {
+        const prevDateGroup = dateGroups[currentDateIndex + 1];
+        if (prevDateGroup?.photos.length > 0) {
+          const prevPhoto =
+            prevDateGroup.photos[prevDateGroup.photos.length - 1]; // Most recent from prev date
+          const prevHautBatchId =
+            prevPhoto.hautUploadData?.hautBatchId ||
+            prevPhoto.hautBatchId ||
+            prevPhoto.id;
+          try {
+            const prevResults = await getHautAnalysisResults(prevHautBatchId);
+            if (prevResults && prevResults.length > 0) {
+              previousMetrics = transformHautResults(prevResults) as any;
             }
+          } catch (e) {
+            // console.log('Could not load previous photo metrics');
+          }
+        }
+      }
 
-            const existingGroup = groups.find(g => g.date === dateKey);
-            if (existingGroup) {
-                existingGroup.photos.push(photo);
+      if (results && results.length > 0) {
+        const transformedMetrics: any = transformHautResults(results);
+
+        // Helper function to calculate change
+        const calculateChange = (
+          currentValue: number,
+          previousValue: number | undefined,
+        ): {
+          change: number | null;
+          changeText: string;
+          changeDirection: 'up' | 'down' | 'none';
+        } => {
+          if (previousValue === undefined) {
+            return { change: null, changeText: '', changeDirection: 'none' };
+          }
+          const diff = currentValue - previousValue;
+          if (diff === 0) {
+            return { change: 0, changeText: '', changeDirection: 'none' };
+          }
+          const absDiff = Math.abs(Math.round(diff));
+          // For skin scores, higher is generally better, so positive diff = improvement (up arrow)
+          if (diff > 0) {
+            return {
+              change: diff,
+              changeText: `↑${absDiff}`,
+              changeDirection: 'up',
+            };
+          } else {
+            return {
+              change: diff,
+              changeText: `↓${absDiff}`,
+              changeDirection: 'down',
+            };
+          }
+        };
+
+        // Define map of all supported metric keys -> Concern Name
+        const METRIC_TO_CONCERN_MAP: Record<string, string> = {
+          pigmentationScore: 'Pigmentation',
+          uniformnessScore: 'Evenness',
+          rednessScore: 'Redness',
+          acneScore: 'Breakouts',
+          poresScore: 'Visible Pores',
+          linesScore: 'Lines',
+          hydrationScore: 'Dewiness',
+          eyeAreaCondition: 'Dark Circles',
+          puffinessScore: 'Eye Puffiness',
+          skinType: 'Skin Type',
+        };
+
+        // Extract top concerns dynamically
+        const concerns: TopConcern[] = [];
+
+        Object.entries(METRIC_TO_CONCERN_MAP).forEach(
+          ([metricKey, concernName]) => {
+            if (
+              transformedMetrics[metricKey] !== undefined &&
+              transformedMetrics[metricKey] !== null
+            ) {
+              if (
+                transformedMetrics.topConcerns &&
+                transformedMetrics.topConcerns.includes(metricKey)
+              ) {
+                const changeInfo = calculateChange(
+                  transformedMetrics[metricKey],
+                  previousMetrics?.[metricKey],
+                );
+
+                // Look up ingredients from Ingredients.json instead of concerns.json
+                let ingredients: string[] = getIngredientsForMetric(metricKey);
+
+                concerns.push({
+                  name: concernName,
+                  metricKey,
+                  value: transformedMetrics[metricKey],
+                  ...changeInfo,
+                  ingredients,
+                  foundIngredients: [],
+                  ingredientsLoading: ingredients.length > 0,
+                });
+              }
+            }
+          },
+        );
+
+        setTopConcerns(concerns);
+
+        // Fetch routine-match data for each concern's ingredients
+        concerns.forEach(async concern => {
+          if (concern.ingredients.length === 0) return;
+          const apiConcernName = getConcernNameForAPI(concern.metricKey);
+          if (!apiConcernName) return;
+          try {
+            const response = (await generateConcernMessage(
+              apiConcernName,
+            )) as any;
+            if (response?.success && response.data) {
+              setTopConcerns(prev =>
+                prev.map(c =>
+                  c.metricKey === concern.metricKey
+                    ? {
+                        ...c,
+                        foundIngredients: response.data.found_ingredients || [],
+                        ingredientsLoading: false,
+                      }
+                    : c,
+                ),
+              );
             } else {
-                groups.push({
-                    date: dateKey,
-                    dateLabel,
-                    photos: [photo],
-                });
+              setTopConcerns(prev =>
+                prev.map(c =>
+                  c.metricKey === concern.metricKey
+                    ? { ...c, ingredientsLoading: false }
+                    : c,
+                ),
+              );
             }
+          } catch {
+            setTopConcerns(prev =>
+              prev.map(c =>
+                c.metricKey === concern.metricKey
+                  ? { ...c, ingredientsLoading: false }
+                  : c,
+              ),
+            );
+          }
         });
+      }
+    } catch (error) {
+      // console.log('Error loading concerns:', error);
+    } finally {
+      setIsLoadingConcerns(false);
+    }
+  };
 
-        // Sort by date descending (newest first)
-        groups.sort((a, b) => b.date.localeCompare(a.date));
-        return groups;
-    }, [photos]);
-
-    // Current date group and photo
-    const currentDateGroup = dateGroups[currentDateIndex] || dateGroups[0];
-    const currentPhoto = currentDateGroup?.photos[currentPhotoInDate];
-    const hasPhotosForCurrentDate = currentDateGroup?.photos.length > 0;
-
-    // console.log("currentPhoto", currentPhoto);
-    console.log("currentDateGroup", currentDateGroup);
-
-    // Refresh photos when screen comes into focus
-    useFocusEffect(
-        useCallback(() => {
-            refreshPhotos();
-            loadReportHistory();
-            loadUserMetrics();
-        }, [refreshPhotos])
-    );
-
-    const loadUserMetrics = async () => {
-        try {
-            setIsLoadingMetrics(true);
-            const response = await getUserRoutineScanMetrics() as any;
-            if (response.success && response.data) {
-                setUserMetrics(response.data);
-            }
-        } catch (error) {
-            console.error('Error loading user metrics:', error);
-        } finally {
-            setIsLoadingMetrics(false);
-        }
-    };
-
-    // Specifically refresh when a new photo is uploaded
-    useEffect(() => {
-        const subscription = DeviceEventEmitter.addListener('photoUploaded', () => {
-            refreshPhotos();
-        });
-        return () => subscription.remove();
-    }, [refreshPhotos]);
-
-    const loadReportHistory = async () => {
-        try {
-            setIsLoadingReports(true);
-            const response = await getReportHistory() as any;
-            if (response.success) {
-                setReports(response.reports && response.reports.length > 0 ? [response.reports[0]] : []);
-            }
-        } catch (error) {
-            console.error('Error loading report history:', error);
-        } finally {
-            setIsLoadingReports(false);
-        }
-    };
-
-    // Load concerns for current photo when it changes (skip if same photo)
-    const currentPhotoId = currentPhoto?.id || currentPhoto?.hautUploadData?.imageId || null;
-    useEffect(() => {
+  // Listen for top concern changes to refetch metrics
+  useEffect(() => {
+    const subscription = DeviceEventEmitter.addListener(
+      'refreshTopConcerns',
+      () => {
         if (currentPhoto) {
-            const photoId = currentPhoto.id || currentPhoto.hautUploadData?.imageId;
-            if (photoId && photoId === loadedConcernsPhotoIdRef.current) {
-                return; // Already loaded concerns for this photo
-            }
-            loadConcernsForPhoto(currentPhoto);
-        } else {
-            loadedConcernsPhotoIdRef.current = null;
-            setTopConcerns([]);
+          // Clear the ref to force re-fetch
+          loadedConcernsPhotoIdRef.current = null;
+          loadConcernsForPhoto(currentPhoto);
         }
-    }, [currentPhotoId]);
+      },
+    );
+    return () => subscription.remove();
+  }, [currentPhoto, loadConcernsForPhoto]);
 
-    // Load concerns for the current photo
-    const loadConcernsForPhoto = async (photo: any) => {
-        if (!photo?.id && !photo?.hautUploadData?.imageId) return;
+  // Navigate between dates
+  const goToPrevDate = () => {
+    if (currentDateIndex < dateGroups.length - 1) {
+      const newIndex = currentDateIndex + 1;
+      setCurrentDateIndex(newIndex);
+      setCurrentPhotoInDate(0);
 
-        const imageId = photo.hautUploadData?.imageId || photo.id;
-        loadedConcernsPhotoIdRef.current = photo.id || imageId;
-        setIsLoadingConcerns(true);
+      // Trigger loading more photos when approaching the end (within 3 date groups)
+      if (
+        pagination.has_next &&
+        !isLoadingMore &&
+        newIndex >= dateGroups.length - 3
+      ) {
+        // console.log('🔵 HOME: Loading more photos - approaching end of date groups');
+        loadMorePhotos();
+      }
+    }
+  };
 
-        try {
-            // Get current photo results
-            const results = await getHautAnalysisResults(imageId);
+  const goToNextDate = () => {
+    if (currentDateIndex > 0) {
+      setCurrentDateIndex(currentDateIndex - 1);
+      setCurrentPhotoInDate(0);
+    }
+  };
 
-            // Find previous photo to compare (in the current date group or earlier)
-            let previousMetrics: any = null;
+  // Navigate between photos within same date (called by carousel)
+  const handleCarouselSnap = (index: number) => {
+    if (index >= 0 && index < currentDateGroup.photos.length) {
+      setCurrentPhotoInDate(index);
+    }
+  };
 
-            // Look for previous photo in same date group first
-            if (currentPhotoInDate > 0 && currentDateGroup?.photos[currentPhotoInDate - 1]) {
-                const prevPhoto = currentDateGroup.photos[currentPhotoInDate - 1];
-                const prevImageId = prevPhoto.hautUploadData?.imageId || prevPhoto.id;
-                try {
-                    const prevResults = await getHautAnalysisResults(prevImageId);
-                    if (prevResults && prevResults.length > 0) {
-                        previousMetrics = transformHautResults(prevResults) as any;
-                    }
-                } catch (e) {
-                    // console.log('Could not load previous photo metrics');
-                }
-            }
-            // If no previous in same date, look in previous date group
-            else if (currentDateIndex < dateGroups.length - 1) {
-                const prevDateGroup = dateGroups[currentDateIndex + 1];
-                if (prevDateGroup?.photos.length > 0) {
-                    const prevPhoto = prevDateGroup.photos[prevDateGroup.photos.length - 1]; // Most recent from prev date
-                    const prevImageId = prevPhoto.hautUploadData?.imageId || prevPhoto.id;
-                    try {
-                        const prevResults = await getHautAnalysisResults(prevImageId);
-                        if (prevResults && prevResults.length > 0) {
-                            previousMetrics = transformHautResults(prevResults) as any;
-                        }
-                    } catch (e) {
-                        // console.log('Could not load previous photo metrics');
-                    }
-                }
-            }
+  // Format date for display
+  const getDateLabel = (photo: any) => {
+    if (!photo?.timestamp) return 'TODAY';
+    const date = new Date(photo.timestamp);
+    if (isToday(date)) return 'TODAY';
+    if (isYesterday(date)) return 'YESTERDAY';
+    return format(date, 'MMM d').toUpperCase();
+  };
 
-            if (results && results.length > 0) {
-                const transformedMetrics: any = transformHautResults(results);
+  // Get score indicator color
+  const getScoreColor = (score: number) => {
+    if (score >= 70) return '#22C55E'; // Green
+    if (score >= 50) return '#EAB308'; // Yellow
+    return '#EF4444'; // Red
+  };
 
-                // Helper function to calculate change
-                const calculateChange = (currentValue: number, previousValue: number | undefined): { change: number | null; changeText: string; changeDirection: 'up' | 'down' | 'none' } => {
-                    if (previousValue === undefined) {
-                        return { change: null, changeText: '', changeDirection: 'none' };
-                    }
-                    const diff = currentValue - previousValue;
-                    if (diff === 0) {
-                        return { change: 0, changeText: '', changeDirection: 'none' };
-                    }
-                    const absDiff = Math.abs(Math.round(diff));
-                    // For skin scores, higher is generally better, so positive diff = improvement (up arrow)
-                    if (diff > 0) {
-                        return { change: diff, changeText: `↑${absDiff}`, changeDirection: 'up' };
-                    } else {
-                        return { change: diff, changeText: `↓${absDiff}`, changeDirection: 'down' };
-                    }
-                };
+  const handleMenuPress = (): void => {
+    setIsSettingsVisible(true);
+  };
 
-                // Define map of all supported metric keys -> Concern Name
-                const METRIC_TO_CONCERN_MAP: Record<string, string> = {
-                    pigmentationScore: 'Pigmentation',
-                    uniformnessScore: 'Evenness',
-                    rednessScore: 'Redness',
-                    acneScore: 'Breakouts',
-                    poresScore: 'Visible Pores',
-                    linesScore: 'Lines',
-                    hydrationScore: 'Dewiness',
-                    eyeAreaCondition: 'Dark Circles'
-                };
+  const handlePhotoPress = (photo?: any) => {
+    const targetPhoto = photo || currentPhoto;
+    if (targetPhoto) {
+      // Set selected snapshot in context before navigating
+      setSelectedSnapshot({
+        id: targetPhoto.id,
+        url: targetPhoto.storageUrl,
+        storageUrl: targetPhoto.storageUrl,
+        threadId: targetPhoto.threadId,
+        apiData: {
+          created_at: targetPhoto.apiData?.created_at || null,
+        },
+      });
 
-                // Extract top concerns dynamically
-                const concerns: TopConcern[] = [];
+      (navigation as any).navigate('Snapshot', {
+        photoId: targetPhoto.id,
+        thumbnailUrl: targetPhoto.storageUrl,
+        localUri: targetPhoto.storageUrl,
+        timestamp: targetPhoto.apiData?.created_at || null,
+        fromPhotoGrid: 'true',
+        hautBatchId:
+          targetPhoto.hautUploadData?.hautBatchId || targetPhoto.hautBatchId,
+        imageId: targetPhoto.hautUploadData?.imageId || targetPhoto.id,
+      });
+    }
+  };
 
-                Object.entries(METRIC_TO_CONCERN_MAP).forEach(([metricKey, concernName]) => {
-                    if (transformedMetrics[metricKey] !== undefined && transformedMetrics[metricKey] !== null) {
-                        if (transformedMetrics.topConcerns && transformedMetrics.topConcerns.includes(metricKey)) {
-                            const changeInfo = calculateChange(
-                                transformedMetrics[metricKey],
-                                previousMetrics?.[metricKey]
-                            );
+  // Skeleton Loading Component for Photo Slider
+  const PhotoSliderSkeleton = () => (
+    <View style={styles.carouselContainer}>
+      <Carousel
+        key="carousel-skeleton"
+        loop={false}
+        width={SCREEN_WIDTH - 36}
+        height={173}
+        style={{
+          width: SCREEN_WIDTH - 64,
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+        data={[1, 2, 3]}
+        mode="parallax"
+        modeConfig={{
+          parallaxScrollingScale: 1.0,
+          parallaxScrollingOffset: 50,
+        }}
+        renderItem={() => (
+          <View style={styles.carouselItemContainer}>
+            <SkeletonPlaceholder borderRadius={32}>
+              <SkeletonPlaceholder.Item
+                width={173}
+                height={173}
+                borderRadius={32}
+              />
+            </SkeletonPlaceholder>
+          </View>
+        )}
+      />
+    </View>
+  );
 
-                            // Look up ingredients from Ingredients.json instead of concerns.json
-                            let ingredients: string[] = getIngredientsForMetric(metricKey);
+  // Skeleton Loading Component for Concerns
+  const ConcernsSkeleton = () => (
+    <SkeletonPlaceholder borderRadius={4}>
+      <SkeletonPlaceholder.Item>
+        {[1, 2, 3].map(item => (
+          <SkeletonPlaceholder.Item
+            key={item}
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="space-between"
+            marginBottom={10}
+            paddingHorizontal={16}
+            paddingVertical={16}
+          >
+            <SkeletonPlaceholder.Item
+              width={100}
+              height={20}
+              borderRadius={4}
+            />
+            <SkeletonPlaceholder.Item
+              width={80}
+              height={28}
+              borderRadius={12}
+            />
+          </SkeletonPlaceholder.Item>
+        ))}
+      </SkeletonPlaceholder.Item>
+    </SkeletonPlaceholder>
+  );
 
-                            concerns.push({
-                                name: concernName,
-                                metricKey,
-                                value: transformedMetrics[metricKey],
-                                ...changeInfo,
-                                ingredients,
-                                foundIngredients: [],
-                                ingredientsLoading: ingredients.length > 0,
-                            });
-                        }
-                    }
-                });
-
-                setTopConcerns(concerns);
-
-                // Fetch routine-match data for each concern's ingredients
-                concerns.forEach(async (concern) => {
-                    if (concern.ingredients.length === 0) return;
-                    const apiConcernName = getConcernNameForAPI(concern.metricKey);
-                    if (!apiConcernName) return;
-                    try {
-                        const response = await generateConcernMessage(apiConcernName) as any;
-                        if (response?.success && response.data) {
-                            setTopConcerns(prev => prev.map(c =>
-                                c.metricKey === concern.metricKey
-                                    ? {
-                                        ...c,
-                                        foundIngredients: response.data.found_ingredients || [],
-                                        ingredientsLoading: false,
-                                    }
-                                    : c
-                            ));
-                        } else {
-                            setTopConcerns(prev => prev.map(c =>
-                                c.metricKey === concern.metricKey
-                                    ? { ...c, ingredientsLoading: false }
-                                    : c
-                            ));
-                        }
-                    } catch {
-                        setTopConcerns(prev => prev.map(c =>
-                            c.metricKey === concern.metricKey
-                                ? { ...c, ingredientsLoading: false }
-                                : c
-                        ));
-                    }
-                });
-            }
-        } catch (error) {
-            // console.log('Error loading concerns:', error);
-        } finally {
-            setIsLoadingConcerns(false);
-        }
-    };
-
-    // Listen for top concern changes to refetch metrics
-    useEffect(() => {
-        const subscription = DeviceEventEmitter.addListener('refreshTopConcerns', () => {
-            if (currentPhoto) {
-                // Clear the ref to force re-fetch
-                loadedConcernsPhotoIdRef.current = null;
-                loadConcernsForPhoto(currentPhoto);
-            }
+  // Stable callback for carousel item press to avoid re-renders
+  // We strictly use the passed item, so we don't depend on currentPhoto or handlePhotoPress
+  const onCarouselItemPress = useCallback(
+    (item: any) => {
+      if (item) {
+        // Set selected snapshot in context before navigating
+        setSelectedSnapshot({
+          id: item.id,
+          url: item.storageUrl,
+          storageUrl: item.storageUrl,
+          threadId: item.threadId,
+          apiData: {
+            created_at: item.apiData?.created_at || null,
+          },
         });
-        return () => subscription.remove();
-    }, [currentPhoto, loadConcernsForPhoto]);
 
-    // Navigate between dates
-    const goToPrevDate = () => {
-        if (currentDateIndex < dateGroups.length - 1) {
-            const newIndex = currentDateIndex + 1;
-            setCurrentDateIndex(newIndex);
-            setCurrentPhotoInDate(0);
+        (navigation as any).navigate('Snapshot', {
+          photoId: item.id,
+          thumbnailUrl: item.storageUrl,
+          localUri: item.storageUrl,
+          timestamp: item.apiData?.created_at || null,
+          fromPhotoGrid: 'true',
+          hautBatchId: item.hautUploadData?.hautBatchId || item.hautBatchId,
+          imageId: item.hautUploadData?.imageId || item.id,
+        });
+      }
+    },
+    [navigation, setSelectedSnapshot],
+  );
 
-            // Trigger loading more photos when approaching the end (within 3 date groups)
-            if (pagination.has_next && !isLoadingMore && newIndex >= dateGroups.length - 3) {
-                // console.log('🔵 HOME: Loading more photos - approaching end of date groups');
-                loadMorePhotos();
-            }
-        }
-    };
+  // Render carousel item with skeleton loading (Memoized to prevent unnecessary re-renders)
+  const renderCarouselItem = useCallback(
+    ({ item, index }: { item: any; index: number }) => (
+      <ImageWithSkeleton
+        key={item.storageUrl}
+        uri={item.storageUrl}
+        style={styles.carouselImage}
+        onPress={() => onCarouselItemPress(item)}
+        forceLoading={isLoading}
+      />
+    ),
+    [onCarouselItemPress, isLoading],
+  );
 
-    const goToNextDate = () => {
-        if (currentDateIndex > 0) {
-            setCurrentDateIndex(currentDateIndex - 1);
-            setCurrentPhotoInDate(0);
-        }
-    };
+  const handleNewScan = () => {
+    (navigation as any).navigate('Camera');
+  };
 
-    // Navigate between photos within same date (called by carousel)
-    const handleCarouselSnap = (index: number) => {
-        if (index >= 0 && index < currentDateGroup.photos.length) {
-            setCurrentPhotoInDate(index);
-        }
-    };
+  return (
+    <View style={styles.container}>
+      <HomeHeader onMenuPress={handleMenuPress} />
 
-    // Format date for display
-    const getDateLabel = (photo: any) => {
-        if (!photo?.timestamp) return 'TODAY';
-        const date = new Date(photo.timestamp);
-        if (isToday(date)) return 'TODAY';
-        if (isYesterday(date)) return 'YESTERDAY';
-        return format(date, 'MMM d').toUpperCase();
-    };
-
-    // Get score indicator color
-    const getScoreColor = (score: number) => {
-        if (score >= 70) return '#22C55E'; // Green
-        if (score >= 50) return '#EAB308'; // Yellow
-        return '#EF4444'; // Red
-    };
-
-    const handleMenuPress = (): void => {
-        setIsSettingsVisible(true);
-    };
-
-    const handlePhotoPress = (photo?: any) => {
-        const targetPhoto = photo || currentPhoto;
-        if (targetPhoto) {
-            // Set selected snapshot in context before navigating
-            setSelectedSnapshot({
-                id: targetPhoto.id,
-                url: targetPhoto.storageUrl,
-                storageUrl: targetPhoto.storageUrl,
-                threadId: targetPhoto.threadId,
-                apiData: {
-                    created_at: targetPhoto.apiData?.created_at || null
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* Photo Slider Section */}
+        <View style={styles.photoSliderCard}>
+          {/* Top Navigation Row */}
+          <View style={styles.sliderNavRow}>
+            {/* Left Arrow - Go to older date */}
+            <TouchableOpacity
+              style={[
+                styles.arrowButton,
+                currentDateIndex >= dateGroups.length - 1 &&
+                  styles.arrowButtonDisabled,
+              ]}
+              onPress={goToPrevDate}
+              disabled={currentDateIndex >= dateGroups.length - 1}
+            >
+              <ChevronLeft
+                size={20}
+                color={
+                  currentDateIndex >= dateGroups.length - 1
+                    ? '#C4C4C4'
+                    : '#666666'
                 }
-            });
+              />
+            </TouchableOpacity>
 
-            (navigation as any).navigate('Snapshot', {
-                photoId: targetPhoto.id,
-                thumbnailUrl: targetPhoto.storageUrl,
-                localUri: targetPhoto.storageUrl,
-                timestamp: targetPhoto.apiData?.created_at || null,
-                fromPhotoGrid: 'true',
-                hautBatchId: targetPhoto.hautUploadData?.hautBatchId || targetPhoto.hautBatchId,
-                imageId: targetPhoto.hautUploadData?.imageId || targetPhoto.id,
-            });
-        }
-    };
+            {/* Date Badge */}
+            <View style={styles.dateBadge}>
+              <Text style={styles.dateBadgeText}>
+                {currentDateGroup?.dateLabel || 'TODAY'}
+              </Text>
+            </View>
 
-    // Skeleton Loading Component for Photo Slider
-    const PhotoSliderSkeleton = () => (
-        <View style={styles.carouselContainer}>
-            <Carousel
-                key="carousel-skeleton"
+            {/* Right Arrow - Go to newer date */}
+            <TouchableOpacity
+              style={[
+                styles.arrowButton,
+                currentDateIndex === 0 && styles.arrowButtonDisabled,
+              ]}
+              onPress={goToNextDate}
+              disabled={currentDateIndex === 0}
+            >
+              <ChevronRight
+                size={20}
+                color={currentDateIndex === 0 ? '#C4C4C4' : '#666666'}
+              />
+            </TouchableOpacity>
+          </View>
+
+          {/* Photo Container */}
+          {isLoading && photos.length === 0 ? (
+            <PhotoSliderSkeleton />
+          ) : hasPhotosForCurrentDate && currentDateGroup.photos.length > 1 ? (
+            /* 3D Carousel for multiple photos - 3 images visible */
+            <View style={styles.carouselContainer}>
+              <Carousel
+                key={`carousel-${currentDateGroup?.date}-${currentDateGroup?.photos?.length}`}
+                ref={carouselRef}
                 loop={false}
                 width={SCREEN_WIDTH - 36}
                 height={173}
-                style={{ width: SCREEN_WIDTH - 64, justifyContent: 'center', alignItems: 'center' }}
-                data={[1, 2, 3]}
+                style={{
+                  width: SCREEN_WIDTH - 64,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                }}
+                data={[...currentDateGroup.photos].reverse()}
                 mode="parallax"
                 modeConfig={{
-                    parallaxScrollingScale: 1.0,
-                    parallaxScrollingOffset: 50,
+                  parallaxScrollingScale: 1.0,
+                  parallaxScrollingOffset: 200,
+                  parallaxAdjacentItemScale: 0.8,
                 }}
-                renderItem={() => (
-                    <View style={styles.carouselItemContainer}>
-                        <SkeletonPlaceholder borderRadius={32}>
-                            <SkeletonPlaceholder.Item
-                                width={173}
-                                height={173}
-                                borderRadius={32}
-                            />
-                        </SkeletonPlaceholder>
-                    </View>
+                scrollAnimationDuration={300}
+                // onSnapToItem={handleCarouselSnap}
+                onSnapToItem={index => {
+                  // Reverse the index back to match original photo array
+                  const photosCount = currentDateGroup?.photos?.length || 0;
+                  const reversedIndex =
+                    photosCount > 0 ? photosCount - 1 - index : 0;
+                  handleCarouselSnap(reversedIndex);
+                }}
+                defaultIndex={Math.max(
+                  0,
+                  Math.min(
+                    (currentDateGroup?.photos?.length || 0) - 1,
+                    (currentDateGroup?.photos?.length || 0) -
+                      1 -
+                      currentPhotoInDate,
+                  ),
                 )}
-            />
-        </View>
-    );
-
-    // Skeleton Loading Component for Concerns
-    const ConcernsSkeleton = () => (
-        <SkeletonPlaceholder borderRadius={4}>
-            <SkeletonPlaceholder.Item>
-                {[1, 2, 3].map((item) => (
-                    <SkeletonPlaceholder.Item
-                        key={item}
-                        flexDirection="row"
-                        alignItems="center"
-                        justifyContent="space-between"
-                        marginBottom={10}
-                        paddingHorizontal={16}
-                        paddingVertical={16}
-                    >
-                        <SkeletonPlaceholder.Item width={100} height={20} borderRadius={4} />
-                        <SkeletonPlaceholder.Item width={80} height={28} borderRadius={12} />
-                    </SkeletonPlaceholder.Item>
-                ))}
-            </SkeletonPlaceholder.Item>
-        </SkeletonPlaceholder>
-    );
-
-    // Stable callback for carousel item press to avoid re-renders
-    // We strictly use the passed item, so we don't depend on currentPhoto or handlePhotoPress
-    const onCarouselItemPress = useCallback((item: any) => {
-        if (item) {
-            // Set selected snapshot in context before navigating
-            setSelectedSnapshot({
-                id: item.id,
-                url: item.storageUrl,
-                storageUrl: item.storageUrl,
-                threadId: item.threadId,
-                apiData: {
-                    created_at: item.apiData?.created_at || null
-                }
-            });
-
-            (navigation as any).navigate('Snapshot', {
-                photoId: item.id,
-                thumbnailUrl: item.storageUrl,
-                localUri: item.storageUrl,
-                timestamp: item.apiData?.created_at || null,
-                fromPhotoGrid: 'true',
-                hautBatchId: item.hautUploadData?.hautBatchId || item.hautBatchId,
-                imageId: item.hautUploadData?.imageId || item.id,
-            });
-        }
-    }, [navigation, setSelectedSnapshot]);
-
-    // Render carousel item with skeleton loading (Memoized to prevent unnecessary re-renders)
-    const renderCarouselItem = useCallback(({ item, index }: { item: any; index: number }) => (
-        <ImageWithSkeleton
-            key={item.storageUrl}
-            uri={item.storageUrl}
-            style={styles.carouselImage}
-            onPress={() => onCarouselItemPress(item)}
-            forceLoading={isLoading}
-        />
-    ), [onCarouselItemPress, isLoading]);
-
-    const handleNewScan = () => {
-        (navigation as any).navigate('Camera');
-    };
-
-    return (
-        <View style={styles.container}>
-            <HomeHeader
-                onMenuPress={handleMenuPress}
-            />
-
-            <ScrollView
-                style={styles.scrollView}
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-            >
-                {/* Photo Slider Section */}
-                <View style={styles.photoSliderCard}>
-                    {/* Top Navigation Row */}
-                    <View style={styles.sliderNavRow}>
-                        {/* Left Arrow - Go to older date */}
-                        <TouchableOpacity
-                            style={[styles.arrowButton, currentDateIndex >= dateGroups.length - 1 && styles.arrowButtonDisabled]}
-                            onPress={goToPrevDate}
-                            disabled={currentDateIndex >= dateGroups.length - 1}
-                        >
-                            <ChevronLeft
-                                size={20}
-                                color={currentDateIndex >= dateGroups.length - 1 ? '#C4C4C4' : '#666666'}
-                            />
-                        </TouchableOpacity>
-
-                        {/* Date Badge */}
-                        <View style={styles.dateBadge}>
-                            <Text style={styles.dateBadgeText}>
-                                {currentDateGroup?.dateLabel || 'TODAY'}
-                            </Text>
-                        </View>
-
-                        {/* Right Arrow - Go to newer date */}
-                        <TouchableOpacity
-                            style={[styles.arrowButton, currentDateIndex === 0 && styles.arrowButtonDisabled]}
-                            onPress={goToNextDate}
-                            disabled={currentDateIndex === 0}
-                        >
-                            <ChevronRight
-                                size={20}
-                                color={currentDateIndex === 0 ? '#C4C4C4' : '#666666'}
-                            />
-                        </TouchableOpacity>
-                    </View>
-
-                    {/* Photo Container */}
-                    {isLoading && photos.length === 0 ? (
-                        <PhotoSliderSkeleton />
-                    ) : hasPhotosForCurrentDate && currentDateGroup.photos.length > 1 ? (
-                        /* 3D Carousel for multiple photos - 3 images visible */
-                        <View style={styles.carouselContainer}>
-                            <Carousel
-                                key={`carousel-${currentDateGroup?.date}-${currentDateGroup?.photos?.length}`}
-                                ref={carouselRef}
-                                loop={false}
-                                width={SCREEN_WIDTH - 36}
-                                height={173}
-                                style={{ width: SCREEN_WIDTH - 64, justifyContent: 'center', alignItems: 'center' }}
-                                data={[...currentDateGroup.photos].reverse()}
-                                mode="parallax"
-                                modeConfig={{
-                                    parallaxScrollingScale: 1.0,
-                                    parallaxScrollingOffset: 200,
-                                    parallaxAdjacentItemScale: 0.8,
-                                }}
-                                scrollAnimationDuration={300}
-                                // onSnapToItem={handleCarouselSnap}
-                                onSnapToItem={(index) => {
-                                    // Reverse the index back to match original photo array
-                                    const photosCount = currentDateGroup?.photos?.length || 0;
-                                    const reversedIndex = photosCount > 0 ? photosCount - 1 - index : 0;
-                                    handleCarouselSnap(reversedIndex);
-                                }}
-                                defaultIndex={Math.max(0, Math.min((currentDateGroup?.photos?.length || 0) - 1, (currentDateGroup?.photos?.length || 0) - 1 - currentPhotoInDate))}
-
-                                // defaultIndex={currentPhotoInDate}
-                                renderItem={renderCarouselItem}
-                            />
-                        </View>
-                    ) : hasPhotosForCurrentDate ? (
-                        /* Single photo display with skeleton loading */
-                        <View style={styles.photoWrapper}>
-                            <ImageWithSkeleton
-                                uri={currentPhoto?.storageUrl || ''}
-                                style={styles.photo}
-                                onPress={() => handlePhotoPress()}
-                                containerStyle={styles.singlePhotoContainer}
-                                forceLoading={isLoading}
-                            />
-                        </View>
-                    ) : (
-                        <View style={styles.photoWrapper}>
-                            <View style={styles.emptyPhotoContainer}>
-                                {/* Face Scan Icon */}
-                                <View style={{ alignItems: 'center', justifyContent: 'center', backgroundColor: '#F5F5F5', borderRadius: 99, padding: 15 }}>
-                                    <SvgXml xml={scanPlaceholderSvg} width={50} height={50} />
-                                </View>
-                                {/* New Scan Button */}
-                                <TouchableOpacity
-                                    style={styles.newScanButton}
-                                    onPress={handleNewScan}
-                                >
-                                    <Plus size={16} color="#FFFFFF" />
-                                    <Text style={styles.newScanButtonText}>New Scan</Text>
-                                </TouchableOpacity>
-                            </View>
-                        </View>
-                    )}
-
-                    {/* No dots/indicators - using 3D carousel effect instead */}
+                // defaultIndex={currentPhotoInDate}
+                renderItem={renderCarouselItem}
+              />
+            </View>
+          ) : hasPhotosForCurrentDate ? (
+            /* Single photo display with skeleton loading */
+            <View style={styles.photoWrapper}>
+              <ImageWithSkeleton
+                uri={currentPhoto?.storageUrl || ''}
+                style={styles.photo}
+                onPress={() => handlePhotoPress()}
+                containerStyle={styles.singlePhotoContainer}
+                forceLoading={isLoading}
+              />
+            </View>
+          ) : (
+            <View style={styles.photoWrapper}>
+              <View style={styles.emptyPhotoContainer}>
+                {/* Face Scan Icon */}
+                <View
+                  style={{
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#F5F5F5',
+                    borderRadius: 99,
+                    padding: 15,
+                  }}
+                >
+                  <SvgXml xml={scanPlaceholderSvg} width={50} height={50} />
                 </View>
+                {/* New Scan Button */}
+                <TouchableOpacity
+                  style={styles.newScanButton}
+                  onPress={handleNewScan}
+                >
+                  <Plus size={16} color="#FFFFFF" />
+                  <Text style={styles.newScanButtonText}>New Scan</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          )}
 
-                {/* User Metrics Section - Requested Design */}
-                {userMetrics && (
-                    <View style={styles.metricsProfileCard}>
-                        <View style={styles.metricsProfileRow}>
-                            <View style={styles.metricsProfileItem}>
-                                <Text style={styles.metricsProfileLabel}>Facial Scans</Text>
-                                <View style={styles.metricsProfileValueContainer}>
-                                    <Text style={styles.metricsProfileValue}>{userMetrics.total_face_scans}</Text>
-                                </View>
-                            </View>
-                            <View style={styles.metricsProfileItem}>
-                                <Text style={styles.metricsProfileLabel}>Routine Items</Text>
-                                <View style={styles.metricsProfileValueContainer}>
-                                    <Text style={styles.metricsProfileValue}>{userMetrics.total_routines}</Text>
-                                </View>
-                            </View>
-                        </View>
-                    </View>
-                )}
-
-                {/* Top Concerns Section */}
-                {(isLoadingConcerns || topConcerns.length > 0) && (
-                    <View style={styles.sectionCard}>
-                        <View style={styles.sectionHeader}>
-                            <Star size={18} color="#79716B" />
-                            <Text style={styles.sectionTitle}>Top Concerns</Text>
-                        </View>
-
-                        {isLoadingConcerns ? (
-                            <ConcernsSkeleton />
-                        ) : topConcerns.length > 0 ? (
-                            <>
-                                <Text style={styles.ingredientsTitle}>Helpful Ingredients</Text>
-                                <Text style={styles.concernSubtitle}>
-                                    Dermatologists recommend at least one of the following ingredients for your concerns
-                                </Text>
-                                {topConcerns.map((concern) => {
-                                    const isExpanded = expandedConcerns[concern.name] ?? false;
-                                    const MAX_VISIBLE = 2;
-                                    const hasAtLeastOne = concern.foundIngredients && concern.foundIngredients.length > 0;
-                                    const showToggle = hasAtLeastOne && concern.ingredients.length > MAX_VISIBLE;
-                                    const visibleIngredients = (showToggle && !isExpanded) ? concern.ingredients.slice(0, MAX_VISIBLE) : concern.ingredients;
-                                    const hasMore = showToggle;
-
-                                    return (
-                                        <View key={concern.name} style={styles.concernCard}>
-                                            {/* Concern Header Row */}
-                                            <TouchableOpacity
-                                                style={styles.concernHeaderRow}
-                                                onPress={() => {
-                                                    (navigation as any).navigate('MetricDetail', {
-                                                        metricKey: concern.metricKey,
-                                                        metricValue: concern.value,
-                                                        photoData: currentPhoto ? JSON.stringify(currentPhoto) : undefined,
-                                                        precomputedChange: concern.change !== undefined && concern.changeDirection && concern.changeDirection !== 'none' ? {
-                                                            arrow: concern.changeDirection === 'up' ? '↑' : '↓',
-                                                            value: Math.abs(concern.change || 0)
-                                                        } : (concern.change !== undefined ? { arrow: '→', value: 0 } : undefined)
-                                                    });
-                                                }}
-                                            >
-                                                <Text style={styles.concernName}>{concern.name}</Text>
-                                                <View style={styles.concernValueContainer}>
-                                                    <View style={styles.scoreBadge}>
-                                                        {concern.changeDirection === 'up' && (
-                                                            <View style={styles.changeIndicator}>
-                                                                <ArrowUp size={12} color="#44403C" />
-                                                                <Text style={styles.changeValue}>
-                                                                    {Math.abs(concern.change || 0)}
-                                                                </Text>
-                                                            </View>
-                                                        )}
-                                                        {concern.changeDirection === 'down' && (
-                                                            <View style={styles.changeIndicator}>
-                                                                <ArrowDown size={12} color="#44403C" />
-                                                                <Text style={styles.changeValue}>
-                                                                    {Math.abs(concern.change || 0)}
-                                                                </Text>
-                                                            </View>
-                                                        )}
-                                                        <View style={styles.scoreIndicatorContainer}>
-                                                            <View style={[styles.scoreIndicator, { backgroundColor: getScoreColor(concern.value) }]} />
-                                                            <Text style={styles.concernValue}>{concern.value}</Text>
-                                                        </View>
-                                                    </View>
-                                                    <ChevronRight size={24} color="#A9A29D" />
-                                                </View>
-                                            </TouchableOpacity>
-
-                                            {/* Ingredient Rows */}
-                                            {concern.ingredientsLoading ? (
-                                                <View style={styles.ingredientLoadingContainer}>
-                                                    <SkeletonPlaceholder borderRadius={4}>
-                                                        <SkeletonPlaceholder.Item>
-                                                            {[1, 2].map((i) => (
-                                                                <SkeletonPlaceholder.Item
-                                                                    key={i}
-                                                                    flexDirection="row"
-                                                                    justifyContent="space-between"
-                                                                    alignItems="center"
-                                                                    paddingVertical={10}
-                                                                    paddingHorizontal={4}
-                                                                >
-                                                                    <SkeletonPlaceholder.Item width={100} height={14} borderRadius={4} />
-                                                                    <SkeletonPlaceholder.Item width={80} height={14} borderRadius={4} />
-                                                                </SkeletonPlaceholder.Item>
-                                                            ))}
-                                                        </SkeletonPlaceholder.Item>
-                                                    </SkeletonPlaceholder>
-                                                </View>
-                                            ) : concern.ingredients.length > 0 ? (
-                                                <View style={styles.ingredientListContainer}>
-                                                    {visibleIngredients.map((ingredient, idx) => {
-                                                        const colonIndex = ingredient.indexOf(':');
-                                                        const ingredientName = colonIndex > 0 ? ingredient.substring(0, colonIndex).trim() : ingredient.trim();
-
-                                                        const foundEntry = concern.foundIngredients?.find((found) => {
-                                                            if (typeof found === 'string') {
-                                                                return found.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-                                                            }
-                                                            return (found as any)?.ingredient?.toLowerCase().trim() === ingredientName.toLowerCase().trim();
-                                                        });
-                                                        const isFound = Boolean(foundEntry);
-                                                        const isLast = idx === visibleIngredients.length - 1 && !hasMore;
-
-                                                        return (
-                                                            <TouchableOpacity
-                                                                key={idx}
-                                                                style={[styles.ingredientRow, !isLast && styles.ingredientRowBorder]}
-                                                                onPress={() => {
-                                                                    const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
-                                                                    (navigation as any).navigate('ThreadChat', {
-                                                                        chatType: 'ingredients_related_chat',
-                                                                        initialMessage: message,
-                                                                        draftMessage: message,
-                                                                        hideInitial: true,
-                                                                        imageId: currentPhotoId
-                                                                    });
-                                                                }}
-                                                            >
-                                                                <Text style={styles.ingredientName}>{ingredientName}</Text>
-                                                                {isFound && (
-                                                                    <View style={styles.routineChip}>
-                                                                        <View style={styles.routineDot} />
-                                                                        <Text style={styles.routineText}>In your Routine</Text>
-                                                                    </View>
-                                                                )}
-                                                                <ChevronRight size={18} color="#D6D3D1" />
-                                                            </TouchableOpacity>
-                                                        );
-                                                    })}
-                                                    {hasMore && (
-                                                        <TouchableOpacity
-                                                            style={styles.showMoreButton}
-                                                            onPress={() => toggleConcernExpanded(concern.name)}
-                                                        >
-                                                            <Text style={styles.showMoreText}>
-                                                                {isExpanded ? 'Show less' : 'Show more'}
-                                                            </Text>
-                                                        </TouchableOpacity>
-                                                    )}
-                                                </View>
-                                            ) : null}
-                                        </View>
-                                    );
-                                })}
-                            </>
-                        ) : null}
-                    </View>
-                )}
-
-                {/* SkinCheck Card Section */}
-                <SkinCheckCard
-                    reports={reports}
-                    loading={isLoadingReports}
-                    onPress={() => {
-                        if (isLoadingConcerns) {
-                            Alert.alert('Analysis Loading', 'Please wait for your analysis results to finish loading.');
-                            return;
-                        }
-                        if (topConcerns && topConcerns.length > 0) {
-                            (navigation as any).navigate('SkinCheck');
-                        } else {
-                            Alert.alert(
-                                'Take a scan to continue',
-                                'SkinCheck sends your scan, scores, and routine to a professional. Take a new scan today to continue.',
-                                [
-                                    { text: 'Cancel', style: 'cancel' },
-                                    { text: 'Take New Scan', onPress: () => (navigation as any).navigate('Camera') }
-                                ]
-                            );
-                        }
-                    }}
-                />
-
-                {/* Bottom spacing for tab bar */}
-                <View style={{ height: 100 }} />
-            </ScrollView>
-
-            <SettingsDrawer
-                isVisible={isSettingsVisible}
-                onClose={() => setIsSettingsVisible(false)}
-            />
+          {/* No dots/indicators - using 3D carousel effect instead */}
         </View>
-    );
+
+        {/* User Metrics Section - Requested Design */}
+        {userMetrics && (
+          <View style={styles.metricsProfileCard}>
+            <View style={styles.metricsProfileRow}>
+              <View style={styles.metricsProfileItem}>
+                <Text style={styles.metricsProfileLabel}>Facial Scans</Text>
+                <View style={styles.metricsProfileValueContainer}>
+                  <Text style={styles.metricsProfileValue}>
+                    {userMetrics.total_face_scans}
+                  </Text>
+                </View>
+              </View>
+              <View style={styles.metricsProfileItem}>
+                <Text style={styles.metricsProfileLabel}>Routine Items</Text>
+                <View style={styles.metricsProfileValueContainer}>
+                  <Text style={styles.metricsProfileValue}>
+                    {userMetrics.total_routines}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Top Concerns Section */}
+        {(isLoadingConcerns || topConcerns.length > 0) && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Star size={18} color="#79716B" />
+              <Text style={styles.sectionTitle}>Top Concerns</Text>
+            </View>
+
+            {isLoadingConcerns ? (
+              <ConcernsSkeleton />
+            ) : topConcerns.length > 0 ? (
+              <>
+                <Text style={styles.ingredientsTitle}>Helpful Ingredients</Text>
+                <Text style={styles.concernSubtitle}>
+                  Dermatologists recommend at least one of the following
+                  ingredients for your concerns
+                </Text>
+                {topConcerns.map(concern => {
+                  const isExpanded = expandedConcerns[concern.name] ?? false;
+                  const MAX_VISIBLE = 2;
+                  const hasAtLeastOne =
+                    concern.foundIngredients &&
+                    concern.foundIngredients.length > 0;
+                  const showToggle =
+                    hasAtLeastOne && concern.ingredients.length > MAX_VISIBLE;
+                  const visibleIngredients =
+                    showToggle && !isExpanded
+                      ? concern.ingredients.slice(0, MAX_VISIBLE)
+                      : concern.ingredients;
+                  const hasMore = showToggle;
+
+                  return (
+                    <View key={concern.name} style={styles.concernCard}>
+                      {/* Concern Header Row */}
+                      <TouchableOpacity
+                        style={styles.concernHeaderRow}
+                        onPress={() => {
+                          (navigation as any).navigate('MetricDetail', {
+                            metricKey: concern.metricKey,
+                            metricValue: concern.value,
+                            photoData: currentPhoto
+                              ? JSON.stringify(currentPhoto)
+                              : undefined,
+                            precomputedChange:
+                              concern.change !== undefined &&
+                              concern.changeDirection &&
+                              concern.changeDirection !== 'none'
+                                ? {
+                                    arrow:
+                                      concern.changeDirection === 'up'
+                                        ? '↑'
+                                        : '↓',
+                                    value: Math.abs(concern.change || 0),
+                                  }
+                                : concern.change !== undefined
+                                ? { arrow: '→', value: 0 }
+                                : undefined,
+                          });
+                        }}
+                      >
+                        <Text style={styles.concernName}>{concern.name}</Text>
+                        <View style={styles.concernValueContainer}>
+                          <View style={styles.scoreBadge}>
+                            {concern.changeDirection === 'up' && (
+                              <View style={styles.changeIndicator}>
+                                <ArrowUp size={12} color="#44403C" />
+                                <Text style={styles.changeValue}>
+                                  {Math.abs(concern.change || 0)}
+                                </Text>
+                              </View>
+                            )}
+                            {concern.changeDirection === 'down' && (
+                              <View style={styles.changeIndicator}>
+                                <ArrowDown size={12} color="#44403C" />
+                                <Text style={styles.changeValue}>
+                                  {Math.abs(concern.change || 0)}
+                                </Text>
+                              </View>
+                            )}
+                            <View style={styles.scoreIndicatorContainer}>
+                              <View
+                                style={[
+                                  styles.scoreIndicator,
+                                  {
+                                    backgroundColor: getScoreColor(
+                                      concern.value,
+                                    ),
+                                  },
+                                ]}
+                              />
+                              <Text style={styles.concernValue}>
+                                {concern.value}
+                              </Text>
+                            </View>
+                          </View>
+                          <ChevronRight size={24} color="#A9A29D" />
+                        </View>
+                      </TouchableOpacity>
+
+                      {/* Ingredient Rows */}
+                      {concern.ingredientsLoading ? (
+                        <View style={styles.ingredientLoadingContainer}>
+                          <SkeletonPlaceholder borderRadius={4}>
+                            <SkeletonPlaceholder.Item>
+                              {[1, 2].map(i => (
+                                <SkeletonPlaceholder.Item
+                                  key={i}
+                                  flexDirection="row"
+                                  justifyContent="space-between"
+                                  alignItems="center"
+                                  paddingVertical={10}
+                                  paddingHorizontal={4}
+                                >
+                                  <SkeletonPlaceholder.Item
+                                    width={100}
+                                    height={14}
+                                    borderRadius={4}
+                                  />
+                                  <SkeletonPlaceholder.Item
+                                    width={80}
+                                    height={14}
+                                    borderRadius={4}
+                                  />
+                                </SkeletonPlaceholder.Item>
+                              ))}
+                            </SkeletonPlaceholder.Item>
+                          </SkeletonPlaceholder>
+                        </View>
+                      ) : concern.ingredients.length > 0 ? (
+                        <View style={styles.ingredientListContainer}>
+                          {visibleIngredients.map((ingredient, idx) => {
+                            const colonIndex = ingredient.indexOf(':');
+                            const ingredientName =
+                              colonIndex > 0
+                                ? ingredient.substring(0, colonIndex).trim()
+                                : ingredient.trim();
+
+                            const foundEntry = concern.foundIngredients?.find(
+                              found => {
+                                if (typeof found === 'string') {
+                                  return (
+                                    found.toLowerCase().trim() ===
+                                    ingredientName.toLowerCase().trim()
+                                  );
+                                }
+                                return (
+                                  (found as any)?.ingredient
+                                    ?.toLowerCase()
+                                    .trim() ===
+                                  ingredientName.toLowerCase().trim()
+                                );
+                              },
+                            );
+                            const isFound = Boolean(foundEntry);
+                            const isLast =
+                              idx === visibleIngredients.length - 1 && !hasMore;
+
+                            return (
+                              <TouchableOpacity
+                                key={idx}
+                                style={[
+                                  styles.ingredientRow,
+                                  !isLast && styles.ingredientRowBorder,
+                                ]}
+                                onPress={() => {
+                                  const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
+                                  (navigation as any).navigate('ThreadChat', {
+                                    chatType: 'ingredients_related_chat',
+                                    initialMessage: message,
+                                    draftMessage: message,
+                                    hideInitial: true,
+                                    imageId: currentPhotoId,
+                                  });
+                                }}
+                              >
+                                <Text style={styles.ingredientName}>
+                                  {ingredientName}
+                                </Text>
+                                {isFound && (
+                                  <View style={styles.routineChip}>
+                                    <View style={styles.routineDot} />
+                                    <Text style={styles.routineText}>
+                                      In your Routine
+                                    </Text>
+                                  </View>
+                                )}
+                                <ChevronRight size={18} color="#D6D3D1" />
+                              </TouchableOpacity>
+                            );
+                          })}
+                          {hasMore && (
+                            <TouchableOpacity
+                              style={styles.showMoreButton}
+                              onPress={() =>
+                                toggleConcernExpanded(concern.name)
+                              }
+                            >
+                              <Text style={styles.showMoreText}>
+                                {isExpanded ? 'Show less' : 'Show more'}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      ) : null}
+                    </View>
+                  );
+                })}
+              </>
+            ) : null}
+          </View>
+        )}
+
+        {/* SkinCheck Card Section */}
+        <SkinCheckCard
+          reports={reports}
+          loading={isLoadingReports}
+          onPress={() => {
+            if (isLoadingConcerns) {
+              Alert.alert(
+                'Analysis Loading',
+                'Please wait for your analysis results to finish loading.',
+              );
+              return;
+            }
+            if (topConcerns && topConcerns.length > 0) {
+              (navigation as any).navigate('SkinCheck');
+            } else {
+              Alert.alert(
+                'Take a scan to continue',
+                'SkinCheck sends your scan, scores, and routine to a professional. Take a new scan today to continue.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  {
+                    text: 'Take New Scan',
+                    onPress: () => (navigation as any).navigate('Camera'),
+                  },
+                ],
+              );
+            }
+          }}
+        />
+
+        {/* Bottom spacing for tab bar */}
+        <View style={{ height: 100 }} />
+      </ScrollView>
+
+      <SettingsDrawer
+        isVisible={isSettingsVisible}
+        onClose={() => setIsSettingsVisible(false)}
+      />
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: colors.background,
-    },
-    scrollView: {
-        flex: 1,
-        marginTop: 80,
-    },
-    scrollContent: {
-        paddingHorizontal: spacing.md,
-        paddingTop: spacing.md,
-    },
+  container: {
+    flex: 1,
+    backgroundColor: colors.background,
+  },
+  scrollView: {
+    flex: 1,
+    marginTop: 80,
+  },
+  scrollContent: {
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.md,
+  },
 
-    // Photo Slider
-    photoSliderCard: {
-        backgroundColor: colors.imageSliderBackground,
-        borderRadius: 16,
-        marginBottom: spacing.lg,
-        padding: spacing.md,
-        paddingBottom: spacing.lg,
-        height: 270,
-        marginTop: 20
-    },
-    sliderNavRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        marginBottom: spacing.md,
-    },
-    arrowButton: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    arrowButtonDisabled: {
-        opacity: 0.5,
-    },
-    dateBadge: {
-        backgroundColor: 'rgba(255, 255, 255, 0.9)',
-        paddingHorizontal: 20,
-        paddingVertical: 8,
-        borderRadius: 20,
-    },
-    dateBadgeText: {
-        fontSize: 13,
-        // fontWeight: '600',
-        fontFamily: fontFamily.semiBold,
-        color: '#666666',
-        letterSpacing: 0.5,
-    },
-    photoWrapper: {
-        alignSelf: 'center',
-        width: SCREEN_WIDTH - 64,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    photo: {
-        width: 173,
-        height: 173,
-        borderRadius: 32,
-    },
-    photoPlaceholder: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        width: 173,
-        height: 173,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-        borderRadius: 16,
-    },
-    placeholderText: {
-        fontSize: 16,
-        // fontWeight: '600',
-        fontFamily: fontFamily.semiBold,
-        color: '#666666',
-    },
-    placeholderSubtext: {
-        fontSize: 14,
-        color: '#999999',
-        marginTop: 4,
-    },
+  // Photo Slider
+  photoSliderCard: {
+    backgroundColor: colors.imageSliderBackground,
+    borderRadius: 16,
+    marginBottom: spacing.lg,
+    padding: spacing.md,
+    paddingBottom: spacing.lg,
+    height: 270,
+    marginTop: 20,
+  },
+  sliderNavRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: spacing.md,
+  },
+  arrowButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  arrowButtonDisabled: {
+    opacity: 0.5,
+  },
+  dateBadge: {
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    paddingHorizontal: 20,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  dateBadgeText: {
+    fontSize: 13,
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
+    color: '#666666',
+    letterSpacing: 0.5,
+  },
+  photoWrapper: {
+    alignSelf: 'center',
+    width: SCREEN_WIDTH - 64,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  photo: {
+    width: 173,
+    height: 173,
+    borderRadius: 32,
+  },
+  photoPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 173,
+    height: 173,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 16,
+  },
+  placeholderText: {
+    fontSize: 16,
+    // fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
+    color: '#666666',
+  },
+  placeholderSubtext: {
+    fontSize: 14,
+    color: '#999999',
+    marginTop: 4,
+  },
 
-    // Empty Photo State
-    emptyPhotoContainer: {
-        width: 173,
-        height: 173,
-        backgroundColor: '#E7E5E4',
-        borderRadius: 32,
-        justifyContent: 'center',
-        alignItems: 'center',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-        elevation: 3,
-    },
-    newScanButton: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: "#10AFCC",
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 20,
-        marginTop: 16,
-        gap: 6,
-    },
-    newScanButtonText: {
-        fontSize: 12,
-        // fontWeight: '700',
-        fontFamily: fontFamily.bold,
-        color: '#FFFFFF',
-    },
+  // Empty Photo State
+  emptyPhotoContainer: {
+    width: 173,
+    height: 173,
+    backgroundColor: '#E7E5E4',
+    borderRadius: 32,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  newScanButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#10AFCC',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 20,
+    marginTop: 16,
+    gap: 6,
+  },
+  newScanButtonText: {
+    fontSize: 12,
+    // fontWeight: '700',
+    fontFamily: fontFamily.bold,
+    color: '#FFFFFF',
+  },
 
-    // Carousel Dots
-    carouselDots: {
-        flexDirection: 'row',
-        justifyContent: 'center',
-        alignItems: 'center',
-        marginTop: spacing.sm,
-        gap: 8,
-    },
-    carouselDot: {
-        width: 8,
-        height: 8,
-        borderRadius: 4,
-        backgroundColor: 'rgba(255, 255, 255, 0.5)',
-    },
-    carouselDotActive: {
-        backgroundColor: colors.tabSelected,
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-    },
+  // Carousel Dots
+  carouselDots: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: spacing.sm,
+    gap: 8,
+  },
+  carouselDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+  },
+  carouselDotActive: {
+    backgroundColor: colors.tabSelected,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
 
-    // Section Card
-    sectionCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: spacing.md,
-        marginBottom: spacing.md,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    sectionHeader: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: spacing.md,
-        gap: 8,
-    },
-    sectionTitle: {
-        fontSize: 18,
-        fontWeight: '600',
-        color: colors.textPrimary,
-    },
+  // Section Card
+  sectionCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: spacing.md,
+    marginBottom: spacing.md,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+    gap: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
 
-    // Concerns
-    concernSubtitle: {
-        fontSize: 14,
-        color: '#79716B',
-        lineHeight: 20,
-        marginBottom: 16,
-    },
-    ingredientsTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        fontFamily: fontFamily.bold,
-        color: '#44403C',
-        marginBottom: 8,
-    },
-    concernCard: {
-        backgroundColor: '#F5F5F5',
-        borderRadius: 12,
-        marginBottom: 10,
-        overflow: 'hidden',
-    },
-    concernHeaderRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingHorizontal: 16,
-        paddingVertical: 16,
-    },
-    concernName: {
-        fontSize: 16,
-        fontWeight: '500',
-        color: '#57534E',
-    },
-    concernValueContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-    },
-    concernChange: {
-        fontSize: 14,
-        color: colors.textTertiary,
-    },
-    scoreBadge: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#E7E5E4',
-        paddingHorizontal: 8,
-        paddingVertical: 6,
-        borderRadius: 12,
-        gap: 8,
-    },
-    changeIndicator: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 2,
-    },
-    changeValue: {
-        fontSize: 14,
-        fontWeight: '500',
-        color: '#44403C',
-    },
-    noChangeText: {
-        fontSize: 14,
-        color: '#A8A29E',
-    },
-    scoreIndicator: {
-        width: 10,
-        height: 10,
-        borderRadius: 5,
-    },
-    concernValue: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.textPrimary,
-    },
-    loadingContainer: {
-        padding: spacing.lg,
-        alignItems: 'center',
-    },
-    emptyConcernsContainer: {
-        paddingBottom: 8,
-    },
-    emptyConcernsText: {
-        fontSize: 14,
-        color: colors.textTertiary,
-    },
+  // Concerns
+  concernSubtitle: {
+    fontSize: 14,
+    color: '#79716B',
+    lineHeight: 20,
+    marginBottom: 16,
+  },
+  ingredientsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: fontFamily.bold,
+    color: '#44403C',
+    marginBottom: 8,
+  },
+  concernCard: {
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    marginBottom: 10,
+    overflow: 'hidden',
+  },
+  concernHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+  },
+  concernName: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#57534E',
+  },
+  concernValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  concernChange: {
+    fontSize: 14,
+    color: colors.textTertiary,
+  },
+  scoreBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#E7E5E4',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    borderRadius: 12,
+    gap: 8,
+  },
+  changeIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 2,
+  },
+  changeValue: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#44403C',
+  },
+  noChangeText: {
+    fontSize: 14,
+    color: '#A8A29E',
+  },
+  scoreIndicator: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+  },
+  concernValue: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: colors.textPrimary,
+  },
+  loadingContainer: {
+    padding: spacing.lg,
+    alignItems: 'center',
+  },
+  emptyConcernsContainer: {
+    paddingBottom: 8,
+  },
+  emptyConcernsText: {
+    fontSize: 14,
+    color: colors.textTertiary,
+  },
 
-    // Ingredient rows inside concern card
-    ingredientLoadingContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 12,
-    },
-    ingredientListContainer: {
-        paddingHorizontal: 16,
-        paddingBottom: 4,
-    },
-    ingredientRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        paddingVertical: 12,
-    },
-    ingredientRowBorder: {
-        borderBottomWidth: 1,
-        borderBottomColor: '#E7E5E4',
-    },
-    ingredientName: {
-        fontSize: 14,
-        fontWeight: '400',
-        color: '#44403C',
-        flex: 1,
-    },
-    routineChip: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#FFF',
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#E7E5E4',
-        paddingHorizontal: 8,
-        paddingVertical: 6,
-        gap: 4,
-        marginLeft: 8,
-    },
-    routineDot: {
-        width: 6,
-        height: 6,
-        borderRadius: 3,
-        backgroundColor: '#12B76A',
-    },
-    routineText: {
-        fontSize: 12,
-        color: '#57534E',
-        fontWeight: '400',
-    },
-    showMoreButton: {
-        paddingVertical: 10,
-    },
-    showMoreText: {
-        fontSize: 13,
-        color: '#A8A29E',
-    },
+  // Ingredient rows inside concern card
+  ingredientLoadingContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 12,
+  },
+  ingredientListContainer: {
+    paddingHorizontal: 16,
+    paddingBottom: 4,
+  },
+  ingredientRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+  },
+  ingredientRowBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E7E5E4',
+  },
+  ingredientName: {
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#44403C',
+    flex: 1,
+  },
+  routineChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#E7E5E4',
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+    gap: 4,
+    marginLeft: 8,
+  },
+  routineDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: '#12B76A',
+  },
+  routineText: {
+    fontSize: 12,
+    color: '#57534E',
+    fontWeight: '400',
+  },
+  showMoreButton: {
+    paddingVertical: 10,
+  },
+  showMoreText: {
+    fontSize: 13,
+    color: '#A8A29E',
+  },
 
-    // SkinCheck Card
-    skinCheckCard: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        backgroundColor: '#FFFFFF',
-        borderRadius: 16,
-        padding: 20,
-        marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.09,
-        shadowRadius: 10,
-        elevation: 3,
-    },
-    skinCheckTitle: {
-        fontSize: 17,
-        fontWeight: '700',
-        color: '#44403C',
-        marginBottom: 2,
-        fontFamily: fontFamily.bold,
-    },
-    skinCheckDescription: {
-        fontSize: 13,
-        color: '#A9A29D',
-        marginBottom: 4,
-    },
+  // SkinCheck Card
+  skinCheckCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.09,
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  skinCheckTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#44403C',
+    marginBottom: 2,
+    fontFamily: fontFamily.bold,
+  },
+  skinCheckDescription: {
+    fontSize: 13,
+    color: '#A9A29D',
+    marginBottom: 4,
+  },
 
-    // (Routine Score section removed - replaced by SkinCheck card)
-    scoreIndicatorContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 4,
-        backgroundColor: '#FFF',
-        borderRadius: 8,
-        paddingHorizontal: 6,
-        paddingVertical: 4,
-    },
+  // (Routine Score section removed - replaced by SkinCheck card)
+  scoreIndicatorContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#FFF',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+  },
 
-    // Carousel Styles
-    carouselContainer: {
-        alignItems: 'center',
-        justifyContent: 'center',
-        // height: 173,
-    },
-    carouselItemContainer: {
-        flex: 1,
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
-    carouselImage: {
-        width: 173,
-        height: 173,
-        borderRadius: 32,
-    },
+  // Carousel Styles
+  carouselContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    // height: 173,
+  },
+  carouselItemContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  carouselImage: {
+    width: 173,
+    height: 173,
+    borderRadius: 32,
+  },
 
-    // Image loading skeleton styles
-    imageSkeleton: {
-        position: 'absolute',
-        zIndex: 1,
-    },
-    hiddenImage: {
-        opacity: 0,
-    },
-    imageContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#E7E5E4', // Placeholder color specifically for when image is loading but skeleton is hidden
-        borderRadius: 32, // Match image border radius
-    },
-    singlePhotoContainer: {
-        justifyContent: 'center',
-        alignItems: 'center',
-    },
+  // Image loading skeleton styles
+  imageSkeleton: {
+    position: 'absolute',
+    zIndex: 1,
+  },
+  hiddenImage: {
+    opacity: 0,
+  },
+  imageContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#E7E5E4', // Placeholder color specifically for when image is loading but skeleton is hidden
+    borderRadius: 32, // Match image border radius
+  },
+  singlePhotoContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
-    // User Metrics Section Styles (Matching Snapshot's profile style)
-    metricsProfileCard: {
-        backgroundColor: '#FFFFFF',
-        borderRadius: 14,
-        padding: 10,
-        marginBottom: 12,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 2,
-    },
-    metricsProfileRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-    },
-    metricsProfileItem: {
-        width: '48%',
-        backgroundColor: '#F5F5F5',
-        padding: 8,
-        borderRadius: 8,
-        alignItems: 'center',
-    },
-    metricsProfileLabel: {
-        fontSize: 13,
-        color: '#A9A29D',
-        marginBottom: 6,
-        fontWeight: '600',
-        fontFamily: fontFamily.semiBold,
-        textAlign: 'center',
-    },
-    metricsProfileValueContainer: {
-        width: "100%",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    metricsProfileValue: {
-        fontSize: 15,
-        fontWeight: '700',
-        color: '#1C1917',
-        fontFamily: fontFamily.bold,
-    },
+  // User Metrics Section Styles (Matching Snapshot's profile style)
+  metricsProfileCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 14,
+    padding: 10,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  metricsProfileRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+  },
+  metricsProfileItem: {
+    width: '48%',
+    backgroundColor: '#F5F5F5',
+    padding: 8,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  metricsProfileLabel: {
+    fontSize: 13,
+    color: '#A9A29D',
+    marginBottom: 6,
+    fontWeight: '600',
+    fontFamily: fontFamily.semiBold,
+    textAlign: 'center',
+  },
+  metricsProfileValueContainer: {
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  metricsProfileValue: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#1C1917',
+    fontFamily: fontFamily.bold,
+  },
 });

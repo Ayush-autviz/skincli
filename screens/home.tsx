@@ -1119,17 +1119,28 @@ export default function HomeScreen(): React.JSX.Element {
                                   });
                                 }}
                               >
-                                <Text style={styles.ingredientName}>
-                                  {ingredientName}
-                                </Text>
-                                {isFound && (
-                                  <View style={styles.routineChip}>
-                                    <View style={styles.routineDot} />
-                                    <Text style={styles.routineText}>
-                                      In your Routine
-                                    </Text>
-                                  </View>
-                                )}
+                                <View style={{ flex: 1 }}>
+                                  <Text style={styles.ingredientName}>
+                                    {ingredientName}
+                                  </Text>
+                                  {isFound && (
+                                    <View style={styles.routineChip}>
+                                      <View style={styles.routineDot} />
+                                      <Text style={styles.routineText}>
+                                        In your Routine
+                                      </Text>
+                                    </View>
+                                  )}
+                                  {isFound &&
+                                    foundEntry &&
+                                    typeof foundEntry !== 'string' &&
+                                    Array.isArray(foundEntry.products) &&
+                                    foundEntry.products.length > 0 && (
+                                      <Text style={styles.productHighlight}>
+                                        {foundEntry.products.join(', ')}
+                                      </Text>
+                                    )}
+                                </View>
                                 <ChevronRight size={18} color="#D6D3D1" />
                               </TouchableOpacity>
                             );
@@ -1168,12 +1179,11 @@ export default function HomeScreen(): React.JSX.Element {
               );
               return;
             }
-            if (topConcerns && topConcerns.length > 0) {
-              (navigation as any).navigate('SkinCheck');
-            } else {
+            // Check if we have a current image/photo to work with
+            if (!currentPhoto || !currentPhoto.id || !currentPhoto.storageUrl) {
               Alert.alert(
-                'Take a scan to continue',
-                'SkinCheck sends your scan, scores, and routine to a professional. Take a new scan today to continue.',
+                'No scan available',
+                'Please take a new scan to continue.',
                 [
                   { text: 'Cancel', style: 'cancel' },
                   {
@@ -1182,7 +1192,10 @@ export default function HomeScreen(): React.JSX.Element {
                   },
                 ],
               );
+              return;
             }
+            // Allow SkinCheck access when we have a scan, regardless of whether there are top concerns or not
+            (navigation as any).navigate('SkinCheck');
           }}
         />
 
@@ -1480,7 +1493,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     gap: 4,
-    marginLeft: 8,
+    marginTop: 8,
+    marginBottom: 6,
+    alignSelf: 'flex-start',
   },
   routineDot: {
     width: 6,
@@ -1618,5 +1633,11 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#1C1917',
     fontFamily: fontFamily.bold,
+  },
+  productHighlight: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1917',
+    marginTop: 2,
   },
 });

@@ -286,13 +286,13 @@ export const processPhotoMetrics = photos => {
       const formattedDate =
         timestamp instanceof Date && !isNaN(timestamp.getTime())
           ? timestamp.toLocaleString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric',
-            hour: 'numeric',
-            minute: '2-digit',
-            hour12: true,
-          })
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: 'numeric',
+              minute: '2-digit',
+              hour12: true,
+            })
           : 'Invalid Date';
 
       // For skin_type, store the string value instead of numeric score
@@ -427,8 +427,8 @@ const PhotoThumbCard = ({
               routineFlagLoading
                 ? '#A9A29D'
                 : photo.apiData.image.routine_flag
-                  ? '#79716B'
-                  : '#A9A29D'
+                ? '#79716B'
+                : '#A9A29D'
             }
             strokeWidth={2.5}
           />
@@ -444,8 +444,8 @@ const PhotoThumbCard = ({
               summaryLoading
                 ? '#A9A29D'
                 : photo.apiData.image.summary
-                  ? '#79716B'
-                  : '#A9A29D'
+                ? '#79716B'
+                : '#A9A29D'
             }
             strokeWidth={2.5}
           />
@@ -1384,8 +1384,8 @@ export const MetricRow = ({
   const mockAverage =
     validScores.length > 0
       ? Math.round(
-        validScores.reduce((sum, s) => sum + s.score, 0) / validScores.length,
-      )
+          validScores.reduce((sum, s) => sum + s.score, 0) / validScores.length,
+        )
       : null;
 
   // Current score (selected photo or latest)
@@ -1395,9 +1395,9 @@ export const MetricRow = ({
       : metric.scores[metric.scores.length - 1]?.score;
   const displayScore =
     currentScore !== null &&
-      currentScore !== undefined &&
-      !isNaN(currentScore) &&
-      currentScore !== 0
+    currentScore !== undefined &&
+    !isNaN(currentScore) &&
+    currentScore !== 0
       ? Math.round(currentScore)
       : null;
 
@@ -1528,7 +1528,7 @@ export const MetricRow = ({
               >
                 <Text style={styles.selectedValue}>
                   {metric.scores[selectedIndex].score === 0 ||
-                    metric.scores[selectedIndex].score === null
+                  metric.scores[selectedIndex].score === null
                     ? 'No Data'
                     : `${metric.scores[selectedIndex].score}/100`}
                 </Text>
@@ -1768,15 +1768,13 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({
       }
     }
 
-    // Store photo in context for snapshot screen - include apiData like PhotoGrid does
+    // Store photo in context for snapshot screen - include full apiData like PhotoGrid does
     setSelectedSnapshot({
       id: photoId,
       url: photo.storageUrl,
       storageUrl: photo.storageUrl,
       threadId: photo.threadId,
-      apiData: {
-        created_at: timestampParam, // Add the timestamp as created_at to match PhotoGrid structure
-      },
+      apiData: photo.apiData || {}, // Include full API data like PhotoGrid does for consistent behavior
     });
 
     console.log('🔵 photoId from MetricsSeries:', photo);

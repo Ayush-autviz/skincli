@@ -584,13 +584,22 @@ const RecommendationsList = ({
           });
         }}
       >
-        <Text style={styles.ingredientName}>{ingredientName}</Text>
-        {isPresent && (
-          <View style={styles.routineChip}>
-            <View style={styles.routineDot} />
-            <Text style={styles.routineText}>In your Routine</Text>
-          </View>
-        )}
+        <View style={{ flex: 1 }}>
+          <Text style={styles.ingredientName}>{ingredientName}</Text>
+          {isPresent && (
+            <View style={styles.routineChip}>
+              <View style={styles.routineDot} />
+              <Text style={styles.routineText}>In your Routine</Text>
+            </View>
+          )}
+          {isPresent &&
+            presence.products &&
+            presence.products.length > 0 && (
+              <Text style={styles.productHighlight}>
+                {presence.products.join(', ')}
+              </Text>
+            )}
+        </View>
         <ChevronRight size={20} color="#D6D3D1" />
       </TouchableOpacity>
     );
@@ -872,7 +881,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     paddingVertical: 6,
     gap: 4,
-    marginLeft: 8,
+    marginTop: 8,
+    marginBottom: 6,
+    alignSelf: 'flex-start',
   },
   routineDot: {
     width: 6,
@@ -926,5 +937,11 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
     textAlign: 'center',
     lineHeight: 25,
+  },
+  productHighlight: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#1C1917',
+    marginTop: 2,
   },
 });

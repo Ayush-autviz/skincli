@@ -565,6 +565,10 @@ const RecommendationsList = ({
       colonIndex > 0
         ? ingredient.substring(0, colonIndex).trim()
         : ingredient.trim();
+    const ingredientDesc =
+      colonIndex > 0
+        ? ingredient.substring(colonIndex + 1).trim()
+        : '';
     const presence = getIngredientPresence(ingredientName, concernKey);
     const isPresent = presence.status === 'present';
 
@@ -586,19 +590,30 @@ const RecommendationsList = ({
       >
         <View style={{ flex: 1 }}>
           <Text style={styles.ingredientName}>{ingredientName}</Text>
-          {isPresent && (
-            <View style={styles.routineChip}>
-              <View style={styles.routineDot} />
-              <Text style={styles.routineText}>In your Routine</Text>
-            </View>
-          )}
+          <View style={styles.routineChip}>
+            <View
+              style={[
+                styles.routineDot,
+                {
+                  backgroundColor: isPresent ? '#12B76A' : '#A9A29D',
+                },
+              ]}
+            />
+            <Text style={styles.routineText}>
+              {isPresent ? 'In your Routine' : 'Not in Routine'}
+            </Text>
+          </View>
           {isPresent &&
-            presence.products &&
-            presence.products.length > 0 && (
-              <Text style={styles.productHighlight}>
-                {presence.products.join(', ')}
-              </Text>
-            )}
+          presence.products &&
+          presence.products.length > 0 ? (
+            <Text style={styles.productHighlight}>
+              {presence.products.join(', ')}
+            </Text>
+          ) : ingredientDesc ? (
+            <Text style={styles.ingredientDesc}>
+              {ingredientDesc}
+            </Text>
+          ) : null}
         </View>
         <ChevronRight size={20} color="#D6D3D1" />
       </TouchableOpacity>
@@ -889,7 +904,6 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: '#12B76A',
   },
   routineText: {
     fontSize: 12,
@@ -942,6 +956,12 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#1C1917',
+    marginTop: 2,
+  },
+  ingredientDesc: {
+    fontSize: 13,
+    color: '#57534E',
+    lineHeight: 18,
     marginTop: 2,
   },
 });

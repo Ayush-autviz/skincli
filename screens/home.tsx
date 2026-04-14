@@ -536,10 +536,10 @@ export default function HomeScreen(): React.JSX.Element {
                 prev.map(c =>
                   c.metricKey === concern.metricKey
                     ? {
-                        ...c,
-                        foundIngredients: response.data.found_ingredients || [],
-                        ingredientsLoading: false,
-                      }
+                      ...c,
+                      foundIngredients: response.data.found_ingredients || [],
+                      ingredientsLoading: false,
+                    }
                     : c,
                 ),
               );
@@ -795,7 +795,7 @@ export default function HomeScreen(): React.JSX.Element {
               style={[
                 styles.arrowButton,
                 currentDateIndex >= dateGroups.length - 1 &&
-                  styles.arrowButtonDisabled,
+                styles.arrowButtonDisabled,
               ]}
               onPress={goToPrevDate}
               disabled={currentDateIndex >= dateGroups.length - 1}
@@ -871,8 +871,8 @@ export default function HomeScreen(): React.JSX.Element {
                   Math.min(
                     (currentDateGroup?.photos?.length || 0) - 1,
                     (currentDateGroup?.photos?.length || 0) -
-                      1 -
-                      currentPhotoInDate,
+                    1 -
+                    currentPhotoInDate,
                   ),
                 )}
                 // defaultIndex={currentPhotoInDate}
@@ -933,7 +933,7 @@ export default function HomeScreen(): React.JSX.Element {
                 </View>
               </View>
               <View style={styles.metricsProfileItem}>
-                <Text style={styles.metricsProfileLabel}>Routine Items</Text>
+                <Text style={styles.metricsProfileLabel}>Items in Routine</Text>
                 <View style={styles.metricsProfileValueContainer}>
                   <Text style={styles.metricsProfileValue}>
                     {userMetrics.total_routines}
@@ -989,18 +989,18 @@ export default function HomeScreen(): React.JSX.Element {
                               : undefined,
                             precomputedChange:
                               concern.change !== undefined &&
-                              concern.changeDirection &&
-                              concern.changeDirection !== 'none'
+                                concern.changeDirection &&
+                                concern.changeDirection !== 'none'
                                 ? {
-                                    arrow:
-                                      concern.changeDirection === 'up'
-                                        ? '↑'
-                                        : '↓',
-                                    value: Math.abs(concern.change || 0),
-                                  }
+                                  arrow:
+                                    concern.changeDirection === 'up'
+                                      ? '↑'
+                                      : '↓',
+                                  value: Math.abs(concern.change || 0),
+                                }
                                 : concern.change !== undefined
-                                ? { arrow: '→', value: 0 }
-                                : undefined,
+                                  ? { arrow: '→', value: 0 }
+                                  : undefined,
                           });
                         }}
                       >

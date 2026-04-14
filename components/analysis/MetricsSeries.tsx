@@ -1777,7 +1777,11 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({
       apiData: photo.apiData || {}, // Include full API data like PhotoGrid does for consistent behavior
     });
 
-    console.log('🔵 photoId from MetricsSeries:', photo);
+    console.log('🔵 Navigating to snapshot from MetricsSeries:', {
+      photoId: photo.id,
+      hautBatchId: photo.hautUploadData?.hautBatchId || photo.hautBatchId,
+      imageId: photo.hautUploadData?.imageId || photo.id
+    });
 
     // Navigate to snapshot screen
     navigateToSnapshot({

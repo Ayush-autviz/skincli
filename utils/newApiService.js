@@ -1502,6 +1502,7 @@ export const transformComparisonData = comparisonData => {
           metrics: metrics,
           hautUploadData: {
             imageId: image.image_id,
+            hautBatchId: image.haut_batch_id,
           },
           apiData: photoData,
         };

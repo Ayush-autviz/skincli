@@ -224,7 +224,7 @@ const BottomTabBar = ({
 };
 
 // Configurations
-const ANALYSIS_TIMEOUT_SECONDS = 45;
+const ANALYSIS_TIMEOUT_SECONDS = 80;
 const QUALITY_THRESHOLD_MIN = 10;
 const { height: SCREEN_HEIGHT, width: SCREEN_WIDTH } = Dimensions.get('window');
 const ANALYSIS_TIMEOUT_MS = ANALYSIS_TIMEOUT_SECONDS * 1000;
@@ -584,7 +584,7 @@ const SnapshotScreen = (): React.JSX.Element => {
       setLoadingMicrocopy('Analyzing image...');
       startPollingForResults(result.hautBatchId);
     } catch (error: any) {
-      setLoadingMicrocopy('Processing failed');
+      setLoadingMicrocopy('Continuing analysis...');
       setUiState('no_results');
     } finally {
       setIsProcessing(false);
@@ -593,7 +593,7 @@ const SnapshotScreen = (): React.JSX.Element => {
 
   const startPollingForResults = (batchId: string): void => {
     mainTimeoutRef.current = setTimeout(() => {
-      setLoadingMicrocopy('No metrics found');
+      setLoadingMicrocopy('Analyzing skin metrics...');
       setUiState('no_results');
       stopPolling();
     }, ANALYSIS_TIMEOUT_MS);
@@ -610,12 +610,14 @@ const SnapshotScreen = (): React.JSX.Element => {
 
           const transformedMetrics = transformHautResults(results);
 
-          if (
-            Object.keys(transformedMetrics).length === 1 &&
-            (transformedMetrics as any).imageQuality
-          ) {
-            setLoadingMicrocopy('No results found');
-            setUiState('no_results');
+          // Check if we have core metrics yet. If only metadata like imageQuality or skinType is present, keep polling.
+          const hasCoreMetrics = [
+            'acneScore', 'pigmentationScore', 'uniformnessScore', 'rednessScore', 'poresScore', 'linesScore'
+          ].some(key => (transformedMetrics as any)[key] !== undefined && (transformedMetrics as any)[key] !== null);
+
+          if (!hasCoreMetrics) {
+            setLoadingMicrocopy('Analyzing skin metrics...');
+            pollingTimeoutRef.current = setTimeout(poll, 3000);
             return;
           }
 
@@ -669,15 +671,18 @@ const SnapshotScreen = (): React.JSX.Element => {
           setAnalysisResults(results);
           setLoadingMicrocopy('Preparing results...');
 
-          // NEW: Transition to complete state IMMEDIATELY after primary metrics are ready
+          stopPolling();
           setUiState('complete');
           setSummaryLoading(true);
 
           if (fromScanTab) {
-            refreshPhotos();
+            try {
+              refreshPhotos();
+            } catch (e) {
+              console.warn('refreshPhotos failed:', e);
+            }
           }
           DeviceEventEmitter.emit('photoUploaded');
-          stopPolling();
 
           // Fetch secondary data (AI summary, score changes, top concerns) in background
           const contextPhotos = photos || [];
@@ -705,8 +710,8 @@ const SnapshotScreen = (): React.JSX.Element => {
                         skinType: currentProfile?.skinType || 'normal',
                         skinConcerns: currentProfile?.concerns
                           ? Object.keys(currentProfile.concerns).filter(
-                              key => currentProfile.concerns![key],
-                            )
+                            key => currentProfile.concerns![key],
+                          )
                           : [],
                         excludedMetrics: [],
                         metrics: transformedMetrics || {},
@@ -718,7 +723,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                         if (chatResponse.success && chatResponse.data) {
                           setSummary(
                             chatResponse.data.message ||
-                              chatResponse.data.feedback,
+                            chatResponse.data.feedback,
                           );
                         }
                       } catch (_) {
@@ -829,17 +834,9 @@ const SnapshotScreen = (): React.JSX.Element => {
           pollingTimeoutRef.current = setTimeout(poll, 3000);
         }
       } catch (error: any) {
-        if (error.message.includes('not ready yet')) {
-          pollingTimeoutRef.current = setTimeout(poll, 3000);
-        } else {
-          if (mainTimeoutRef.current) {
-            clearTimeout(mainTimeoutRef.current);
-            mainTimeoutRef.current = null;
-          }
-          setLoadingMicrocopy('Analysis failed');
-          setUiState('no_results');
-          stopPolling();
-        }
+        // Keep polling on any error until mainTimeoutRef stops it after 45s
+        setLoadingMicrocopy('Analyzing image...');
+        pollingTimeoutRef.current = setTimeout(poll, 3000);
       }
     };
 
@@ -1025,26 +1022,22 @@ const SnapshotScreen = (): React.JSX.Element => {
     );
   }
 
-  const showSkeletonScreen = uiState === 'loading' || uiState === 'analyzing';
-  if (showSkeletonScreen) {
+  // Treat ANY state that is not 'complete' as a processing state to prevent
+  // the user from seeing the underlying incomplete SnapshotScreen UI.
+  if (uiState !== 'complete') {
     const useEffectiveLoadingBackground =
       localUri && (uiState === 'loading' || uiState === 'analyzing');
+
+    // If Haut.ai permanently fails, gracefully display the error on the processing overlay
+    const overlayMicrocopy = loadingMicrocopy;
+
     return (
       <SnapshotLoading
-        microcopy={loadingMicrocopy}
+        microcopy={overlayMicrocopy}
         onClose={handleClose}
         backgroundImageUri={
           useEffectiveLoadingBackground ? localUri : undefined
         }
-      />
-    );
-  }
-
-  if (!photoData && uiState !== 'loading') {
-    return (
-      <SnapshotLoading
-        microcopy={'Error loading snapshot data.'}
-        onClose={handleClose}
       />
     );
   }
@@ -1089,18 +1082,18 @@ const SnapshotScreen = (): React.JSX.Element => {
   const profileOrder = ['skinType', 'skinTone', 'perceivedAge', 'eyeAge'];
   const profileMetrics = metrics
     ? profileOrder
-        .filter(key => metrics[key] !== undefined)
-        .map(key => ({
-          key,
-          value:
-            key === 'skinType' || key === 'skinTone'
-              ? typeof metrics[key] === 'string'
-                ? metrics[key].charAt(0).toUpperCase() +
-                  metrics[key].slice(1).toLowerCase()
-                : metrics[key]
-              : metrics[key],
-          label: formatMetricName(key),
-        }))
+      .filter(key => metrics[key] !== undefined)
+      .map(key => ({
+        key,
+        value:
+          key === 'skinType' || key === 'skinTone'
+            ? typeof metrics[key] === 'string'
+              ? metrics[key].charAt(0).toUpperCase() +
+              metrics[key].slice(1).toLowerCase()
+              : metrics[key]
+            : metrics[key],
+        label: formatMetricName(key),
+      }))
     : [];
 
   // Get score metrics for the analysis section
@@ -1117,14 +1110,14 @@ const SnapshotScreen = (): React.JSX.Element => {
   ];
   const scoreMetrics = metrics
     ? scoreOrder
-        .filter(
-          key => metrics[key] !== undefined && typeof metrics[key] === 'number',
-        )
-        .map(key => ({
-          key,
-          value: metrics[key],
-          label: formatMetricName(key),
-        }))
+      .filter(
+        key => metrics[key] !== undefined && typeof metrics[key] === 'number',
+      )
+      .map(key => ({
+        key,
+        value: metrics[key],
+        label: formatMetricName(key),
+      }))
     : [];
   const sortedScoreMetrics = (() => {
     if (!Array.isArray(scoreMetrics) || scoreMetrics.length === 0)
@@ -1213,8 +1206,8 @@ const SnapshotScreen = (): React.JSX.Element => {
                 {summary
                   ? summary
                   : summaryLoading
-                  ? 'Analyzing your results...'
-                  : 'Your skin looks glowing! How is your skin feeling today?'}
+                    ? 'Analyzing your results...'
+                    : 'Your skin looks glowing! How is your skin feeling today?'}
               </Text>
               <Text style={styles.aiInsightSubtext}>
                 Your reflections help add to your journal and improve your
@@ -1272,7 +1265,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                   style={[
                     styles.analysisRow,
                     index < sortedScoreMetrics.length &&
-                      styles.analysisRowBorder,
+                    styles.analysisRowBorder,
                   ]}
                   onPress={() => {
                     (navigation as any).navigate('MetricDetail', {
@@ -1315,9 +1308,8 @@ const SnapshotScreen = (): React.JSX.Element => {
                   <View style={styles.analysisRowRight}>
                     <Text style={styles.analysisChangeText}>
                       {scoreChanges[item.key]
-                        ? `${scoreChanges[item.key].arrow}${
-                            scoreChanges[item.key].value
-                          }`
+                        ? `${scoreChanges[item.key].arrow}${scoreChanges[item.key].value
+                        }`
                         : ''}
                     </Text>
                     <View style={styles.analysisDotContainer}>
@@ -1358,22 +1350,7 @@ const SnapshotScreen = (): React.JSX.Element => {
           </TouchableOpacity>
         )} */}
 
-        {/* No Results State */}
-        {uiState === 'no_results' && (
-          <View style={styles.noResultsCard}>
-            <Text style={styles.noResultsTitle}>No Analysis Available</Text>
-            <Text style={styles.noResultsMessage}>
-              We couldn't analyze this image. This could be due to poor
-              lighting, camera angle, or network issues.
-            </Text>
-            <TouchableOpacity
-              onPress={() => (navigation as any).navigate('Camera')}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.noResultsLink}>Try again</Text>
-            </TouchableOpacity>
-          </View>
-        )}
+        {/* No Results State -> Handled in SnapshotLoading overlay */}
       </ScrollView>
 
       {/* Bottom Tab Bar */}

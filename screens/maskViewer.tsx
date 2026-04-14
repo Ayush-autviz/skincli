@@ -88,16 +88,18 @@ const formatConditionName = (conditionName: string): string => {
   if (!conditionName) return 'Original';
 
   const nameMap: { [key: string]: string } = {
-    'none': 'Original',
-    'redness': 'Redness',
-    'hydration': 'Dewiness',
-    'eye_bags': 'Dark Circles',
-    'pores': 'Visible Pores',
-    'acne': 'Breakouts',
-    'lines': 'Lines',
-    'translucency': 'Translucency',
-    'pigmentation': 'Pigmentation',
-    'uniformness': 'Evenness'
+    none: 'Original',
+    redness: 'Redness',
+    hydration: 'Dewiness',
+    dark_circles: 'Dark Circles',
+    pores: 'Visible Pores',
+    breakouts: 'Breakouts',
+    lines: 'Lines',
+    translucency: 'Translucency',
+    pigmentation: 'Pigmentation',
+    uniformness: 'Evenness',
+    puffiness: 'Eye Puffiness',
+    sagging: 'Sagging',
   };
 
   return nameMap[conditionName] || conditionName.charAt(0).toUpperCase() + conditionName.slice(1);
@@ -336,15 +338,17 @@ const MaskViewerScreen = (): React.JSX.Element => {
       .filter((mask: any) => {
         // Only include masks that have maskVerbiage in concerns.json
         const conditionToConcernKey: { [key: string]: string } = {
-          'redness': 'rednessScore',
-          'hydration': 'hydrationScore',
-          'eye_bags': 'eyeAreaCondition',
-          'pores': 'poresScore',
-          'acne': 'acneScore',
-          'lines': 'linesScore',
-          'translucency': 'translucencyScore',
-          'pigmentation': 'pigmentationScore',
-          'uniformness': 'uniformnessScore'
+          redness: 'rednessScore',
+          hydration: 'hydrationScore',
+          dark_circles: 'eyeAreaCondition',
+          pores: 'poresScore',
+          breakouts: 'acneScore',
+          lines: 'linesScore',
+          translucency: 'translucencyScore',
+          pigmentation: 'pigmentationScore',
+          uniformness: 'uniformnessScore',
+          puffiness: 'puffinessScore',
+          sagging: 'saggingScore',
         };
 
         const concernKey = conditionToConcernKey[mask.skin_condition_name];
@@ -365,10 +369,12 @@ const MaskViewerScreen = (): React.JSX.Element => {
           'pigmentation',
           'redness',
           'pores',
-          'acne',
+          'breakouts',
           'lines',
           'hydration',
-          'eye_bags'
+          'dark_circles',
+          'puffiness',
+          'sagging',
         ];
 
         const indexA = order.indexOf(a.skin_condition_name);
@@ -491,14 +497,16 @@ const MaskViewerScreen = (): React.JSX.Element => {
             const currentCondition = maskOptions[activeIndex]?.skin_condition_name;
             if (currentCondition && currentCondition !== 'none') {
               const map: { [key: string]: string } = {
-                'redness': 'rednessScore',
-                'hydration': 'hydrationScore',
-                'eye_bags': 'eyeAreaCondition',
-                'pores': 'poresScore',
-                'acne': 'acneScore',
-                'lines': 'linesScore',
-                'pigmentation': 'pigmentationScore',
-                'uniformness': 'uniformnessScore'
+                redness: 'rednessScore',
+                hydration: 'hydrationScore',
+                dark_circles: 'eyeAreaCondition',
+                pores: 'poresScore',
+                breakouts: 'acneScore',
+                lines: 'linesScore',
+                pigmentation: 'pigmentationScore',
+                uniformness: 'uniformnessScore',
+                puffiness: 'puffinessScore',
+                sagging: 'saggingScore',
               };
               const key = map[currentCondition];
               const details = (concernsData as any)?.skinConcerns?.[key];

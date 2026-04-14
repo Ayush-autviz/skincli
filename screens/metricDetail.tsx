@@ -710,7 +710,7 @@ const getConditionNameForMetric = (metricKey: string) => {
   const mapping: Record<string, string> = {
     rednessScore: 'redness',
     hydrationScore: 'hydration',
-    eyeAge: 'eye_bags',
+    eyeAge: 'dark_circles',
     poresScore: 'pores',
     acneScore: 'breakouts',
     linesScore: 'lines',
@@ -736,12 +736,12 @@ const getSkinConditionNameForMetric = (metricKey: string) => {
     hydrationScore: 'hydration',
     eyeAge: 'eyes_age',
     poresScore: 'pores',
-    acneScore: 'acne',
+    acneScore: 'breakouts',
     linesScore: 'lines',
     translucencyScore: 'translucency',
     pigmentationScore: 'pigmentation',
     uniformnessScore: 'uniformness',
-    eyeAreaCondition: 'eye_bags',
+    eyeAreaCondition: 'dark_circles',
     perceivedAge: 'age',
     skinTone: 'skin_tone',
     skinType: 'skin_type',
@@ -2473,41 +2473,31 @@ export default function MetricDetailScreen() {
           // Check if we have mask images data - use fetched mask images
           let maskImageData = null;
 
-          // First try to use the fetched mask images
+          // First try to use fetched mask images – exact condition match only.
           if (maskImages && Array.isArray(maskImages)) {
             maskImageData = maskImages.find(
               (image: any) => image.skin_condition_name === conditionName,
-            );
-            // If not found, try to find any mask image
-            if (!maskImageData && maskImages.length > 0) {
-              maskImageData = maskImages[0];
-            }
+            ) ?? null;
           }
 
-          console.log("parsedPhotoData", parsedPhotoData)
-
-          // Fallback to photo data if no fetched mask images
+          // Fallback to photo data passed from snapshot screen
           if (!maskImageData) {
-            if (parsedPhotoData?.maskImages) {
-              maskImageData = parsedPhotoData.maskImages.filter(
-                (image: any) => image.skin_condition_name === conditionName,
-              )[0];
-              if (!maskImageData && parsedPhotoData.maskImages.length > 0) {
-                maskImageData = parsedPhotoData.maskImages[0];
-              }
-            } else if (parsedPhotoData?.maskResults) {
-              maskImageData = parsedPhotoData.maskResults.find(
-                (result: any) => result.skin_condition_name === conditionName,
-              );
-              if (!maskImageData && parsedPhotoData.maskResults.length > 0) {
-                maskImageData = parsedPhotoData.maskResults[0];
-              }
+            if (parsedPhotoData?.maskImages && Array.isArray(parsedPhotoData.maskImages)) {
+              maskImageData =
+                parsedPhotoData.maskImages.find(
+                  (image: any) => image.skin_condition_name === conditionName,
+                ) ?? null;
+            } else if (parsedPhotoData?.maskResults && Array.isArray(parsedPhotoData.maskResults)) {
+              maskImageData =
+                parsedPhotoData.maskResults.find(
+                  (result: any) => result.skin_condition_name === conditionName,
+                ) ?? null;
             }
           }
 
-          console.log('🔵 maskImageData:', maskImageData);
           console.log('🔵 conditionName:', conditionName);
-          console.log('trendScores:', trendScores);
+          console.log('🔵 maskImageData:', maskImageData);
+          console.log('🔵 trendScores:', trendScores);
 
           // If no mask data, show the original photo instead
           if (

@@ -25,6 +25,7 @@ import {
   Text,
   ScrollView,
   ActivityIndicator,
+  Animated,
   Dimensions,
   Alert,
   StatusBar,
@@ -339,6 +340,120 @@ const SnapshotLoading = ({
     </View>
   );
 };
+
+// ===== Skeleton Analysis Section =====
+const SkeletonAnalysisSection = (): React.JSX.Element => {
+  const shimmer = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(shimmer, {
+          toValue: 1,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+        Animated.timing(shimmer, {
+          toValue: 0,
+          duration: 900,
+          useNativeDriver: true,
+        }),
+      ]),
+    );
+    loop.start();
+    return () => loop.stop();
+  }, [shimmer]);
+
+  const opacity = shimmer.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.35, 0.7],
+  });
+
+  const ROW_COUNT = 5;
+  return (
+    <View style={skeletonStyles.card}>
+      {/* Title skeleton */}
+      <Animated.View style={[skeletonStyles.titleBar, { opacity }]} />
+      {Array.from({ length: ROW_COUNT }).map((_, i) => (
+        <View key={i} style={skeletonStyles.row}>
+          {/* Star icon placeholder */}
+          <Animated.View style={[skeletonStyles.iconCircle, { opacity }]} />
+          {/* Label placeholder */}
+          <Animated.View
+            style={[
+              skeletonStyles.labelBar,
+              { opacity, width: 80 + (i % 3) * 20 },
+            ]}
+          />
+          {/* Right side: score dot + number */}
+          <View style={skeletonStyles.rightGroup}>
+            <Animated.View style={[skeletonStyles.dotCircle, { opacity }]} />
+            <Animated.View style={[skeletonStyles.scoreBar, { opacity }]} />
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+const skeletonStyles = StyleSheet.create({
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 22,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    elevation: 2,
+  },
+  titleBar: {
+    height: 16,
+    width: 80,
+    borderRadius: 8,
+    backgroundColor: '#E5E7EB',
+    marginBottom: 20,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 14,
+    borderTopWidth: 1,
+    borderTopColor: '#F3F4F6',
+  },
+  iconCircle: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: '#E5E7EB',
+    marginRight: 10,
+  },
+  labelBar: {
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#E5E7EB',
+    flex: 1,
+  },
+  rightGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 12,
+  },
+  dotCircle: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#E5E7EB',
+    marginRight: 6,
+  },
+  scoreBar: {
+    width: 28,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: '#E5E7EB',
+  },
+});
 
 // ===== Helper Functions =====
 const getMetricTag = (value: number) => {
@@ -1140,6 +1255,9 @@ const SnapshotScreen = (): React.JSX.Element => {
         )}
 
         {/* Analysis Section */}
+        {uiState === 'complete' && sortedScoreMetrics.length === 0 && (
+          <SkeletonAnalysisSection />
+        )}
         {sortedScoreMetrics.length > 0 && (
           <View style={styles.analysisCard}>
             <Text style={styles.analysisTitle}>Analysis</Text>
@@ -1210,6 +1328,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                     </View>
                     <ChevronRight
                       size={20}
+
                       color="#D7D3D0"
                       style={{ marginLeft: 4 }}
                     />

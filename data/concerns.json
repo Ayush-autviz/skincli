@@ -942,35 +942,30 @@
         "The highlighted zones indicate areas of sagging"
       ],
       "scoreLevels": {
-        "excellent": {
+        "great": {
           "max": 100,
           "min": 90,
-          "text": "Your skin shows excellent firmness with minimal sagging detected. This indicates optimal skin structure and support with very little gravitational effect visible."
-        },
-        "great": {
-          "max": 89,
-          "min": 80,
-          "text": "Your skin displays good firmness with mostly maintained structure. Only minor areas of sagging are present, indicating well-supported skin architecture."
+          "text": "No visible skin sagging."
         },
         "good": {
-          "max": 79,
-          "min": 70,
-          "text": "Your skin shows moderate firmness with generally healthy structure. Some areas of mild sagging are noticeable but overall skin support is maintained."
+          "max": 89,
+          "min": 80,
+          "text": "Mild sagging in nasolabial area or marionette lines."
         },
         "average": {
-          "max": 69,
+          "max": 79,
           "min": 50,
-          "text": "Average skin firmness with moderate sagging detected. Several areas show gravitational effects which is common with aging and can be addressed with supportive treatments."
+          "text": "Moderate sagging in the cheeks or jawline with visible softening of facial contours."
         },
         "poor": {
           "max": 49,
           "min": 30,
-          "text": "Poor skin firmness with noticeable sagging affecting facial contours. Multiple areas show structural loss that would benefit from firming treatments and support strategies."
+          "text": "Pronounced sagging with deep folds and noticeable loss of definition in facial structure."
         },
         "bad": {
           "max": 29,
           "min": 0,
-          "text": "Significant sagging concerns with pronounced structural loss detected. This indicates substantial gravitational effects that would benefit from comprehensive firming approaches and possibly professional treatments."
+          "text": "Severe sagging with significant drooping, jowls, and extensive volume loss."
         }
       },
       "whatYouCanDo": [

@@ -325,7 +325,7 @@ const MaskViewerScreen = (): React.JSX.Element => {
   console.log('🔵 parsedPhotoData.maskImages length:', parsedPhotoData?.maskImages?.length);
   console.log('🔵 parsedPhotoData.storageUrl:', parsedPhotoData?.storageUrl);
 
-  // Prepare mask data - filter out options with "Unknown" mask_img_url and sort by desired order
+  // Prepare mask data - map "Unknown" mask_img_url to original image and sort by desired order
   const maskOptions: MaskOption[] = [
     {
       skin_condition_name: 'none',
@@ -334,7 +334,16 @@ const MaskViewerScreen = (): React.JSX.Element => {
       image_url: parsedPhotoData?.maskImages?.[0]?.image_url
     },
     ...(parsedPhotoData?.maskImages || [])
-      .filter((mask: any) => mask.mask_img_url !== "Unknown")
+      .map((mask: any) => {
+        // If mask_img_url is "Unknown", fall back to the original image storageUrl
+        if (mask.mask_img_url === "Unknown" || !mask.mask_img_url) {
+          return {
+            ...mask,
+            mask_img_url: null, // Set to null so the viewer falls back to the original image only
+          };
+        }
+        return mask;
+      })
       .filter((mask: any) => {
         // Only include masks that have maskVerbiage in concerns.json
         const conditionToConcernKey: { [key: string]: string } = {

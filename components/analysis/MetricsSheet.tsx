@@ -515,6 +515,8 @@ const MetricsSheet = forwardRef<MetricsSheetRef, MetricsSheetProps>(({
                     'linesScore',     // Lines
                     'hydrationScore', // Hydration
                     'eyeAreaCondition', // Eye Area Condition
+                    'puffinessScore', // Puffiness
+                    'saggingScore',   // Sagging
                   ];
 
                   const indexA = order.indexOf(keyA);

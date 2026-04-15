@@ -81,6 +81,7 @@ interface AdviceData {
   disclaimer: string;
   ingredients: string[];
   Behavior: string[];
+  'Lifestyle Tips'?: string[];
 }
 
 interface ConcernDetail {
@@ -90,6 +91,7 @@ interface ConcernDetail {
   contextText?: string;
   scoreLevels: Record<string, ScoreLevel>;
   advice?: AdviceData;
+  lifestyleTips?: string[];
   typeDescriptions?: Record<
     string,
     {
@@ -177,6 +179,7 @@ import { LineChart } from 'react-native-chart-kit';
 // @ts-ignore
 import concernsData from '../data/concerns.json';
 import ingredientsData from '../data/Ingredients.json';
+
 import MetricsSeries_simple from '../components/analysis/MetricsSeries_simple';
 import MetricsSeries, {
   MetricRow,
@@ -1399,6 +1402,10 @@ export default function MetricDetailScreen() {
   // State for the detailed content of the current concern
   const [currentConcernDetails, setCurrentConcernDetails] =
     useState<ConcernDetail | null>(null);
+  const lifestyleTips =
+    currentConcernDetails?.lifestyleTips ||
+    currentConcernDetails?.advice?.['Lifestyle Tips'] ||
+    [];
   // State for tooltip
   const [tooltip, setTooltip] = useState<{
     visible: boolean;
@@ -2495,6 +2502,14 @@ export default function MetricDetailScreen() {
             }
           }
 
+          // If mask image is unknown or missing, fallback so we don't display a broken image
+          if (maskImageData && (maskImageData.mask_img_url === "Unknown" || !maskImageData.mask_img_url)) {
+             maskImageData = {
+               ...maskImageData,
+               mask_img_url: null
+             };
+          }
+
           console.log('🔵 conditionName:', conditionName);
           console.log('🔵 maskImageData:', maskImageData);
           console.log('🔵 trendScores:', trendScores);
@@ -3058,6 +3073,18 @@ export default function MetricDetailScreen() {
               ? currentConcernDetails.overview
               : 'Loading overview...'}
           </Text>
+
+          {lifestyleTips.length > 0 && (
+            <View style={styles.lifestyleTipsSection}>
+              <Text style={styles.lifestyleTipsTitle}>Lifestyle Tips</Text>
+              {lifestyleTips.map((tip: string, index: number) => (
+                <View key={`lifestyle-tip-${index}`} style={styles.lifestyleTipRow}>
+                  <Text style={styles.lifestyleTipBullet}>•</Text>
+                  <Text style={styles.lifestyleTipText}>{tip}</Text>
+                </View>
+              ))}
+            </View>
+          )}
 
           {/* Patience Note Box */}
           {(() => {
@@ -3898,6 +3925,33 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   medicalText: {
+    flex: 1,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#57534E',
+    fontWeight: '400',
+  },
+  lifestyleTipsSection: {
+    marginBottom: 12,
+  },
+  lifestyleTipsTitle: {
+    fontSize: 15,
+    fontFamily: fontFamily.bold,
+    color: '#44403C',
+    marginBottom: 8,
+  },
+  lifestyleTipRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  lifestyleTipBullet: {
+    width: 14,
+    fontSize: 14,
+    lineHeight: 20,
+    color: '#57534E',
+  },
+  lifestyleTipText: {
     flex: 1,
     fontSize: 14,
     lineHeight: 20,

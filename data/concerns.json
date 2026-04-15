@@ -322,8 +322,16 @@
       "displayName": "Acne",
       "associatedMetric": "Acne score <90",
       "overview": "Breakouts occur when pores get clogged by oil and dead skin cells, allowing bacteria to thrive and cause inflammation. This complex issue is influenced by hormones, genetics, diet, and stress, requiring a multi‑faceted approach to manage effectively.",
+      "lifestyleTips": [
+        "Develop a consistent cleansing routine without over-washing.",
+        "Introduce acne-fighting ingredients gradually to prevent irritation.",
+        "Consider dietary factors if you notice a trigger.",
+        "Consider the role stress can play.",
+        "Consider the role that hormonal changes can play, making breakouts somewhat unpredictable.",
+        "Remember that improvement isn't always linear - patience and consistency matter."
+      ],
       "maskVerbiage": [
-        "The highlighted zones, if any, indicate areas with detected acne"
+        "The highlighted zones indicate areas with detected acne"
       ],
       "scoreLevels": {
         "excellent": {
@@ -440,6 +448,14 @@
           "Manage stress levels.",
           "Monitor patterns with Magic Mirror  to identify triggers and treatment efficacy.",
           "Remember that improvement isn’t always linear — patience and consistency matter."
+        ],
+        "Lifestyle Tips": [
+          "Develop a consistent cleansing routine without over‑washing.",
+          "Introduce acne‑fighting ingredients gradually to prevent irritation.",
+          "Consider dietary factors if you notice a trigger.",
+          "Consider the role stress can play",
+          "Consider the role that hormonal changes can play, making breakouts somewhat unpredictable.",
+          "Remember that improvement isn’t always linear - patience and consistency matter."
         ]
       }
     },
@@ -448,8 +464,14 @@
       "displayName": "Pigmentation",
       "associatedMetric": "Pigmentation quality <90",
       "overview": "Pigmented spots, or hyperpigmentation, result from excess melanin production, often triggered by sun exposure, hormonal shifts, or skin inflammation. These can manifest as sun spots, age spots, or melasma, affecting the skin's evenness.",
+      "lifestyleTips": [
+        "Maintain consistent, year-round sun protection (SPF 30+).",
+        "Consider professional treatments like chemical peels or laser therapy for persistent spots.",
+        "Be patient, as fading pigmentation can take several months. Consistency matters.",
+        "Consider using tinted sun protection, considering the role that blue light can play in pigmentation."
+      ],
       "maskVerbiage": [
-        "The highlighted zones, if any, indicate detected pigmentation spots"
+        "The highlighted zones indicate detected pigmentation spots"
       ],
       "scoreLevels": {
         "excellent": {
@@ -560,8 +582,12 @@
       "displayName": "Uniformness",
       "associatedMetric": "Skin uniformness <90",
       "overview": "Skin evenness refers to the evenness of skin texture, tone, and overall appearance. Factors like sun damage, aging, acne scarring, and uneven pigmentation can affect skin uniformness, making targeted treatments beneficial.",
+      "lifestyleTips": [
+        "Maintain consistent, year-round sun protection (SPF 30+).",
+        "Remember that improvement isn't always linear - patience and consistency matter."
+      ],
       "maskVerbiage": [
-        "The highlighted zones, if any, indicate areas of skin texture irregularities"
+        "The highlighted zones indicate areas of skin texture irregularities"
       ],
       "scoreLevels": {
         "excellent": {
@@ -671,8 +697,14 @@
       "displayName": "Redness",
       "associatedMetric": "Redness score <80",
       "overview": "Skin redness often signals a compromised barrier, leading to sensitivity and irritation from external factors; it can also indicate conditions like rosacea. Maintaining a healthy skin microbiome and using calming ingredients are key to managing redness.",
+      "lifestyleTips": [
+        "Simplify your routine during flare-ups as various ingredients in your products may aggravate symptoms.",
+        "Use lukewarm (never hot) water when cleansing.",
+        "For persistent redness seek professional care.",
+        "Be patient, as reducing flares may take time. Consistency matters."
+      ],
       "maskVerbiage": [
-        "The highlighted zones, if any, indicate areas with high redness"
+        "The highlighted zones indicate areas with high redness"
       ],
       "scoreLevels": {
         "excellent": {
@@ -787,10 +819,12 @@
       "displayName": "Lines",
       "associatedMetric": "Lines score <75",
       "overview": "Wrinkles are visible lines or creases that form due to aging, sun damage, and repeated facial expressions, resulting from the loss of collagen and elastin. Addressing wrinkles involves protecting the skin and using ingredients that support skin structure and renewal.",
+      "lifestyleTips": [
+        "Maintain consistent, year-round sun protection (SPF 30+) for prevention.",
+        "Maintain skin hydration."
+      ],
       "maskVerbiage": [
-        "Red lines, if any, indicate deep wrinkle lines",
-        "Green lines, if any, indicate fine wrinkle lines",
-        "Yellow  lines, if any, indicate sagging contours"
+        "Pink lines indicate fine or deep wrinkle lines"
       ],
       "scoreLevels": {
         "excellent": {
@@ -902,6 +936,15 @@
       "displayName": "Sagging",
       "associatedMetric": "Sagging score (submetric of lines score) < 70",
       "overview": "Skin sagging occurs from the loss of collagen, elastin, and underlying facial volume, influenced by loss of bony structure, gravity and aging. While topical treatments can improve appearance, managing sagging involves supporting skin structure and realistic expectations.",
+      "lifestyleTips": [
+        "Approach sagging with realistic expectations; topicals improve appearance but don't match procedural interventions.",
+        "Consider professional treatments such as lasers and devices for deeper remodeling.",
+        "Maintain healthy body weight, note it's normal after weight loss to see sagging in your facial contours.",
+        "Maintain consistent, year-round sun protection (SPF 30+)."
+      ],
+      "maskVerbiage": [
+        "The highlighted zones indicate areas of sagging"
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -1087,6 +1130,11 @@
       "displayName": "Dark Circles",
       "associatedMetric": "Dark circles score < 70",
       "overview": "Dark circles can stem from genetics, thin skin revealing blood vessels, hyperpigmentation, or shadows from volume loss. Lifestyle factors like lack of sleep or allergies can also contribute to their appearance under the eyes.",
+      "lifestyleTips": [
+        "Try to identify the primary cause of your dark circles if possible. Some triggers may not be amenable to skin care products, i.e. genetic predisposition.",
+        "Get adequate sleep.",
+        "Consider the role that allergies can play; rubbing eyes can aggravate dark circles."
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,
@@ -1292,8 +1340,13 @@
       "displayName": "Pores",
       "associatedMetric": "Pores quality <90",
       "overview": "Visible pores are a natural part of skin texture, but enlarged or prominent pores can be influenced by genetics, oil production, aging, and sun damage. Understanding your pore condition helps guide appropriate treatments and skincare routines.",
+      "lifestyleTips": [
+        "Nasal adhesive strips: Attach to sebum and debris inside of pores to help gently lift away.",
+        "Maintain consistent cleansing without stripping the skin.",
+        "Be patient, as treating pores can take time. Consistency matters."
+      ],
       "maskVerbiage": [
-        "Blue zones, if any, indicate areas with visible presence of pores"
+        "Blue zones indicate areas with visible presence of pores"
       ],
       "scoreLevels": {
         "excellent": {
@@ -1634,11 +1687,16 @@
     },
     "hydrationScore": {
       "keyForLookup": "hydrationScore",
-      "displayName": "Hydration",
+      "displayName": "Dewiness",
       "associatedMetric": "Hydration score <70",
       "overview": "Dewiness refers to the skin's ability to retain and balance moisture, which is essential for maintaining a healthy, resilient barrier. Well-moisturized skin appears plump, smooth, and radiant, while dryness can lead to dullness, rough texture, increased sensitivity, and the appearance of fine lines. Factors such as climate, skincare habits, diet, and age can all impact your skin's hydration levels.",
+      "lifestyleTips": [
+        "Consider factors that indoor and outdoor environments can play in terms of impacting dryness and hydration of the skin.",
+        "Avoid over-cleansing or using harsh soaps, which can strip the skin's natural moisture.",
+        "Apply moisturizer immediately after cleansing to lock in moisture."
+      ],
       "maskVerbiage": [
-        "The highlighted zones, if any, indicate areas of low moisture"
+        "The highlighted zones indicate areas of low moisture"
       ],
       "scoreLevels": {
         "excellent": {
@@ -1742,10 +1800,13 @@
       "keyForLookup": "eyeAreaCondition",
       "displayName": "Dark Circles",
       "overview": "Your dark circles score reflects the overall health and appearance of the skin around your eyes. This metric focuses on pigmentation, fluid retention, and skin thickness in the delicate eye area, helping you track improvements in brightness and skin quality.",
+      "lifestyleTips": [
+        "Try to identify the primary cause of your dark circles if possible. Some triggers may not be amenable to skin care products, i.e. genetic predisposition.",
+        "Get adequate sleep.",
+        "Consider the role that allergies can play; rubbing eyes can aggravate dark circles."
+      ],
       "maskVerbiage": [
-        "Green zones, if any, indicate detected dark circles under the eyes",
-        "Yellow zones, if any, indicate detected puffiness or eye bags",
-        "White  lines, if any, indicate detected lacrimal grove areas"
+        "The highlighted zones indicate areas of dark circles"
       ],
       "scoreLevels": {
         "excellent": {
@@ -1938,6 +1999,9 @@
       "displayName": "Eye Puffiness",
       "associatedMetric": "Puffiness score <70",
       "overview": "Puffiness around the eyes and face can be caused by various factors, including fluid retention, lack of sleep, allergies, or natural aging. It often manifests as swelling or eye bags, making the face appear tired or less vibrant.",
+      "maskVerbiage": [
+        "The highlighted zones indicate areas of eye puffiness"
+      ],
       "scoreLevels": {
         "excellent": {
           "max": 100,

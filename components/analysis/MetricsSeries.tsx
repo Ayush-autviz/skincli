@@ -154,6 +154,7 @@ const DATE_CARD_MARGIN = 3;
 
 const METRIC_KEYS = [
   'acneScore',
+  'hydrationScore',
   'rednessScore',
   'eyeAreaCondition',
   'linesScore',
@@ -169,6 +170,7 @@ const METRIC_KEYS = [
 
 export const METRIC_LABELS = {
   acneScore: 'Breakouts',
+  hydrationScore: 'Dewiness',
   rednessScore: 'Redness',
   eyeAreaCondition: 'Dark Circles',
   linesScore: 'Lines',

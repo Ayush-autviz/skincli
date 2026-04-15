@@ -3961,7 +3961,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   lifestyleTipsTitle: {
-    fontSize: 15,
+    fontSize: 16,
+    fontWeight: '700',
     fontFamily: fontFamily.bold,
     color: '#44403C',
     marginBottom: 8,

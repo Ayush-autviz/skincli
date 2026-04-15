@@ -222,7 +222,12 @@ export default function HomeScreen(): React.JSX.Element {
     isLoadingMore,
     setSelectedSnapshot,
   } = usePhotoContext();
-  const { user, profile } = useAuthStore();
+  const {
+    user,
+    profile,
+    hasSeenRoutineAlert,
+    setHasSeenRoutineAlert,
+  } = useAuthStore();
 
   // Date group navigation state
   const [currentDateIndex, setCurrentDateIndex] = useState<number>(0);
@@ -336,6 +341,27 @@ export default function HomeScreen(): React.JSX.Element {
       setIsLoadingMetrics(false);
     }
   };
+
+  // Show routine evaluation alert if conditions are met
+  useEffect(() => {
+    if (
+      userMetrics &&
+      userMetrics.total_face_scans >= 1 &&
+      userMetrics.total_routines === 0 &&
+      !hasSeenRoutineAlert
+    ) {
+      Alert.alert(
+        'Add to your routine',
+        'Please add the products and treatments you are currently using to your routine so we can tell you what ingredients your skin is missing',
+        [
+          {
+            text: 'OK',
+            onPress: () => setHasSeenRoutineAlert(true),
+          },
+        ],
+      );
+    }
+  }, [userMetrics, hasSeenRoutineAlert, setHasSeenRoutineAlert]);
 
   // Specifically refresh when a new photo is uploaded
   useEffect(() => {
@@ -1149,14 +1175,14 @@ export default function HomeScreen(): React.JSX.Element {
                                     typeof foundEntry !== 'string' &&
                                     Array.isArray(foundEntry.products) &&
                                     foundEntry.products.length > 0 ? (
-                                      <Text style={styles.productHighlight}>
-                                        {foundEntry.products.join(', ')}
-                                      </Text>
-                                    ) : ingredientDesc ? (
-                                      <Text style={styles.ingredientDesc}>
-                                        {ingredientDesc}
-                                      </Text>
-                                    ) : null}
+                                    <Text style={styles.productHighlight}>
+                                      {foundEntry.products.join(', ')}
+                                    </Text>
+                                  ) : ingredientDesc ? (
+                                    <Text style={styles.ingredientDesc}>
+                                      {ingredientDesc}
+                                    </Text>
+                                  ) : null}
                                 </View>
                                 <ChevronRight size={18} color="#D6D3D1" />
                               </TouchableOpacity>

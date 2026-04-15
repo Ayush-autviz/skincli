@@ -24,6 +24,7 @@ const useAuthStore = create(
       // Profile data and status
       profile: null,
       profileStatus: null, // true = complete, false = incomplete
+      hasSeenRoutineAlert: false,
 
       // Top Concerns
       topConcerns: [],
@@ -50,6 +51,8 @@ const useAuthStore = create(
       setProfileStatus: (profileStatus) => set({ profileStatus }),
 
       setTopConcerns: (topConcerns) => set({ topConcerns }),
+
+      setHasSeenRoutineAlert: (hasSeenRoutineAlert) => set({ hasSeenRoutineAlert }),
 
       setLoading: (loading) => set({ loading }),
 
@@ -87,6 +90,7 @@ const useAuthStore = create(
         profile: state.profile,
         profileStatus: state.profileStatus,
         topConcerns: state.topConcerns,
+        hasSeenRoutineAlert: state.hasSeenRoutineAlert,
       }),
     }
   )

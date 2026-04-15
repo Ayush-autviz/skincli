@@ -1306,6 +1306,12 @@
           "initialChatMessage": "Effectively managing allergies can be key to reducing under-eye puffiness, as allergic reactions often cause inflammation and fluid buildup in this area. Are allergies a concern for you?"
         }
       ],
+      "lifestyleTips": [
+        "Try to identify the primary cause of your under eye puffiness if possible. Some triggers may not be amenable to skin care products.",
+        "For persistent swelling, applying cool compresses or gentle massage to the area can promote drainage.",
+        "Get adequate sleep.",
+        "Consider the role that allergies can play; rubbing eyes can aggravate under eye puffiness."
+      ],
       "advice": {
         "disclaimer": "Remember, Magic Mirror does not provide medical advice",
         "Behavior": [
@@ -1779,7 +1785,7 @@
     "eyeAreaCondition": {
       "keyForLookup": "eyeAreaCondition",
       "displayName": "Dark Circles",
-      "overview": "Your dark circles score reflects the overall health and appearance of the skin around your eyes. This metric focuses on pigmentation, fluid retention, and skin thickness in the delicate eye area, helping you track improvements in brightness and skin quality.",
+      "overview": "Dark circles can stem from genetics, thin skin revealing blood vessels, hyperpigmentation, or shadows from volume loss. Lifestyle factors like lack of sleep or allergies can also contribute to their appearance under the eyes.",
       "lifestyleTips": [
         "Try to identify the primary cause of your dark circles if possible. Some triggers may not be amenable to skin care products, i.e. genetic predisposition.",
         "Get adequate sleep.",
@@ -1978,7 +1984,7 @@
       "keyForLookup": "puffinessScore",
       "displayName": "Eye Puffiness",
       "associatedMetric": "Puffiness score <70",
-      "overview": "Puffiness around the eyes and face can be caused by various factors, including fluid retention, lack of sleep, allergies, or natural aging. It often manifests as swelling or eye bags, making the face appear tired or less vibrant.",
+      "overview": "Under eye puffiness often results from fluid retention due to factors like high salt intake, allergies, or lack of sleep. It can also be caused by age-related changes where fat pads become more prominent under the eyes",
       "maskVerbiage": [
         "The highlighted zones indicate areas of eye puffiness"
       ],
@@ -2029,13 +2035,19 @@
           "initialChatMessage": "Lack of sleep is a common cause of puffiness. Ensuring you get enough rest can make a huge difference. Are you looking for ways to improve your sleep hygiene?"
         }
       ],
+      "lifestyleTips": [
+        "Try to identify the primary cause of your under eye puffiness if possible. Some triggers may not be amenable to skin care products.",
+        "For persistent swelling, applying cool compresses or gentle massage to the area can promote drainage.",
+        "Get adequate sleep.",
+        "Consider the role that allergies can play; rubbing eyes can aggravate under eye puffiness."
+      ],
       "advice": {
         "disclaimer": "Remember, Magic Mirror does not provide medical advice",
         "Behavior": [
-          "Prioritize 7-9 hours of quality sleep to help regulate fluids and reduce puffiness.",
-          "Use cold compresses or cooled eye masks to soothe and reduce swelling.",
-          "Stay hydrated and limit salt intake, especially before bedtime.",
-          "Consider elevation during sleep to prevent fluid accumulation around the eyes."
+          "Try to identify the primary cause of your under eye puffiness if possible. Some triggers may not be amenable to skin care products.",
+          "For persistent swelling, applying cool compresses or gentle massage to the area can promote drainage.",
+          "Get adequate sleep.",
+          "Consider the role that allergies can play; rubbing eyes can aggravate under eye puffiness."
         ]
       }
     }

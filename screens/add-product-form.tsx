@@ -29,7 +29,10 @@ interface AddProductFormParams {
 
 const allConcerns = [
     'Anti-aging (eyes)',
+    'Anti-Aging (Face)',
     'Breakouts',
+    'Cleanser',
+    'Crepey Skin',
     'Dewiness',
     'Dry Skin',
     'Enlarged Pores',
@@ -44,6 +47,7 @@ const allConcerns = [
     'Sagging',
     'Sensitive Skin',
     'Sun Damage',
+    'Sun Protection',
     'Under Eye Circles',
     'Visible Pores',
     'Wrinkles',

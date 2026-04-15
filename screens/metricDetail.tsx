@@ -755,6 +755,13 @@ const getSkinConditionNameForMetric = (metricKey: string) => {
   return mapping[metricKey] || null;
 };
 
+const getSkinConditionAliases = (conditionName: string | null): string[] => {
+  if (!conditionName) return [];
+  if (conditionName === 'breakouts') return ['breakouts', 'acne'];
+  if (conditionName === 'acne') return ['acne', 'breakouts'];
+  return [conditionName];
+};
+
 // Helper function to convert metricKey to concern name for API
 const getConcernNameForAPI = (metricKey: string) => {
   if (!metricKey) return null;
@@ -1370,6 +1377,7 @@ export default function MetricDetailScreen() {
         parsedPhotoData?.hautBatchId;
       if (!batchId) {
         console.log('🔴 No hautBatchId available for fetching mask images');
+        setMaskImagesLoading(false);
         return;
       }
 
@@ -1788,11 +1796,23 @@ export default function MetricDetailScreen() {
 
       setIsLoadingTrends(true);
       try {
-        console.log('🔵 Fetching trend scores for:', skinConditionName);
-        const response = (await getSkinTrendScores({
-          skin_condition_name: skinConditionName,
-          sort_order: 'desc',
-        })) as any;
+        const conditionCandidates = getSkinConditionAliases(skinConditionName);
+        let response: any = null;
+
+        for (const candidate of conditionCandidates) {
+          try {
+            console.log('🔵 Fetching trend scores for:', candidate);
+            response = (await getSkinTrendScores({
+              skin_condition_name: candidate,
+              sort_order: 'desc',
+            })) as any;
+            if (response?.success) break;
+          } catch (err) {
+            if (candidate === conditionCandidates[conditionCandidates.length - 1]) {
+              throw err;
+            }
+          }
+        }
 
         console.log('🔵 response of getSkinTrendScores:', response);
 
@@ -2482,22 +2502,28 @@ export default function MetricDetailScreen() {
 
           // First try to use fetched mask images – exact condition match only.
           if (maskImages && Array.isArray(maskImages)) {
-            maskImageData = maskImages.find(
-              (image: any) => image.skin_condition_name === conditionName,
-            ) ?? null;
+            const conditionAliases = getSkinConditionAliases(conditionName);
+            maskImageData =
+              maskImages.find((image: any) =>
+                conditionAliases.includes(image.skin_condition_name),
+              ) ?? null;
           }
 
           // Fallback to photo data passed from snapshot screen
           if (!maskImageData) {
             if (parsedPhotoData?.maskImages && Array.isArray(parsedPhotoData.maskImages)) {
+              const conditionAliases = getSkinConditionAliases(conditionName);
               maskImageData =
                 parsedPhotoData.maskImages.find(
-                  (image: any) => image.skin_condition_name === conditionName,
+                  (image: any) =>
+                    conditionAliases.includes(image.skin_condition_name),
                 ) ?? null;
             } else if (parsedPhotoData?.maskResults && Array.isArray(parsedPhotoData.maskResults)) {
+              const conditionAliases = getSkinConditionAliases(conditionName);
               maskImageData =
                 parsedPhotoData.maskResults.find(
-                  (result: any) => result.skin_condition_name === conditionName,
+                  (result: any) =>
+                    conditionAliases.includes(result.skin_condition_name),
                 ) ?? null;
             }
           }
@@ -2555,7 +2581,7 @@ export default function MetricDetailScreen() {
               console.log('🔵 s1:', s1);
               const diff = s0 - s1;
               changeAbs = Math.abs(Math.round(diff));
-              changeArrow = diff < 0 ? '↑' : diff > 0 ? '↓' : '→';
+              changeArrow = diff > 0 ? '↑' : diff < 0 ? '↓' : '→';
             }
 
             console.log('🔵 latestScore:', latestScore);

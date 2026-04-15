@@ -750,14 +750,29 @@ const SnapshotScreen = (): React.JSX.Element => {
                         return dateB.getTime() - dateA.getTime();
                       },
                     );
-                    const currentIndex = sortedPhotos.findIndex((p: any) => {
-                      const pImgId = p.hautUploadData?.imageId || p.id;
-                      return (
-                        pImgId === batchId ||
-                        pImgId === imageId ||
-                        pImgId === photoId
-                      );
-                    });
+                    const currentPhotoIds = new Set(
+                      [
+                        batchId,
+                        imageId,
+                        photoId,
+                        passedImageId,
+                        passedHautBatchId,
+                      ].filter(Boolean) as string[],
+                    );
+                    const getPhotoIds = (p: any): string[] =>
+                      [
+                        p?.id,
+                        p?.imageId,
+                        p?.hautBatchId,
+                        p?.hautUploadData?.imageId,
+                        p?.hautUploadData?.hautBatchId,
+                        p?.apiData?.image?.image_id,
+                        p?.apiData?.image?.haut_batch_id,
+                      ].filter(Boolean);
+
+                    const currentIndex = sortedPhotos.findIndex((p: any) =>
+                      getPhotoIds(p).some((id: string) => currentPhotoIds.has(id)),
+                    );
 
                     let prevPhoto = null;
                     if (currentIndex >= 0) {
@@ -765,12 +780,18 @@ const SnapshotScreen = (): React.JSX.Element => {
                         prevPhoto = sortedPhotos[currentIndex + 1];
                       }
                     } else if (sortedPhotos.length > 0) {
-                      prevPhoto = sortedPhotos[0];
+                      // If we cannot locate current index, pick the first non-current photo
+                      prevPhoto =
+                        sortedPhotos.find((p: any) =>
+                          !getPhotoIds(p).some((id: string) => currentPhotoIds.has(id)),
+                        ) || null;
                     }
 
                     if (prevPhoto) {
                       const prevHautBatchId =
-                        prevPhoto.hautUploadData?.hautBatchId;
+                        prevPhoto.hautUploadData?.hautBatchId ||
+                        prevPhoto.hautBatchId ||
+                        prevPhoto.apiData?.image?.haut_batch_id;
                       if (!prevHautBatchId) return;
                       const prevResults = await getHautAnalysisResults(
                         prevHautBatchId,
@@ -786,9 +807,12 @@ const SnapshotScreen = (): React.JSX.Element => {
                           'uniformnessScore',
                           'rednessScore',
                           'acneScore',
+                          'hydrationScore',
                           'eyeAreaCondition',
                           'linesScore',
                           'poresScore',
+                          'puffinessScore',
+                          'saggingScore',
                         ];
                         scoreKeys.forEach(key => {
                           const curr = (transformedMetrics as any)[key];

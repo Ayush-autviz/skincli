@@ -1136,35 +1136,30 @@
         "Consider the role that allergies can play; rubbing eyes can aggravate dark circles."
       ],
       "scoreLevels": {
-        "excellent": {
+        "great": {
           "max": 100,
           "min": 90,
-          "text": "Your under-eye area shows minimal dark circles with excellent overall appearance. This indicates optimal condition with very little discoloration detected."
-        },
-        "great": {
-          "max": 89,
-          "min": 80,
-          "text": "Your under-eye area displays well-controlled dark circles with mostly even tone. Only minor discoloration is present, indicating good eye area health."
+          "text": "Under-eye area appears bright and even-toned with no visible dark circles, indicates healthy periorbital skin."
         },
         "good": {
-          "max": 79,
-          "min": 70,
-          "text": "Your under-eye area shows moderate dark circle control with generally healthy appearance. Some discoloration is noticeable but not significantly pronounced."
+          "max": 89,
+          "min": 80,
+          "text": "Mild darkening under the eyes; early signs of pigmentation or vascular visibility, limited in size and intensity."
         },
         "average": {
-          "max": 69,
+          "max": 79,
           "min": 50,
-          "text": "Average dark circle condition with moderate discoloration. Several areas of darkness are detected under the eyes, which is common and can be improved with targeted treatments."
+          "text": "Moderate dark circles present with noticeable discoloration and contrast against surrounding skin."
         },
         "poor": {
           "max": 49,
           "min": 30,
-          "text": "Poor dark circle control with noticeable discoloration affecting under-eye appearance. Multiple areas of darkness are detected that would benefit from specialized eye care treatments."
+          "text": "Pronounced dark circles under both eyes with clear pigmentation or vascular prominence; affects overall eye area appearance."
         },
         "bad": {
           "max": 29,
           "min": 0,
-          "text": "Significant dark circle concerns with prominent discoloration detected. This indicates substantial under-eye darkness that would benefit from comprehensive eye care approaches and possibly professional treatments."
+          "text": "Severe and persistent dark circles with deep discoloration and structural hollowness; may indicate chronic vascular or pigmentary issues."
         }
       },
       "whatYouCanDo": [
@@ -1244,35 +1239,30 @@
       "associatedMetric": "Eye bags score < 70",
       "overview": "Under-eye puffiness often results from fluid retention due to factors like high salt intake, allergies, or lack of sleep. It can also be caused by age-related changes where fat pads become more prominent under the eyes.",
       "scoreLevels": {
-        "excellent": {
+        "great": {
           "max": 100,
           "min": 90,
-          "text": "Your under-eye area shows minimal puffiness with excellent overall appearance. This indicates optimal condition with very little eye bag prominence detected."
-        },
-        "great": {
-          "max": 89,
-          "min": 80,
-          "text": "Your under-eye area displays well-controlled puffiness with mostly smooth appearance. Only minor eye bags are present, indicating good eye area health."
+          "text": "Under-eye area appears smooth and firm with no visible puffiness, indicating optimal periorbital skin condition."
         },
         "good": {
-          "max": 79,
-          "min": 70,
-          "text": "Your under-eye area shows moderate puffiness control with generally healthy appearance. Some eye bags are noticeable but not significantly pronounced."
+          "max": 89,
+          "min": 80,
+          "text": "Mild puffiness localized to the lower eyelids; may reflect temporary fluid retention or early structural changes."
         },
         "average": {
-          "max": 69,
+          "max": 79,
           "min": 50,
-          "text": "Average eye bag condition with moderate puffiness. Several areas of under-eye prominence are detected, which is common and can be improved with targeted treatments."
+          "text": "Moderate under-eye swelling is visible on both sides, suggests soft tissue accumulation or reduced lymphatic drainage."
         },
         "poor": {
           "max": 49,
           "min": 30,
-          "text": "Poor eye bag control with noticeable puffiness affecting under-eye appearance. Multiple areas of prominence are detected that would benefit from specialized eye care treatments."
+          "text": "Significant puffiness with noticeable bulging of the lower eyelids indicates advanced weakening of orbital support structures."
         },
         "bad": {
           "max": 29,
           "min": 0,
-          "text": "Significant eye bag concerns with prominent puffiness detected. This indicates substantial under-eye prominence that would benefit from comprehensive eye care approaches and possibly professional treatments."
+          "text": "Severe and persistent swelling with extensive under-eye bags; commonly associated with aging, chronic fluid retention, or fat displacement."
         }
       },
       "whatYouCanDo": [
@@ -2003,35 +1993,30 @@
         "The highlighted zones indicate areas of eye puffiness"
       ],
       "scoreLevels": {
-        "excellent": {
-          "max": 100,
-          "min": 91,
-          "text": "Your skin shows very little to no signs of puffiness. Your eye area and facial contours appear well-defined and refreshed."
-        },
         "great": {
-          "max": 90,
-          "min": 81,
-          "text": "Minimal puffiness detected. Your skin maintains good definition, with only minor areas of concern that are easily manageable."
+          "max": 100,
+          "min": 90,
+          "text": "Under-eye area appears smooth and firm with no visible puffiness, indicating optimal periorbital skin condition."
         },
         "good": {
-          "max": 80,
-          "min": 71,
-          "text": "Some mild puffiness is visible, particularly around the eye area. Targeted treatments can help improve definition and reduce swelling."
+          "max": 89,
+          "min": 80,
+          "text": "Mild puffiness localized to the lower eyelids; may reflect temporary fluid retention or early structural changes."
         },
         "average": {
-          "max": 70,
-          "min": 51,
-          "text": "Noticeable puffiness is present. Incorporating cooling treatments and improving sleep/hydration can help reduce overall swelling."
+          "max": 79,
+          "min": 50,
+          "text": "Moderate under-eye swelling is visible on both sides, suggests soft tissue accumulation or reduced lymphatic drainage."
         },
         "poor": {
-          "max": 50,
-          "min": 31,
-          "text": "Significant puffiness detected. Consider specialized eye creams and lifestyle adjustments to address persistent swelling."
+          "max": 49,
+          "min": 30,
+          "text": "Significant puffiness with noticeable bulging of the lower eyelids indicates advanced weakening of orbital support structures."
         },
         "bad": {
-          "max": 30,
+          "max": 29,
           "min": 0,
-          "text": "Extensive puffiness is visible. This may indicate significant fluid retention or other factors that would benefit from consistent targeted care."
+          "text": "Severe and persistent swelling with extensive under-eye bags; commonly associated with aging, chronic fluid retention, or fat displacement."
         }
       },
       "whatYouCanDo": [

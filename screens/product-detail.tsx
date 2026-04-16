@@ -867,7 +867,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
           </View>
 
           {/* 2. Effectiveness Section - Hidden in add mode */}
-          {!isAddMode && (
+          {!isAddMode && routineData?.concern_tracking && routineData?.concern_tracking?.length > 0 && (
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Effectiveness</Text>
               {routineData.concern_tracking && routineData.concern_tracking.length > 0 ? (

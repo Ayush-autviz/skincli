@@ -1795,35 +1795,30 @@
         "The highlighted zones indicate areas of dark circles"
       ],
       "scoreLevels": {
-        "excellent": {
-          "max": 100,
-          "min": 91,
-          "text": "Excellent dark circle appearance"
-        },
         "great": {
-          "max": 90,
-          "min": 81,
-          "text": "Very good dark circle appearance"
+          "max": 100,
+          "min": 90,
+          "text": "Under-eye area appears bright and even-toned with no visible dark circles, indicates healthy periorbital skin."
         },
         "good": {
-          "max": 79,
-          "min": 70,
-          "text": "Moderate dark circle visibility"
+          "max": 89,
+          "min": 80,
+          "text": "Mild darkening under the eyes; early signs of pigmentation or vascular visibility, limited in size and intensity."
         },
         "average": {
-          "max": 69,
+          "max": 79,
           "min": 50,
-          "text": "Moderate dark circle visibility"
+          "text": "Moderate dark circles present with noticeable discoloration and contrast against surrounding skin."
         },
         "poor": {
           "max": 49,
           "min": 30,
-          "text": "Significant dark circle visibility; may benefit from targeted care"
+          "text": "Pronounced dark circles under both eyes with clear pigmentation or vascular prominence; affects overall eye area appearance."
         },
         "bad": {
           "max": 29,
           "min": 0,
-          "text": "Significant dark circle visibility; may benefit from targeted care"
+          "text": "Severe and persistent dark circles with deep discoloration and structural hollowness; may indicate chronic vascular or pigmentary issues."
         }
       },
       "whatYouCanDo": [

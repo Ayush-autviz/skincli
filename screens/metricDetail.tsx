@@ -2430,7 +2430,7 @@ export default function MetricDetailScreen() {
                         styles.backgroundImage as any,
                         { opacity: everythingLoaded ? 1 : 0 },
                       ]}
-                      resizeMode="cover"
+                      resizeMode="contain"
                       onLoadEnd={() => setBackgroundImageLoading(false)}
                     />
                     {!everythingLoaded && (
@@ -2619,7 +2619,7 @@ export default function MetricDetailScreen() {
                         styles.backgroundImage as any,
                         { opacity: everythingLoaded ? 1 : 0 },
                       ]}
-                      resizeMode="cover"
+                      resizeMode="contain"
                       onLoadEnd={() => setBackgroundImageLoading(false)}
                     />
                     {!everythingLoaded && (

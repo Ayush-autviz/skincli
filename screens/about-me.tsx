@@ -15,13 +15,19 @@ import {
   Alert,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
-import { User, PencilLine } from 'lucide-react-native';
+import {
+  User,
+  PencilLine,
+  CheckCircle,
+  ChevronRight,
+  Package,
+} from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { colors, spacing, fontFamily } from '../styles';
 import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
 import useAuthStore from '../stores/authStore';
-import { getProfile } from '../utils/newApiService';
+import { getProfile, getRoutineItems } from '../utils/newApiService';
 import { usePhotoContext } from '../contexts/PhotoContext';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import ImageWithSkeleton from '../components/ui/ImageWithSkeleton';
@@ -52,6 +58,7 @@ export default function AboutMeScreen(): React.JSX.Element {
   const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
   const [isProfileLoading, setIsProfileLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<TabType>('photos');
+  const [effectiveProducts, setEffectiveProducts] = useState<any[]>([]);
 
   // Fetch profile on mount
   useEffect(() => {
@@ -83,8 +90,113 @@ export default function AboutMeScreen(): React.JSX.Element {
     }
   };
 
+  const fetchEffectiveProducts = async () => {
+    try {
+      const response = (await getRoutineItems()) as any;
+      if (response.success && response.data) {
+        const typeMap: { [key: string]: string } = {
+          product: 'Product',
+          activity: 'Activity',
+          nutrition: 'Nutrition',
+          treatment_facial: 'Treatment / Facial',
+          treatment_injection: 'Treatment / Injection',
+          treatment_other: 'Treatment / Other',
+          injectables: 'Injectables',
+        };
+        const usageMap: { [key: string]: string } = {
+          am: 'AM',
+          pm: 'PM',
+          both: 'AM + PM',
+          as_needed: 'As needed',
+          AM: 'AM',
+          PM: 'PM',
+          Both: 'AM + PM',
+          'As needed': 'As needed',
+        };
+        const frequencyMap: { [key: string]: string } = {
+          daily: 'Daily',
+          weekly: 'Weekly',
+          as_needed: 'As needed',
+        };
+        const getDate = (dateValue: any): Date | null => {
+          if (!dateValue) return null;
+          try {
+            return new Date(dateValue);
+          } catch {
+            return null;
+          }
+        };
+
+        const transformed = response.data.map((apiItem: any) => ({
+          id: apiItem.id,
+          name: apiItem.name,
+          type: typeMap[apiItem.type] || apiItem.type,
+          usage: usageMap[apiItem.usage] || apiItem.usage,
+          frequency: frequencyMap[apiItem.frequency] || apiItem.frequency,
+          concerns: apiItem.concern || [],
+          concern_tracking: apiItem.concern_tracking || [],
+          dateStarted: getDate(apiItem.start_date),
+          dateStopped: getDate(apiItem.end_date),
+          is_tracking_paused: apiItem.is_tracking_paused,
+          stopReason: apiItem.end_reason || '',
+          upc: apiItem.upc || undefined,
+          brand: apiItem.brand_name || apiItem.brand || undefined,
+          image_url: apiItem.image_url || undefined,
+          extra: apiItem.extra || {},
+        }));
+
+        const effective = transformed.filter((item: any) => {
+          if (!item.concern_tracking || item.concern_tracking.length === 0)
+            return false;
+          return item.concern_tracking.some(
+            (t: any) => t.is_effective === true,
+          );
+        });
+
+        setEffectiveProducts(effective);
+      } else {
+        setEffectiveProducts([]);
+      }
+    } catch {
+      setEffectiveProducts([]);
+    }
+  };
+
+  useEffect(() => {
+    fetchEffectiveProducts();
+  }, []);
+
   const handleEditProfile = (): void => {
     (navigation as any).navigate('profile');
+  };
+
+  const handleNavigateToProductDetail = (item: any) => {
+    (navigation as any).navigate('ProductDetail', {
+      itemId: item.id,
+      productData: {
+        product_name: item.name,
+        brand: item.extra?.brand,
+        upc: item.upc || undefined,
+        ingredients: item.extra?.ingredients || [],
+        good_for: item.extra?.good_for || [],
+        product_image: item.image_url || item.extra?.image_url,
+        image_url: item.image_url || item.extra?.image_url,
+      },
+      routineData: {
+        name: item.name,
+        type: item.type,
+        usage: item.usage,
+        frequency: item.frequency,
+        concerns: item.concerns || [],
+        concern_tracking: item.concern_tracking || [],
+        dateStarted: item.dateStarted,
+        dateStopped: item.dateStopped,
+        stopReason: item.stopReason,
+        extra: item.extra || {},
+        is_tracking_paused: item.is_tracking_paused,
+      },
+      upc: item.upc || undefined,
+    });
   };
 
   const handlePhotoPress = (photo: any): void => {
@@ -294,6 +406,52 @@ export default function AboutMeScreen(): React.JSX.Element {
               </View>
             </View>
           </>
+        )}
+
+        {/* Effective Products Section inside profile card */}
+        {effectiveProducts.length > 0 && !isProfileLoading && (
+          <View style={styles.effectiveSection}>
+            <View style={styles.effectiveHeader}>
+              <Text style={styles.effectiveTitle}>Effective Products</Text>
+            </View>
+            {effectiveProducts.map(item => {
+              const brandName = item.extra?.brand || item.brand || '';
+              const imageUrl = item.extra?.image_url || item.image_url;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.effectiveItemCard}
+                  onPress={() => handleNavigateToProductDetail(item)}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.effectiveItemImageContainer}>
+                    {imageUrl ? (
+                      <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.effectiveItemImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.effectiveItemImage}>
+                        <Package size={18} color="#A9A29D" />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.effectiveItemContent}>
+                    {brandName ? (
+                      <Text style={styles.effectiveItemBrand}>
+                        {brandName.toUpperCase()}
+                      </Text>
+                    ) : null}
+                    <Text style={styles.effectiveItemName} numberOfLines={1}>
+                      {item.name}
+                    </Text>
+                  </View>
+                  <ChevronRight size={18} color="#D6D3D1" />
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         )}
       </View>
 
@@ -518,5 +676,61 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#78716C',
     textAlign: 'center',
+  },
+
+  // Effective Products Section
+  effectiveSection: {
+    marginTop: 5,
+    paddingTop: 16,
+    // borderTopWidth: 1,
+    //borderTopColor: '#E7E5E4',
+  },
+  effectiveHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 10,
+  },
+  effectiveTitle: {
+    fontSize: 14,
+    fontFamily: fontFamily.semiBold,
+    fontWeight: '600',
+    color: '#22C55E',
+  },
+  effectiveItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+    //borderBottomWidth: 1,
+    //borderBottomColor: '#F5F5F5',
+  },
+  effectiveItemImageContainer: {
+    marginRight: 10,
+  },
+  effectiveItemImage: {
+    width: 36,
+    height: 36,
+    borderRadius: 8,
+    backgroundColor: '#E7E5E4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  effectiveItemContent: {
+    flex: 1,
+    justifyContent: 'center',
+  },
+  effectiveItemBrand: {
+    fontSize: 9,
+    fontWeight: '700',
+    color: '#A9A29D',
+    fontFamily: fontFamily.bold,
+    letterSpacing: 0.5,
+    marginBottom: 1,
+  },
+  effectiveItemName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#44403C',
+    fontFamily: fontFamily.medium,
   },
 });

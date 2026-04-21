@@ -29,6 +29,8 @@ import {
   Plus,
   ArrowUp,
   ArrowDown,
+  CheckCircle,
+  Package,
 } from 'lucide-react-native';
 import { SvgXml } from 'react-native-svg';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
@@ -44,6 +46,7 @@ import {
   generateConcernMessage,
   getReportHistory,
   getUserRoutineScanMetrics,
+  getRoutineItems,
 } from '../utils/newApiService';
 import SkinCheckCard from '../components/home/SkinCheckCard';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
@@ -222,12 +225,8 @@ export default function HomeScreen(): React.JSX.Element {
     isLoadingMore,
     setSelectedSnapshot,
   } = usePhotoContext();
-  const {
-    user,
-    profile,
-    hasSeenRoutineAlert,
-    setHasSeenRoutineAlert,
-  } = useAuthStore();
+  const { user, profile, hasSeenRoutineAlert, setHasSeenRoutineAlert } =
+    useAuthStore();
 
   // Date group navigation state
   const [currentDateIndex, setCurrentDateIndex] = useState<number>(0);
@@ -254,6 +253,10 @@ export default function HomeScreen(): React.JSX.Element {
     total_face_scans: number;
   } | null>(null);
   const [isLoadingMetrics, setIsLoadingMetrics] = useState<boolean>(true);
+
+  // Review-ready routine items state
+  const [reviewItems, setReviewItems] = useState<any[]>([]);
+  const [isLoadingReview, setIsLoadingReview] = useState<boolean>(true);
 
   // Toggle ingredient visibility for a concern
   const toggleConcernExpanded = (concernName: string) => {
@@ -325,8 +328,92 @@ export default function HomeScreen(): React.JSX.Element {
       refreshPhotos();
       loadReportHistory();
       loadUserMetrics();
+      loadReviewItems();
     }, [refreshPhotos]),
   );
+
+  const loadReviewItems = async () => {
+    try {
+      setIsLoadingReview(true);
+      const response = (await getRoutineItems()) as any;
+      if (response.success && response.data) {
+        const typeMap: { [key: string]: string } = {
+          product: 'Product',
+          activity: 'Activity',
+          nutrition: 'Nutrition',
+          treatment_facial: 'Treatment / Facial',
+          treatment_injection: 'Treatment / Injection',
+          treatment_other: 'Treatment / Other',
+          injectables: 'Injectables',
+        };
+        const usageMap: { [key: string]: string } = {
+          am: 'AM',
+          pm: 'PM',
+          both: 'AM + PM',
+          as_needed: 'As needed',
+          AM: 'AM',
+          PM: 'PM',
+          Both: 'AM + PM',
+          'As needed': 'As needed',
+        };
+        const frequencyMap: { [key: string]: string } = {
+          daily: 'Daily',
+          weekly: 'Weekly',
+          as_needed: 'As needed',
+        };
+        const getDate = (dateValue: any): Date | null => {
+          if (!dateValue) return null;
+          try {
+            return new Date(dateValue);
+          } catch {
+            return null;
+          }
+        };
+
+        const transformed = response.data.map((apiItem: any) => ({
+          id: apiItem.id,
+          name: apiItem.name,
+          type: typeMap[apiItem.type] || apiItem.type,
+          usage: usageMap[apiItem.usage] || apiItem.usage,
+          frequency: frequencyMap[apiItem.frequency] || apiItem.frequency,
+          concerns: apiItem.concern || [],
+          concern_tracking: apiItem.concern_tracking || [],
+          dateStarted: getDate(apiItem.start_date),
+          dateStopped: getDate(apiItem.end_date),
+          treatmentDate: getDate(apiItem.treatment_date),
+          is_tracking_paused: apiItem.is_tracking_paused,
+          stopReason: apiItem.end_reason || '',
+          dateCreated: getDate(apiItem.dateCreated) || new Date(),
+          upc: apiItem.upc || undefined,
+          brand: apiItem.brand_name || apiItem.brand || undefined,
+          image_url: apiItem.image_url || undefined,
+          extra: apiItem.extra || {},
+        }));
+
+        const readyToReview = transformed.filter((item: any) => {
+          if (
+            !item.concern_tracking ||
+            item.concern_tracking.length === 0 ||
+            item.is_tracking_paused
+          ) {
+            return false;
+          }
+          return item.concern_tracking.some(
+            (t: any) => t.is_completed === true && t.is_effective === null,
+          );
+        });
+
+        setReviewItems(readyToReview);
+      } else {
+        setReviewItems([]);
+      }
+    } catch (error) {
+      console.error('Error loading review items:', error);
+      setReviewItems([]);
+    } finally {
+      setIsLoadingReview(false);
+    }
+  };
 
   const loadUserMetrics = async () => {
     try {
@@ -562,10 +649,10 @@ export default function HomeScreen(): React.JSX.Element {
                 prev.map(c =>
                   c.metricKey === concern.metricKey
                     ? {
-                      ...c,
-                      foundIngredients: response.data.found_ingredients || [],
-                      ingredientsLoading: false,
-                    }
+                        ...c,
+                        foundIngredients: response.data.found_ingredients || [],
+                        ingredientsLoading: false,
+                      }
                     : c,
                 ),
               );
@@ -803,6 +890,35 @@ export default function HomeScreen(): React.JSX.Element {
     (navigation as any).navigate('Camera');
   };
 
+  const handleNavigateToProductDetail = (item: any) => {
+    (navigation as any).navigate('ProductDetail', {
+      itemId: item.id,
+      productData: {
+        product_name: item.name,
+        brand: item.extra?.brand,
+        upc: item.upc || undefined,
+        ingredients: item.extra?.ingredients || [],
+        good_for: item.extra?.good_for || [],
+        product_image: item.image_url || item.extra?.image_url,
+        image_url: item.image_url || item.extra?.image_url,
+      },
+      routineData: {
+        name: item.name,
+        type: item.type,
+        usage: item.usage,
+        frequency: item.frequency,
+        concerns: item.concerns || [],
+        concern_tracking: item.concern_tracking || [],
+        dateStarted: item.dateStarted,
+        dateStopped: item.dateStopped,
+        stopReason: item.stopReason,
+        extra: item.extra || {},
+        is_tracking_paused: item.is_tracking_paused,
+      },
+      upc: item.upc || undefined,
+    });
+  };
+
   return (
     <View style={styles.container}>
       <HomeHeader onMenuPress={handleMenuPress} />
@@ -821,7 +937,7 @@ export default function HomeScreen(): React.JSX.Element {
               style={[
                 styles.arrowButton,
                 currentDateIndex >= dateGroups.length - 1 &&
-                styles.arrowButtonDisabled,
+                  styles.arrowButtonDisabled,
               ]}
               onPress={goToPrevDate}
               disabled={currentDateIndex >= dateGroups.length - 1}
@@ -897,8 +1013,8 @@ export default function HomeScreen(): React.JSX.Element {
                   Math.min(
                     (currentDateGroup?.photos?.length || 0) - 1,
                     (currentDateGroup?.photos?.length || 0) -
-                    1 -
-                    currentPhotoInDate,
+                      1 -
+                      currentPhotoInDate,
                   ),
                 )}
                 // defaultIndex={currentPhotoInDate}
@@ -1015,18 +1131,18 @@ export default function HomeScreen(): React.JSX.Element {
                               : undefined,
                             precomputedChange:
                               concern.change !== undefined &&
-                                concern.changeDirection &&
-                                concern.changeDirection !== 'none'
+                              concern.changeDirection &&
+                              concern.changeDirection !== 'none'
                                 ? {
-                                  arrow:
-                                    concern.changeDirection === 'up'
-                                      ? '↑'
-                                      : '↓',
-                                  value: Math.abs(concern.change || 0),
-                                }
+                                    arrow:
+                                      concern.changeDirection === 'up'
+                                        ? '↑'
+                                        : '↓',
+                                    value: Math.abs(concern.change || 0),
+                                  }
                                 : concern.change !== undefined
-                                  ? { arrow: '→', value: 0 }
-                                  : undefined,
+                                ? { arrow: '→', value: 0 }
+                                : undefined,
                           });
                         }}
                       >
@@ -1171,10 +1287,10 @@ export default function HomeScreen(): React.JSX.Element {
                                     </Text>
                                   </View>
                                   {isFound &&
-                                    foundEntry &&
-                                    typeof foundEntry !== 'string' &&
-                                    Array.isArray(foundEntry.products) &&
-                                    foundEntry.products.length > 0 ? (
+                                  foundEntry &&
+                                  typeof foundEntry !== 'string' &&
+                                  Array.isArray(foundEntry.products) &&
+                                  foundEntry.products.length > 0 ? (
                                     <Text style={styles.productHighlight}>
                                       {foundEntry.products.join(', ')}
                                     </Text>
@@ -1207,6 +1323,64 @@ export default function HomeScreen(): React.JSX.Element {
                 })}
               </>
             ) : null}
+          </View>
+        )}
+
+        {/* Review Effectiveness Section */}
+        {!isLoadingReview && reviewItems.length > 0 && (
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Review Effectiveness</Text>
+            </View>
+            <Text style={styles.reviewSubtitle}>
+              These products are ready for you to review their effectiveness
+            </Text>
+            {reviewItems.map(item => {
+              const brandName = item.extra?.brand || item.brand || '';
+              const imageUrl = item.extra?.image_url || item.image_url;
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.reviewItemCard}
+                  onPress={() => handleNavigateToProductDetail(item)}
+                  activeOpacity={0.9}
+                >
+                  <View style={styles.reviewItemImageContainer}>
+                    {imageUrl ? (
+                      <Image
+                        source={{ uri: imageUrl }}
+                        style={styles.reviewItemImage}
+                        resizeMode="cover"
+                      />
+                    ) : (
+                      <View style={styles.reviewItemImage}>
+                        <Package size={20} color="#A9A29D" />
+                      </View>
+                    )}
+                  </View>
+                  <View style={styles.reviewItemContent}>
+                    {brandName ? (
+                      <Text style={styles.reviewItemBrand}>
+                        {brandName.toUpperCase()}
+                      </Text>
+                    ) : null}
+                    <Text style={styles.reviewItemName}>{item.name}</Text>
+                    <Text style={styles.reviewItemUsage}>
+                      {item.frequency}
+                      {item.usage ? ` / ${item.usage}` : ''}
+                    </Text>
+                  </View>
+                  <View style={styles.reviewItemRight}>
+                    <ChevronRight size={18} color="#D6D3D1" />
+                    <View style={styles.reviewBadge}>
+                      <Text style={styles.reviewBadgeText}>
+                        Ready to Review
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         )}
 
@@ -1406,7 +1580,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.md,
+    marginBottom: spacing.sm,
     gap: 8,
   },
   sectionTitle: {
@@ -1687,5 +1861,74 @@ const styles = StyleSheet.create({
     color: '#57534E',
     lineHeight: 18,
     marginTop: 2,
+  },
+
+  // Review Effectiveness Section
+  reviewSubtitle: {
+    fontSize: 14,
+    color: '#79716B',
+    lineHeight: 20,
+    marginBottom: 12,
+  },
+  reviewItemCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    borderRadius: 12,
+    marginBottom: 10,
+    padding: 12,
+    overflow: 'hidden',
+  },
+  reviewItemImageContainer: {
+    marginRight: 12,
+  },
+  reviewItemImage: {
+    width: 44,
+    height: 44,
+    borderRadius: 8,
+    backgroundColor: '#E7E5E4',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  reviewItemContent: {
+    flex: 1,
+    gap: 2,
+    justifyContent: 'space-between',
+  },
+  reviewItemBrand: {
+    fontSize: 10,
+    fontWeight: '700',
+    color: '#A9A29D',
+    fontFamily: fontFamily.bold,
+    letterSpacing: 0.5,
+    marginBottom: 2,
+  },
+  reviewItemName: {
+    fontSize: 15,
+    fontWeight: '500',
+    color: '#44403C',
+    fontFamily: fontFamily.medium,
+    marginBottom: 2,
+  },
+  reviewItemUsage: {
+    fontSize: 12,
+    color: '#78716C',
+  },
+  reviewItemRight: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 6,
+  },
+  reviewBadge: {
+    backgroundColor: '#FEF3C7',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  reviewBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#92400E',
+    fontFamily: fontFamily.semiBold,
   },
 });

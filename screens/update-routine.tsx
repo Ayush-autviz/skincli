@@ -1175,8 +1175,8 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={handleTreatmentDateChange}
                 minimumDate={new Date(new Date().getFullYear() - 10, 0, 1)}
-                textColor={Platform.OS === 'ios' ? colors.textPrimary : colors.white}
-                style={Platform.OS === 'ios' ? { backgroundColor: colors.white } : undefined}
+                textColor="#1C1917"
+                style={Platform.OS === 'ios' ? { backgroundColor: '#F5F5F4', borderRadius: 12, marginTop: 10 } : undefined}
                 themeVariant="light"
               />
             )}
@@ -1210,8 +1210,8 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={handleStartDateChange}
                 minimumDate={new Date(new Date().getFullYear() - 10, 0, 1)}
-                textColor={Platform.OS === 'ios' ? colors.textPrimary : colors.white}
-                style={Platform.OS === 'ios' ? { backgroundColor: colors.white } : undefined}
+                textColor="#1C1917"
+                style={Platform.OS === 'ios' ? { backgroundColor: '#F5F5F4', borderRadius: 12, marginTop: 10 } : undefined}
                 themeVariant="light"
               />
             )}
@@ -1260,8 +1260,8 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 onChange={handleEndDateChange}
                 minimumDate={startDate || new Date(new Date().getFullYear() - 10, 0, 1)}
-                textColor={Platform.OS === 'ios' ? colors.textPrimary : colors.white}
-                style={Platform.OS === 'ios' ? { backgroundColor: colors.white } : undefined}
+                textColor="#1C1917"
+                style={Platform.OS === 'ios' ? { backgroundColor: '#F5F5F4', borderRadius: 12, marginTop: 10 } : undefined}
                 themeVariant="light"
               />
             )}

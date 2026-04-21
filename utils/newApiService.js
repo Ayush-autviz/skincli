@@ -1694,12 +1694,16 @@ export const postChatMessage = async body => {
  * @param {string} email - Expert's email
  * @returns {Promise<Object>} Response data
  */
-export const generateExpertReportLink = async email => {
+export const generateExpertReportLink = async (email, comment = '') => {
   try {
-    console.log('🔵 Generating expert report link for:', email);
-    const response = await apiClient.post('/expert-view/generate-report-link', {
+    console.log('🔵 Generating expert report link for:', email, 'with comment:', comment);
+    const payload = {
       expert_email: email,
-    });
+    };
+    if (comment) {
+      payload.user_comment = comment;
+    }
+    const response = await apiClient.post('/expert-view/generate-report-link', payload);
 
     if (response.data.status === 200 || response.data.status === 201) {
       return response.data;

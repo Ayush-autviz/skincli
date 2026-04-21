@@ -245,62 +245,34 @@ const ZoomableMaskImage = ({
       <GestureHandlerRootView style={styles.gestureContainer}>
         <GestureDetector gesture={composedGesture}>
           <Animated.View style={[styles.imageWrapper, animatedStyle]}>
-            {/* Check if maskUri is SVG or regular image */}
-            {maskUri && maskUri.toLowerCase().includes('.svg') ? (
-              // For SVG masks, show background image with mask overlay
-              <>
-                <Image
-                  source={{ uri: sanitizeS3Uri(photoUri) }}
-                  style={styles.backgroundImage}
-                  resizeMode="cover"
-                  onError={(error) => {
-                    console.log('🔴 Error loading background image:', error.nativeEvent.error);
-                  }}
-                  onLoad={() => {
-                    console.log('✅ Background image loaded successfully');
-                    setImageLoaded(true)
-                  }}
-                />
+            {/* Always show background image */}
+            <Image
+              source={{ uri: sanitizeS3Uri(photoUri) }}
+              style={styles.backgroundImage}
+              resizeMode="contain"
+              onError={(error) => {
+                console.log('🔴 Error loading background image:', error.nativeEvent.error);
+              }}
+              onLoad={() => {
+                console.log('✅ Background image loaded successfully');
+                setImageLoaded(true);
+              }}
+            />
 
+            {/* Show mask overlay if maskUri is present (and not Original mode) */}
+            {maskUri && conditionName !== 'none' ? (
+              <View style={styles.maskOverlay}>
                 <ConditionalImage
                   source={sanitizeS3Uri(maskUri)}
                   style={styles.maskOverlay}
-                  resizeMode="cover"
+                  resizeMode="contain"
                   width="100%"
                   height="100%"
                   onLoad={() => setMaskLoaded(true)}
                   onError={() => setMaskLoaded(true)}
                 />
-              </>
-            ) : maskUri ? (
-              // For non-SVG masks, show only the mask image
-              <Image
-                source={{ uri: sanitizeS3Uri(maskUri) }}
-                style={styles.backgroundImage}
-                resizeMode="cover"
-                onError={(error) => {
-                  console.log('🔴 Error loading mask image:', error.nativeEvent.error);
-                }}
-                onLoad={() => {
-                  console.log('✅ Mask image loaded successfully');
-                  setImageLoaded(true)
-                }}
-              />
-            ) : (
-              // For original (no mask), show background image
-              <Image
-                source={{ uri: sanitizeS3Uri(photoUri) }}
-                style={styles.backgroundImage}
-                resizeMode="cover"
-                onError={(error) => {
-                  console.log('🔴 Error loading background image:', error.nativeEvent.error);
-                }}
-                onLoad={() => {
-                  console.log('✅ Background image loaded successfully');
-                  setImageLoaded(true)
-                }}
-              />
-            )}
+              </View>
+            ) : null}
           </Animated.View>
         </GestureDetector>
       </GestureHandlerRootView>

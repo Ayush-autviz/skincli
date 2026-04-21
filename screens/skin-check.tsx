@@ -24,6 +24,7 @@ const SkinCheckScreen = () => {
     const navigation = useNavigation();
     const [step, setStep] = useState(1);
     const [email, setEmail] = useState('');
+    const [comment, setComment] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [generatedLink, setGeneratedLink] = useState('');
 
@@ -41,7 +42,7 @@ const SkinCheckScreen = () => {
 
         try {
             setIsLoading(true);
-            const response: any = await generateExpertReportLink(email);
+            const response: any = await generateExpertReportLink(email, comment);
 
             if (response.status === 200 || response.status === 201) {
                 const linkPath = response.data?.link_path || response.result?.link_path;
@@ -125,6 +126,20 @@ const SkinCheckScreen = () => {
                                         onChangeText={setEmail}
                                         keyboardType="email-address"
                                         autoCapitalize="none"
+                                    />
+                                </View>
+
+                                <View style={styles.inputGroup}>
+                                    <Text style={styles.label}>Add a comment (Optional)</Text>
+                                    <TextInput
+                                        style={[styles.input, styles.textArea]}
+                                        placeholder="E.g. Please outline any specific concerns..."
+                                        placeholderTextColor="#A9A29D"
+                                        value={comment}
+                                        onChangeText={setComment}
+                                        multiline
+                                        numberOfLines={3}
+                                        textAlignVertical="top"
                                     />
                                 </View>
 
@@ -320,6 +335,10 @@ const styles = StyleSheet.create({
         color: '#1F2937',
         fontFamily: fontFamily.regular,
         backgroundColor: '#FFFFFF',
+    },
+    textArea: {
+        height: 100,
+        paddingTop: 12,
     },
     shareBtnContent: {
         flexDirection: 'row',

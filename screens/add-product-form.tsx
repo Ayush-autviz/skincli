@@ -301,6 +301,9 @@ const AddProductFormScreen = (): React.JSX.Element => {
                         display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                         onChange={handleDateChange}
                         maximumDate={new Date()}
+                        textColor="#1C1917"
+                        themeVariant="light"
+                        style={Platform.OS === 'ios' ? { backgroundColor: '#F5F5F4', borderRadius: 12, marginTop: 10 } : undefined}
                     />
                 )}
                 <TouchableOpacity

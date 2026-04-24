@@ -873,9 +873,12 @@ export const processHautImage = async (imageUri, imageType = 'front_image') => {
     });
 
     if (response.data.status === 200) {
-      const { hautBatchId, imageId } = response.data.data.result;
-      console.log('✅ [Haut.ai] Image accepted', { hautBatchId, imageId });
-      return { hautBatchId, imageId };
+      console.log('✅ [Haut.ai] Image accepted', response.data);
+      const resultData = response.data.data.result || {};
+      const finalBatchId = resultData.hautBatchId || resultData.haut_batch_id;
+      const finalImageId = resultData.imageId || resultData.image_id;
+      console.log('✅ [Haut.ai] Image accepted', { hautBatchId: finalBatchId, imageId: finalImageId });
+      return { hautBatchId: finalBatchId, imageId: finalImageId };
     }
 
     throw new Error(response.data.message || 'Image processing failed');
@@ -948,12 +951,14 @@ export const processHautImages = async ({ front, left, right }) => {
     });
 
     if (response.data.status === 200) {
-      const { hautBatchId, imageId } = response.data.data.result;
+      const resultData = response.data.data.result || {};
+      const finalBatchId = resultData.hautBatchId || resultData.haut_batch_id;
+      const finalImageId = resultData.imageId || resultData.image_id;
       console.log('✅ [Haut.ai] Face-180 images accepted', {
-        hautBatchId,
-        imageId,
+        hautBatchId: finalBatchId,
+        imageId: finalImageId,
       });
-      return { hautBatchId, imageId };
+      return { hautBatchId: finalBatchId, imageId: finalImageId };
     }
 
     throw new Error(response.data.message || 'Image processing failed');

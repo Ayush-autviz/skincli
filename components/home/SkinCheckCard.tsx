@@ -33,18 +33,39 @@ interface SkinCheckCardProps {
   onPress?: () => void;
 }
 
-const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress }) => {
+const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
+  reports,
+  loading,
+  onPress,
+}) => {
   if (loading) {
     return (
       <View style={styles.container}>
         <SkeletonPlaceholder borderRadius={4}>
           <SkeletonPlaceholder.Item padding={20}>
-            <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="center">
+            <SkeletonPlaceholder.Item
+              flexDirection="row"
+              justifyContent="space-between"
+              alignItems="center"
+            >
               <SkeletonPlaceholder.Item>
-                <SkeletonPlaceholder.Item width={120} height={24} borderRadius={4} />
-                <SkeletonPlaceholder.Item width={200} height={16} marginTop={8} borderRadius={4} />
+                <SkeletonPlaceholder.Item
+                  width={120}
+                  height={24}
+                  borderRadius={4}
+                />
+                <SkeletonPlaceholder.Item
+                  width={200}
+                  height={16}
+                  marginTop={8}
+                  borderRadius={4}
+                />
               </SkeletonPlaceholder.Item>
-              <SkeletonPlaceholder.Item width={24} height={24} borderRadius={12} />
+              <SkeletonPlaceholder.Item
+                width={24}
+                height={24}
+                borderRadius={12}
+              />
             </SkeletonPlaceholder.Item>
           </SkeletonPlaceholder.Item>
         </SkeletonPlaceholder>
@@ -57,7 +78,11 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
     let normalized = dateString;
     // Handled in other parts of the app (e.g. snapshot.tsx, threadChat.tsx)
     // If no timezone indicator, append Z to treat it as UTC
-    if (!normalized.endsWith('Z') && !normalized.includes('+') && !normalized.includes('-', 10)) {
+    if (
+      !normalized.endsWith('Z') &&
+      !normalized.includes('+') &&
+      !normalized.includes('-', 10)
+    ) {
       normalized = normalized + 'Z';
     }
     return parseISO(normalized);
@@ -89,35 +114,57 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
 
   if (!report) {
     return (
-      <TouchableOpacity style={styles.container} activeOpacity={0.9} onPress={onPress}>
+      <TouchableOpacity
+        style={styles.container}
+        activeOpacity={0.9}
+        onPress={onPress}
+      >
         <View style={styles.titleRow}>
           <Text style={styles.title}>Request a SkinCheck</Text>
           <ChevronRight size={24} color="#D1D5DB" />
         </View>
-        <Text style={styles.subtitle}>Send this scan, your scores, and your routine to your skin health professional.</Text>
+        <Text style={styles.subtitle}>
+          Send this scan, your scores, and your routine to your skin health
+          professional.
+        </Text>
       </TouchableOpacity>
     );
   }
 
-  const expert = report.shared_with && report.shared_with.length > 0 ? report.shared_with[0] : null;
-  const comment = report.comments && report.comments.length > 0 ? report.comments[0] : null;
-  const sentTime = expert ? (expert.shared_at || report.created_at) : report.created_at;
+  const expert =
+    report.shared_with && report.shared_with.length > 0
+      ? report.shared_with[0]
+      : null;
+  const comment =
+    report.comments && report.comments.length > 0 ? report.comments[0] : null;
+  const sentTime = expert
+    ? expert.shared_at || report.created_at
+    : report.created_at;
 
   return (
-    <TouchableOpacity style={styles.container} activeOpacity={0.9} onPress={onPress}>
-      <View style={styles.titleRow}>
+    <View style={styles.container}>
+      <TouchableOpacity
+        style={styles.titleRow}
+        activeOpacity={0.9}
+        onPress={onPress}
+      >
         <Text style={styles.title}>SkinCheck</Text>
         <ChevronRight size={24} color="#D1D5DB" />
-      </View>
+      </TouchableOpacity>
 
       <View style={styles.innerBox}>
         {/* Sent info */}
         <View style={styles.sentInfoRow}>
-          <Text style={styles.sentToText}>Sent to {expert?.expert_name || 'Expert'}</Text>
+          <Text style={styles.sentToText}>
+            Sent to {expert?.expert_name || 'Expert'}
+          </Text>
           <Text style={styles.sentTimeText}>{formatTime(sentTime)}</Text>
         </View>
         <Text style={styles.scanDateLabel}>
-          Scan date - <Text style={styles.scanDateValue}>{formatTime(report.scanned_date || report.created_at)}</Text>
+          Scan date -{' '}
+          <Text style={styles.scanDateValue}>
+            {formatTime(report.scanned_date || report.created_at)}
+          </Text>
         </Text>
 
         {/* Reply info */}
@@ -129,17 +176,21 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({ reports, loading, onPress
                   <MessageSquareText size={18} color="#4B5563" />
                 </View>
                 <View>
-                  <Text style={styles.replyExpertName}>{expert?.expert_name || 'Expert'}</Text>
+                  <Text style={styles.replyExpertName}>
+                    {expert?.expert_name || 'Expert'}
+                  </Text>
                   {/* <Text style={styles.replyExpertRole}>Professional</Text> */}
                 </View>
               </View>
-              <Text style={styles.sentTimeText}>{formatRepliedTime(comment.created_at)}</Text>
+              <Text style={styles.sentTimeText}>
+                {formatRepliedTime(comment.created_at)}
+              </Text>
             </View>
             <Text style={styles.commentText}>{comment.comment_text}</Text>
           </View>
         )}
       </View>
-    </TouchableOpacity>
+    </View>
   );
 };
 

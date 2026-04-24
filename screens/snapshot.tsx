@@ -583,7 +583,7 @@ const SnapshotScreen = (): React.JSX.Element => {
       setHautBatchId(result.hautBatchId);
       setImageId(result.imageId);
       setLoadingMicrocopy('Analyzing image...');
-      startPollingForResults(result.hautBatchId);
+      startPollingForResults(result.hautBatchId, result.imageId);
     } catch (error: any) {
       setLoadingMicrocopy('Continuing analysis...');
       setUiState('no_results');
@@ -592,7 +592,7 @@ const SnapshotScreen = (): React.JSX.Element => {
     }
   };
 
-  const startPollingForResults = (batchId: string): void => {
+  const startPollingForResults = (batchId: string, activeImageId: string | null = null): void => {
     mainTimeoutRef.current = setTimeout(() => {
       setLoadingMicrocopy('Analyzing skin metrics...');
       setUiState('no_results');
@@ -657,7 +657,7 @@ const SnapshotScreen = (): React.JSX.Element => {
 
           const photoDataObj: PhotoData = {
             id: photoId || '',
-            imageId: imageId || passedImageId,
+            imageId: activeImageId || imageId || passedImageId,
             hautBatchId: batchId,
             storageUrl: localUri || '',
             timestamp: parsedTimestamp,
@@ -694,7 +694,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                 (async () => {
                   try {
                     const summaryResp = await getImageChatSummary(
-                      imageId || passedImageId || batchId,
+                      activeImageId || imageId || passedImageId || batchId,
                     );
                     if (summaryResp.summary) {
                       setSummary(summaryResp.summary);
@@ -702,7 +702,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                       const currentUser = useAuthStore.getState().user;
                       const currentProfile = useAuthStore.getState().profile;
                       const chatData = {
-                        imageId: imageId || passedImageId || batchId,
+                        imageId: activeImageId || imageId || passedImageId || batchId,
                         firstName:
                           currentUser?.user_name ||
                           currentProfile?.user_name ||
@@ -753,7 +753,7 @@ const SnapshotScreen = (): React.JSX.Element => {
                     const currentPhotoIds = new Set(
                       [
                         batchId,
-                        imageId,
+                        activeImageId || imageId,
                         photoId,
                         passedImageId,
                         passedHautBatchId,
@@ -899,7 +899,7 @@ const SnapshotScreen = (): React.JSX.Element => {
         setHautBatchId(passedHautBatchId || null);
         setLoadingMicrocopy('Loading analysis results...');
         setUiState('analyzing');
-        startPollingForResults(passedHautBatchId || '');
+        startPollingForResults(passedHautBatchId || '', passedImageId || null);
       }
       hasInitializedRef.current = true;
       return;

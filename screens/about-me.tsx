@@ -41,7 +41,7 @@ const PHOTO_SIZE =
   (SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - PHOTO_GAP * (NUM_COLUMNS - 1)) /
   NUM_COLUMNS;
 
-type TabType = 'photos' | 'activity';
+type TabType = 'photos' | 'activity' | 'rated';
 
 export default function AboutMeScreen(): React.JSX.Element {
   const navigation = useNavigation();
@@ -58,7 +58,7 @@ export default function AboutMeScreen(): React.JSX.Element {
   const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
   const [isProfileLoading, setIsProfileLoading] = useState<boolean>(false);
   const [activeTab, setActiveTab] = useState<TabType>('photos');
-  const [effectiveProducts, setEffectiveProducts] = useState<any[]>([]);
+  const [ratedItems, setRatedItems] = useState<any[]>([]);
 
   // Fetch profile on mount
   useEffect(() => {
@@ -90,7 +90,7 @@ export default function AboutMeScreen(): React.JSX.Element {
     }
   };
 
-  const fetchEffectiveProducts = async () => {
+  const fetchRatedItems = async () => {
     try {
       const response = (await getRoutineItems()) as any;
       if (response.success && response.data) {
@@ -145,25 +145,23 @@ export default function AboutMeScreen(): React.JSX.Element {
           extra: apiItem.extra || {},
         }));
 
-        const effective = transformed.filter((item: any) => {
+        const rated = transformed.filter((item: any) => {
           if (!item.concern_tracking || item.concern_tracking.length === 0)
             return false;
-          return item.concern_tracking.some(
-            (t: any) => t.is_effective === true,
-          );
+          return true; // Include all items that have concern tracking
         });
 
-        setEffectiveProducts(effective);
+        setRatedItems(rated);
       } else {
-        setEffectiveProducts([]);
+        setRatedItems([]);
       }
     } catch {
-      setEffectiveProducts([]);
+      setRatedItems([]);
     }
   };
 
   useEffect(() => {
-    fetchEffectiveProducts();
+    fetchRatedItems();
   }, []);
 
   const handleEditProfile = (): void => {
@@ -403,61 +401,20 @@ export default function AboutMeScreen(): React.JSX.Element {
                 <Text style={styles.profileBirthDate}>
                   Birth Date {formatBirthDate(profile?.birth_date)}
                 </Text>
+                <TouchableOpacity onPress={handleLogout} style={{ marginTop: 8 }}>
+                  <Text style={{ color: '#717680', fontWeight: '400', fontSize: 14 }}>
+                    Log Out
+                  </Text>
+                </TouchableOpacity>
               </View>
             </View>
           </>
-        )}
-
-        {/* Effective Products Section inside profile card */}
-        {effectiveProducts.length > 0 && !isProfileLoading && (
-          <View style={styles.effectiveSection}>
-            <View style={styles.effectiveHeader}>
-              <Text style={styles.effectiveTitle}>Effective Products</Text>
-            </View>
-            {effectiveProducts.map(item => {
-              const brandName = item.extra?.brand || item.brand || '';
-              const imageUrl = item.extra?.image_url || item.image_url;
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.effectiveItemCard}
-                  onPress={() => handleNavigateToProductDetail(item)}
-                  activeOpacity={0.9}
-                >
-                  <View style={styles.effectiveItemImageContainer}>
-                    {imageUrl ? (
-                      <Image
-                        source={{ uri: imageUrl }}
-                        style={styles.effectiveItemImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={styles.effectiveItemImage}>
-                        <Package size={18} color="#A9A29D" />
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.effectiveItemContent}>
-                    {brandName ? (
-                      <Text style={styles.effectiveItemBrand}>
-                        {brandName.toUpperCase()}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.effectiveItemName} numberOfLines={1}>
-                      {item.name}
-                    </Text>
-                  </View>
-                  <ChevronRight size={18} color="#D6D3D1" />
-                </TouchableOpacity>
-              );
-            })}
-          </View>
         )}
       </View>
 
       {/* Tab Bar */}
       <View style={styles.tabContainer}>
-        <View style={styles.tabBar}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
           <TouchableOpacity
             style={[styles.tab, activeTab === 'photos' && styles.activeTab]}
             onPress={() => setActiveTab('photos')}
@@ -484,12 +441,20 @@ export default function AboutMeScreen(): React.JSX.Element {
               Journal
             </Text>
           </TouchableOpacity>
-        </View>
-        <TouchableOpacity onPress={handleLogout}>
-          <Text style={{ color: '#717680', fontWeight: '400', fontSize: 15 }}>
-            Log Out
-          </Text>
-        </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.tab, activeTab === 'rated' && styles.activeTab]}
+            onPress={() => setActiveTab('rated')}
+          >
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'rated' && styles.activeTabText,
+              ]}
+            >
+              Rated Products/Services
+            </Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
       {/* Tab Content */}
@@ -529,8 +494,51 @@ export default function AboutMeScreen(): React.JSX.Element {
             onEndReachedThreshold={0.5}
           />
         )
-      ) : (
+      ) : activeTab === 'activity' ? (
         <ActivityList />
+      ) : (
+        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.ratedSectionContainer}>
+          {ratedItems.length > 0 ? (
+            <View style={styles.ratedSection}>
+              {ratedItems.map((item) => {
+                const brandName = item.extra?.brand || item.brand || '';
+                return (
+                  <View key={item.id} style={styles.ratedItemCard}>
+                    {brandName ? (
+                      <Text style={styles.ratedItemBrand}>{brandName.toUpperCase()}</Text>
+                    ) : null}
+                    <Text style={styles.ratedItemName}>{item.name}</Text>
+                    <View style={styles.ratedConcernsList}>
+                      {item.concern_tracking.map((tracking: any, idx: number) => {
+                        const concernName = tracking.concern_name || 'Unknown Concern';
+                        let statusText = 'Not yet rated';
+                        let statusColor = '#78716C';
+                        if (tracking.is_effective === true) {
+                          statusText = 'Effective';
+                          statusColor = '#22C55E';
+                        } else if (tracking.is_effective === false) {
+                          statusText = 'Not Effective';
+                          statusColor = '#EF4444';
+                        }
+                        
+                        return (
+                          <Text key={idx} style={styles.ratedConcernItem}>
+                            {concernName.replace(/([A-Z])/g, ' $1').trim().replace(/^./, (str: string) => str.toUpperCase())} - <Text style={{ color: statusColor, fontWeight: '600' }}>{statusText}</Text>
+                          </Text>
+                        );
+                      })}
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          ) : (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No rated items</Text>
+              <Text style={styles.emptySubtext}>You haven't tracked any products or services yet.</Text>
+            </View>
+          )}
+        </ScrollView>
       )}
 
       <SettingsDrawer
@@ -678,59 +686,48 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Effective Products Section
-  effectiveSection: {
-    marginTop: 5,
-    paddingTop: 16,
-    // borderTopWidth: 1,
-    //borderTopColor: '#E7E5E4',
+  // Rated Items Section
+  ratedSectionContainer: {
+    paddingHorizontal: spacing.md,
+    paddingTop: 14,
+    paddingBottom: 100,
   },
-  effectiveHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 10,
+  ratedSection: {
+    gap: 12,
   },
-  effectiveTitle: {
-    fontSize: 14,
-    fontFamily: fontFamily.semiBold,
-    fontWeight: '600',
-    color: '#22C55E',
+  ratedItemCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E9EAEB',
   },
-  effectiveItemCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 10,
-    //borderBottomWidth: 1,
-    //borderBottomColor: '#F5F5F5',
-  },
-  effectiveItemImageContainer: {
-    marginRight: 10,
-  },
-  effectiveItemImage: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#E7E5E4',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  effectiveItemContent: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  effectiveItemBrand: {
-    fontSize: 9,
+  ratedItemBrand: {
+    fontSize: 10,
     fontWeight: '700',
     color: '#A9A29D',
     fontFamily: fontFamily.bold,
     letterSpacing: 0.5,
-    marginBottom: 1,
+    marginBottom: 2,
   },
-  effectiveItemName: {
+  ratedItemName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1C1917',
+    fontFamily: fontFamily.semiBold,
+    marginBottom: 8,
+  },
+  ratedConcernsList: {
+    gap: 4,
+  },
+  ratedConcernItem: {
     fontSize: 14,
-    fontWeight: '500',
-    color: '#44403C',
+    color: '#57534E',
     fontFamily: fontFamily.medium,
   },
 });

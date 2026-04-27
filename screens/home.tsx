@@ -257,6 +257,7 @@ export default function HomeScreen(): React.JSX.Element {
   // Review-ready routine items state
   const [reviewItems, setReviewItems] = useState<any[]>([]);
   const [isLoadingReview, setIsLoadingReview] = useState<boolean>(true);
+  const [isReviewExpanded, setIsReviewExpanded] = useState<boolean>(false);
 
   // Toggle ingredient visibility for a concern
   const toggleConcernExpanded = (concernName: string) => {
@@ -649,10 +650,10 @@ export default function HomeScreen(): React.JSX.Element {
                 prev.map(c =>
                   c.metricKey === concern.metricKey
                     ? {
-                        ...c,
-                        foundIngredients: response.data.found_ingredients || [],
-                        ingredientsLoading: false,
-                      }
+                      ...c,
+                      foundIngredients: response.data.found_ingredients || [],
+                      ingredientsLoading: false,
+                    }
                     : c,
                 ),
               );
@@ -937,7 +938,7 @@ export default function HomeScreen(): React.JSX.Element {
               style={[
                 styles.arrowButton,
                 currentDateIndex >= dateGroups.length - 1 &&
-                  styles.arrowButtonDisabled,
+                styles.arrowButtonDisabled,
               ]}
               onPress={goToPrevDate}
               disabled={currentDateIndex >= dateGroups.length - 1}
@@ -1013,8 +1014,8 @@ export default function HomeScreen(): React.JSX.Element {
                   Math.min(
                     (currentDateGroup?.photos?.length || 0) - 1,
                     (currentDateGroup?.photos?.length || 0) -
-                      1 -
-                      currentPhotoInDate,
+                    1 -
+                    currentPhotoInDate,
                   ),
                 )}
                 // defaultIndex={currentPhotoInDate}
@@ -1090,15 +1091,13 @@ export default function HomeScreen(): React.JSX.Element {
         {(isLoadingConcerns || topConcerns.length > 0) && (
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Star size={18} color="#79716B" />
-              <Text style={styles.sectionTitle}>Top Concerns</Text>
+              <Text style={styles.sectionTitle}>Top Concerns and Helpful Ingredients</Text>
             </View>
 
             {isLoadingConcerns ? (
               <ConcernsSkeleton />
             ) : topConcerns.length > 0 ? (
               <>
-                <Text style={styles.ingredientsTitle}>Helpful Ingredients</Text>
                 <Text style={styles.concernSubtitle}>
                   Dermatologists recommend at least one of the following
                   ingredients for your concerns
@@ -1131,18 +1130,18 @@ export default function HomeScreen(): React.JSX.Element {
                               : undefined,
                             precomputedChange:
                               concern.change !== undefined &&
-                              concern.changeDirection &&
-                              concern.changeDirection !== 'none'
+                                concern.changeDirection &&
+                                concern.changeDirection !== 'none'
                                 ? {
-                                    arrow:
-                                      concern.changeDirection === 'up'
-                                        ? '↑'
-                                        : '↓',
-                                    value: Math.abs(concern.change || 0),
-                                  }
+                                  arrow:
+                                    concern.changeDirection === 'up'
+                                      ? '↑'
+                                      : '↓',
+                                  value: Math.abs(concern.change || 0),
+                                }
                                 : concern.change !== undefined
-                                ? { arrow: '→', value: 0 }
-                                : undefined,
+                                  ? { arrow: '→', value: 0 }
+                                  : undefined,
                           });
                         }}
                       >
@@ -1266,9 +1265,12 @@ export default function HomeScreen(): React.JSX.Element {
                                 }}
                               >
                                 <View style={{ flex: 1 }}>
-                                  <Text style={styles.ingredientName}>
-                                    {ingredientName}
-                                  </Text>
+                                  <View style={styles.ingredientNameRow}>
+                                    <Text style={styles.ingredientName}>
+                                      {ingredientName}
+                                    </Text>
+                                    <ChevronRight size={24} color="#A9A29D" />
+                                  </View>
                                   <View style={styles.routineChip}>
                                     <View
                                       style={[
@@ -1287,20 +1289,23 @@ export default function HomeScreen(): React.JSX.Element {
                                     </Text>
                                   </View>
                                   {isFound &&
-                                  foundEntry &&
-                                  typeof foundEntry !== 'string' &&
-                                  Array.isArray(foundEntry.products) &&
-                                  foundEntry.products.length > 0 ? (
-                                    <Text style={styles.productHighlight}>
-                                      {foundEntry.products.join(', ')}
-                                    </Text>
+                                    foundEntry &&
+                                    typeof foundEntry !== 'string' &&
+                                    Array.isArray(foundEntry.products) &&
+                                    foundEntry.products.length > 0 ? (
+                                    <View>
+                                      {foundEntry.products.map((product: string, pIdx: number) => (
+                                        <Text key={pIdx} style={styles.productHighlight}>
+                                          {product}
+                                        </Text>
+                                      ))}
+                                    </View>
                                   ) : ingredientDesc ? (
                                     <Text style={styles.ingredientDesc}>
-                                      {ingredientDesc}
+                                      {ingredientDesc.charAt(0).toUpperCase() + ingredientDesc.slice(1)}
                                     </Text>
                                   ) : null}
                                 </View>
-                                <ChevronRight size={18} color="#D6D3D1" />
                               </TouchableOpacity>
                             );
                           })}
@@ -1335,7 +1340,7 @@ export default function HomeScreen(): React.JSX.Element {
             <Text style={styles.reviewSubtitle}>
               These products are ready for you to review their effectiveness
             </Text>
-            {reviewItems.map(item => {
+            {(isReviewExpanded ? reviewItems : reviewItems.slice(0, 3)).map(item => {
               const brandName = item.extra?.brand || item.brand || '';
               const imageUrl = item.extra?.image_url || item.image_url;
               return (
@@ -1381,6 +1386,16 @@ export default function HomeScreen(): React.JSX.Element {
                 </TouchableOpacity>
               );
             })}
+            {reviewItems.length > 3 && (
+              <TouchableOpacity
+                style={styles.reviewSeeMoreButton}
+                onPress={() => setIsReviewExpanded(!isReviewExpanded)}
+              >
+                <Text style={styles.reviewSeeMoreText}>
+                  {isReviewExpanded ? 'See less' : 'See more'}
+                </Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 
@@ -1584,7 +1599,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 17,
     fontWeight: '600',
     color: colors.textPrimary,
   },
@@ -1693,6 +1708,11 @@ const styles = StyleSheet.create({
   ingredientRowBorder: {
     borderBottomWidth: 1,
     borderBottomColor: '#E7E5E4',
+  },
+  ingredientNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
   ingredientName: {
     fontSize: 14,
@@ -1852,7 +1872,7 @@ const styles = StyleSheet.create({
   },
   productHighlight: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '400',
     color: '#1C1917',
     marginTop: 2,
   },
@@ -1930,5 +1950,14 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#92400E',
     fontFamily: fontFamily.semiBold,
+  },
+  reviewSeeMoreButton: {
+    paddingVertical: 10,
+    alignItems: 'center',
+    marginTop: 4,
+  },
+  reviewSeeMoreText: {
+    fontSize: 15,
+    color: '#A4A7AE',
   },
 });

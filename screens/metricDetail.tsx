@@ -2971,9 +2971,12 @@ export default function MetricDetailScreen() {
                                   />
                                 </View>
                                 <View style={styles.ingredientContent}>
-                                  <Text style={styles.ingredientName}>
-                                    {ingredientName}
-                                  </Text>
+                                  <View style={styles.ingredientNameRow}>
+                                    <Text style={styles.ingredientName}>
+                                      {ingredientName}
+                                    </Text>
+                                    <ChevronRight size={24} color="#A9A29D" />
+                                  </View>
 
                                   <View style={styles.routineChip}>
                                     <View
@@ -2994,16 +2997,19 @@ export default function MetricDetailScreen() {
                                   </View>
 
                                   {isFound && foundProducts.length > 0 ? (
-                                    <Text style={styles.productHighlight}>
-                                      {foundProducts.join(', ')}
-                                    </Text>
+                                    <View>
+                                      {foundProducts.map((product: string, pIdx: number) => (
+                                        <Text key={pIdx} style={styles.productHighlight}>
+                                          {product}
+                                        </Text>
+                                      ))}
+                                    </View>
                                   ) : ingredientDesc ? (
                                     <Text style={styles.ingredientDesc}>
                                       {ingredientDesc}
                                     </Text>
                                   ) : null}
                                 </View>
-                                <ChevronRight size={18} color="#D6D3D1" />
                               </TouchableOpacity>
                             );
                           },
@@ -4499,11 +4505,10 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   ingredientName: {
-    fontSize: 15,
-    fontWeight: '500',
-    fontFamily: fontFamily.medium,
-    color: '#1C1917',
-    marginBottom: 2,
+    fontSize: 14,
+    fontWeight: '400',
+    color: '#44403C',
+    flex: 1,
   },
   ingredientDesc: {
     fontSize: 13,
@@ -4535,9 +4540,14 @@ const styles = StyleSheet.create({
   },
   productHighlight: {
     fontSize: 14,
-    fontWeight: '600',
+    fontWeight: '400',
     color: '#1C1917',
     marginTop: 2,
+  },
+  ingredientNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
   },
 
   // Considerations styles for skin tone

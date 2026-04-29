@@ -1766,7 +1766,7 @@ const MetricsSeries: React.FC<MetricsSeriesProps> = ({
 
       // Format to the required format: 'Thu Jul 24 2025 12:01:59 GMT+0530'
       if (dateObj instanceof Date && !isNaN(dateObj.getTime())) {
-        timestampParam = dateObj.toString();
+        timestampParam = dateObj.toISOString();
       }
     }
 

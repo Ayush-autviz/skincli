@@ -201,7 +201,7 @@ export default function AboutMeScreen(): React.JSX.Element {
     // Convert timestamp to string if it's a date object or missing
     let timestampParam = photo.apiData?.created_at || null;
     if (photo.created_at) {
-      timestampParam = new Date(photo.created_at).toString();
+      timestampParam = new Date(photo.created_at).toISOString();
     } else if (photo.timestamp) {
       const ts = photo.timestamp;
       let dateObj;
@@ -211,7 +211,7 @@ export default function AboutMeScreen(): React.JSX.Element {
         dateObj = new Date(ts);
       }
       if (!isNaN(dateObj.getTime())) {
-        timestampParam = dateObj.toString();
+        timestampParam = dateObj.toISOString();
       }
     }
 

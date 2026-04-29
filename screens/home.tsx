@@ -756,13 +756,15 @@ export default function HomeScreen(): React.JSX.Element {
     const targetPhoto = photo || currentPhoto;
     if (targetPhoto) {
       // Set selected snapshot in context before navigating
+      const timestamp = targetPhoto.apiData?.created_at || (targetPhoto.timestamp ? new Date(targetPhoto.timestamp).toISOString() : null);
+
       setSelectedSnapshot({
         id: targetPhoto.id,
         url: targetPhoto.storageUrl,
         storageUrl: targetPhoto.storageUrl,
         threadId: targetPhoto.threadId,
         apiData: {
-          created_at: targetPhoto.apiData?.created_at || null,
+          created_at: timestamp,
         },
       });
 
@@ -770,7 +772,7 @@ export default function HomeScreen(): React.JSX.Element {
         photoId: targetPhoto.id,
         thumbnailUrl: targetPhoto.storageUrl,
         localUri: targetPhoto.storageUrl,
-        timestamp: targetPhoto.apiData?.created_at || null,
+        timestamp: timestamp,
         fromPhotoGrid: 'true',
         hautBatchId:
           targetPhoto.hautUploadData?.hautBatchId || targetPhoto.hautBatchId,
@@ -849,13 +851,15 @@ export default function HomeScreen(): React.JSX.Element {
     (item: any) => {
       if (item) {
         // Set selected snapshot in context before navigating
+        const timestamp = item.apiData?.created_at || (item.timestamp ? new Date(item.timestamp).toISOString() : null);
+
         setSelectedSnapshot({
           id: item.id,
           url: item.storageUrl,
           storageUrl: item.storageUrl,
           threadId: item.threadId,
           apiData: {
-            created_at: item.apiData?.created_at || null,
+            created_at: timestamp,
           },
         });
 
@@ -863,7 +867,7 @@ export default function HomeScreen(): React.JSX.Element {
           photoId: item.id,
           thumbnailUrl: item.storageUrl,
           localUri: item.storageUrl,
-          timestamp: item.apiData?.created_at || null,
+          timestamp: timestamp,
           fromPhotoGrid: 'true',
           hautBatchId: item.hautUploadData?.hautBatchId || item.hautBatchId,
           imageId: item.hautUploadData?.imageId || item.id,

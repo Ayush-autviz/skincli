@@ -148,13 +148,15 @@ const PhotoGrid: React.FC<PhotoGridProps> = ({
       apiData: photo.apiData
     });
 
+    const timestamp = photo.apiData?.created_at || (photo.timestamp ? new Date(photo.timestamp).toISOString() : null);
+
     // Navigate WITH the required photoId param AND the thumbnailUrl
     // Add fromPhotoGrid flag to skip processing and go directly to polling
     (navigation as any).navigate('Snapshot', { 
       photoId, 
       thumbnailUrl: photo.storageUrl,
       localUri: photo.storageUrl, // Provide URI for immediate render
-      timestamp: photo.apiData?.created_at || null, // Pass creation date if available
+      timestamp: timestamp, // Pass creation date if available
       fromPhotoGrid: 'true', // Flag to indicate we're coming from PhotoGrid
       hautBatchId: photo.hautUploadData?.hautBatchId || photo.hautBatchId, // Pass the hautBatchId for polling
       imageId: photo.hautUploadData?.imageId || photo.id // Pass the imageId for polling

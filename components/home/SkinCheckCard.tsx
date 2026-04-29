@@ -38,6 +38,8 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
   loading,
   onPress,
 }) => {
+  console.log('reports', reports);
+
   if (loading) {
     return (
       <View style={styles.container}>

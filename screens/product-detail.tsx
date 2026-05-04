@@ -12,12 +12,46 @@ import {
   Alert,
   Modal,
   Image,
+  Platform,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import { ArrowLeft, Edit, Trash2, X, TrendingUp, ArrowRight, CheckCircle, TrendingDown, Minus, AlertCircle, Check, ChevronRight, Calendar, Package, ChevronLeft } from 'lucide-react-native';
-import { colors, fontSize, spacing, typography, borderRadius, shadows, fontFamily } from '../styles';
-import { searchProductByUPC, deleteRoutineItem, toggleTracking, getRoutineItems } from '../utils/newApiService';
+import {
+  useNavigation,
+  useRoute,
+  useFocusEffect,
+} from '@react-navigation/native';
+import {
+  ArrowLeft,
+  Edit,
+  Trash2,
+  X,
+  TrendingUp,
+  ArrowRight,
+  CheckCircle,
+  TrendingDown,
+  Minus,
+  AlertCircle,
+  Check,
+  ChevronRight,
+  Calendar,
+  Package,
+  ChevronLeft,
+} from 'lucide-react-native';
+import {
+  colors,
+  fontSize,
+  spacing,
+  typography,
+  borderRadius,
+  shadows,
+  fontFamily,
+} from '../styles';
+import {
+  searchProductByUPC,
+  deleteRoutineItem,
+  toggleTracking,
+  getRoutineItems,
+} from '../utils/newApiService';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { treatmentCategories } from '../data/treatmentCategories';
 import HomeHeader from '../components/ui/HomeHeader';
@@ -39,12 +73,26 @@ interface ApiResponse {
 const ProductDetailSkeleton = () => (
   <View style={{ flex: 1, backgroundColor: colors.background }}>
     {/* Product Card Skeleton */}
-    <View style={[styles.productCard, { marginTop: 105 }]}>
+    <View
+      style={[
+        styles.productCard,
+        { marginTop: Platform.OS === 'ios' ? 105 : 85 },
+      ]}
+    >
       <SkeletonPlaceholder borderRadius={4}>
         <SkeletonPlaceholder.Item flexDirection="row" alignItems="center">
-          <SkeletonPlaceholder.Item width={80} height={80} borderRadius={10} marginRight={16} />
+          <SkeletonPlaceholder.Item
+            width={80}
+            height={80}
+            borderRadius={10}
+            marginRight={16}
+          />
           <SkeletonPlaceholder.Item flex={1}>
-            <SkeletonPlaceholder.Item width={100} height={14} marginBottom={8} />
+            <SkeletonPlaceholder.Item
+              width={100}
+              height={14}
+              marginBottom={8}
+            />
             <SkeletonPlaceholder.Item width={180} height={20} />
           </SkeletonPlaceholder.Item>
         </SkeletonPlaceholder.Item>
@@ -58,11 +106,22 @@ const ProductDetailSkeleton = () => (
         <SkeletonPlaceholder.Item>
           {[1, 2, 3].map(i => (
             <SkeletonPlaceholder.Item key={i} marginBottom={16}>
-              <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" marginBottom={8}>
+              <SkeletonPlaceholder.Item
+                flexDirection="row"
+                justifyContent="space-between"
+                marginBottom={8}
+              >
                 <SkeletonPlaceholder.Item width={140} height={14} />
                 <SkeletonPlaceholder.Item width={80} height={14} />
               </SkeletonPlaceholder.Item>
-              {i < 3 && <SkeletonPlaceholder.Item width="100%" height={1} marginTop={4} opacity={0.5} />}
+              {i < 3 && (
+                <SkeletonPlaceholder.Item
+                  width="100%"
+                  height={1}
+                  marginTop={4}
+                  opacity={0.5}
+                />
+              )}
             </SkeletonPlaceholder.Item>
           ))}
         </SkeletonPlaceholder.Item>
@@ -77,7 +136,7 @@ const ProductDetailSkeleton = () => (
           {[1, 2, 3, 4].map(i => (
             <SkeletonPlaceholder.Item
               key={i}
-              width={80 + (i * 10)}
+              width={80 + i * 10}
               height={32}
               borderRadius={10}
               marginRight={8}
@@ -93,7 +152,7 @@ const ProductDetailSkeleton = () => (
 const ProductDetailScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute();
-  const params = route.params as ProductDetailParams || {};
+  const params = (route.params as ProductDetailParams) || {};
 
   // Determine mode: 'add' for adding new products, 'view' for viewing existing routine items
   const isAddMode = params.mode === 'add';
@@ -101,16 +160,20 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const [productData, setProductData] = useState<any>(params.productData || {});
   const [routineData, setRoutineData] = useState<any>({
     ...(params.routineData || {}),
-    is_tracking_paused: params.routineData?.is_tracking_paused
+    is_tracking_paused: params.routineData?.is_tracking_paused,
   });
   const isTreatment = routineData.type?.toLowerCase() !== 'product';
-  
+
   // Find treatment data if it's a treatment
-  const currentSubcategory = isTreatment 
-    ? treatmentCategories.flatMap(c => c.subcategories).find(s => 
-        s.name.toLowerCase() === routineData.name?.toLowerCase() ||
-        s.name.toLowerCase() === routineData.extra?.subcategory?.toLowerCase()
-      )
+  const currentSubcategory = isTreatment
+    ? treatmentCategories
+        .flatMap(c => c.subcategories)
+        .find(
+          s =>
+            s.name.toLowerCase() === routineData.name?.toLowerCase() ||
+            s.name.toLowerCase() ===
+              routineData.extra?.subcategory?.toLowerCase(),
+        )
     : null;
 
   console.log('🔍 Product data:', productData);
@@ -130,11 +193,13 @@ const ProductDetailScreen = (): React.JSX.Element => {
       setIsFetchingRoutine(true);
       console.log('🔍 Fetching fresh routine data for itemId:', params.itemId);
 
-      const response = await getRoutineItems() as ApiResponse;
+      const response = (await getRoutineItems()) as ApiResponse;
 
       if (response.success && response.data) {
         // Find the specific item by itemId
-        const item = response.data.find((item: any) => item.id === params.itemId);
+        const item = response.data.find(
+          (item: any) => item.id === params.itemId,
+        );
 
         if (item) {
           console.log('✅ Fresh routine data fetched:', item);
@@ -151,7 +216,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
             dateStopped: item.end_date ? new Date(item.end_date) : null,
             stopReason: item.end_reason || '',
             extra: item.extra || {},
-            is_tracking_paused: item.is_tracking_paused
+            is_tracking_paused: item.is_tracking_paused,
           };
 
           setRoutineData(transformedData);
@@ -182,7 +247,9 @@ const ProductDetailScreen = (): React.JSX.Element => {
           setIsFetchingProduct(true);
           console.log('🔍 Fetching fresh product data for UPC:', params.upc);
 
-          const response = await searchProductByUPC(params.upc) as ApiResponse;
+          const response = (await searchProductByUPC(
+            params.upc,
+          )) as ApiResponse;
 
           if (response.success && response.data) {
             console.log('✅ Fresh product data fetched:', response.data);
@@ -212,9 +279,11 @@ const ProductDetailScreen = (): React.JSX.Element => {
   // Also refetch when screen comes into focus (e.g. returning from rating review)
   useFocusEffect(
     useCallback(() => {
-      console.log('🔄 ProductDetail: Screen focused, refreshing routine data...');
+      console.log(
+        '🔄 ProductDetail: Screen focused, refreshing routine data...',
+      );
       fetchRoutineData();
-    }, [fetchRoutineData])
+    }, [fetchRoutineData]),
   );
 
   // Check if product is manually added (no UPC means manually added)
@@ -229,7 +298,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
     const formattedDate = startDate.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
 
     if (routineData.dateStopped) {
@@ -237,7 +306,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
       const formattedStopDate = stopDate.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
       return `You started using this product on ${formattedDate} and stopped on ${formattedStopDate}`;
     }
@@ -285,7 +354,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Get completed concerns for modal
   const getCompletedConcerns = () => {
-    if (!routineData.concern_tracking || routineData.concern_tracking.length === 0) {
+    if (
+      !routineData.concern_tracking ||
+      routineData.concern_tracking.length === 0
+    ) {
       return [];
     }
     return routineData.concern_tracking
@@ -295,7 +367,8 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle edit button press
   const handleEdit = () => {
-    const isTreatment = routineData.type && routineData.type.toLowerCase() !== 'product';
+    const isTreatment =
+      routineData.type && routineData.type.toLowerCase() !== 'product';
 
     if (isTreatment) {
       (navigation as any).navigate('AddTreatmentForm', {
@@ -307,8 +380,8 @@ const ProductDetailScreen = (): React.JSX.Element => {
           type: routineData.type,
           frequency: routineData.frequency,
           treatmentDate: routineData.treatmentDate || routineData.dateStarted,
-          concerns: routineData.concerns || []
-        }
+          concerns: routineData.concerns || [],
+        },
       });
     } else {
       (navigation as any).navigate('AddProductForm', {
@@ -323,7 +396,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
           usage: routineData.usage,
           frequency: routineData.frequency,
           dateStarted: routineData.dateStarted,
-        }
+        },
       });
     }
   };
@@ -338,25 +411,21 @@ const ProductDetailScreen = (): React.JSX.Element => {
     try {
       await toggleTracking(params.itemId, 'resume');
 
-      Alert.alert(
-        'Tracking Started',
-        'Product tracking has been started.',
-        [
-          {
-            text: 'OK',
-            onPress: () => {
-              // Refresh the screen or navigate back
-              navigation.goBack();
-            }
-          }
-        ]
-      );
+      Alert.alert('Tracking Started', 'Product tracking has been started.', [
+        {
+          text: 'OK',
+          onPress: () => {
+            // Refresh the screen or navigate back
+            navigation.goBack();
+          },
+        },
+      ]);
     } catch (error: any) {
       console.error('Error starting tracking:', error);
       Alert.alert(
         'Error',
         error.message || 'Failed to start tracking. Please try again.',
-        [{ text: 'OK' }]
+        [{ text: 'OK' }],
       );
     }
   };
@@ -383,14 +452,19 @@ const ProductDetailScreen = (): React.JSX.Element => {
     else frequencyText = formatDisplayText(frequency);
 
     // Format concerns
-    const concernsText = concerns.length > 0
-      ? concerns.map((c: string) => c.toLowerCase()).join(', ')
-      : '';
+    const concernsText =
+      concerns.length > 0
+        ? concerns.map((c: string) => c.toLowerCase()).join(', ')
+        : '';
 
     if (usage === 'as_needed') {
-      return `Using ${usageText} / ${frequencyText}${concernsText ? ` for ${concernsText}` : ''}`;
+      return `Using ${usageText} / ${frequencyText}${
+        concernsText ? ` for ${concernsText}` : ''
+      }`;
     }
-    return `Using ${usageText} / ${frequencyText}${concernsText ? ` for ${concernsText}` : ''}`;
+    return `Using ${usageText} / ${frequencyText}${
+      concernsText ? ` for ${concernsText}` : ''
+    }`;
   };
 
   // Handle usage response and navigate to tracking review
@@ -403,7 +477,7 @@ const ProductDetailScreen = (): React.JSX.Element => {
       routineData: routineData,
       productData: productData,
       concernTracking: routineData.concern_tracking || [],
-      usageResponse: response
+      usageResponse: response,
     });
   };
 
@@ -491,25 +565,30 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 [
                   {
                     text: 'OK',
-                    onPress: () => navigation.goBack()
-                  }
-                ]
+                    onPress: () => navigation.goBack(),
+                  },
+                ],
               );
             } catch (error) {
-              console.error(isTreatment ? '🔴 Error removing treatment:' : '🔴 Error removing product:', error);
+              console.error(
+                isTreatment
+                  ? '🔴 Error removing treatment:'
+                  : '🔴 Error removing product:',
+                error,
+              );
               Alert.alert(
                 'Error',
                 isTreatment
                   ? 'Failed to remove the Treatment. Please try again.'
                   : 'Failed to remove the product. Please try again.',
-                [{ text: 'OK' }]
+                [{ text: 'OK' }],
               );
             } finally {
               setIsDeleting(false);
             }
           },
         },
-      ]
+      ],
     );
   };
 
@@ -532,13 +611,13 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const formatIngredientName = (ingredient: string) => {
     const specialCases: { [key: string]: string } = {
       'aqua/water': 'Water (Aqua)',
-      'glycerin': 'Glycerin',
+      glycerin: 'Glycerin',
       'coco-caprylate/caprate': 'Caprylic/Capric Triglyceride',
-      'dimethicone': 'Dimethicone',
+      dimethicone: 'Dimethicone',
       'ceramide np': 'Ceramide NP',
       'ceramide ap': 'Ceramide AP',
       'sodium hyaluronate': 'Sodium Hyaluronate',
-      'petrolatum': 'Petrolatum',
+      petrolatum: 'Petrolatum',
     };
 
     const lowerIngredient = ingredient.toLowerCase();
@@ -555,14 +634,14 @@ const ProductDetailScreen = (): React.JSX.Element => {
   // Format good_for items for display
   const formatGoodForItem = (item: string) => {
     const specialCases: { [key: string]: string } = {
-      'dry_skin': 'Dry Skin',
-      'oily_skin': 'Oily Skin',
-      'combination_skin': 'Combination Skin',
-      'normal_skin': 'Normal Skin',
-      'sensitive_skin': 'Sensitive Skin',
-      'hydration': 'Hydration',
-      'fine_lines': 'Fine Lines',
-      'anti_aging': 'Anti-Aging',
+      dry_skin: 'Dry Skin',
+      oily_skin: 'Oily Skin',
+      combination_skin: 'Combination Skin',
+      normal_skin: 'Normal Skin',
+      sensitive_skin: 'Sensitive Skin',
+      hydration: 'Hydration',
+      fine_lines: 'Fine Lines',
+      anti_aging: 'Anti-Aging',
     };
 
     const lowerItem = item.toLowerCase();
@@ -621,7 +700,6 @@ const ProductDetailScreen = (): React.JSX.Element => {
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
       .join(' ');
   };
-
 
   console.log('🔍 Routine data:', routineData);
 
@@ -685,15 +763,19 @@ const ProductDetailScreen = (): React.JSX.Element => {
             {/* Concerns Reviewed Section */}
             {getCompletedConcerns().length > 0 && (
               <>
-                <Text style={styles.modalSectionHeading}>Concerns Reviewed</Text>
+                <Text style={styles.modalSectionHeading}>
+                  Concerns Reviewed
+                </Text>
                 <View style={styles.modalChipContainer}>
-                  {getCompletedConcerns().map((concern: string, index: number) => (
-                    <View key={index} style={styles.modalChip}>
-                      <Text style={styles.modalChipText}>
-                        {formatConcernName(concern)}
-                      </Text>
-                    </View>
-                  ))}
+                  {getCompletedConcerns().map(
+                    (concern: string, index: number) => (
+                      <View key={index} style={styles.modalChip}>
+                        <Text style={styles.modalChipText}>
+                          {formatConcernName(concern)}
+                        </Text>
+                      </View>
+                    ),
+                  )}
                 </View>
               </>
             )}
@@ -703,29 +785,39 @@ const ProductDetailScreen = (): React.JSX.Element => {
               Have you been using this product as needed?
             </Text>
 
-
             {/* Response Options */}
             <View style={styles.modalOptionsContainer}>
               {/* Yes Option */}
               <TouchableOpacity
                 style={[
                   styles.modalOption,
-                  usageResponse === 'yes' && styles.modalOptionSelected
+                  usageResponse === 'yes' && styles.modalOptionSelected,
                 ]}
                 onPress={() => handleUsageResponse('yes')}
                 activeOpacity={0.7}
               >
-                <View style={[
-                  styles.modalOptionIcon,
-                  usageResponse === 'yes' && styles.modalOptionIconSelected
-                ]}>
-                  <Check size={16} color={usageResponse === 'yes' ? colors.white : colors.textSecondary} />
+                <View
+                  style={[
+                    styles.modalOptionIcon,
+                    usageResponse === 'yes' && styles.modalOptionIconSelected,
+                  ]}
+                >
+                  <Check
+                    size={16}
+                    color={
+                      usageResponse === 'yes'
+                        ? colors.white
+                        : colors.textSecondary
+                    }
+                  />
                 </View>
                 <View style={styles.modalOptionTextContainer}>
-                  <Text style={[
-                    styles.modalOptionText,
-                    usageResponse === 'yes' && styles.modalOptionTextSelected
-                  ]}>
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      usageResponse === 'yes' && styles.modalOptionTextSelected,
+                    ]}
+                  >
                     Yes, I've been using it consistently
                   </Text>
                   <Text style={styles.modalOptionSubtext}>
@@ -738,22 +830,33 @@ const ProductDetailScreen = (): React.JSX.Element => {
               <TouchableOpacity
                 style={[
                   styles.modalOption,
-                  usageResponse === 'no' && styles.modalOptionSelected
+                  usageResponse === 'no' && styles.modalOptionSelected,
                 ]}
                 onPress={() => handleUsageResponse('no')}
                 activeOpacity={0.7}
               >
-                <View style={[
-                  styles.modalOptionIcon,
-                  usageResponse === 'no' && styles.modalOptionIconSelected
-                ]}>
-                  <X size={16} color={usageResponse === 'no' ? colors.white : colors.textSecondary} />
+                <View
+                  style={[
+                    styles.modalOptionIcon,
+                    usageResponse === 'no' && styles.modalOptionIconSelected,
+                  ]}
+                >
+                  <X
+                    size={16}
+                    color={
+                      usageResponse === 'no'
+                        ? colors.white
+                        : colors.textSecondary
+                    }
+                  />
                 </View>
                 <View style={styles.modalOptionTextContainer}>
-                  <Text style={[
-                    styles.modalOptionText,
-                    usageResponse === 'no' && styles.modalOptionTextSelected
-                  ]}>
+                  <Text
+                    style={[
+                      styles.modalOptionText,
+                      usageResponse === 'no' && styles.modalOptionTextSelected,
+                    ]}
+                  >
                     No, I haven't been using it consistently
                   </Text>
                   <Text style={styles.modalOptionSubtext}>
@@ -771,22 +874,37 @@ const ProductDetailScreen = (): React.JSX.Element => {
       {isFetchingProduct ? (
         <ProductDetailSkeleton />
       ) : (
-        <ScrollView style={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        <ScrollView
+          style={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           {/* 1. Product Card: Image, Brand Name, Product Name, Add to Routine */}
           <View style={styles.productCard}>
             <View style={styles.productCardContainer}>
               {/* Product Image Placeholder */}
-              <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  gap: spacing.md,
+                  alignItems: 'center',
+                }}
+              >
                 <View style={styles.productImageContainer}>
-                  {(productData.product_image || productData.image_url) ? (
+                  {productData.product_image || productData.image_url ? (
                     <Image
-                      source={{ uri: productData.product_image || productData.image_url }}
+                      source={{
+                        uri: productData.product_image || productData.image_url,
+                      }}
                       style={styles.productImage}
                       resizeMode="contain"
                     />
                   ) : (
                     <View style={styles.productImagePlaceholder}>
-                      <Icon name="bottle-tonic-outline" size={40} color={colors.textSecondary} />
+                      <Icon
+                        name="bottle-tonic-outline"
+                        size={40}
+                        color={colors.textSecondary}
+                      />
                     </View>
                   )}
                 </View>
@@ -799,19 +917,34 @@ const ProductDetailScreen = (): React.JSX.Element => {
                     </Text>
                   )}
                   <Text style={styles.productNameNew}>
-                    {productData.product_name || routineData.name || 'Unknown Product'}
+                    {productData.product_name ||
+                      routineData.name ||
+                      'Unknown Product'}
                   </Text>
 
                   {/* Dynamic Usage Text */}
                   {!isAddMode && routineData.dateStarted && (
-                    <Text style={{
-                      fontSize: fontSize.sm,
-                      fontFamily: fontFamily.regular,
-                      color: colors.textSecondary,
-                      marginTop: spacing.sm,
-                      lineHeight: 20
-                    }}>
-                      Using <Text style={{ fontFamily: fontFamily.semiBold }}>{formatConcernName(routineData.frequency || '')} / {getUsagePills().join(' / ')}</Text> since <Text style={{ fontFamily: fontFamily.semiBold }}>{new Date(routineData.dateStarted).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</Text>
+                    <Text
+                      style={{
+                        fontSize: fontSize.sm,
+                        fontFamily: fontFamily.regular,
+                        color: colors.textSecondary,
+                        marginTop: spacing.sm,
+                        lineHeight: 20,
+                      }}
+                    >
+                      Using{' '}
+                      <Text style={{ fontFamily: fontFamily.semiBold }}>
+                        {formatConcernName(routineData.frequency || '')} /{' '}
+                        {getUsagePills().join(' / ')}
+                      </Text>{' '}
+                      since{' '}
+                      <Text style={{ fontFamily: fontFamily.semiBold }}>
+                        {new Date(routineData.dateStarted).toLocaleDateString(
+                          'en-US',
+                          { month: 'short', day: 'numeric', year: 'numeric' },
+                        )}
+                      </Text>
                     </Text>
                   )}
                 </View>
@@ -823,21 +956,24 @@ const ProductDetailScreen = (): React.JSX.Element => {
                   onPress={handleAddToRoutine}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.addToRoutineText}>Add to Your Routine</Text>
+                  <Text style={styles.addToRoutineText}>
+                    Add to Your Routine
+                  </Text>
                 </TouchableOpacity>
               )}
 
               {/* Usage text, Remove, and Edit buttons - Only in view mode */}
               {!isAddMode && (
                 <View style={{ marginTop: 0, width: '100%' }}>
-
                   {/* Remove Button */}
                   <TouchableOpacity
                     style={styles.addToRoutineButton}
                     onPress={handleRemove}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.addToRoutineText}>Remove from routine</Text>
+                    <Text style={styles.addToRoutineText}>
+                      Remove from routine
+                    </Text>
                   </TouchableOpacity>
 
                   {/* Edit Button */}
@@ -847,17 +983,19 @@ const ProductDetailScreen = (): React.JSX.Element => {
                       justifyContent: 'center',
                       alignItems: 'center',
                       gap: 6,
-                      marginTop: spacing.md
+                      marginTop: spacing.md,
                     }}
                     onPress={handleEdit}
                     activeOpacity={0.7}
                   >
                     <Edit size={16} color={colors.textSecondary} />
-                    <Text style={{
-                      fontSize: fontSize.md,
-                      fontFamily: fontFamily.medium,
-                      color: colors.textSecondary
-                    }}>
+                    <Text
+                      style={{
+                        fontSize: fontSize.md,
+                        fontFamily: fontFamily.medium,
+                        color: colors.textSecondary,
+                      }}
+                    >
                       Edit
                     </Text>
                   </TouchableOpacity>
@@ -867,100 +1005,133 @@ const ProductDetailScreen = (): React.JSX.Element => {
           </View>
 
           {/* 2. Effectiveness Section - Hidden in add mode */}
-          {!isAddMode && routineData?.concern_tracking && routineData?.concern_tracking?.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Effectiveness</Text>
-              {routineData.concern_tracking && routineData.concern_tracking.length > 0 ? (
-                <View style={styles.effectivenessListContainer}>
-                  {routineData.concern_tracking.map((tracking: any, index: number) => {
-                    const weeksCompleted = tracking.weeks_completed || 0;
-                    const totalWeeks = tracking.total_weeks || 0;
-                    const requiredDays = tracking.required_days || 0;
-                    const weeksRemaining = Math.max(0, totalWeeks - weeksCompleted);
-                    const showDays = totalWeeks === 0 && requiredDays > 0;
-                    const isCompleted = tracking.is_completed;
-                    const isEffective = tracking.is_effective;
-                    const canReview = isCompleted && isEffective === null;
+          {!isAddMode &&
+            routineData?.concern_tracking &&
+            routineData?.concern_tracking?.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Effectiveness</Text>
+                {routineData.concern_tracking &&
+                routineData.concern_tracking.length > 0 ? (
+                  <View style={styles.effectivenessListContainer}>
+                    {routineData.concern_tracking.map(
+                      (tracking: any, index: number) => {
+                        const weeksCompleted = tracking.weeks_completed || 0;
+                        const totalWeeks = tracking.total_weeks || 0;
+                        const requiredDays = tracking.required_days || 0;
+                        const weeksRemaining = Math.max(
+                          0,
+                          totalWeeks - weeksCompleted,
+                        );
+                        const showDays = totalWeeks === 0 && requiredDays > 0;
+                        const isCompleted = tracking.is_completed;
+                        const isEffective = tracking.is_effective;
+                        const canReview = isCompleted && isEffective === null;
 
-                    return (
-                      <View key={index}>
-                        {/* Divider at the top of each row */}
-                        <View style={styles.effectivenessDivider} />
-                        <View style={styles.effectivenessRow}>
-                          <Text style={styles.effectivenessName}>
-                            {formatConcernName(tracking.concern_name || 'Unknown Concern')}
-                          </Text>
-                          <View style={styles.effectivenessStatusContainer}>
-                            {/* Ready to Review - Clickable Link */}
-                            {canReview ? (
-                              <TouchableOpacity onPress={() => handleConcernClick(tracking)} activeOpacity={0.7}>
+                        return (
+                          <View key={index}>
+                            {/* Divider at the top of each row */}
+                            <View style={styles.effectivenessDivider} />
+                            <View style={styles.effectivenessRow}>
+                              <Text style={styles.effectivenessName}>
+                                {formatConcernName(
+                                  tracking.concern_name || 'Unknown Concern',
+                                )}
+                              </Text>
+                              <View style={styles.effectivenessStatusContainer}>
+                                {/* Ready to Review - Clickable Link */}
+                                {canReview ? (
+                                  <TouchableOpacity
+                                    onPress={() => handleConcernClick(tracking)}
+                                    activeOpacity={0.7}
+                                  >
+                                    <Text
+                                      style={styles.reviewEffectivenessLink}
+                                    >
+                                      Review Effectiveness →
+                                    </Text>
+                                  </TouchableOpacity>
+                                ) : !isCompleted ? (
+                                  /* In Progress - Show weeks remaining */
+                                  <View style={styles.reviewWeeksBadge}>
+                                    <Text style={styles.reviewWeeksText}>
+                                      Review in{' '}
+                                      <Text style={styles.reviewWeeksBold}>
+                                        {showDays
+                                          ? `${requiredDays} day${
+                                              requiredDays !== 1 ? 's' : ''
+                                            }`
+                                          : `${weeksRemaining} week${
+                                              weeksRemaining !== 1 ? 's' : ''
+                                            }`}
+                                      </Text>
+                                    </Text>
+                                  </View>
+                                ) : isEffective === true ? (
+                                  /* Proven Effective */
+                                  <View style={styles.effectiveIndicator}>
+                                    <View style={styles.effectiveDot} />
+                                    <Text style={styles.effectiveText}>
+                                      Effective
+                                    </Text>
+                                  </View>
+                                ) : (
+                                  /* Not Effective */
+                                  <View style={styles.notEffectiveIndicator}>
+                                    <View style={styles.notEffectiveDot} />
+                                    <Text style={styles.notEffectiveText}>
+                                      Not Effective
+                                    </Text>
+                                  </View>
+                                )}
+                              </View>
+                            </View>
+                          </View>
+                        );
+                      },
+                    )}
+                  </View>
+                ) : routineData.concerns && routineData.concerns.length > 0 ? (
+                  /* Show concerns that haven't started tracking yet */
+                  <View style={styles.effectivenessListContainer}>
+                    {routineData.concerns.map(
+                      (concern: string, index: number) => (
+                        <View key={index}>
+                          <View style={styles.effectivenessRow}>
+                            <Text style={styles.effectivenessName}>
+                              {formatConcernName(concern)}
+                            </Text>
+                            <View style={styles.effectivenessStatusContainer}>
+                              <TouchableOpacity
+                                onPress={handleStartTracking}
+                                activeOpacity={0.7}
+                              >
                                 <Text style={styles.reviewEffectivenessLink}>
-                                  Review Effectiveness →
+                                  Start Tracking →
                                 </Text>
                               </TouchableOpacity>
-                            ) : !isCompleted ? (
-                              /* In Progress - Show weeks remaining */
-                              <View style={styles.reviewWeeksBadge}>
-                                <Text style={styles.reviewWeeksText}>
-                                  Review in <Text style={styles.reviewWeeksBold}>
-                                    {showDays ? `${requiredDays} day${requiredDays !== 1 ? 's' : ''}` : `${weeksRemaining} week${weeksRemaining !== 1 ? 's' : ''}`}
-                                  </Text>
-                                </Text>
-                              </View>
-                            ) : isEffective === true ? (
-                              /* Proven Effective */
-                              <View style={styles.effectiveIndicator}>
-                                <View style={styles.effectiveDot} />
-                                <Text style={styles.effectiveText}>Effective</Text>
-                              </View>
-                            ) : (
-                              /* Not Effective */
-                              <View style={styles.notEffectiveIndicator}>
-                                <View style={styles.notEffectiveDot} />
-                                <Text style={styles.notEffectiveText}>Not Effective</Text>
-                              </View>
-                            )}
+                            </View>
                           </View>
+                          {index < routineData.concerns.length - 1 && (
+                            <View style={styles.effectivenessDivider} />
+                          )}
                         </View>
-                      </View>
-                    );
-                  })}
-                </View>
-              ) : routineData.concerns && routineData.concerns.length > 0 ? (
-                /* Show concerns that haven't started tracking yet */
-                <View style={styles.effectivenessListContainer}>
-                  {routineData.concerns.map((concern: string, index: number) => (
-                    <View key={index}>
-                      <View style={styles.effectivenessRow}>
-                        <Text style={styles.effectivenessName}>
-                          {formatConcernName(concern)}
-                        </Text>
-                        <View style={styles.effectivenessStatusContainer}>
-                          <TouchableOpacity onPress={handleStartTracking} activeOpacity={0.7}>
-                            <Text style={styles.reviewEffectivenessLink}>
-                              Start Tracking →
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
-                      </View>
-                      {index < routineData.concerns.length - 1 && (
-                        <View style={styles.effectivenessDivider} />
-                      )}
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Text style={styles.noDataText}>No concerns tracked yet</Text>
-              )}
-            </View>
-          )}
+                      ),
+                    )}
+                  </View>
+                ) : (
+                  <Text style={styles.noDataText}>No concerns tracked yet</Text>
+                )}
+              </View>
+            )}
 
           {/* 2.5 Treatment Information (About and Concerns) - Only for treatments */}
           {isTreatment && currentSubcategory && (
             <>
               {/* About section */}
               <View style={styles.section}>
-                <Text style={styles.sectionTitle}>About {currentSubcategory.name}</Text>
+                <Text style={styles.sectionTitle}>
+                  About {currentSubcategory.name}
+                </Text>
                 <View style={styles.infoCard}>
                   <Text style={styles.infoCardDescription}>
                     {currentSubcategory.description}
@@ -969,93 +1140,120 @@ const ProductDetailScreen = (): React.JSX.Element => {
               </View>
 
               {/* Treatment generally addresses these concerns section */}
-              {currentSubcategory.concerns && currentSubcategory.concerns.length > 0 && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>This treatment generally addresses these concerns</Text>
-                  <View style={styles.infoListContainer}>
-                    {currentSubcategory.concerns.map(concern => (
-                      <View key={concern} style={styles.infoListItem}>
-                        <View style={styles.infoListDot} />
-                        <Text style={styles.infoListText}>{concern}</Text>
-                      </View>
-                    ))}
+              {currentSubcategory.concerns &&
+                currentSubcategory.concerns.length > 0 && (
+                  <View style={styles.section}>
+                    <Text style={styles.sectionTitle}>
+                      This treatment generally addresses these concerns
+                    </Text>
+                    <View style={styles.infoListContainer}>
+                      {currentSubcategory.concerns.map(concern => (
+                        <View key={concern} style={styles.infoListItem}>
+                          <View style={styles.infoListDot} />
+                          <Text style={styles.infoListText}>{concern}</Text>
+                        </View>
+                      ))}
+                    </View>
                   </View>
-                </View>
-              )}
+                )}
             </>
           )}
 
           {/* 3. Product is good for */}
-          {!isManuallyAdded && productData.good_for && productData.good_for.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Product is good for</Text>
-              <View style={styles.chipSelectorContainer}>
-                {productData.good_for.map((item: string, index: number) => (
-                  <View key={index} style={styles.chipButton}>
-                    <Text style={styles.chipButtonText}>{formatGoodForItem(item)}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* 4. Ingredients - List Format with Show More */}
-          {!isManuallyAdded && productData.ingredients && productData.ingredients.length > 0 && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Ingredients</Text>
-              <View style={styles.ingredientsListContainer}>
-                {productData.ingredients
-                  .slice(0, showAllIngredients ? productData.ingredients.length : INITIAL_INGREDIENTS_COUNT)
-                  .map((ingredient: any, index: number, arr: any[]) => (
-                    <View key={index}>
-                      {index < arr.length && (
-                        <View style={styles.ingredientDivider} />
-                      )}
-                      <Text style={styles.ingredientListItem}>
-                        {formatIngredientName(ingredient.ingredient_name)}
+          {!isManuallyAdded &&
+            productData.good_for &&
+            productData.good_for.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Product is good for</Text>
+                <View style={styles.chipSelectorContainer}>
+                  {productData.good_for.map((item: string, index: number) => (
+                    <View key={index} style={styles.chipButton}>
+                      <Text style={styles.chipButtonText}>
+                        {formatGoodForItem(item)}
                       </Text>
                     </View>
                   ))}
-              </View>
-              {productData.ingredients.length > INITIAL_INGREDIENTS_COUNT && (
-                <TouchableOpacity
-                  style={styles.showMoreButton}
-                  onPress={() => setShowAllIngredients(!showAllIngredients)}
-                  activeOpacity={0.8}
-                >
-                  <Text style={styles.showMoreText}>
-                    {showAllIngredients
-                      ? 'Show Less'
-                      : `Show ${productData.ingredients.length - INITIAL_INGREDIENTS_COUNT} More Ingredients`}
-                  </Text>
-                </TouchableOpacity>
-              )}
-
-              {/* 5. Free of - Inline in Ingredients section */}
-              {productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
-                <View style={styles.freeOfSection}>
-                  <Text style={styles.freeOfTitle}>Free of</Text>
-                  <View style={styles.chipSelectorContainer}>
-                    {(() => {
-                      const freeOfItems = Array.from(new Set(
-                        productData.ingredients
-                          .flatMap((ingredient: any) => ingredient.free_of || [])
-                          .filter(Boolean)
-                      ));
-
-                      return freeOfItems.map((freeOfItem: any, index: number) => (
-                        <View key={index} style={styles.chipButton}>
-                          <Text style={styles.chipButtonText}>
-                            {formatFreeOfItem(freeOfItem)}
-                          </Text>
-                        </View>
-                      ));
-                    })()}
-                  </View>
                 </View>
-              )}
-            </View>
-          )}
+              </View>
+            )}
+
+          {/* 4. Ingredients - List Format with Show More */}
+          {!isManuallyAdded &&
+            productData.ingredients &&
+            productData.ingredients.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Ingredients</Text>
+                <View style={styles.ingredientsListContainer}>
+                  {productData.ingredients
+                    .slice(
+                      0,
+                      showAllIngredients
+                        ? productData.ingredients.length
+                        : INITIAL_INGREDIENTS_COUNT,
+                    )
+                    .map((ingredient: any, index: number, arr: any[]) => (
+                      <View key={index}>
+                        {index < arr.length && (
+                          <View style={styles.ingredientDivider} />
+                        )}
+                        <Text style={styles.ingredientListItem}>
+                          {formatIngredientName(ingredient.ingredient_name)}
+                        </Text>
+                      </View>
+                    ))}
+                </View>
+                {productData.ingredients.length > INITIAL_INGREDIENTS_COUNT && (
+                  <TouchableOpacity
+                    style={styles.showMoreButton}
+                    onPress={() => setShowAllIngredients(!showAllIngredients)}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.showMoreText}>
+                      {showAllIngredients
+                        ? 'Show Less'
+                        : `Show ${
+                            productData.ingredients.length -
+                            INITIAL_INGREDIENTS_COUNT
+                          } More Ingredients`}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+
+                {/* 5. Free of - Inline in Ingredients section */}
+                {productData.ingredients &&
+                  productData.ingredients.some(
+                    (ingredient: any) =>
+                      ingredient.free_of && ingredient.free_of.length > 0,
+                  ) && (
+                    <View style={styles.freeOfSection}>
+                      <Text style={styles.freeOfTitle}>Free of</Text>
+                      <View style={styles.chipSelectorContainer}>
+                        {(() => {
+                          const freeOfItems = Array.from(
+                            new Set(
+                              productData.ingredients
+                                .flatMap(
+                                  (ingredient: any) => ingredient.free_of || [],
+                                )
+                                .filter(Boolean),
+                            ),
+                          );
+
+                          return freeOfItems.map(
+                            (freeOfItem: any, index: number) => (
+                              <View key={index} style={styles.chipButton}>
+                                <Text style={styles.chipButtonText}>
+                                  {formatFreeOfItem(freeOfItem)}
+                                </Text>
+                              </View>
+                            ),
+                          );
+                        })()}
+                      </View>
+                    </View>
+                  )}
+              </View>
+            )}
 
           {/* Bottom spacing */}
           <View style={styles.bottomSpacing} />
@@ -1079,7 +1277,7 @@ const styles = StyleSheet.create({
     height: 105,
     backgroundColor: colors.white,
     borderBottomWidth: 0.4,
-    borderBottomColor: "#E5E5E5",
+    borderBottomColor: '#E5E5E5',
   },
   header: {
     flexDirection: 'row',
@@ -1150,7 +1348,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flex: 1,
     // paddingHorizontal: spacing.lg,
-    marginTop: 105,
+    marginTop: Platform.OS === 'ios' ? 105 : 85,
   },
   loadingContainer: {
     flex: 1,
@@ -1839,8 +2037,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: "#E9EAEB",
-    backgroundColor: "#fff",
+    borderColor: '#E9EAEB',
+    backgroundColor: '#fff',
     borderRadius: borderRadius.md,
   },
   productInfoContainer: {
@@ -1994,7 +2192,7 @@ const styles = StyleSheet.create({
     color: '#717680',
     fontWeight: '500',
   },
-  // Free Of Section Styles  
+  // Free Of Section Styles
   freeOfSection: {
     marginTop: spacing.lg,
     paddingTop: spacing.md,
@@ -2006,7 +2204,6 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   productCard: {
-
     marginBottom: 10,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,

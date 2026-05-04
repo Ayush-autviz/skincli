@@ -19,7 +19,14 @@ DEV PRINCIPLES
 ------------------------------------------------------*/
 
 import React, { useState, useEffect, useCallback } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ActivityIndicator,
+  Platform,
+} from 'react-native';
 import { Camera } from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
@@ -35,9 +42,17 @@ export default function Home(): React.JSX.Element {
   const navigation = useNavigation();
   const [isSettingsVisible, setIsSettingsVisible] = useState<boolean>(false);
   const { user } = useAuthStore();
-  const { photos, isLoading, refreshPhotos, lastUpdated, pagination, isLoadingMore, loadMorePhotos } = usePhotoContext();
+  const {
+    photos,
+    isLoading,
+    refreshPhotos,
+    lastUpdated,
+    pagination,
+    isLoadingMore,
+    loadMorePhotos,
+  } = usePhotoContext();
 
-  console.log("isLoading", isLoading);
+  console.log('isLoading', isLoading);
 
   useEffect(() => {
     console.log('📱 Home screen loaded');
@@ -48,7 +63,7 @@ export default function Home(): React.JSX.Element {
     useCallback(() => {
       console.log('📱 Home screen focused - refreshing photos');
       refreshPhotos();
-    }, [refreshPhotos])
+    }, [refreshPhotos]),
   );
 
   const handleMenuPress = (): void => {
@@ -73,11 +88,8 @@ export default function Home(): React.JSX.Element {
 
   return (
     <View style={styles.container}>
-      <TabHeader 
-        title="Magic Mirror" 
-        onMenuPress={handleMenuPress}
-      />
-      
+      <TabHeader title="Magic Mirror" onMenuPress={handleMenuPress} />
+
       <View style={[styles.content, styles.photoGridContainer]}>
         {photos.length === 0 && !isLoading ? (
           <View style={styles.emptyStateContainer}>
@@ -87,14 +99,18 @@ export default function Home(): React.JSX.Element {
             <Text style={styles.emptyTitle}>No snapshots yet</Text>
             <Text style={styles.emptySubtitle}>Take a Selfie!</Text>
             <Text style={styles.emptySubtitle}>Look at a source of light.</Text>
-            <Text style={styles.emptySubtitle}>Center your face in the frame.</Text>
+            <Text style={styles.emptySubtitle}>
+              Center your face in the frame.
+            </Text>
             <Text style={styles.emptySubtitle}>No make up, please!</Text>
             <Text style={styles.emptySubtitle}>Click + below</Text>
-            <Text style={styles.emptySubtitle}>On your first visit, repeat to unlock the Progress Charts</Text>
+            <Text style={styles.emptySubtitle}>
+              On your first visit, repeat to unlock the Progress Charts
+            </Text>
           </View>
         ) : (
-          <PhotoGrid 
-            photos={photos} 
+          <PhotoGrid
+            photos={photos}
             onRefresh={refreshPhotos}
             lastUpdated={lastUpdated}
             onLoadMore={loadMorePhotos}
@@ -105,7 +121,7 @@ export default function Home(): React.JSX.Element {
         )}
       </View>
 
-      <SettingsDrawer 
+      <SettingsDrawer
         isVisible={isSettingsVisible}
         onClose={() => setIsSettingsVisible(false)}
       />
@@ -122,11 +138,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-   marginTop: 100,
+    marginTop: Platform.OS === 'ios' ? 100 : 80,
   },
   content: {
     flex: 1,
-    marginTop: 120,
+    marginTop: Platform.OS === 'ios' ? 120 : 100,
     marginBottom: 140, // Extra space for floating add button
     paddingHorizontal: spacing.lg,
   },

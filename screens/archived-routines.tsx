@@ -2,9 +2,30 @@
 // Screen to display archived (stopped) routine items
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { View, Text, FlatList, ActivityIndicator, StyleSheet, TouchableOpacity, Alert, RefreshControl, ScrollView, Image } from 'react-native';
+import {
+  View,
+  Text,
+  FlatList,
+  ActivityIndicator,
+  StyleSheet,
+  TouchableOpacity,
+  Alert,
+  RefreshControl,
+  ScrollView,
+  Image,
+  Platform,
+} from 'react-native';
 import { colors, spacing, typography, shadows, fontFamily } from '../styles';
-import { ChevronLeft, Archive, Clock, Calendar, Trash2, RotateCcw, AlertCircle, ChevronRight } from 'lucide-react-native';
+import {
+  ChevronLeft,
+  Archive,
+  Clock,
+  Calendar,
+  Trash2,
+  RotateCcw,
+  AlertCircle,
+  ChevronRight,
+} from 'lucide-react-native';
 import { useNavigation } from '@react-navigation/native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -15,7 +36,7 @@ import TabHeader from '../components/ui/TabHeader';
 import {
   getRoutineItems,
   updateRoutineItem,
-  clearPendingRequests
+  clearPendingRequests,
 } from '../utils/newApiService';
 
 // Type definitions
@@ -86,10 +107,17 @@ interface ApiItem {
 }
 
 // Helper function to calculate usage duration
-const calculateUsageDuration = (dateStarted: string | Date | { toDate: () => Date } | null): string | null => {
+const calculateUsageDuration = (
+  dateStarted: string | Date | { toDate: () => Date } | null,
+): string | null => {
   let start: Date | null = null;
   // Firestore Timestamp
-  if (dateStarted && typeof dateStarted === 'object' && 'toDate' in dateStarted && typeof dateStarted.toDate === 'function') {
+  if (
+    dateStarted &&
+    typeof dateStarted === 'object' &&
+    'toDate' in dateStarted &&
+    typeof dateStarted.toDate === 'function'
+  ) {
     start = dateStarted.toDate();
   }
   // JS Date
@@ -136,25 +164,25 @@ const ArchivedRoutines: React.FC = () => {
   const transformApiItem = (apiItem: ApiItem): TransformedRoutineItem => {
     // Normalize API values to component expected format
     const typeMap: { [key: string]: string } = {
-      'product': 'Product',
-      'activity': 'Activity',
-      'nutrition': 'Nutrition',
-      'treatment_facial': 'Treatment / Facial',
-      'treatment_injection': 'Treatment / Injection',
-      'treatment_other': 'Treatment / Other'
+      product: 'Product',
+      activity: 'Activity',
+      nutrition: 'Nutrition',
+      treatment_facial: 'Treatment / Facial',
+      treatment_injection: 'Treatment / Injection',
+      treatment_other: 'Treatment / Other',
     };
 
     const usageMap: { [key: string]: string } = {
-      'am': 'AM',
-      'pm': 'PM',
-      'both': 'AM + PM',
-      'as_needed': 'As needed'
+      am: 'AM',
+      pm: 'PM',
+      both: 'AM + PM',
+      as_needed: 'As needed',
     };
 
     const frequencyMap: { [key: string]: string } = {
-      'daily': 'Daily',
-      'weekly': 'Weekly',
-      'as_needed': 'As needed'
+      daily: 'Daily',
+      weekly: 'Weekly',
+      as_needed: 'As needed',
     };
 
     // Helper to get date from root level only
@@ -168,11 +196,11 @@ const ArchivedRoutines: React.FC = () => {
     };
 
     // Check if this is a treatment type
-    const isTreatment = apiItem.type && (
-      apiItem.type === 'treatment_facial' ||
-      apiItem.type === 'treatment_injection' ||
-      apiItem.type === 'treatment_other'
-    );
+    const isTreatment =
+      apiItem.type &&
+      (apiItem.type === 'treatment_facial' ||
+        apiItem.type === 'treatment_injection' ||
+        apiItem.type === 'treatment_other');
 
     return {
       id: apiItem.id,
@@ -186,21 +214,23 @@ const ArchivedRoutines: React.FC = () => {
       brand_name: apiItem.brand_name,
       image_url: apiItem.image_url,
       // For treatment types, use treatment date; for others, use start/stop dates from root level
-      dateStarted: isTreatment ?
-        getDate(apiItem.treatment_date) :
-        getDate(apiItem.start_date),
-      dateStopped: isTreatment ? undefined : // Treatments don't have stop dates
-        getDate(apiItem.end_date),
-      treatmentDate: isTreatment ?
-        getDate(apiItem.treatment_date) : undefined,
+      dateStarted: isTreatment
+        ? getDate(apiItem.treatment_date)
+        : getDate(apiItem.start_date),
+      dateStopped: isTreatment
+        ? undefined // Treatments don't have stop dates
+        : getDate(apiItem.end_date),
+      treatmentDate: isTreatment ? getDate(apiItem.treatment_date) : undefined,
       stopReason: apiItem.end_reason || '',
       dateCreated: getDate(apiItem.dateCreated) || new Date(),
-      extra: apiItem.extra || {}
+      extra: apiItem.extra || {},
     };
   };
 
   // Fetch routine items from API
-  const fetchRoutineItems = async (isRefresh: boolean = false): Promise<void> => {
+  const fetchRoutineItems = async (
+    isRefresh: boolean = false,
+  ): Promise<void> => {
     try {
       if (isRefresh) {
         setRefreshing(true);
@@ -209,30 +239,37 @@ const ArchivedRoutines: React.FC = () => {
       }
       setError(null);
 
-      const response = await getRoutineItems() as ApiResponse;
+      const response = (await getRoutineItems()) as ApiResponse;
 
       if (response.success && response.data) {
-        const transformedItems = response.data.map((item: ApiItem) => transformApiItem(item));
+        const transformedItems = response.data.map((item: ApiItem) =>
+          transformApiItem(item),
+        );
         // Filter only stopped items (exclude all treatments)
-        const stoppedItems = transformedItems.filter((item: TransformedRoutineItem) => {
-          const isTreatment = item.type && (
-            item.type === 'Treatment / Facial' ||
-            item.type === 'Treatment / Injection' ||
-            item.type === 'Treatment / Other'
-          );
+        const stoppedItems = transformedItems.filter(
+          (item: TransformedRoutineItem) => {
+            const isTreatment =
+              item.type &&
+              (item.type === 'Treatment / Facial' ||
+                item.type === 'Treatment / Injection' ||
+                item.type === 'Treatment / Other');
 
-          // Exclude all treatments from archived routines
-          if (isTreatment) {
-            return false;
-          } else {
-            // For non-treatments, only include stopped items
-            if (item.dateStopped) {
-              const stoppedDate = typeof item.dateStopped === 'string' ? new Date(item.dateStopped) : item.dateStopped;
-              return stoppedDate <= new Date();
+            // Exclude all treatments from archived routines
+            if (isTreatment) {
+              return false;
+            } else {
+              // For non-treatments, only include stopped items
+              if (item.dateStopped) {
+                const stoppedDate =
+                  typeof item.dateStopped === 'string'
+                    ? new Date(item.dateStopped)
+                    : item.dateStopped;
+                return stoppedDate <= new Date();
+              }
+              return false;
             }
-            return false;
-          }
-        });
+          },
+        );
         setRoutineItems(stoppedItems);
       } else {
         setRoutineItems([]);
@@ -261,7 +298,11 @@ const ArchivedRoutines: React.FC = () => {
       {/* List header – same as routine screen */}
       <View style={styles.skeletonListHeader}>
         <SkeletonPlaceholder borderRadius={4}>
-          <SkeletonPlaceholder.Item flexDirection="row" justifyContent="space-between" alignItems="center">
+          <SkeletonPlaceholder.Item
+            flexDirection="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
             <SkeletonPlaceholder.Item width={160} height={14} />
             <SkeletonPlaceholder.Item width={110} height={14} />
           </SkeletonPlaceholder.Item>
@@ -275,16 +316,29 @@ const ArchivedRoutines: React.FC = () => {
         </SkeletonPlaceholder>
       </View>
 
-      {[1, 2, 3, 4, 5].map((i) => (
+      {[1, 2, 3, 4, 5].map(i => (
         <View key={`archived-skeleton-${i}`} style={styles.skeletonItemCard}>
           <SkeletonPlaceholder borderRadius={4}>
             <SkeletonPlaceholder.Item flexDirection="row" alignItems="center">
-              <SkeletonPlaceholder.Item width={40} height={40} borderRadius={20} marginRight={12} />
+              <SkeletonPlaceholder.Item
+                width={40}
+                height={40}
+                borderRadius={20}
+                marginRight={12}
+              />
               <SkeletonPlaceholder.Item flex={1}>
-                <SkeletonPlaceholder.Item width="60%" height={16} marginBottom={6} />
+                <SkeletonPlaceholder.Item
+                  width="60%"
+                  height={16}
+                  marginBottom={6}
+                />
                 <SkeletonPlaceholder.Item width="40%" height={12} />
               </SkeletonPlaceholder.Item>
-              <SkeletonPlaceholder.Item width={20} height={20} borderRadius={10} />
+              <SkeletonPlaceholder.Item
+                width={20}
+                height={20}
+                borderRadius={10}
+              />
             </SkeletonPlaceholder.Item>
           </SkeletonPlaceholder>
         </View>
@@ -301,7 +355,7 @@ const ArchivedRoutines: React.FC = () => {
     React.useCallback(() => {
       clearPendingRequests();
       fetchRoutineItems();
-    }, [])
+    }, []),
   );
 
   const handleRefresh = (): void => {
@@ -319,28 +373,38 @@ const ArchivedRoutines: React.FC = () => {
     }
 
     // Sort all items by date (most recent first)
-    const sortedItems = [...routineItems].sort((a: TransformedRoutineItem, b: TransformedRoutineItem) => {
-      // For treatment types, use treatment date; for others, use stop date
-      const isTreatmentA = a.type && (
-        a.type === 'Treatment / Facial' ||
-        a.type === 'Treatment / Injection' ||
-        a.type === 'Treatment / Other'
-      );
-      const isTreatmentB = b.type && (
-        b.type === 'Treatment / Facial' ||
-        b.type === 'Treatment / Injection' ||
-        b.type === 'Treatment / Other'
-      );
+    const sortedItems = [...routineItems].sort(
+      (a: TransformedRoutineItem, b: TransformedRoutineItem) => {
+        // For treatment types, use treatment date; for others, use stop date
+        const isTreatmentA =
+          a.type &&
+          (a.type === 'Treatment / Facial' ||
+            a.type === 'Treatment / Injection' ||
+            a.type === 'Treatment / Other');
+        const isTreatmentB =
+          b.type &&
+          (b.type === 'Treatment / Facial' ||
+            b.type === 'Treatment / Injection' ||
+            b.type === 'Treatment / Other');
 
-      const dateA = isTreatmentA ?
-        (a.treatmentDate ? new Date(a.treatmentDate) : new Date(0)) :
-        (a.dateStopped ? new Date(a.dateStopped) : new Date(0));
-      const dateB = isTreatmentB ?
-        (b.treatmentDate ? new Date(b.treatmentDate) : new Date(0)) :
-        (b.dateStopped ? new Date(b.dateStopped) : new Date(0));
+        const dateA = isTreatmentA
+          ? a.treatmentDate
+            ? new Date(a.treatmentDate)
+            : new Date(0)
+          : a.dateStopped
+          ? new Date(a.dateStopped)
+          : new Date(0);
+        const dateB = isTreatmentB
+          ? b.treatmentDate
+            ? new Date(b.treatmentDate)
+            : new Date(0)
+          : b.dateStopped
+          ? new Date(b.dateStopped)
+          : new Date(0);
 
-      return dateB.getTime() - dateA.getTime();
-    });
+        return dateB.getTime() - dateA.getTime();
+      },
+    );
 
     return sortedItems;
   }, [routineItems]);
@@ -356,24 +420,30 @@ const ArchivedRoutines: React.FC = () => {
     let stopDateStr = '';
 
     if (item.dateStarted) {
-      const startDate = typeof item.dateStarted === 'string' ? new Date(item.dateStarted) :
-        item.dateStarted instanceof Date ? item.dateStarted :
-          (item.dateStarted as any).toDate();
+      const startDate =
+        typeof item.dateStarted === 'string'
+          ? new Date(item.dateStarted)
+          : item.dateStarted instanceof Date
+          ? item.dateStarted
+          : (item.dateStarted as any).toDate();
       startDateStr = startDate.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
     }
 
     if (item.dateStopped) {
-      const stopDate = typeof item.dateStopped === 'string' ? new Date(item.dateStopped) :
-        item.dateStopped instanceof Date ? item.dateStopped :
-          (item.dateStopped as any).toDate();
+      const stopDate =
+        typeof item.dateStopped === 'string'
+          ? new Date(item.dateStopped)
+          : item.dateStopped instanceof Date
+          ? item.dateStopped
+          : (item.dateStopped as any).toDate();
       stopDateStr = stopDate.toLocaleDateString('en-US', {
         month: 'short',
         day: 'numeric',
-        year: 'numeric'
+        year: 'numeric',
       });
     }
 
@@ -392,7 +462,12 @@ const ArchivedRoutines: React.FC = () => {
         );
       }
       return (
-        <View style={[styles.itemImage, { justifyContent: 'center', alignItems: 'center' }]}>
+        <View
+          style={[
+            styles.itemImage,
+            { justifyContent: 'center', alignItems: 'center' },
+          ]}
+        >
           <Text style={{ color: '#A9A29D', fontSize: 10 }}>No Image</Text>
         </View>
       );
@@ -401,21 +476,23 @@ const ArchivedRoutines: React.FC = () => {
     return (
       <TouchableOpacity
         style={styles.routineItemCard}
-        onPress={() => { }} // No detail navigation for archived items
+        onPress={() => {}} // No detail navigation for archived items
         activeOpacity={0.9}
       >
-        <View style={styles.itemImageContainer}>
-          {renderItemImage()}
-        </View>
+        <View style={styles.itemImageContainer}>{renderItemImage()}</View>
 
         <View style={styles.itemContentContainer}>
-          {brandName ? (
-            <Text style={styles.brandText}>{brandName}</Text>
-          ) : null}
+          {brandName ? <Text style={styles.brandText}>{brandName}</Text> : null}
           <Text style={styles.itemNameText}>{item.name}</Text>
 
           <Text style={styles.usageText}>
-            Used <Text style={styles.usageBoldText}>{item.frequency} / {displayUsage}</Text> from <Text style={styles.usageBoldText}>{startDateStr || 'N/A'}</Text> to <Text style={styles.usageBoldText}>{stopDateStr || 'N/A'}</Text>
+            Used{' '}
+            <Text style={styles.usageBoldText}>
+              {item.frequency} / {displayUsage}
+            </Text>{' '}
+            from{' '}
+            <Text style={styles.usageBoldText}>{startDateStr || 'N/A'}</Text> to{' '}
+            <Text style={styles.usageBoldText}>{stopDateStr || 'N/A'}</Text>
           </Text>
 
           {/* <View style={styles.effectivenessContainer}>
@@ -435,9 +512,7 @@ const ArchivedRoutines: React.FC = () => {
   // Render section header
 
   // Enhanced Loading Component
-  const LoadingState = () => (
-    <RoutineSkeleton />
-  );
+  const LoadingState = () => <RoutineSkeleton />;
 
   // Enhanced Error Component
   const ErrorState = () => (
@@ -448,9 +523,15 @@ const ArchivedRoutines: React.FC = () => {
         </View>
         <Text style={styles.errorText}>Unable to load archived routines</Text>
         <Text style={styles.errorSubtext}>
-          {typeof error === 'string' ? error : (error as any)?.message || 'Something went wrong while loading your archived routines'}
+          {typeof error === 'string'
+            ? error
+            : (error as any)?.message ||
+              'Something went wrong while loading your archived routines'}
         </Text>
-        <TouchableOpacity style={styles.retryButton} onPress={() => fetchRoutineItems()}>
+        <TouchableOpacity
+          style={styles.retryButton}
+          onPress={() => fetchRoutineItems()}
+        >
           <RotateCcw size={16} color={colors.textOnPrimary} />
           <Text style={styles.retryButtonText}>Try Again</Text>
         </TouchableOpacity>
@@ -514,10 +595,10 @@ const ArchivedRoutines: React.FC = () => {
             style={styles.sectionsList}
             data={archivedItems}
             renderItem={renderArchivedItem}
-            keyExtractor={(item) => item.id}
+            keyExtractor={item => item.id}
             contentContainerStyle={[
               styles.listContentContainer,
-              { paddingBottom: insets.bottom + 20 }
+              { paddingBottom: insets.bottom + 20 },
             ]}
             refreshControl={
               <RefreshControl
@@ -532,7 +613,6 @@ const ArchivedRoutines: React.FC = () => {
       </View>
     </View>
   );
-
 };
 
 export default ArchivedRoutines;
@@ -544,7 +624,7 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-    marginTop: 100, // Space for header
+    marginTop: Platform.OS === 'ios' ? 100 : 80, // Space for header
     // marginBottom: 100, // Space for bottom nav
   },
   headerContainer: {

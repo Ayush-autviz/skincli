@@ -13,6 +13,7 @@ import {
   Dimensions,
   FlatList,
   Alert,
+  Platform,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
@@ -401,8 +402,17 @@ export default function AboutMeScreen(): React.JSX.Element {
                 <Text style={styles.profileBirthDate}>
                   Birth Date {formatBirthDate(profile?.birth_date)}
                 </Text>
-                <TouchableOpacity onPress={handleLogout} style={{ marginTop: 8 }}>
-                  <Text style={{ color: '#717680', fontWeight: '400', fontSize: 14 }}>
+                <TouchableOpacity
+                  onPress={handleLogout}
+                  style={{ marginTop: 8 }}
+                >
+                  <Text
+                    style={{
+                      color: '#717680',
+                      fontWeight: '400',
+                      fontSize: 14,
+                    }}
+                  >
                     Log Out
                   </Text>
                 </TouchableOpacity>
@@ -414,7 +424,11 @@ export default function AboutMeScreen(): React.JSX.Element {
 
       {/* Tab Bar */}
       <View style={styles.tabContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabBar}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.tabBar}
+        >
           <TouchableOpacity
             style={[styles.tab, activeTab === 'photos' && styles.activeTab]}
             onPress={() => setActiveTab('photos')}
@@ -497,36 +511,58 @@ export default function AboutMeScreen(): React.JSX.Element {
       ) : activeTab === 'activity' ? (
         <ActivityList />
       ) : (
-        <ScrollView style={{ flex: 1 }} contentContainerStyle={styles.ratedSectionContainer}>
+        <ScrollView
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.ratedSectionContainer}
+        >
           {ratedItems.length > 0 ? (
             <View style={styles.ratedSection}>
-              {ratedItems.map((item) => {
+              {ratedItems.map(item => {
                 const brandName = item.extra?.brand || item.brand || '';
                 return (
                   <View key={item.id} style={styles.ratedItemCard}>
                     {brandName ? (
-                      <Text style={styles.ratedItemBrand}>{brandName.toUpperCase()}</Text>
+                      <Text style={styles.ratedItemBrand}>
+                        {brandName.toUpperCase()}
+                      </Text>
                     ) : null}
                     <Text style={styles.ratedItemName}>{item.name}</Text>
                     <View style={styles.ratedConcernsList}>
-                      {item.concern_tracking.map((tracking: any, idx: number) => {
-                        const concernName = tracking.concern_name || 'Unknown Concern';
-                        let statusText = 'Not yet rated';
-                        let statusColor = '#78716C';
-                        if (tracking.is_effective === true) {
-                          statusText = 'Effective';
-                          statusColor = '#22C55E';
-                        } else if (tracking.is_effective === false) {
-                          statusText = 'Not Effective';
-                          statusColor = '#EF4444';
-                        }
-                        
-                        return (
-                          <Text key={idx} style={styles.ratedConcernItem}>
-                            {concernName.replace(/([A-Z])/g, ' $1').trim().replace(/^./, (str: string) => str.toUpperCase())} - <Text style={{ color: statusColor, fontWeight: '600' }}>{statusText}</Text>
-                          </Text>
-                        );
-                      })}
+                      {item.concern_tracking.map(
+                        (tracking: any, idx: number) => {
+                          const concernName =
+                            tracking.concern_name || 'Unknown Concern';
+                          let statusText = 'Not yet rated';
+                          let statusColor = '#78716C';
+                          if (tracking.is_effective === true) {
+                            statusText = 'Effective';
+                            statusColor = '#22C55E';
+                          } else if (tracking.is_effective === false) {
+                            statusText = 'Not Effective';
+                            statusColor = '#EF4444';
+                          }
+
+                          return (
+                            <Text key={idx} style={styles.ratedConcernItem}>
+                              {concernName
+                                .replace(/([A-Z])/g, ' $1')
+                                .trim()
+                                .replace(/^./, (str: string) =>
+                                  str.toUpperCase(),
+                                )}{' '}
+                              -{' '}
+                              <Text
+                                style={{
+                                  color: statusColor,
+                                  fontWeight: '600',
+                                }}
+                              >
+                                {statusText}
+                              </Text>
+                            </Text>
+                          );
+                        },
+                      )}
                     </View>
                   </View>
                 );
@@ -535,7 +571,9 @@ export default function AboutMeScreen(): React.JSX.Element {
           ) : (
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No rated items</Text>
-              <Text style={styles.emptySubtext}>You haven't tracked any products or services yet.</Text>
+              <Text style={styles.emptySubtext}>
+                You haven't tracked any products or services yet.
+              </Text>
             </View>
           )}
         </ScrollView>
@@ -562,7 +600,7 @@ const styles = StyleSheet.create({
   profileCard: {
     backgroundColor: '#FFFFFF',
     marginHorizontal: spacing.md,
-    marginTop: spacing.md + 100,
+    marginTop: spacing.md + (Platform.OS === 'ios' ? 100 : 80),
     marginBottom: spacing.md,
     paddingVertical: 20,
     paddingHorizontal: spacing.lg,

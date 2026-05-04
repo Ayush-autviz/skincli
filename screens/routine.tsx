@@ -15,11 +15,16 @@ DEV PRINCIPLES
 
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, StyleSheet, TouchableOpacity, SafeAreaView, ScrollView,
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  SafeAreaView,
+  ScrollView,
+  Platform,
 } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { useNavigation } from '@react-navigation/native';
-
 
 import HomeHeader from '../components/ui/HomeHeader';
 import SettingsDrawer from '../components/layout/SettingsDrawer';
@@ -46,7 +51,7 @@ export default function RoutineTab(): React.JSX.Element {
       if (myRoutineRef.current && myRoutineRef.current.refetchRoutines) {
         myRoutineRef.current.refetchRoutines();
       }
-    }, [])
+    }, []),
   );
 
   const handleMenuPress = (): void => {
@@ -67,22 +72,45 @@ export default function RoutineTab(): React.JSX.Element {
             style={styles.tabButton}
             onPress={() => setActiveTab('myRoutine')}
           >
-            <Text style={[styles.tabText, activeTab === 'myRoutine' && styles.activeTabText]}>Routine</Text>
-            {activeTab === 'myRoutine' && <View style={styles.activeTabIndicator} />}
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'myRoutine' && styles.activeTabText,
+              ]}
+            >
+              Routine
+            </Text>
+            {activeTab === 'myRoutine' && (
+              <View style={styles.activeTabIndicator} />
+            )}
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.tabButton}
             onPress={() => setActiveTab('recommendations')}
           >
-            <Text style={[styles.tabText, activeTab === 'recommendations' && styles.activeTabText]}>Ingredients</Text>
-            {activeTab === 'recommendations' && <View style={styles.activeTabIndicator} />}
+            <Text
+              style={[
+                styles.tabText,
+                activeTab === 'recommendations' && styles.activeTabText,
+              ]}
+            >
+              Ingredients
+            </Text>
+            {activeTab === 'recommendations' && (
+              <View style={styles.activeTabIndicator} />
+            )}
           </TouchableOpacity>
         </View>
 
         {/* Tab Content */}
         <View style={styles.tabContentContainer}>
           {activeTab === 'myRoutine' && <MyRoutine ref={myRoutineRef} />}
-          {activeTab === 'recommendations' && <RecommendationsList recommendations={[]} onRecommendationPress={() => { }} />}
+          {activeTab === 'recommendations' && (
+            <RecommendationsList
+              recommendations={[]}
+              onRecommendationPress={() => {}}
+            />
+          )}
         </View>
       </View>
 
@@ -101,7 +129,7 @@ const styles = StyleSheet.create({
   },
   contentContainer: {
     flex: 1,
-    marginTop: 100,
+    marginTop: Platform.OS === 'ios' ? 100 : 80,
   },
   // Custom Header "Magic Mirror"
   // screenHeader: {

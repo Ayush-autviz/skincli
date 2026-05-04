@@ -33,13 +33,25 @@ import {
   X,
   Camera,
   ChevronRight,
-  Search
+  Search,
 } from 'lucide-react-native';
-import { colors, fontSize, spacing, typography, borderRadius, shadows } from '../styles';
+import {
+  colors,
+  fontSize,
+  spacing,
+  typography,
+  borderRadius,
+  shadows,
+} from '../styles';
 import TabHeader from '../components/ui/TabHeader';
 import ProductImageScannerModal from '../components/ProductImageScannerModal';
 import ProductSearchModal from '../components/ProductSearchModal';
-import { updateRoutineItem, deleteRoutineItem, searchProductByUPC, searchProducts } from '../utils/newApiService';
+import {
+  updateRoutineItem,
+  deleteRoutineItem,
+  searchProductByUPC,
+  searchProducts,
+} from '../utils/newApiService';
 
 interface UpdateRoutineParams {
   itemData?: string;
@@ -64,7 +76,7 @@ interface RoutineItem {
 // const concernsOptions = [
 //   'Breakouts',
 //   'Evenness',
-//   'Redness', 
+//   'Redness',
 //   'Visible Pores',
 //   'Lines',
 //   'Eye Area Condition',
@@ -96,27 +108,26 @@ const concernsOptions = [
   'Sun Damage',
   'Under Eye Circles',
   'Wrinkles',
-  'I don\'t know',
-  'Other'
+  "I don't know",
+  'Other',
 ];
-
 
 // Define stop reasons
 const stopReasons = [
   'Not effective',
-  'Doesn\'t feel right',
+  "Doesn't feel right",
   'Allergy',
   'Too expensive',
-  'Other'
+  'Other',
 ];
 
 const UpdateRoutineScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute();
-  const params = route.params as UpdateRoutineParams || {};
+  const params = (route.params as UpdateRoutineParams) || {};
 
   console.log('🔍 UpdateRoutine: Initial params:', params);
-  
+
   // Form state
   const [itemName, setItemName] = useState<string>('');
   const [itemType, setItemType] = useState<string>('Product');
@@ -132,24 +143,28 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const [isSaving, setIsSaving] = useState<boolean>(false);
   const [isDeleting, setIsDeleting] = useState<boolean>(false);
   const [itemId, setItemId] = useState<string>('');
-  
+
   // UPC and product data states
   const [upcCode, setUpcCode] = useState<string>('');
   const [productData, setProductData] = useState<any>(null);
   const [isProductCrossed, setIsProductCrossed] = useState<boolean>(false);
-  const [showProductImageModal, setShowProductImageModal] = useState<boolean>(false);
-  const [showProductSearchModal, setShowProductSearchModal] = useState<boolean>(false);
+  const [showProductImageModal, setShowProductImageModal] =
+    useState<boolean>(false);
+  const [showProductSearchModal, setShowProductSearchModal] =
+    useState<boolean>(false);
   const [isFetchingProduct, setIsFetchingProduct] = useState<boolean>(false);
   const [showAllGoodFor, setShowAllGoodFor] = useState<boolean>(false);
   const [showAllIngredients, setShowAllIngredients] = useState<boolean>(false);
   const [showAllFreeOf, setShowAllFreeOf] = useState<boolean>(false);
-  
+
   // Search states (now only used for the modal)
-  
+
   // Date picker states
-  const [showStartDatePicker, setShowStartDatePicker] = useState<boolean>(false);
+  const [showStartDatePicker, setShowStartDatePicker] =
+    useState<boolean>(false);
   const [showEndDatePicker, setShowEndDatePicker] = useState<boolean>(false);
-  const [showTreatmentDatePicker, setShowTreatmentDatePicker] = useState<boolean>(false);
+  const [showTreatmentDatePicker, setShowTreatmentDatePicker] =
+    useState<boolean>(false);
 
   // Initialize form with existing data
   useEffect(() => {
@@ -159,17 +174,24 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         setItemId(itemData.id || '');
         setItemName(itemData.name || '');
         setItemType(itemData.type || 'Product');
-        
+
         // Handle UPC and product data
         if (itemData.upc) {
           setUpcCode(itemData.upc);
           setProductData(itemData.productData || null);
         }
-        
+
         // Handle usage conversion
-        if (itemData.usage === 'both' || itemData.usage === 'AM + PM' || itemData.usage === 'Both') {
+        if (
+          itemData.usage === 'both' ||
+          itemData.usage === 'AM + PM' ||
+          itemData.usage === 'Both'
+        ) {
           setItemUsage(['AM & PM']);
-        } else if (itemData.usage === 'as_needed' || itemData.usage === 'As needed') {
+        } else if (
+          itemData.usage === 'as_needed' ||
+          itemData.usage === 'As needed'
+        ) {
           setItemUsage(['As needed']);
         } else if (itemData.usage === 'am' || itemData.usage === 'AM') {
           setItemUsage(['AM']);
@@ -178,26 +200,37 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         } else if (itemData.usage) {
           setItemUsage([itemData.usage]);
         }
-        
+
         // Handle frequency conversion
-        if (itemData.frequency === 'as_needed' || itemData.frequency === 'As needed') {
+        if (
+          itemData.frequency === 'as_needed' ||
+          itemData.frequency === 'As needed'
+        ) {
           setItemFrequency('As needed');
-        } else if (itemData.frequency === 'daily' || itemData.frequency === 'Daily') {
+        } else if (
+          itemData.frequency === 'daily' ||
+          itemData.frequency === 'Daily'
+        ) {
           setItemFrequency('Daily');
-        } else if (itemData.frequency === 'weekly' || itemData.frequency === 'Weekly') {
+        } else if (
+          itemData.frequency === 'weekly' ||
+          itemData.frequency === 'Weekly'
+        ) {
           setItemFrequency('Weekly');
         } else if (itemData.frequency) {
           setItemFrequency(itemData.frequency);
         }
-        
+
         setItemConcerns(itemData.concerns || []);
-        
+
         // Initialize custom concern if "Other: [text]" exists
-        const othersConcern = itemData.concerns?.find((c: string) => c.startsWith('Other: '));
+        const othersConcern = itemData.concerns?.find((c: string) =>
+          c.startsWith('Other: '),
+        );
         if (othersConcern) {
           setCustomConcern(othersConcern.replace('Other: ', ''));
         }
-        
+
         // Handle dates
         if (itemData.dateStarted) {
           setStartDate(new Date(itemData.dateStarted));
@@ -209,14 +242,14 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         if (itemData.treatmentDate) {
           setTreatmentDate(new Date(itemData.treatmentDate));
         }
-        
+
         setStopReason(itemData.stopReason || '');
       } catch (error) {
         console.error('Error parsing item data:', error);
         Alert.alert('Error', 'Failed to load routine item data');
       }
     }
-    
+
     if (params.itemId) {
       setItemId(params.itemId);
     }
@@ -249,26 +282,31 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     setShowAllGoodFor(false); // Reset show all states
     setShowAllIngredients(false);
     setShowAllFreeOf(false);
-    
+
     // Auto-populate concerns based on good_for data
-    if (scannedProductData.good_for && Array.isArray(scannedProductData.good_for)) {
-      const mappedConcerns = scannedProductData.good_for.map((concern: string) => {
-        // Map API concerns to our concerns options
-        const concernMapping: { [key: string]: string } = {
-          'dry_skin': 'Dry Skin',
-          'oily_skin': 'Oily Skin',
-          'combination_skin': 'Combination Skin',
-          'normal_skin': 'Normal Skin',
-          'sensitive_skin': 'Sensitive Skin',
-          'acne_prone': 'Acne Prone',
-          'aging': 'Anti-Aging (Face)',
-          'hydration': 'Hydration',
-          'brightening': 'Brightening',
-          'pore_minimizing': 'Visible Pores'
-        };
-        return concernMapping[concern] || concern;
-      }).filter(Boolean);
-      
+    if (
+      scannedProductData.good_for &&
+      Array.isArray(scannedProductData.good_for)
+    ) {
+      const mappedConcerns = scannedProductData.good_for
+        .map((concern: string) => {
+          // Map API concerns to our concerns options
+          const concernMapping: { [key: string]: string } = {
+            dry_skin: 'Dry Skin',
+            oily_skin: 'Oily Skin',
+            combination_skin: 'Combination Skin',
+            normal_skin: 'Normal Skin',
+            sensitive_skin: 'Sensitive Skin',
+            acne_prone: 'Acne Prone',
+            aging: 'Anti-Aging (Face)',
+            hydration: 'Hydration',
+            brightening: 'Brightening',
+            pore_minimizing: 'Visible Pores',
+          };
+          return concernMapping[concern] || concern;
+        })
+        .filter(Boolean);
+
       setItemConcerns(mappedConcerns);
     }
   };
@@ -277,15 +315,16 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const handleProductImageError = (message: string) => {
     Alert.alert(
       'Product Not Found',
-      message || 'Could not identify the product. Please try again or add it manually.',
+      message ||
+        'Could not identify the product. Please try again or add it manually.',
       [
         {
           text: 'OK',
           onPress: () => {
             setShowProductImageModal(false);
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -299,7 +338,6 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     setShowAllIngredients(false);
     setShowAllFreeOf(false);
   };
-
 
   // Search functionality is now handled by the ProductSearchModal
 
@@ -318,25 +356,32 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
           console.log('🔍 Full product data fetched:', fullProductData);
 
           setProductData(fullProductData);
-          setItemName(fullProductData.product_name || product.product_name || '');
+          setItemName(
+            fullProductData.product_name || product.product_name || '',
+          );
           setUpcCode(fullProductData.upc || product.upc || '');
 
           // Auto-populate concerns based on good_for data
-          if (fullProductData.good_for && Array.isArray(fullProductData.good_for)) {
-            const mappedConcerns = fullProductData.good_for.map((concern: string) => {
-              // Map API concerns to our concerns options
-              const concernMapping: { [key: string]: string } = {
-                'dry_skin': 'Dry Skin',
-                'oily_skin': 'Oily Skin',
-                'combination_skin': 'Combination Skin',
-                'normal_skin': 'Normal Skin',
-                'sensitive_skin': 'Sensitive Skin',
-                'hydration': 'Hydration',
-                'fine_lines': 'Fine Lines',
-                'anti_aging': 'Anti-Aging',
-              };
-              return concernMapping[concern] || concern;
-            }).filter(Boolean);
+          if (
+            fullProductData.good_for &&
+            Array.isArray(fullProductData.good_for)
+          ) {
+            const mappedConcerns = fullProductData.good_for
+              .map((concern: string) => {
+                // Map API concerns to our concerns options
+                const concernMapping: { [key: string]: string } = {
+                  dry_skin: 'Dry Skin',
+                  oily_skin: 'Oily Skin',
+                  combination_skin: 'Combination Skin',
+                  normal_skin: 'Normal Skin',
+                  sensitive_skin: 'Sensitive Skin',
+                  hydration: 'Hydration',
+                  fine_lines: 'Fine Lines',
+                  anti_aging: 'Anti-Aging',
+                };
+                return concernMapping[concern] || concern;
+              })
+              .filter(Boolean);
 
             setItemConcerns(mappedConcerns);
           }
@@ -349,20 +394,22 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
 
           // Auto-populate concerns based on good_for data
           if (product.good_for && Array.isArray(product.good_for)) {
-            const mappedConcerns = product.good_for.map((concern: string) => {
-              // Map API concerns to our concerns options
-              const concernMapping: { [key: string]: string } = {
-                'dry_skin': 'Dry Skin',
-                'oily_skin': 'Oily Skin',
-                'combination_skin': 'Combination Skin',
-                'normal_skin': 'Normal Skin',
-                'sensitive_skin': 'Sensitive Skin',
-                'hydration': 'Hydration',
-                'fine_lines': 'Fine Lines',
-                'anti_aging': 'Anti-Aging',
-              };
-              return concernMapping[concern] || concern;
-            }).filter(Boolean);
+            const mappedConcerns = product.good_for
+              .map((concern: string) => {
+                // Map API concerns to our concerns options
+                const concernMapping: { [key: string]: string } = {
+                  dry_skin: 'Dry Skin',
+                  oily_skin: 'Oily Skin',
+                  combination_skin: 'Combination Skin',
+                  normal_skin: 'Normal Skin',
+                  sensitive_skin: 'Sensitive Skin',
+                  hydration: 'Hydration',
+                  fine_lines: 'Fine Lines',
+                  anti_aging: 'Anti-Aging',
+                };
+                return concernMapping[concern] || concern;
+              })
+              .filter(Boolean);
 
             setItemConcerns(mappedConcerns);
           }
@@ -376,20 +423,22 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
 
         // Auto-populate concerns based on good_for data
         if (product.good_for && Array.isArray(product.good_for)) {
-          const mappedConcerns = product.good_for.map((concern: string) => {
-            // Map API concerns to our concerns options
-            const concernMapping: { [key: string]: string } = {
-              'dry_skin': 'Dry Skin',
-              'oily_skin': 'Oily Skin',
-              'combination_skin': 'Combination Skin',
-              'normal_skin': 'Normal Skin',
-              'sensitive_skin': 'Sensitive Skin',
-              'hydration': 'Hydration',
-              'fine_lines': 'Fine Lines',
-              'anti_aging': 'Anti-Aging',
-            };
-            return concernMapping[concern] || concern;
-          }).filter(Boolean);
+          const mappedConcerns = product.good_for
+            .map((concern: string) => {
+              // Map API concerns to our concerns options
+              const concernMapping: { [key: string]: string } = {
+                dry_skin: 'Dry Skin',
+                oily_skin: 'Oily Skin',
+                combination_skin: 'Combination Skin',
+                normal_skin: 'Normal Skin',
+                sensitive_skin: 'Sensitive Skin',
+                hydration: 'Hydration',
+                fine_lines: 'Fine Lines',
+                anti_aging: 'Anti-Aging',
+              };
+              return concernMapping[concern] || concern;
+            })
+            .filter(Boolean);
 
           setItemConcerns(mappedConcerns);
         }
@@ -415,20 +464,22 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
 
       // Auto-populate concerns based on good_for data
       if (product.good_for && Array.isArray(product.good_for)) {
-        const mappedConcerns = product.good_for.map((concern: string) => {
-          // Map API concerns to our concerns options
-          const concernMapping: { [key: string]: string } = {
-            'dry_skin': 'Dry Skin',
-            'oily_skin': 'Oily Skin',
-            'combination_skin': 'Combination Skin',
-            'normal_skin': 'Normal Skin',
-            'sensitive_skin': 'Sensitive Skin',
-            'hydration': 'Hydration',
-            'fine_lines': 'Fine Lines',
-            'anti_aging': 'Anti-Aging',
-          };
-          return concernMapping[concern] || concern;
-        }).filter(Boolean);
+        const mappedConcerns = product.good_for
+          .map((concern: string) => {
+            // Map API concerns to our concerns options
+            const concernMapping: { [key: string]: string } = {
+              dry_skin: 'Dry Skin',
+              oily_skin: 'Oily Skin',
+              combination_skin: 'Combination Skin',
+              normal_skin: 'Normal Skin',
+              sensitive_skin: 'Sensitive Skin',
+              hydration: 'Hydration',
+              fine_lines: 'Fine Lines',
+              anti_aging: 'Anti-Aging',
+            };
+            return concernMapping[concern] || concern;
+          })
+          .filter(Boolean);
 
         setItemConcerns(mappedConcerns);
       }
@@ -439,7 +490,6 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     }
   };
 
-
   // Handle text input change
   const handleNameChange = (text: string) => {
     setItemName(text);
@@ -449,20 +499,20 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   const formatIngredientName = (ingredient: string) => {
     const specialCases: { [key: string]: string } = {
       'aqua/water': 'Water (Aqua)',
-      'glycerin': 'Glycerin',
+      glycerin: 'Glycerin',
       'coco-caprylate/caprate': 'Caprylic/Capric Triglyceride',
-      'dimethicone': 'Dimethicone',
+      dimethicone: 'Dimethicone',
       'ceramide np': 'Ceramide NP',
       'ceramide ap': 'Ceramide AP',
       'sodium hyaluronate': 'Sodium Hyaluronate',
-      'petrolatum': 'Petrolatum',
+      petrolatum: 'Petrolatum',
     };
-    
+
     const lowerIngredient = ingredient.toLowerCase();
     if (specialCases[lowerIngredient]) {
       return specialCases[lowerIngredient];
     }
-    
+
     return ingredient
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -472,21 +522,21 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   // Format good_for items for display
   const formatGoodForItem = (item: string) => {
     const specialCases: { [key: string]: string } = {
-      'dry_skin': 'Dry Skin',
-      'oily_skin': 'Oily Skin',
-      'combination_skin': 'Combination Skin',
-      'normal_skin': 'Normal Skin',
-      'sensitive_skin': 'Sensitive Skin',
-      'hydration': 'Hydration',
-      'fine_lines': 'Fine Lines',
-      'anti_aging': 'Anti-Aging',
+      dry_skin: 'Dry Skin',
+      oily_skin: 'Oily Skin',
+      combination_skin: 'Combination Skin',
+      normal_skin: 'Normal Skin',
+      sensitive_skin: 'Sensitive Skin',
+      hydration: 'Hydration',
+      fine_lines: 'Fine Lines',
+      anti_aging: 'Anti-Aging',
     };
-    
+
     const lowerItem = item.toLowerCase();
     if (specialCases[lowerItem]) {
       return specialCases[lowerItem];
     }
-    
+
     return item
       .split('_')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -504,12 +554,12 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
       'paraben free': 'Paraben Free',
       'sulfate free': 'Sulfate Free',
     };
-    
+
     const lowerItem = item.toLowerCase();
     if (specialCases[lowerItem]) {
       return specialCases[lowerItem];
     }
-    
+
     return item
       .split(' ')
       .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
@@ -552,7 +602,9 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     // Update concerns: remove old custom concern if exists, add new one
     setItemConcerns(currentConcerns => {
       // Remove any existing custom concern (starts with "Other: ") and plain "Other"
-      const filtered = currentConcerns.filter(c => c !== 'Other' && !c.startsWith('Other: '));
+      const filtered = currentConcerns.filter(
+        c => c !== 'Other' && !c.startsWith('Other: '),
+      );
       // Add new custom concern if text is not empty
       if (text.trim()) {
         return [...filtered, `Other: ${text.trim()}`];
@@ -586,11 +638,13 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
 
   // Check if current type is a treatment type
   const isTreatmentType = (): boolean => {
-    return Boolean(itemType && typeof itemType === 'string' && (
-      itemType === 'Treatment / Facial' || 
-      itemType === 'Treatment / Injection' || 
-      itemType === 'Treatment / Other'
-    ));
+    return Boolean(
+      itemType &&
+        typeof itemType === 'string' &&
+        (itemType === 'Treatment / Facial' ||
+          itemType === 'Treatment / Injection' ||
+          itemType === 'Treatment / Other'),
+    );
   };
 
   // Format parameters for backend
@@ -601,8 +655,17 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
       return value === 'As needed' ? 'as_needed' : value.toLowerCase();
     }
     // Handle usage
-    if (value === 'AM' || value === 'PM' || value === 'AM + PM' || value === 'As needed') {
-      return value === 'AM + PM' ? 'both' : value === 'As needed' ? 'as_needed' : value.toLowerCase();
+    if (
+      value === 'AM' ||
+      value === 'PM' ||
+      value === 'AM + PM' ||
+      value === 'As needed'
+    ) {
+      return value === 'AM + PM'
+        ? 'both'
+        : value === 'As needed'
+        ? 'as_needed'
+        : value.toLowerCase();
     }
     // Handle type
     if (value === 'Product' || value === 'Activity' || value === 'Nutrition') {
@@ -617,17 +680,26 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   // Save routine item
   const handleSave = async (): Promise<void> => {
     if (!itemName.trim()) {
-      Alert.alert('Missing Information', 'Please enter a name for your routine item.');
+      Alert.alert(
+        'Missing Information',
+        'Please enter a name for your routine item.',
+      );
       return;
     }
 
     if (!itemType.trim()) {
-      Alert.alert('Missing Information', 'Please select what type of item this is.');
+      Alert.alert(
+        'Missing Information',
+        'Please select what type of item this is.',
+      );
       return;
     }
 
     if (itemConcerns.length === 0) {
-      Alert.alert('Missing Information', 'Please select at least one concern to help track your progress.');
+      Alert.alert(
+        'Missing Information',
+        'Please select at least one concern to help track your progress.',
+      );
       return;
     }
 
@@ -648,15 +720,18 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         Alert.alert('Missing Information', 'Please select a time of day.');
         return;
       }
-      
+
       if (!itemFrequency) {
         Alert.alert('Missing Information', 'Please select a usage frequency.');
         return;
       }
-      
+
       // For non-treatment types, validate start date
       if (!startDate) {
-        Alert.alert('Missing Information', 'Please select when you started using this item.');
+        Alert.alert(
+          'Missing Information',
+          'Please select when you started using this item.',
+        );
         return;
       }
     }
@@ -667,8 +742,8 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
       type: formatParameter(itemType),
       concern: itemConcerns,
       extra: {
-        dateUpdated: new Date().toISOString()
-      }
+        dateUpdated: new Date().toISOString(),
+      },
     };
 
     // Add UPC code and product data if product was scanned
@@ -680,7 +755,7 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         ingredients: productData.ingredients || [],
         good_for: productData.good_for || [],
         product_id: productData.product_id,
-        total_ingredients: productData.total_ingredients
+        total_ingredients: productData.total_ingredients,
       };
     } else {
       // Explicitly set empty UPC for manually entered products
@@ -693,13 +768,13 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
       const includesAM = itemUsage.includes('AM');
       const includesPM = itemUsage.includes('PM');
       const includesAMPM = itemUsage.includes('AM & PM');
-      
+
       if (includesAMPM) finalUsage = 'both';
       else if (includesAM && includesPM) finalUsage = 'both';
       else if (includesPM) finalUsage = 'pm';
       else if (includesAM) finalUsage = 'am';
       else if (itemUsage.includes('As needed')) finalUsage = 'as_needed';
-      
+
       apiItemData.usage = finalUsage;
       apiItemData.frequency = formatParameter(itemFrequency);
     }
@@ -721,18 +796,25 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
     setIsSaving(true);
     try {
       const response = await updateRoutineItem(itemId, apiItemData);
-      
+
       if ((response as any).success) {
-        Alert.alert('Success!', 'Your routine item has been updated successfully.', [
-          {
-            text: 'Continue',
-            onPress: () => (navigation as any).goBack()
-          }
-        ]);
+        Alert.alert(
+          'Success!',
+          'Your routine item has been updated successfully.',
+          [
+            {
+              text: 'Continue',
+              onPress: () => (navigation as any).goBack(),
+            },
+          ],
+        );
       }
     } catch (err: any) {
       console.error('🔴 UpdateRoutine: Error saving item:', err);
-      Alert.alert('Error', err.message || 'Failed to save item. Please try again.');
+      Alert.alert(
+        'Error',
+        err.message || 'Failed to save item. Please try again.',
+      );
     } finally {
       setIsSaving(false);
     }
@@ -757,26 +839,29 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
             setIsDeleting(true);
             try {
               const response = await deleteRoutineItem(itemId);
-              
+
               if ((response as any).success) {
                 Alert.alert('Success!', 'Routine item deleted successfully.', [
                   {
                     text: 'Continue',
-                    onPress: () => (navigation as any).goBack()
-                  }
+                    onPress: () => (navigation as any).goBack(),
+                  },
                 ]);
               } else {
                 Alert.alert('Error', 'Failed to delete routine item');
               }
             } catch (err: any) {
               console.error('🔴 UpdateRoutine: Error deleting item:', err);
-              Alert.alert('Error', err.message || 'Failed to delete item. Please try again.');
+              Alert.alert(
+                'Error',
+                err.message || 'Failed to delete item. Please try again.',
+              );
             } finally {
               setIsDeleting(false);
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
@@ -793,12 +878,12 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
               <ArrowLeft size={22} color={colors.primary} />
             </View>
           </TouchableOpacity>
-          
+
           <View style={styles.titleContainer}>
             <Text style={styles.headerTitle}>Edit Routine Item</Text>
             <View style={styles.titleUnderline} />
           </View>
-          
+
           <TouchableOpacity
             style={styles.deleteButton}
             onPress={handleDelete}
@@ -810,516 +895,642 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
         <View style={styles.shadowContainer} />
       </View>
 
-      <KeyboardAvoidingView 
+      <KeyboardAvoidingView
         style={styles.keyboardContainer}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       >
-              <ScrollView 
-                style={styles.scrollView} 
-                contentContainerStyle={styles.scrollContent}
-                showsVerticalScrollIndicator={false}
-              >
-        {/* Category Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle2}>Type</Text>
-          <View style={styles.chipSelectorContainer}>
-            {[
-              { name: 'Product', icon: FlaskConical, color: '#8B7355' },
-              { name: 'Treatment / Facial', icon: FlaskConical, color: '#8B7355' },
-              { name: 'Treatment / Injection', icon: FlaskConical, color: '#8B7355' },
-              { name: 'Treatment / Other', icon: FlaskConical, color: '#8B7355' }
-            ].map(({ name, icon: Icon, color }) => {
-              const isActive = itemType === name;
-              
-              return (
-                <TouchableOpacity
-                  key={name}
-                  style={[
-                    styles.chipButton,
-                    isActive && styles.chipButtonActive
-                  ]}
-                  onPress={() => setItemType(name)}
-                >
-                  <Icon 
-                    size={20} 
-                    color={isActive ? '#FFFFFF' : '#6B7280'} 
-                  />
-                  <Text style={[
-                    styles.chipButtonText,
-                    isActive && styles.chipButtonTextActive
-                  ]}>
-                    {name}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Category Selection */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle2}>Type</Text>
+            <View style={styles.chipSelectorContainer}>
+              {[
+                { name: 'Product', icon: FlaskConical, color: '#8B7355' },
+                {
+                  name: 'Treatment / Facial',
+                  icon: FlaskConical,
+                  color: '#8B7355',
+                },
+                {
+                  name: 'Treatment / Injection',
+                  icon: FlaskConical,
+                  color: '#8B7355',
+                },
+                {
+                  name: 'Treatment / Other',
+                  icon: FlaskConical,
+                  color: '#8B7355',
+                },
+              ].map(({ name, icon: Icon, color }) => {
+                const isActive = itemType === name;
 
-        {/* Name Input */}
-        <View style={[styles.section, { zIndex: 10000 }]}>
-          {/* Only show title when not displaying product details */}
-          {!(upcCode && productData && !isProductCrossed) && (
-            <Text style={styles.sectionTitle2}>Name</Text>
-          )}
-          
-          {/* Show product details if UPC exists and product is not crossed */}
-          {upcCode && productData && !isProductCrossed ? (
-            <View style={styles.productDetailsContent}>
-              {/* Product Title and Brand */}
-              <View style={styles.productTitleContainer}>
-                <Text style={styles.productName}>
-                  {productData.product_name || 'Unknown Product'}
-                </Text>
-                <Text style={styles.brandName}>
-                  {productData.brand?.toUpperCase() || 'UNKNOWN BRAND'}
-                </Text>
-              </View>
-
-              {/* Good For Section */}
-              {productData.good_for && productData.good_for.length > 0 && (
-                <View style={styles.productSection}>
-                  <Text style={styles.productSectionTitle}>Good For</Text>
-                  <View style={styles.chipSelectorContainer}>
-                    {(showAllGoodFor ? productData.good_for : productData.good_for.slice(0, 5)).map((item: string, index: number) => (
-                      <View key={index} style={styles.chipButton}>
-                        <Text style={styles.chipButtonText}>{formatGoodForItem(item)}</Text>
-                      </View>
-                    ))}
-                  </View>
-                  {productData.good_for.length > 5 && (
-                    <TouchableOpacity 
-                      style={styles.showAllButton}
-                      onPress={() => setShowAllGoodFor(!showAllGoodFor)}
+                return (
+                  <TouchableOpacity
+                    key={name}
+                    style={[
+                      styles.chipButton,
+                      isActive && styles.chipButtonActive,
+                    ]}
+                    onPress={() => setItemType(name)}
+                  >
+                    <Icon size={20} color={isActive ? '#FFFFFF' : '#6B7280'} />
+                    <Text
+                      style={[
+                        styles.chipButtonText,
+                        isActive && styles.chipButtonTextActive,
+                      ]}
                     >
-                      <Text style={styles.showAllButtonText}>
-                        {showAllGoodFor ? 'Show Less' : `Show All (${productData.good_for.length})`}
-                      </Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              )}
+                      {name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          </View>
 
-{productData.ingredients && productData.ingredients.some((ingredient: any) => ingredient.free_of && ingredient.free_of.length > 0) && (
-                <View style={styles.productSection}>
-                  <Text style={styles.productSectionTitle}>Free Of</Text>
-                  <View style={styles.chipSelectorContainer}>
-                    {(() => {
-                      const freeOfItems = Array.from(new Set(
-                        productData.ingredients
-                          .flatMap((ingredient: any) => ingredient.free_of || [])
-                          .filter(Boolean)
-                      ));
-                      const displayItems = showAllFreeOf ? freeOfItems : freeOfItems.slice(0, 5);
-                      
-                      return displayItems.map((freeOfItem: any, index: number) => (
+          {/* Name Input */}
+          <View style={[styles.section, { zIndex: 10000 }]}>
+            {/* Only show title when not displaying product details */}
+            {!(upcCode && productData && !isProductCrossed) && (
+              <Text style={styles.sectionTitle2}>Name</Text>
+            )}
+
+            {/* Show product details if UPC exists and product is not crossed */}
+            {upcCode && productData && !isProductCrossed ? (
+              <View style={styles.productDetailsContent}>
+                {/* Product Title and Brand */}
+                <View style={styles.productTitleContainer}>
+                  <Text style={styles.productName}>
+                    {productData.product_name || 'Unknown Product'}
+                  </Text>
+                  <Text style={styles.brandName}>
+                    {productData.brand?.toUpperCase() || 'UNKNOWN BRAND'}
+                  </Text>
+                </View>
+
+                {/* Good For Section */}
+                {productData.good_for && productData.good_for.length > 0 && (
+                  <View style={styles.productSection}>
+                    <Text style={styles.productSectionTitle}>Good For</Text>
+                    <View style={styles.chipSelectorContainer}>
+                      {(showAllGoodFor
+                        ? productData.good_for
+                        : productData.good_for.slice(0, 5)
+                      ).map((item: string, index: number) => (
                         <View key={index} style={styles.chipButton}>
                           <Text style={styles.chipButtonText}>
-                            {formatFreeOfItem(freeOfItem)}
+                            {formatGoodForItem(item)}
                           </Text>
                         </View>
-                      ));
-                    })()}
-                  </View>
-                  {(() => {
-                    const freeOfItems = Array.from(new Set(
-                      productData.ingredients
-                        .flatMap((ingredient: any) => ingredient.free_of || [])
-                        .filter(Boolean)
-                    ));
-                    return freeOfItems.length > 5 && (
-                      <TouchableOpacity 
+                      ))}
+                    </View>
+                    {productData.good_for.length > 5 && (
+                      <TouchableOpacity
                         style={styles.showAllButton}
-                        onPress={() => setShowAllFreeOf(!showAllFreeOf)}
+                        onPress={() => setShowAllGoodFor(!showAllGoodFor)}
                       >
                         <Text style={styles.showAllButtonText}>
-                          {showAllFreeOf ? 'Show Less' : `Show All (${freeOfItems.length})`}
+                          {showAllGoodFor
+                            ? 'Show Less'
+                            : `Show All (${productData.good_for.length})`}
                         </Text>
                       </TouchableOpacity>
-                    );
-                  })()}
-                </View>
-              )}
-
-              {/* Key Ingredients Section */}
-              {productData.ingredients && productData.ingredients.length > 0 && (
-                <View style={styles.productSection}>
-                  <Text style={styles.productSectionTitle}>Ingredients</Text>
-                  <View style={styles.chipSelectorContainer}>
-                    {(showAllIngredients ? productData.ingredients : productData.ingredients.slice(0, 5)).map((ingredient: any, index: number) => (
-                      <View key={index} style={styles.chipButton}>
-                        <Text style={styles.chipButtonText}>
-                          {formatIngredientName(ingredient.ingredient_name)}
-                        </Text>
-                      </View>
-                    ))}
+                    )}
                   </View>
-                  {productData.ingredients.length > 5 && (
-                    <TouchableOpacity 
-                      style={styles.showAllButton}
-                      onPress={() => setShowAllIngredients(!showAllIngredients)}
+                )}
+
+                {productData.ingredients &&
+                  productData.ingredients.some(
+                    (ingredient: any) =>
+                      ingredient.free_of && ingredient.free_of.length > 0,
+                  ) && (
+                    <View style={styles.productSection}>
+                      <Text style={styles.productSectionTitle}>Free Of</Text>
+                      <View style={styles.chipSelectorContainer}>
+                        {(() => {
+                          const freeOfItems = Array.from(
+                            new Set(
+                              productData.ingredients
+                                .flatMap(
+                                  (ingredient: any) => ingredient.free_of || [],
+                                )
+                                .filter(Boolean),
+                            ),
+                          );
+                          const displayItems = showAllFreeOf
+                            ? freeOfItems
+                            : freeOfItems.slice(0, 5);
+
+                          return displayItems.map(
+                            (freeOfItem: any, index: number) => (
+                              <View key={index} style={styles.chipButton}>
+                                <Text style={styles.chipButtonText}>
+                                  {formatFreeOfItem(freeOfItem)}
+                                </Text>
+                              </View>
+                            ),
+                          );
+                        })()}
+                      </View>
+                      {(() => {
+                        const freeOfItems = Array.from(
+                          new Set(
+                            productData.ingredients
+                              .flatMap(
+                                (ingredient: any) => ingredient.free_of || [],
+                              )
+                              .filter(Boolean),
+                          ),
+                        );
+                        return (
+                          freeOfItems.length > 5 && (
+                            <TouchableOpacity
+                              style={styles.showAllButton}
+                              onPress={() => setShowAllFreeOf(!showAllFreeOf)}
+                            >
+                              <Text style={styles.showAllButtonText}>
+                                {showAllFreeOf
+                                  ? 'Show Less'
+                                  : `Show All (${freeOfItems.length})`}
+                              </Text>
+                            </TouchableOpacity>
+                          )
+                        );
+                      })()}
+                    </View>
+                  )}
+
+                {/* Key Ingredients Section */}
+                {productData.ingredients &&
+                  productData.ingredients.length > 0 && (
+                    <View style={styles.productSection}>
+                      <Text style={styles.productSectionTitle}>
+                        Ingredients
+                      </Text>
+                      <View style={styles.chipSelectorContainer}>
+                        {(showAllIngredients
+                          ? productData.ingredients
+                          : productData.ingredients.slice(0, 5)
+                        ).map((ingredient: any, index: number) => (
+                          <View key={index} style={styles.chipButton}>
+                            <Text style={styles.chipButtonText}>
+                              {formatIngredientName(ingredient.ingredient_name)}
+                            </Text>
+                          </View>
+                        ))}
+                      </View>
+                      {productData.ingredients.length > 5 && (
+                        <TouchableOpacity
+                          style={styles.showAllButton}
+                          onPress={() =>
+                            setShowAllIngredients(!showAllIngredients)
+                          }
+                        >
+                          <Text style={styles.showAllButtonText}>
+                            {showAllIngredients
+                              ? 'Show Less'
+                              : `Show All (${productData.ingredients.length})`}
+                          </Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+                  )}
+
+                {/* Free Of Section */}
+
+                {/* Cross button */}
+                <TouchableOpacity
+                  style={styles.crossButton}
+                  onPress={handleCrossProduct}
+                >
+                  <X size={20} color={colors.error} />
+                  <Text style={styles.crossButtonText}>Not this product</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              /* Regular input when no UPC or product is crossed */
+              <View style={styles.inputWrapper}>
+                <FlaskConical
+                  size={20}
+                  color="#6B7280"
+                  style={styles.inputIcon}
+                />
+                <TextInput
+                  style={styles.textInput}
+                  placeholder={
+                    isTreatmentType()
+                      ? 'Enter treatment name'
+                      : `Enter ${itemType?.toLowerCase() || 'item'} name`
+                  }
+                  value={itemName}
+                  onChangeText={handleNameChange}
+                  placeholderTextColor="#9CA3AF"
+                  returnKeyType="next"
+                />
+                {/* Camera and Search icons - only show for Product type and when not treatment */}
+                {!isTreatmentType() && (
+                  <View style={styles.actionButtonsContainer}>
+                    <TouchableOpacity
+                      onPress={handleProductSearch}
+                      style={styles.searchButton}
                     >
-                      <Text style={styles.showAllButtonText}>
-                        {showAllIngredients ? 'Show Less' : `Show All (${productData.ingredients.length})`}
+                      <Search size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      onPress={handleProductImageScan}
+                      style={styles.cameraButton}
+                    >
+                      <Camera size={20} color="#6B7280" />
+                    </TouchableOpacity>
+                  </View>
+                )}
+              </View>
+            )}
+
+            {/* Scan instruction text - only show for Product type and when not treatment and not showing product details */}
+            {!isTreatmentType() &&
+              !(upcCode && productData && !isProductCrossed) && (
+                <Text style={styles.scanInstructionText}>
+                  Scan product with camera, search our database, or type a
+                  product name
+                </Text>
+              )}
+          </View>
+
+          {/* Concerns Selection */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>
+              Why are you Using this Product
+            </Text>
+            <Text style={styles.sectionSubtitle}>Select all that apply</Text>
+            <View style={styles.chipSelectorContainer}>
+              {concernsOptions.map(concern => {
+                // Check if concern is active (either exact match or "Other: [text]" for Other)
+                const isActive =
+                  concern === 'Other'
+                    ? itemConcerns.includes('Other') ||
+                      itemConcerns.some(c => c.startsWith('Other: '))
+                    : itemConcerns.includes(concern);
+
+                return (
+                  <TouchableOpacity
+                    key={concern}
+                    style={[
+                      styles.chipButton,
+                      isActive && styles.chipButtonActive,
+                    ]}
+                    onPress={() => handleConcernToggle(concern)}
+                  >
+                    <Text
+                      style={[
+                        styles.chipButtonText,
+                        isActive && styles.chipButtonTextActive,
+                      ]}
+                    >
+                      {concern}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+            {/* Custom Concern Input - Show when "Other" is selected */}
+            {(itemConcerns.includes('Other') ||
+              itemConcerns.some(c => c.startsWith('Other: '))) && (
+              <View style={styles.customConcernContainer}>
+                <Text style={styles.customConcernLabel}>
+                  Please specify your concern:
+                </Text>
+                <TextInput
+                  style={styles.customConcernInput}
+                  placeholder="Type your concern here..."
+                  value={customConcern}
+                  onChangeText={handleCustomConcernChange}
+                  multiline={false}
+                />
+              </View>
+            )}
+          </View>
+
+          {/* Frequency Selection - Only show for non-treatment types */}
+          {!isTreatmentType() && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Usage Frequency</Text>
+              <Text style={styles.sectionSubtitle}>Select One</Text>
+              <View style={styles.chipSelectorContainer}>
+                {[
+                  { name: 'Daily', icon: CheckCircle, color: '#10B981' },
+                  { name: 'Weekly', icon: CalendarDays, color: '#3B82F6' },
+                  { name: 'As needed', icon: HelpCircle, color: '#8B5CF6' },
+                ].map(({ name, icon: Icon, color }) => {
+                  const isActive = itemFrequency === name;
+
+                  return (
+                    <TouchableOpacity
+                      key={name}
+                      style={[
+                        styles.chipButton,
+                        isActive && styles.chipButtonActive,
+                      ]}
+                      onPress={() => setItemFrequency(name)}
+                    >
+                      <Icon
+                        size={20}
+                        color={isActive ? '#FFFFFF' : '#6B7280'}
+                      />
+                      <Text
+                        style={[
+                          styles.chipButtonText,
+                          isActive && styles.chipButtonTextActive,
+                        ]}
+                      >
+                        {name}
                       </Text>
                     </TouchableOpacity>
-                  )}
-                </View>
-              )}
+                  );
+                })}
+              </View>
+            </View>
+          )}
 
-              {/* Free Of Section */}
-   
+          {/* Time of Day Selection - Only show for non-treatment types */}
+          {!isTreatmentType() && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Time of Day</Text>
+              <Text style={styles.sectionSubtitle}>Select One</Text>
+              <View style={styles.chipSelectorContainer}>
+                {[
+                  { name: 'AM', icon: Sun, color: '#F59E0B' },
+                  { name: 'PM', icon: Moon, color: '#6366F1' },
+                  { name: 'AM & PM', icon: HelpCircle, color: '#8B5CF6' },
+                  { name: 'As needed', icon: HelpCircle, color: '#8B5CF6' },
+                ].map(({ name, icon: Icon, color }) => {
+                  const isActive = itemUsage.includes(name);
 
-              {/* Cross button */}
-              <TouchableOpacity 
-                style={styles.crossButton}
-                onPress={handleCrossProduct}
+                  return (
+                    <TouchableOpacity
+                      key={name}
+                      style={[
+                        styles.chipButton,
+                        isActive && styles.chipButtonActive,
+                      ]}
+                      onPress={() => handleUsageToggle(name)}
+                    >
+                      <Icon
+                        size={20}
+                        color={isActive ? '#FFFFFF' : '#6B7280'}
+                      />
+                      <Text
+                        style={[
+                          styles.chipButtonText,
+                          isActive && styles.chipButtonTextActive,
+                        ]}
+                      >
+                        {name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Date Selection - Different for treatment vs non-treatment types */}
+          {isTreatmentType() ? (
+            /* Treatment Date */
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Treatment Date</Text>
+              <Text style={styles.sectionSubtitle}>
+                When did you receive this treatment?
+              </Text>
+
+              <TouchableOpacity
+                onPress={() =>
+                  setShowTreatmentDatePicker(!showTreatmentDatePicker)
+                }
+                style={styles.inputWrapper}
               >
-                <X size={20} color={colors.error} />
-                <Text style={styles.crossButtonText}>Not this product</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            /* Regular input when no UPC or product is crossed */
-            <View style={styles.inputWrapper}>
-              <FlaskConical 
-                size={20} 
-                color="#6B7280" 
-                style={styles.inputIcon} 
-              />
-            <TextInput
-              style={styles.textInput}
-              placeholder={isTreatmentType() ? "Enter treatment name" : `Enter ${itemType?.toLowerCase() || 'item'} name`}
-              value={itemName}
-              onChangeText={handleNameChange}
-              placeholderTextColor="#9CA3AF"
-              returnKeyType="next"
-            />
-              {/* Camera and Search icons - only show for Product type and when not treatment */}
-              {!isTreatmentType() && (
-                <View style={styles.actionButtonsContainer}>
-                  <TouchableOpacity 
-                    onPress={handleProductSearch}
-                    style={styles.searchButton}
-                  >
-                    <Search size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                  <TouchableOpacity 
-                    onPress={handleProductImageScan}
-                    style={styles.cameraButton}
-                  >
-                    <Camera size={20} color="#6B7280" />
-                  </TouchableOpacity>
-                </View>
-              )}
-            </View>
-          )}
-          
-          {/* Scan instruction text - only show for Product type and when not treatment and not showing product details */}
-          {!isTreatmentType() && !(upcCode && productData && !isProductCrossed) && (
-            <Text style={styles.scanInstructionText}>Scan product with camera, search our database, or type a product name</Text>
-          )}
-        </View>
-
-        {/* Concerns Selection */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Why are you Using this Product</Text>
-          <Text style={styles.sectionSubtitle}>Select all that apply</Text>
-          <View style={styles.chipSelectorContainer}>
-            {concernsOptions.map((concern) => {
-              // Check if concern is active (either exact match or "Other: [text]" for Other)
-              const isActive = concern === 'Other' 
-                ? (itemConcerns.includes('Other') || itemConcerns.some(c => c.startsWith('Other: ')))
-                : itemConcerns.includes(concern);
-              
-              return (
+                <Calendar size={20} color="#6B7280" style={styles.inputIcon} />
                 <TouchableOpacity
-                  key={concern}
-                  style={[
-                    styles.chipButton,
-                    isActive && styles.chipButtonActive
-                  ]}
-                  onPress={() => handleConcernToggle(concern)}
+                  style={styles.dateInputButton}
+                  onPress={() =>
+                    setShowTreatmentDatePicker(!showTreatmentDatePicker)
+                  }
                 >
-                  <Text style={[
-                    styles.chipButtonText,
-                    isActive && styles.chipButtonTextActive
-                  ]}>
-                    {concern}
+                  <Text
+                    style={[
+                      styles.dateText,
+                      !treatmentDate && styles.dateTextPlaceholder,
+                    ]}
+                  >
+                    {treatmentDate
+                      ? treatmentDate.toDateString()
+                      : 'Select treatment date'}
                   </Text>
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-          {/* Custom Concern Input - Show when "Other" is selected */}
-          {(itemConcerns.includes('Other') || itemConcerns.some(c => c.startsWith('Other: '))) && (
-            <View style={styles.customConcernContainer}>
-              <Text style={styles.customConcernLabel}>Please specify your concern:</Text>
-              <TextInput
-                style={styles.customConcernInput}
-                placeholder="Type your concern here..."
-                value={customConcern}
-                onChangeText={handleCustomConcernChange}
-                multiline={false}
-              />
+              </TouchableOpacity>
+
+              {showTreatmentDatePicker && (
+                <DateTimePicker
+                  value={treatmentDate || new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleTreatmentDateChange}
+                  minimumDate={new Date(new Date().getFullYear() - 10, 0, 1)}
+                  textColor="#1C1917"
+                  style={
+                    Platform.OS === 'ios'
+                      ? {
+                          backgroundColor: '#F5F5F4',
+                          borderRadius: 12,
+                          marginTop: 10,
+                        }
+                      : undefined
+                  }
+                  themeVariant="light"
+                />
+              )}
+            </View>
+          ) : (
+            /* Start Date for non-treatment types */
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Start Date</Text>
+              <Text style={styles.sectionSubtitle}>
+                Required for Efficacy Validation
+              </Text>
+
+              <TouchableOpacity
+                onPress={() => setShowStartDatePicker(!showStartDatePicker)}
+                style={styles.inputWrapper}
+              >
+                <Calendar size={20} color="#6B7280" style={styles.inputIcon} />
+                <TouchableOpacity
+                  style={styles.dateInputButton}
+                  onPress={() => setShowStartDatePicker(!showStartDatePicker)}
+                >
+                  <Text
+                    style={[
+                      styles.dateText,
+                      !startDate && styles.dateTextPlaceholder,
+                    ]}
+                  >
+                    {startDate ? startDate.toDateString() : 'Select start date'}
+                  </Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+
+              {showStartDatePicker && (
+                <DateTimePicker
+                  value={startDate || new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleStartDateChange}
+                  minimumDate={new Date(new Date().getFullYear() - 10, 0, 1)}
+                  textColor="#1C1917"
+                  style={
+                    Platform.OS === 'ios'
+                      ? {
+                          backgroundColor: '#F5F5F4',
+                          borderRadius: 12,
+                          marginTop: 10,
+                        }
+                      : undefined
+                  }
+                  themeVariant="light"
+                />
+              )}
             </View>
           )}
-        </View>
 
-        {/* Frequency Selection - Only show for non-treatment types */}
-        {!isTreatmentType() && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Usage Frequency</Text>
-            <Text style={styles.sectionSubtitle}>Select One</Text>
-            <View style={styles.chipSelectorContainer}>
-              {[
-                { name: 'Daily', icon: CheckCircle, color: '#10B981' },
-                { name: 'Weekly', icon: CalendarDays, color: '#3B82F6' },
-                { name: 'As needed', icon: HelpCircle, color: '#8B5CF6' }
-              ].map(({ name, icon: Icon, color }) => {
-                const isActive = itemFrequency === name;
-                
-                return (
-                  <TouchableOpacity
-                    key={name}
-                    style={[
-                      styles.chipButton,
-                      isActive && styles.chipButtonActive
-                    ]}
-                    onPress={() => setItemFrequency(name)}
-                  >
-                    <Icon 
-                      size={20} 
-                      color={isActive ? '#FFFFFF' : '#6B7280'} 
-                    />
-                    <Text style={[
-                      styles.chipButtonText,
-                      isActive && styles.chipButtonTextActive
-                    ]}>
-                      {name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* Time of Day Selection - Only show for non-treatment types */}
-        {!isTreatmentType() && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Time of Day</Text>
-            <Text style={styles.sectionSubtitle}>Select One</Text>
-            <View style={styles.chipSelectorContainer}>
-              {[
-                { name: 'AM', icon: Sun, color: '#F59E0B' },
-                { name: 'PM', icon: Moon, color: '#6366F1' },
-                { name: 'AM & PM', icon: HelpCircle, color: '#8B5CF6' },
-                { name: 'As needed', icon: HelpCircle, color: '#8B5CF6' }
-              ].map(({ name, icon: Icon, color }) => {
-                const isActive = itemUsage.includes(name);
-                
-                return (
-                  <TouchableOpacity
-                    key={name}
-                    style={[
-                      styles.chipButton,
-                      isActive && styles.chipButtonActive
-                    ]}
-                    onPress={() => handleUsageToggle(name)}
-                  >
-                    <Icon 
-                      size={20} 
-                      color={isActive ? '#FFFFFF' : '#6B7280'} 
-                    />
-                    <Text style={[
-                      styles.chipButtonText,
-                      isActive && styles.chipButtonTextActive
-                    ]}>
-                      {name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* Date Selection - Different for treatment vs non-treatment types */}
-        {isTreatmentType() ? (
-          /* Treatment Date */
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Treatment Date</Text>
-            <Text style={styles.sectionSubtitle}>When did you receive this treatment?</Text>
-            
-            <TouchableOpacity onPress={() => setShowTreatmentDatePicker(!showTreatmentDatePicker)} style={styles.inputWrapper}>
-              <Calendar 
-                size={20} 
-                color="#6B7280" 
-                style={styles.inputIcon} 
-              />
+          {/* Stopped Checkbox - Only show for non-treatment types */}
+          {!isTreatmentType() && (
+            <View style={styles.section}>
               <TouchableOpacity
-                style={styles.dateInputButton}
-                onPress={() => setShowTreatmentDatePicker(!showTreatmentDatePicker)}
+                style={styles.checkboxContainer}
+                onPress={() => setIsStopped(!isStopped)}
               >
-                <Text style={[styles.dateText, !treatmentDate && styles.dateTextPlaceholder]}>
-                  {treatmentDate ? treatmentDate.toDateString() : 'Select treatment date'}
-                </Text>
+                <View
+                  style={[styles.checkbox, isStopped && styles.checkboxChecked]}
+                >
+                  {isStopped && <Text style={styles.checkmark}>✓</Text>}
+                </View>
+                <Text style={styles.checkboxLabel}>Stopped Using It?</Text>
               </TouchableOpacity>
-            </TouchableOpacity>
+            </View>
+          )}
 
-            {showTreatmentDatePicker && (
-              <DateTimePicker
-                value={treatmentDate || new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleTreatmentDateChange}
-                minimumDate={new Date(new Date().getFullYear() - 10, 0, 1)}
-                textColor="#1C1917"
-                style={Platform.OS === 'ios' ? { backgroundColor: '#F5F5F4', borderRadius: 12, marginTop: 10 } : undefined}
-                themeVariant="light"
-              />
-            )}
-          </View>
-        ) : (
-          /* Start Date for non-treatment types */
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Start Date</Text>
-            <Text style={styles.sectionSubtitle}>Required for Efficacy Validation</Text>
-            
-            <TouchableOpacity onPress={() => setShowStartDatePicker(!showStartDatePicker)} style={styles.inputWrapper}>
-              <Calendar 
-                size={20} 
-                color="#6B7280" 
-                style={styles.inputIcon} 
-              />
+          {/* End Date - Only show if stopped and not treatment type */}
+          {!isTreatmentType() && isStopped && (
+            <View style={styles.section}>
+              <Text style={styles.sectionSubtitle}>
+                For Efficacy Validation Please Provide
+              </Text>
               <TouchableOpacity
-                style={styles.dateInputButton}
-                onPress={() => setShowStartDatePicker(!showStartDatePicker)}
-              >
-                <Text style={[styles.dateText, !startDate && styles.dateTextPlaceholder]}>
-                  {startDate ? startDate.toDateString() : 'Select start date'}
-                </Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-
-            {showStartDatePicker && (
-              <DateTimePicker
-                value={startDate || new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleStartDateChange}
-                minimumDate={new Date(new Date().getFullYear() - 10, 0, 1)}
-                textColor="#1C1917"
-                style={Platform.OS === 'ios' ? { backgroundColor: '#F5F5F4', borderRadius: 12, marginTop: 10 } : undefined}
-                themeVariant="light"
-              />
-            )}
-          </View>
-        )}
-
-        {/* Stopped Checkbox - Only show for non-treatment types */}
-        {!isTreatmentType() && (
-          <View style={styles.section}>
-            <TouchableOpacity
-              style={styles.checkboxContainer}
-              onPress={() => setIsStopped(!isStopped)}
-            >
-              <View style={[styles.checkbox, isStopped && styles.checkboxChecked]}>
-                {isStopped && <Text style={styles.checkmark}>✓</Text>}
-              </View>
-              <Text style={styles.checkboxLabel}>Stopped Using It?</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        {/* End Date - Only show if stopped and not treatment type */}
-        {!isTreatmentType() && isStopped && (
-          <View style={styles.section}>
-            <Text style={styles.sectionSubtitle}>For Efficacy Validation Please Provide</Text>
-            <TouchableOpacity onPress={() => setShowEndDatePicker(!showEndDatePicker)} style={styles.inputWrapper}>
-              <CalendarX 
-                size={20} 
-                color="#6B7280" 
-                style={styles.inputIcon} 
-              />
-              <TouchableOpacity
-                style={styles.dateInputButton}
                 onPress={() => setShowEndDatePicker(!showEndDatePicker)}
+                style={styles.inputWrapper}
               >
-                <Text style={[styles.dateText, !endDate && styles.dateTextPlaceholder]}>
-                  {endDate ? endDate.toDateString() : 'Select stop date'}
-                </Text>
-              </TouchableOpacity>
-            </TouchableOpacity>
-
-            {showEndDatePicker && (
-              <DateTimePicker
-                value={endDate || new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={handleEndDateChange}
-                minimumDate={startDate || new Date(new Date().getFullYear() - 10, 0, 1)}
-                textColor="#1C1917"
-                style={Platform.OS === 'ios' ? { backgroundColor: '#F5F5F4', borderRadius: 12, marginTop: 10 } : undefined}
-                themeVariant="light"
-              />
-            )}
-          </View>
-        )}
-
-        {/* Stop Reason - Only show if stopped and not treatment type */}
-        {!isTreatmentType() && isStopped && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle2}>Why did you stop using it?</Text>
-            <View style={styles.chipSelectorContainer}>
-              {stopReasons.map((reason) => {
-                const isActive = stopReason === reason;
-                
-                return (
-                  <TouchableOpacity
-                    key={reason}
+                <CalendarX size={20} color="#6B7280" style={styles.inputIcon} />
+                <TouchableOpacity
+                  style={styles.dateInputButton}
+                  onPress={() => setShowEndDatePicker(!showEndDatePicker)}
+                >
+                  <Text
                     style={[
-                      styles.chipButton,
-                      isActive && styles.chipButtonActive
+                      styles.dateText,
+                      !endDate && styles.dateTextPlaceholder,
                     ]}
-                    onPress={() => setStopReason(reason)}
                   >
-                    <Text style={[
-                      styles.chipButtonText,
-                      isActive && styles.chipButtonTextActive
-                    ]}>
-                      {reason}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
+                    {endDate ? endDate.toDateString() : 'Select stop date'}
+                  </Text>
+                </TouchableOpacity>
+              </TouchableOpacity>
+
+              {showEndDatePicker && (
+                <DateTimePicker
+                  value={endDate || new Date()}
+                  mode="date"
+                  display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                  onChange={handleEndDateChange}
+                  minimumDate={
+                    startDate || new Date(new Date().getFullYear() - 10, 0, 1)
+                  }
+                  textColor="#1C1917"
+                  style={
+                    Platform.OS === 'ios'
+                      ? {
+                          backgroundColor: '#F5F5F4',
+                          borderRadius: 12,
+                          marginTop: 10,
+                        }
+                      : undefined
+                  }
+                  themeVariant="light"
+                />
+              )}
             </View>
+          )}
+
+          {/* Stop Reason - Only show if stopped and not treatment type */}
+          {!isTreatmentType() && isStopped && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle2}>
+                Why did you stop using it?
+              </Text>
+              <View style={styles.chipSelectorContainer}>
+                {stopReasons.map(reason => {
+                  const isActive = stopReason === reason;
+
+                  return (
+                    <TouchableOpacity
+                      key={reason}
+                      style={[
+                        styles.chipButton,
+                        isActive && styles.chipButtonActive,
+                      ]}
+                      onPress={() => setStopReason(reason)}
+                    >
+                      <Text
+                        style={[
+                          styles.chipButtonText,
+                          isActive && styles.chipButtonTextActive,
+                        ]}
+                      >
+                        {reason}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          )}
+
+          {/* Save Button */}
+          <View style={styles.saveButtonContainer}>
+            <TouchableOpacity
+              style={[
+                styles.saveButtonBottom,
+                isSaving && styles.saveButtonDisabled,
+              ]}
+              onPress={handleSave}
+              disabled={isSaving}
+            >
+              {isSaving ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <>
+                  <Text style={styles.saveButtonText}>Save Changes</Text>
+                </>
+              )}
+            </TouchableOpacity>
           </View>
-        )}
 
-        {/* Save Button */}
-        <View style={styles.saveButtonContainer}>
-          <TouchableOpacity
-            style={[styles.saveButtonBottom, isSaving && styles.saveButtonDisabled]}
-            onPress={handleSave}
-            disabled={isSaving}
-          >
-            {isSaving ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <>
-                <Text style={styles.saveButtonText}>Save Changes</Text>
-              </>
-            )}
-          </TouchableOpacity>
-        </View>
-
-        {/* Bottom padding for scroll */}
-        <View style={styles.bottomPadding} />
-              </ScrollView>
+          {/* Bottom padding for scroll */}
+          <View style={styles.bottomPadding} />
+        </ScrollView>
       </KeyboardAvoidingView>
-
 
       {/* Product Image Scanner Modal */}
       <ProductImageScannerModal
@@ -1433,7 +1644,7 @@ const styles = StyleSheet.create({
   },
   keyboardContainer: {
     flex: 1,
-    marginTop: 120,
+    marginTop: Platform.OS === 'ios' ? 120 : 100,
   },
   scrollContainer: {
     flex: 1,

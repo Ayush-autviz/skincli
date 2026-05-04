@@ -186,6 +186,7 @@ import MetricsSeries, {
   processPhotoMetrics,
   METRIC_LABELS,
 } from '../components/analysis/MetricsSeries';
+import HydrationScale from '../components/analysis/HydrationScale';
 
 // Helper functions for perceived age chart
 const calculateActualAge = (
@@ -1808,7 +1809,9 @@ export default function MetricDetailScreen() {
             })) as any;
             if (response?.success) break;
           } catch (err) {
-            if (candidate === conditionCandidates[conditionCandidates.length - 1]) {
+            if (
+              candidate === conditionCandidates[conditionCandidates.length - 1]
+            ) {
               throw err;
             }
           }
@@ -2511,29 +2514,37 @@ export default function MetricDetailScreen() {
 
           // Fallback to photo data passed from snapshot screen
           if (!maskImageData) {
-            if (parsedPhotoData?.maskImages && Array.isArray(parsedPhotoData.maskImages)) {
+            if (
+              parsedPhotoData?.maskImages &&
+              Array.isArray(parsedPhotoData.maskImages)
+            ) {
               const conditionAliases = getSkinConditionAliases(conditionName);
               maskImageData =
-                parsedPhotoData.maskImages.find(
-                  (image: any) =>
-                    conditionAliases.includes(image.skin_condition_name),
+                parsedPhotoData.maskImages.find((image: any) =>
+                  conditionAliases.includes(image.skin_condition_name),
                 ) ?? null;
-            } else if (parsedPhotoData?.maskResults && Array.isArray(parsedPhotoData.maskResults)) {
+            } else if (
+              parsedPhotoData?.maskResults &&
+              Array.isArray(parsedPhotoData.maskResults)
+            ) {
               const conditionAliases = getSkinConditionAliases(conditionName);
               maskImageData =
-                parsedPhotoData.maskResults.find(
-                  (result: any) =>
-                    conditionAliases.includes(result.skin_condition_name),
+                parsedPhotoData.maskResults.find((result: any) =>
+                  conditionAliases.includes(result.skin_condition_name),
                 ) ?? null;
             }
           }
 
           // If mask image is unknown or missing, fallback so we don't display a broken image
-          if (maskImageData && (maskImageData.mask_img_url === "Unknown" || !maskImageData.mask_img_url)) {
-             maskImageData = {
-               ...maskImageData,
-               mask_img_url: null
-             };
+          if (
+            maskImageData &&
+            (maskImageData.mask_img_url === 'Unknown' ||
+              !maskImageData.mask_img_url)
+          ) {
+            maskImageData = {
+              ...maskImageData,
+              mask_img_url: null,
+            };
           }
 
           console.log('🔵 conditionName:', conditionName);
@@ -2605,7 +2616,7 @@ export default function MetricDetailScreen() {
             const everythingLoaded =
               !maskImagesLoading && baseImageReady && maskOverlayReady;
 
-            console.log('mask_img_url', maskImageData?.mask_img_url)
+            console.log('mask_img_url', maskImageData?.mask_img_url);
 
             return (
               <View style={{ marginHorizontal: 16, marginTop: spacing.xxl }}>
@@ -2668,6 +2679,17 @@ export default function MetricDetailScreen() {
                       </Text>
                     </TouchableOpacity>
                   </View>
+
+                  {/* Hydration Scale - below the mask, above the context text */}
+                  {metricKey === 'hydrationScore' && (
+                    <View style={{ width: '90%' }}>
+                      <HydrationScale
+                        score={Number(metricValue)}
+                        showScore={true}
+                      />
+                    </View>
+                  )}
+
                   <View style={styles.maskContentRight}>
                     <Text style={styles.smartContextText}>
                       {getSmartContextText(
@@ -2998,11 +3020,16 @@ export default function MetricDetailScreen() {
 
                                   {isFound && foundProducts.length > 0 ? (
                                     <View>
-                                      {foundProducts.map((product: string, pIdx: number) => (
-                                        <Text key={pIdx} style={styles.productHighlight}>
-                                          {product}
-                                        </Text>
-                                      ))}
+                                      {foundProducts.map(
+                                        (product: string, pIdx: number) => (
+                                          <Text
+                                            key={pIdx}
+                                            style={styles.productHighlight}
+                                          >
+                                            {product}
+                                          </Text>
+                                        ),
+                                      )}
                                     </View>
                                   ) : ingredientDesc ? (
                                     <Text style={styles.ingredientDesc}>
@@ -3110,7 +3137,10 @@ export default function MetricDetailScreen() {
             <View style={styles.lifestyleTipsSection}>
               <Text style={styles.lifestyleTipsTitle}>Lifestyle Tips</Text>
               {lifestyleTips.map((tip: string, index: number) => (
-                <View key={`lifestyle-tip-${index}`} style={styles.lifestyleTipRow}>
+                <View
+                  key={`lifestyle-tip-${index}`}
+                  style={styles.lifestyleTipRow}
+                >
                   <Text style={styles.lifestyleTipBullet}>•</Text>
                   <Text style={styles.lifestyleTipText}>{tip}</Text>
                 </View>

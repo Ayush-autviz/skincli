@@ -1,8 +1,16 @@
 import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  Linking,
+  Alert,
+} from 'react-native';
 import { ChevronRight, MessageSquareText } from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { useNavigation } from '@react-navigation/native';
+import InAppBrowser from 'react-native-inappbrowser-reborn';
 import { usePhotoContext } from '../../contexts/PhotoContext';
 import { colors, spacing, typography, fontFamily } from '../../styles';
 import { format, parseISO, isToday } from 'date-fns';
@@ -24,7 +32,7 @@ interface Report {
   report_id: string;
   status: string;
   created_at: string;
-  scanned_date?: string; // Add optional scanned_date
+  scanned_date?: string;
   shared_with: Expert[];
   comments: Comment[];
   image_id?: string | null;
@@ -37,6 +45,61 @@ interface SkinCheckCardProps {
   onPress?: () => void;
 }
 
+function extractUrls(text: string): string[] {
+  const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+  return text.match(urlRegex) || [];
+}
+
+function renderCommentWithLinks(
+  text: string,
+  onLinkPress: (url: string) => void,
+) {
+  const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
+  const parts = text.split(urlRegex);
+
+  return parts.map((part, index) => {
+    if (urlRegex.test(part)) {
+      urlRegex.lastIndex = 0;
+      return (
+        <Text
+          key={index}
+          style={styles.commentLink}
+          onPress={() => onLinkPress(part)}
+        >
+          {part}
+        </Text>
+      );
+    }
+    return <Text key={index}>{part}</Text>;
+  });
+}
+
+async function openInAppBrowser(url: string) {
+  try {
+    const isAvailable = await InAppBrowser.isAvailable();
+    if (isAvailable) {
+      await InAppBrowser.open(url, {
+        toolbarColor: '#FFFFFF',
+        secondaryToolbarColor: '#F5F5F5',
+        navigationBarColor: '#FFFFFF',
+        navigationBarDividerColor: '#E5E7EB',
+        enableUrlBarHiding: true,
+        enableDefaultShare: true,
+        showTitle: true,
+      });
+    } else {
+      await Linking.openURL(url);
+    }
+  } catch (error) {
+    console.error('Error opening URL:', error);
+    try {
+      await Linking.openURL(url);
+    } catch (e) {
+      Alert.alert('Error', 'Unable to open this link.');
+    }
+  }
+}
+
 const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
   reports,
   loading,
@@ -44,8 +107,6 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
 }) => {
   const navigation = useNavigation();
   const { photos, setSelectedSnapshot } = usePhotoContext();
-
-  console.log('reports', reports);
 
   if (loading) {
     return (
@@ -85,8 +146,6 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
   const parseUTCDate = (dateString: string) => {
     if (!dateString) return null;
     let normalized = dateString;
-    // Handled in other parts of the app (e.g. snapshot.tsx, threadChat.tsx)
-    // If no timezone indicator, append Z to treat it as UTC
     if (
       !normalized.endsWith('Z') &&
       !normalized.includes('+') &&
@@ -151,9 +210,7 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
     : report.created_at;
 
   const handleSnapshotNavigation = () => {
-    console.log('report', report);
     if (report && report.haut_batch_id && report.image_id) {
-      // Try to find the photo in context to get the storageUrl
       const matchingPhoto = photos.find(
         p =>
           p.id === report.image_id ||
@@ -164,7 +221,6 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
 
       const timestampParam = report.scanned_date || report.created_at;
 
-      // Set selected snapshot in context before navigating
       setSelectedSnapshot({
         id: report.image_id,
         url: matchingPhoto?.storageUrl || '',
@@ -198,17 +254,17 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
       </TouchableOpacity>
 
       <TouchableOpacity
-        style={styles.innerBox}
-        activeOpacity={0.9}
+        style={styles.sentToRow}
+        activeOpacity={0.7}
         onPress={handleSnapshotNavigation}
       >
-        {/* Sent info */}
-        <View style={styles.sentInfoRow}>
-          <Text style={styles.sentToText}>
-            Sent to {expert?.expert_name || 'Expert'}
-          </Text>
-          <Text style={styles.sentTimeText}>{formatTime(sentTime)}</Text>
-        </View>
+        <Text style={styles.sentToText}>
+          Sent to {expert?.expert_name || 'Expert'}
+        </Text>
+        <ChevronRight size={16} color="#9CA3AF" />
+      </TouchableOpacity>
+
+      <View style={styles.innerBox}>
         <Text style={styles.scanDateLabel}>
           Scan date -{' '}
           <Text style={styles.scanDateValue}>
@@ -216,7 +272,6 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
           </Text>
         </Text>
 
-        {/* Reply info */}
         {comment && (
           <View style={styles.replySection}>
             <View style={styles.replyHeader}>
@@ -228,17 +283,18 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
                   <Text style={styles.replyExpertName}>
                     {expert?.expert_name || 'Expert'}
                   </Text>
-                  {/* <Text style={styles.replyExpertRole}>Professional</Text> */}
                 </View>
               </View>
               <Text style={styles.sentTimeText}>
                 {formatRepliedTime(comment.created_at)}
               </Text>
             </View>
-            <Text style={styles.commentText}>{comment.comment_text}</Text>
+            <Text style={styles.commentText} selectable>
+              {renderCommentWithLinks(comment.comment_text, openInAppBrowser)}
+            </Text>
           </View>
         )}
-      </TouchableOpacity>
+      </View>
     </View>
   );
 };
@@ -274,22 +330,22 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     paddingRight: 10,
   },
-  innerBox: {
-    backgroundColor: '#F9FAFB',
-    borderRadius: 16,
-    padding: 16,
-  },
-  sentInfoRow: {
+  sentToRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    marginBottom: 12,
   },
   sentToText: {
     fontSize: 16,
     fontWeight: '700',
     color: '#4B5563',
     fontFamily: fontFamily.bold,
+  },
+  innerBox: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 16,
+    padding: 16,
   },
   sentTimeText: {
     fontSize: 13,
@@ -323,8 +379,6 @@ const styles = StyleSheet.create({
   },
   expertIconContainer: {
     marginRight: 10,
-    //  backgroundColor: '#E5E7EB',
-    //padding: 6,
     borderRadius: 8,
   },
   replyExpertName: {
@@ -333,22 +387,17 @@ const styles = StyleSheet.create({
     color: '#1C1917',
     fontFamily: fontFamily.bold,
   },
-  replyExpertRole: {
-    fontSize: 12,
-    color: '#9CA3AF',
-    fontFamily: fontFamily.regular,
-  },
-  repliedTimeText: {
-    fontSize: 11,
-    color: '#9CA3AF',
-    fontFamily: fontFamily.regular,
-  },
   commentText: {
     fontSize: 14,
     color: '#4B5563',
     fontFamily: fontFamily.regular,
     lineHeight: 20,
     marginLeft: 30,
+  },
+  commentLink: {
+    color: '#00839B',
+    textDecorationLine: 'underline',
+    fontFamily: fontFamily.semiBold,
   },
 });
 

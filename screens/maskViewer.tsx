@@ -10,7 +10,7 @@ import {
   StatusBar,
   Image,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { X, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react-native';
@@ -23,12 +23,12 @@ import Animated, {
   interpolate,
   runOnJS,
   useDerivedValue,
-  interpolateColor
+  interpolateColor,
 } from 'react-native-reanimated';
 import {
   Gesture,
   GestureDetector,
-  GestureHandlerRootView
+  GestureHandlerRootView,
 } from 'react-native-gesture-handler';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ConditionalImage } from '../utils/imageUtils';
@@ -36,6 +36,7 @@ import { ConditionalImage } from '../utils/imageUtils';
 // Import the concerns data
 import concernsData from '../data/concerns.json';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
+import HydrationScale from '../components/analysis/HydrationScale';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const IMAGE_SIZE = SCREEN_WIDTH - 40;
@@ -102,7 +103,10 @@ const formatConditionName = (conditionName: string): string => {
     sagging: 'Sagging',
   };
 
-  return nameMap[conditionName] || conditionName.charAt(0).toUpperCase() + conditionName.slice(1);
+  return (
+    nameMap[conditionName] ||
+    conditionName.charAt(0).toUpperCase() + conditionName.slice(1)
+  );
 };
 
 // Enhanced zoomable mask image component
@@ -110,7 +114,7 @@ const ZoomableMaskImage = ({
   photoUri,
   maskUri,
   conditionName,
-  isActive
+  isActive,
 }: {
   photoUri: string;
   maskUri: string;
@@ -143,8 +147,11 @@ const ZoomableMaskImage = ({
     .onStart(() => {
       savedScale.value = scale.value;
     })
-    .onUpdate((e) => {
-      const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, savedScale.value * e.scale));
+    .onUpdate(e => {
+      const newScale = Math.max(
+        MIN_SCALE,
+        Math.min(MAX_SCALE, savedScale.value * e.scale),
+      );
       scale.value = newScale;
     })
     .onEnd(() => {
@@ -169,15 +176,21 @@ const ZoomableMaskImage = ({
       savedTranslateX.value = translateX.value;
       savedTranslateY.value = translateY.value;
     })
-    .onUpdate((e) => {
+    .onUpdate(e => {
       if (scale.value > 1) {
         // Calculate bounds based on current scale
         const scaledSize = IMAGE_SIZE * scale.value;
         const maxTranslateX = (scaledSize - IMAGE_SIZE) / 2;
         const maxTranslateY = (scaledSize - IMAGE_SIZE) / 2;
 
-        translateX.value = Math.max(-maxTranslateX, Math.min(maxTranslateX, savedTranslateX.value + e.translationX));
-        translateY.value = Math.max(-maxTranslateY, Math.min(maxTranslateY, savedTranslateY.value + e.translationY));
+        translateX.value = Math.max(
+          -maxTranslateX,
+          Math.min(maxTranslateX, savedTranslateX.value + e.translationX),
+        );
+        translateY.value = Math.max(
+          -maxTranslateY,
+          Math.min(maxTranslateY, savedTranslateY.value + e.translationY),
+        );
       }
     })
     .onEnd(() => {
@@ -213,7 +226,7 @@ const ZoomableMaskImage = ({
   const composedGesture = Gesture.Simultaneous(
     pinchGesture,
     panGesture,
-    doubleTapGesture
+    doubleTapGesture,
   );
 
   const animatedStyle = useAnimatedStyle(() => ({
@@ -236,9 +249,13 @@ const ZoomableMaskImage = ({
     <View style={styles.maskImageContainer}>
       {isLoading && (
         // <View style={styles.loadingContainer}>
-          <SkeletonPlaceholder borderRadius={28}>
-            <SkeletonPlaceholder.Item width="100%" height="100%" borderRadius={28} />
-          </SkeletonPlaceholder>
+        <SkeletonPlaceholder borderRadius={28}>
+          <SkeletonPlaceholder.Item
+            width="100%"
+            height="100%"
+            borderRadius={28}
+          />
+        </SkeletonPlaceholder>
         // </View>
       )}
 
@@ -250,8 +267,11 @@ const ZoomableMaskImage = ({
               source={{ uri: sanitizeS3Uri(photoUri) }}
               style={styles.backgroundImage}
               resizeMode="contain"
-              onError={(error) => {
-                console.log('🔴 Error loading background image:', error.nativeEvent.error);
+              onError={error => {
+                console.log(
+                  '🔴 Error loading background image:',
+                  error.nativeEvent.error,
+                );
               }}
               onLoad={() => {
                 console.log('✅ Background image loaded successfully');
@@ -283,18 +303,25 @@ const ZoomableMaskImage = ({
 const MaskViewerScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute();
-  const params = route.params as MaskViewerParams || {};
+  const params = (route.params as MaskViewerParams) || {};
 
   console.log('🔵 params:', params);
 
-  const parsedPhotoData = typeof params.photoData === 'string'
-    ? JSON.parse(params.photoData)
-    : params.photoData;
+  const parsedPhotoData =
+    typeof params.photoData === 'string'
+      ? JSON.parse(params.photoData)
+      : params.photoData;
 
   console.log('🔵 parsedPhotoData:', parsedPhotoData);
   console.log('🔵 parsedPhotoData.maskImages:', parsedPhotoData?.maskImages);
-  console.log('🔵 parsedPhotoData.maskImages type:', typeof parsedPhotoData?.maskImages);
-  console.log('🔵 parsedPhotoData.maskImages length:', parsedPhotoData?.maskImages?.length);
+  console.log(
+    '🔵 parsedPhotoData.maskImages type:',
+    typeof parsedPhotoData?.maskImages,
+  );
+  console.log(
+    '🔵 parsedPhotoData.maskImages length:',
+    parsedPhotoData?.maskImages?.length,
+  );
   console.log('🔵 parsedPhotoData.storageUrl:', parsedPhotoData?.storageUrl);
 
   // Prepare mask data - map "Unknown" mask_img_url to original image and sort by desired order
@@ -303,12 +330,12 @@ const MaskViewerScreen = (): React.JSX.Element => {
       skin_condition_name: 'none',
       mask_img_url: parsedPhotoData?.storageUrl,
       displayName: 'Original',
-      image_url: parsedPhotoData?.maskImages?.[0]?.image_url
+      image_url: parsedPhotoData?.maskImages?.[0]?.image_url,
     },
     ...(parsedPhotoData?.maskImages || [])
       .map((mask: any) => {
         // If mask_img_url is "Unknown", fall back to the original image storageUrl
-        if (mask.mask_img_url === "Unknown" || !mask.mask_img_url) {
+        if (mask.mask_img_url === 'Unknown' || !mask.mask_img_url) {
           return {
             ...mask,
             mask_img_url: null, // Set to null so the viewer falls back to the original image only
@@ -333,14 +360,16 @@ const MaskViewerScreen = (): React.JSX.Element => {
         };
 
         const concernKey = conditionToConcernKey[mask.skin_condition_name];
-        const concernDetails = (concernsData as any)?.skinConcerns?.[concernKey];
+        const concernDetails = (concernsData as any)?.skinConcerns?.[
+          concernKey
+        ];
 
         // Only include if maskVerbiage exists
         return concernDetails?.maskVerbiage;
       })
       .map((mask: any) => ({
         ...mask,
-        displayName: formatConditionName(mask.skin_condition_name)
+        displayName: formatConditionName(mask.skin_condition_name),
       }))
       .sort((a: any, b: any) => {
         // Define the desired order for mask conditions
@@ -372,16 +401,20 @@ const MaskViewerScreen = (): React.JSX.Element => {
 
         // If neither is in the order array, sort alphabetically
         return a.skin_condition_name.localeCompare(b.skin_condition_name);
-      })
+      }),
   ];
 
   console.log('🔵 maskOptions:', maskOptions);
 
   // Compute initial index to show the metric's mask when navigating from metric detail
-  const initialIndex =
-    params.initialConditionName
-      ? Math.max(0, maskOptions.findIndex((m: any) => m.skin_condition_name === params.initialConditionName))
-      : 0;
+  const initialIndex = params.initialConditionName
+    ? Math.max(
+      0,
+      maskOptions.findIndex(
+        (m: any) => m.skin_condition_name === params.initialConditionName,
+      ),
+    )
+    : 0;
 
   const scrollX = useSharedValue(initialIndex * SCREEN_WIDTH);
   const currentIndex = useSharedValue(initialIndex);
@@ -390,17 +423,26 @@ const MaskViewerScreen = (): React.JSX.Element => {
   useEffect(() => {
     if (initialIndex > 0) {
       const timer = setTimeout(() => {
-        scrollRef.current?.scrollTo({ x: initialIndex * SCREEN_WIDTH, animated: false });
+        scrollRef.current?.scrollTo({
+          x: initialIndex * SCREEN_WIDTH,
+          animated: false,
+        });
         // Center the active tab in the bottom navigation scroll
-        const navScrollX = Math.max(0, initialIndex * NAV_TAB_WIDTH - SCREEN_WIDTH / 2 + NAV_TAB_WIDTH / 2);
-        navigationScrollRef.current?.scrollTo({ x: navScrollX, animated: false });
+        const navScrollX = Math.max(
+          0,
+          initialIndex * NAV_TAB_WIDTH - SCREEN_WIDTH / 2 + NAV_TAB_WIDTH / 2,
+        );
+        navigationScrollRef.current?.scrollTo({
+          x: navScrollX,
+          animated: false,
+        });
       }, 50);
       return () => clearTimeout(timer);
     }
   }, [initialIndex]);
 
   const scrollHandler = useAnimatedScrollHandler({
-    onScroll: (event) => {
+    onScroll: event => {
       scrollX.value = event.contentOffset.x;
       const index = Math.round(event.contentOffset.x / SCREEN_WIDTH);
       if (index !== currentIndex.value) {
@@ -414,7 +456,7 @@ const MaskViewerScreen = (): React.JSX.Element => {
   const scrollToIndex = (index: number): void => {
     scrollRef.current?.scrollTo({
       x: index * SCREEN_WIDTH,
-      animated: true
+      animated: true,
     });
   };
 
@@ -424,7 +466,11 @@ const MaskViewerScreen = (): React.JSX.Element => {
   return (
     <SafeAreaView style={styles.container}>
       {/* <GestureHandlerRootView style={styles.container}> */}
-      <StatusBar barStyle="light-content" backgroundColor="transparent" translucent />
+      <StatusBar
+        barStyle="light-content"
+        backgroundColor="transparent"
+        translucent
+      />
 
       {/* Header */}
       <SafeAreaView style={styles.headerContainer}>
@@ -475,7 +521,8 @@ const MaskViewerScreen = (): React.JSX.Element => {
             {maskOptions[activeIndex]?.displayName}
           </Text>
           {(() => {
-            const currentCondition = maskOptions[activeIndex]?.skin_condition_name;
+            const currentCondition =
+              maskOptions[activeIndex]?.skin_condition_name;
             if (currentCondition && currentCondition !== 'none') {
               const map: { [key: string]: string } = {
                 redness: 'rednessScore',
@@ -500,8 +547,18 @@ const MaskViewerScreen = (): React.JSX.Element => {
             }
             return null;
           })()}
+
+          {/* Hydration Scale for hydration tab */}
+          {maskOptions[activeIndex]?.skin_condition_name === 'hydration' &&
+            parsedPhotoData?.metrics?.hydrationScore && (
+              <View style={{ marginTop: 16, width: "100%" }}>
+                <HydrationScale
+                  score={Number(parsedPhotoData.metrics.hydrationScore)}
+                  showScore={true}
+                />
+              </View>
+            )}
         </View>
-      
       </View>
 
       {/* Bottom navigation */}
@@ -524,16 +581,25 @@ const MaskViewerScreen = (): React.JSX.Element => {
                   <View style={styles.navigationTab}>
                     <View
                       style={styles.navigationTabLabel}
-                      onLayout={(e) => {
+                      onLayout={e => {
                         const w = e.nativeEvent.layout.width;
-                        setTabWidths(prev => (prev[index] === w ? prev : { ...prev, [index]: w }));
+                        setTabWidths(prev =>
+                          prev[index] === w ? prev : { ...prev, [index]: w },
+                        );
                       }}
                     >
-                      <Animated.Text style={[styles.navigationTabText, { color: '#FFF' }]}>
+                      <Animated.Text
+                        style={[styles.navigationTabText, { color: '#FFF' }]}
+                      >
                         {maskOption.displayName}
                       </Animated.Text>
                       {index === activeIndex && (
-                        <View style={[styles.activeTabIndicator, { width: tabWidths[index] ?? '100%' }]} />
+                        <View
+                          style={[
+                            styles.activeTabIndicator,
+                            { width: tabWidths[index] ?? '100%' },
+                          ]}
+                        />
                       )}
                     </View>
                   </View>
@@ -542,7 +608,7 @@ const MaskViewerScreen = (): React.JSX.Element => {
             </Animated.ScrollView>
           </View>
         </View>
-        </View>
+      </View>
       {/* </GestureHandlerRootView> */}
       {/* </GestureHandlerRootView> */}
     </SafeAreaView>

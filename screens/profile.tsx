@@ -389,7 +389,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    height: 105,
+    height: Platform.OS === 'ios' ? 100 : 80,
     backgroundColor: colors.background,
     borderBottomWidth: 0.4,
     justifyContent: 'flex-end',
@@ -454,7 +454,7 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
+    paddingTop: Platform.OS === 'ios' ? spacing.xxl : spacing.xxl + 20,
   },
 
   // Messages

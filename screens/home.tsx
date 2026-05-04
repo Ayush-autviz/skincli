@@ -18,6 +18,7 @@ import {
   Dimensions,
   Alert,
   DeviceEventEmitter,
+  Platform,
 } from 'react-native';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import {
@@ -1454,7 +1455,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    marginTop: 80,
+    marginTop: Platform.OS === 'ios' ? 80 : 60,
   },
   scrollContent: {
     paddingHorizontal: spacing.md,

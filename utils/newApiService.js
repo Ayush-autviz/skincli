@@ -2648,7 +2648,7 @@ export const getReportHistory = async () => {
     console.log('🔵 Fetching report history...');
     const response = await apiClient.get('/expert-view/my-reports/history');
 
-    console.log('🔵 Response of getReportHistory:', response.data.data.reports);
+    console.log('🔵 Response of getReportHistory:', response.data);
 
     if (response.data.status === 200) {
       console.log('✅ Report history fetched successfully');

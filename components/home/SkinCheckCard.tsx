@@ -2,6 +2,8 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { ChevronRight, MessageSquareText } from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
+import { useNavigation } from '@react-navigation/native';
+import { usePhotoContext } from '../../contexts/PhotoContext';
 import { colors, spacing, typography, fontFamily } from '../../styles';
 import { format, parseISO, isToday } from 'date-fns';
 
@@ -25,6 +27,8 @@ interface Report {
   scanned_date?: string; // Add optional scanned_date
   shared_with: Expert[];
   comments: Comment[];
+  image_id?: string | null;
+  haut_batch_id?: string | null;
 }
 
 interface SkinCheckCardProps {
@@ -38,6 +42,9 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
   loading,
   onPress,
 }) => {
+  const navigation = useNavigation();
+  const { photos, setSelectedSnapshot } = usePhotoContext();
+
   console.log('reports', reports);
 
   if (loading) {
@@ -143,6 +150,42 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
     ? expert.shared_at || report.created_at
     : report.created_at;
 
+  const handleSnapshotNavigation = () => {
+    console.log('report', report);
+    if (report && report.haut_batch_id && report.image_id) {
+      // Try to find the photo in context to get the storageUrl
+      const matchingPhoto = photos.find(
+        p =>
+          p.id === report.image_id ||
+          p.hautBatchId === report.haut_batch_id ||
+          p.hautUploadData?.imageId === report.image_id ||
+          p.hautUploadData?.hautBatchId === report.haut_batch_id,
+      );
+
+      const timestampParam = report.scanned_date || report.created_at;
+
+      // Set selected snapshot in context before navigating
+      setSelectedSnapshot({
+        id: report.image_id,
+        url: matchingPhoto?.storageUrl || '',
+        storageUrl: matchingPhoto?.storageUrl || '',
+        apiData: {
+          created_at: timestampParam,
+        },
+      });
+
+      (navigation as any).navigate('Snapshot', {
+        photoId: report.image_id,
+        thumbnailUrl: matchingPhoto?.storageUrl || '',
+        localUri: matchingPhoto?.storageUrl || '',
+        timestamp: timestampParam,
+        fromPhotoGrid: 'true',
+        hautBatchId: report.haut_batch_id,
+        imageId: report.image_id,
+      });
+    }
+  };
+
   return (
     <View style={styles.container}>
       <TouchableOpacity
@@ -154,7 +197,11 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
         <ChevronRight size={24} color="#D1D5DB" />
       </TouchableOpacity>
 
-      <View style={styles.innerBox}>
+      <TouchableOpacity
+        style={styles.innerBox}
+        activeOpacity={0.9}
+        onPress={handleSnapshotNavigation}
+      >
         {/* Sent info */}
         <View style={styles.sentInfoRow}>
           <Text style={styles.sentToText}>
@@ -191,7 +238,7 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
             <Text style={styles.commentText}>{comment.comment_text}</Text>
           </View>
         )}
-      </View>
+      </TouchableOpacity>
     </View>
   );
 };

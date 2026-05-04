@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Platform } from 'react-native';
 import { SvgXml } from 'react-native-svg';
 import { colors, spacing, fontFamily } from '../../styles';
 import { ChevronLeft } from 'lucide-react-native';
@@ -72,7 +72,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         zIndex: 1000,
-        height: 100, // Adjusted height
+        height: Platform.OS === 'ios' ? 100 : 80, // Adjusted height
         backgroundColor: '#fff',
         justifyContent: 'flex-end',
     },

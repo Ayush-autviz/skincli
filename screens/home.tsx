@@ -651,10 +651,10 @@ export default function HomeScreen(): React.JSX.Element {
                 prev.map(c =>
                   c.metricKey === concern.metricKey
                     ? {
-                      ...c,
-                      foundIngredients: response.data.found_ingredients || [],
-                      ingredientsLoading: false,
-                    }
+                        ...c,
+                        foundIngredients: response.data.found_ingredients || [],
+                        ingredientsLoading: false,
+                      }
                     : c,
                 ),
               );
@@ -757,7 +757,11 @@ export default function HomeScreen(): React.JSX.Element {
     const targetPhoto = photo || currentPhoto;
     if (targetPhoto) {
       // Set selected snapshot in context before navigating
-      const timestamp = targetPhoto.apiData?.created_at || (targetPhoto.timestamp ? new Date(targetPhoto.timestamp).toISOString() : null);
+      const timestamp =
+        targetPhoto.apiData?.created_at ||
+        (targetPhoto.timestamp
+          ? new Date(targetPhoto.timestamp).toISOString()
+          : null);
 
       setSelectedSnapshot({
         id: targetPhoto.id,
@@ -852,7 +856,9 @@ export default function HomeScreen(): React.JSX.Element {
     (item: any) => {
       if (item) {
         // Set selected snapshot in context before navigating
-        const timestamp = item.apiData?.created_at || (item.timestamp ? new Date(item.timestamp).toISOString() : null);
+        const timestamp =
+          item.apiData?.created_at ||
+          (item.timestamp ? new Date(item.timestamp).toISOString() : null);
 
         setSelectedSnapshot({
           id: item.id,
@@ -943,7 +949,7 @@ export default function HomeScreen(): React.JSX.Element {
               style={[
                 styles.arrowButton,
                 currentDateIndex >= dateGroups.length - 1 &&
-                styles.arrowButtonDisabled,
+                  styles.arrowButtonDisabled,
               ]}
               onPress={goToPrevDate}
               disabled={currentDateIndex >= dateGroups.length - 1}
@@ -1019,8 +1025,8 @@ export default function HomeScreen(): React.JSX.Element {
                   Math.min(
                     (currentDateGroup?.photos?.length || 0) - 1,
                     (currentDateGroup?.photos?.length || 0) -
-                    1 -
-                    currentPhotoInDate,
+                      1 -
+                      currentPhotoInDate,
                   ),
                 )}
                 // defaultIndex={currentPhotoInDate}
@@ -1096,7 +1102,9 @@ export default function HomeScreen(): React.JSX.Element {
         {(isLoadingConcerns || topConcerns.length > 0) && (
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Top Concerns and Helpful Ingredients</Text>
+              <Text style={styles.sectionTitle}>
+                Top Concerns and Helpful Ingredients
+              </Text>
             </View>
 
             {isLoadingConcerns ? (
@@ -1135,18 +1143,18 @@ export default function HomeScreen(): React.JSX.Element {
                               : undefined,
                             precomputedChange:
                               concern.change !== undefined &&
-                                concern.changeDirection &&
-                                concern.changeDirection !== 'none'
+                              concern.changeDirection &&
+                              concern.changeDirection !== 'none'
                                 ? {
-                                  arrow:
-                                    concern.changeDirection === 'up'
-                                      ? '↑'
-                                      : '↓',
-                                  value: Math.abs(concern.change || 0),
-                                }
+                                    arrow:
+                                      concern.changeDirection === 'up'
+                                        ? '↑'
+                                        : '↓',
+                                    value: Math.abs(concern.change || 0),
+                                  }
                                 : concern.change !== undefined
-                                  ? { arrow: '→', value: 0 }
-                                  : undefined,
+                                ? { arrow: '→', value: 0 }
+                                : undefined,
                           });
                         }}
                       >
@@ -1294,20 +1302,26 @@ export default function HomeScreen(): React.JSX.Element {
                                     </Text>
                                   </View>
                                   {isFound &&
-                                    foundEntry &&
-                                    typeof foundEntry !== 'string' &&
-                                    Array.isArray(foundEntry.products) &&
-                                    foundEntry.products.length > 0 ? (
+                                  foundEntry &&
+                                  typeof foundEntry !== 'string' &&
+                                  Array.isArray(foundEntry.products) &&
+                                  foundEntry.products.length > 0 ? (
                                     <View>
-                                      {foundEntry.products.map((product: string, pIdx: number) => (
-                                        <Text key={pIdx} style={styles.productHighlight}>
-                                          {product}
-                                        </Text>
-                                      ))}
+                                      {foundEntry.products.map(
+                                        (product: string, pIdx: number) => (
+                                          <Text
+                                            key={pIdx}
+                                            style={styles.productHighlight}
+                                          >
+                                            {product}
+                                          </Text>
+                                        ),
+                                      )}
                                     </View>
                                   ) : ingredientDesc ? (
                                     <Text style={styles.ingredientDesc}>
-                                      {ingredientDesc.charAt(0).toUpperCase() + ingredientDesc.slice(1)}
+                                      {ingredientDesc.charAt(0).toUpperCase() +
+                                        ingredientDesc.slice(1)}
                                     </Text>
                                   ) : null}
                                 </View>
@@ -1337,7 +1351,7 @@ export default function HomeScreen(): React.JSX.Element {
         )}
 
         {/* Review Effectiveness Section */}
-        {!isLoadingReview && reviewItems.length > 0 && (
+        {!isLoadingReview && (
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>Review Effectiveness</Text>
@@ -1345,61 +1359,85 @@ export default function HomeScreen(): React.JSX.Element {
             <Text style={styles.reviewSubtitle}>
               These products are ready for you to review their effectiveness
             </Text>
-            {(isReviewExpanded ? reviewItems : reviewItems.slice(0, 3)).map(item => {
-              const brandName = item.extra?.brand || item.brand || '';
-              const imageUrl = item.extra?.image_url || item.image_url;
-              return (
-                <TouchableOpacity
-                  key={item.id}
-                  style={styles.reviewItemCard}
-                  onPress={() => handleNavigateToProductDetail(item)}
-                  activeOpacity={0.9}
-                >
-                  <View style={styles.reviewItemImageContainer}>
-                    {imageUrl ? (
-                      <Image
-                        source={{ uri: imageUrl }}
-                        style={styles.reviewItemImage}
-                        resizeMode="cover"
-                      />
-                    ) : (
-                      <View style={styles.reviewItemImage}>
-                        <Package size={20} color="#A9A29D" />
-                      </View>
-                    )}
-                  </View>
-                  <View style={styles.reviewItemContent}>
-                    {brandName ? (
-                      <Text style={styles.reviewItemBrand}>
-                        {brandName.toUpperCase()}
-                      </Text>
-                    ) : null}
-                    <Text style={styles.reviewItemName}>{item.name}</Text>
-                    <Text style={styles.reviewItemUsage}>
-                      {item.frequency}
-                      {item.usage ? ` / ${item.usage}` : ''}
+            {reviewItems.length > 0 ? (
+              <>
+                {(isReviewExpanded ? reviewItems : reviewItems.slice(0, 3)).map(
+                  item => {
+                    const brandName = item.extra?.brand || item.brand || '';
+                    const imageUrl = item.extra?.image_url || item.image_url;
+                    return (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.reviewItemCard}
+                        onPress={() => handleNavigateToProductDetail(item)}
+                        activeOpacity={0.9}
+                      >
+                        <View style={styles.reviewItemImageContainer}>
+                          {imageUrl ? (
+                            <Image
+                              source={{ uri: imageUrl }}
+                              style={styles.reviewItemImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={styles.reviewItemImage}>
+                              <Package size={20} color="#A9A29D" />
+                            </View>
+                          )}
+                        </View>
+                        <View style={styles.reviewItemContent}>
+                          {brandName ? (
+                            <Text style={styles.reviewItemBrand}>
+                              {brandName.toUpperCase()}
+                            </Text>
+                          ) : null}
+                          <Text style={styles.reviewItemName}>{item.name}</Text>
+                          <Text style={styles.reviewItemUsage}>
+                            {item.frequency}
+                            {item.usage ? ` / ${item.usage}` : ''}
+                          </Text>
+                        </View>
+                        <View style={styles.reviewItemRight}>
+                          <ChevronRight size={18} color="#D6D3D1" />
+                          <View style={styles.reviewBadge}>
+                            <Text style={styles.reviewBadgeText}>
+                              Ready to Review
+                            </Text>
+                          </View>
+                        </View>
+                      </TouchableOpacity>
+                    );
+                  },
+                )}
+                {reviewItems.length > 3 && (
+                  <TouchableOpacity
+                    style={styles.reviewSeeMoreButton}
+                    onPress={() => setIsReviewExpanded(!isReviewExpanded)}
+                  >
+                    <Text style={styles.reviewSeeMoreText}>
+                      {isReviewExpanded ? 'See less' : 'See more'}
                     </Text>
-                  </View>
-                  <View style={styles.reviewItemRight}>
-                    <ChevronRight size={18} color="#D6D3D1" />
-                    <View style={styles.reviewBadge}>
-                      <Text style={styles.reviewBadgeText}>
-                        Ready to Review
-                      </Text>
-                    </View>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-            {reviewItems.length > 3 && (
-              <TouchableOpacity
-                style={styles.reviewSeeMoreButton}
-                onPress={() => setIsReviewExpanded(!isReviewExpanded)}
-              >
-                <Text style={styles.reviewSeeMoreText}>
-                  {isReviewExpanded ? 'See less' : 'See more'}
+                  </TouchableOpacity>
+                )}
+              </>
+            ) : (
+              <View style={styles.reviewEmptyContainer}>
+                <Text style={styles.reviewEmptyText}>
+                  No product requires an effectiveness review.
                 </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => {
+                    (navigation as any).navigate('AboutMe', {
+                      tab: 'rated',
+                      timestamp: Date.now(),
+                    });
+                  }}
+                >
+                  <Text style={styles.reviewEmptyLink}>
+                    Previously reviewed products
+                  </Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         )}
@@ -1964,5 +2002,25 @@ const styles = StyleSheet.create({
   reviewSeeMoreText: {
     fontSize: 15,
     color: '#A4A7AE',
+  },
+  reviewEmptyContainer: {
+    alignItems: 'center',
+    paddingVertical: 24,
+    paddingHorizontal: 16,
+  },
+  reviewEmptyText: {
+    fontSize: 14,
+    color: '#78716C',
+    fontFamily: fontFamily.regular,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  reviewEmptyLink: {
+    fontSize: 14,
+    color: '#00839B',
+    fontFamily: fontFamily.semiBold,
+    fontWeight: '600',
+    textDecorationLine: 'underline',
   },
 });

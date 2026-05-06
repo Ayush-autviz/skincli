@@ -253,18 +253,19 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
         <ChevronRight size={24} color="#D1D5DB" />
       </TouchableOpacity>
 
-      <TouchableOpacity
-        style={styles.sentToRow}
-        activeOpacity={0.7}
-        onPress={handleSnapshotNavigation}
-      >
-        <Text style={styles.sentToText}>
-          Sent to {expert?.expert_name || 'Expert'}
-        </Text>
-        <ChevronRight size={16} color="#9CA3AF" />
-      </TouchableOpacity>
-
       <View style={styles.innerBox}>
+        {/* Sent to row - clickable, navigates to result */}
+        <TouchableOpacity
+          style={styles.sentToRow}
+          activeOpacity={0.7}
+          onPress={handleSnapshotNavigation}
+        >
+          <Text style={styles.sentToText}>
+            Sent to {expert?.expert_name || 'Expert'}
+          </Text>
+          <ChevronRight size={16} color="#9CA3AF" />
+        </TouchableOpacity>
+
         <Text style={styles.scanDateLabel}>
           Scan date -{' '}
           <Text style={styles.scanDateValue}>
@@ -272,6 +273,7 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
           </Text>
         </Text>
 
+        {/* Reply section - not clickable, only hyperlinks are tappable */}
         {comment && (
           <View style={styles.replySection}>
             <View style={styles.replyHeader}>
@@ -302,9 +304,9 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
 const styles = StyleSheet.create({
   container: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 24,
+    borderRadius: 12,
     padding: 20,
-    marginVertical: 12,
+    marginVertical: 0,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.06,

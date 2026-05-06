@@ -44,7 +44,11 @@ const PHOTO_SIZE =
 
 type TabType = 'photos' | 'activity' | 'rated';
 
-export default function AboutMeScreen(): React.JSX.Element {
+export default function AboutMeScreen({
+  route,
+}: {
+  route: any;
+}): React.JSX.Element {
   const navigation = useNavigation();
   const { user, profile, setProfile, logout } = useAuthStore();
   const {
@@ -61,10 +65,15 @@ export default function AboutMeScreen(): React.JSX.Element {
   const [activeTab, setActiveTab] = useState<TabType>('photos');
   const [ratedItems, setRatedItems] = useState<any[]>([]);
 
-  // Fetch profile on mount
-  useEffect(() => {
-    fetchProfile();
-  }, []);
+  // Update tab when screen gains focus
+  useFocusEffect(
+    useCallback(() => {
+      const tab = route?.params?.tab;
+      if (tab) {
+        setActiveTab(tab);
+      }
+    }, [route?.params?.tab, route?.params?.timestamp]),
+  );
 
   // Refresh photos only on first mount, not every focus
   const hasLoadedPhotosRef = React.useRef(false);

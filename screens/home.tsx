@@ -48,6 +48,7 @@ import {
   getReportHistory,
   getUserRoutineScanMetrics,
   getRoutineItems,
+  updateTimezone,
 } from '../utils/newApiService';
 import SkinCheckCard from '../components/home/SkinCheckCard';
 import { format, isToday, isYesterday, startOfDay } from 'date-fns';
@@ -331,8 +332,18 @@ export default function HomeScreen(): React.JSX.Element {
       loadReportHistory();
       loadUserMetrics();
       loadReviewItems();
+      sendTimezone();
     }, [refreshPhotos]),
   );
+
+  const sendTimezone = async () => {
+    try {
+      const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      await updateTimezone(timezone);
+    } catch (error) {
+      // Silently fail - timezone update is not critical
+    }
+  };
 
   const loadReviewItems = async () => {
     try {

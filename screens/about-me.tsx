@@ -158,7 +158,9 @@ export default function AboutMeScreen({
         const rated = transformed.filter((item: any) => {
           if (!item.concern_tracking || item.concern_tracking.length === 0)
             return false;
-          return true; // Include all items that have concern tracking
+          // Exclude items that have been stopped (have a stop date)
+          if (item.dateStopped) return false;
+          return true;
         });
 
         setRatedItems(rated);
@@ -581,7 +583,7 @@ export default function AboutMeScreen({
             <View style={styles.emptyContainer}>
               <Text style={styles.emptyText}>No rated items</Text>
               <Text style={styles.emptySubtext}>
-                You haven't tracked any products or services yet.
+                You haven't reviewed any products yet.
               </Text>
             </View>
           )}

@@ -43,11 +43,9 @@ export default function RoutineTab(): React.JSX.Element {
     // console.log('🧴 Routine tab loaded');
   }, []);
 
-  // Refetch routines when screen comes into focus (e.g., returning from thread chat)
+  // Refetch routines when screen comes into focus (e.g., returning from product detail)
   useFocusEffect(
     React.useCallback(() => {
-      // console.log('🧴 Routine tab focused - refetching routines');
-      // Trigger refetch in MyRoutine component
       if (myRoutineRef.current && myRoutineRef.current.refetchRoutines) {
         myRoutineRef.current.refetchRoutines();
       }

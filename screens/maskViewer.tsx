@@ -39,7 +39,8 @@ import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import HydrationScale from '../components/analysis/HydrationScale';
 
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
-const IMAGE_SIZE = SCREEN_WIDTH - 40;
+const IMAGE_WIDTH = SCREEN_WIDTH;
+const IMAGE_HEIGHT = SCREEN_WIDTH * 1.25; // Portrait aspect ratio for face photos
 const TAB_HEIGHT = 50;
 const NAV_TAB_WIDTH = 120; // Approximate width of each bottom nav tab (minWidth 80 + padding + gap)
 const MIN_SCALE = 1;
@@ -179,9 +180,10 @@ const ZoomableMaskImage = ({
     .onUpdate(e => {
       if (scale.value > 1) {
         // Calculate bounds based on current scale
-        const scaledSize = IMAGE_SIZE * scale.value;
-        const maxTranslateX = (scaledSize - IMAGE_SIZE) / 2;
-        const maxTranslateY = (scaledSize - IMAGE_SIZE) / 2;
+        const scaledWidth = IMAGE_WIDTH * scale.value;
+        const scaledHeight = IMAGE_HEIGHT * scale.value;
+        const maxTranslateX = (scaledWidth - IMAGE_WIDTH) / 2;
+        const maxTranslateY = (scaledHeight - IMAGE_HEIGHT) / 2;
 
         translateX.value = Math.max(
           -maxTranslateX,
@@ -266,7 +268,7 @@ const ZoomableMaskImage = ({
             <Image
               source={{ uri: sanitizeS3Uri(photoUri) }}
               style={styles.backgroundImage}
-              resizeMode="contain"
+              resizeMode="cover"
               onError={error => {
                 console.log(
                   '🔴 Error loading background image:',
@@ -285,7 +287,7 @@ const ZoomableMaskImage = ({
                 <ConditionalImage
                   source={sanitizeS3Uri(maskUri)}
                   style={styles.maskOverlay}
-                  resizeMode="contain"
+                  resizeMode="cover"
                   width="100%"
                   height="100%"
                   onLoad={() => setMaskLoaded(true)}
@@ -551,7 +553,7 @@ const MaskViewerScreen = (): React.JSX.Element => {
           {/* Hydration Scale for hydration tab */}
           {maskOptions[activeIndex]?.skin_condition_name === 'hydration' &&
             parsedPhotoData?.metrics?.hydrationScore && (
-              <View style={{ marginTop: 16, width: "100%" }}>
+              <View style={{ marginTop: 16, width: '100%' }}>
                 <HydrationScale
                   score={Number(parsedPhotoData.metrics.hydrationScore)}
                   showScore={true}
@@ -630,7 +632,7 @@ const styles = StyleSheet.create({
   header: {
     paddingTop: 10,
     paddingBottom: 15,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+    // backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   headerContent: {
     flexDirection: 'row',
@@ -667,8 +669,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   maskImageContainer: {
-    width: IMAGE_SIZE,
-    height: IMAGE_SIZE,
+    width: IMAGE_WIDTH,
+    height: IMAGE_HEIGHT,
+    marginTop: 80,
     borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: '#111',
@@ -681,7 +684,7 @@ const styles = StyleSheet.create({
   captionContainer: {
     paddingHorizontal: 20,
     paddingTop: 16,
-    paddingBottom: 54,
+    paddingBottom: 34,
     alignItems: 'center',
   },
   captionTitle: {
@@ -729,7 +732,6 @@ const styles = StyleSheet.create({
     left: 0,
     width: '100%',
     height: '100%',
-    borderRadius: 12,
   },
   maskOverlay: {
     position: 'absolute',
@@ -794,11 +796,11 @@ const styles = StyleSheet.create({
   },
   bottomGradient: {
     paddingBottom: 40,
-    paddingTop: 20,
+    // paddingTop: 20,
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   bottomNavigation: {
-    paddingVertical: 10,
+    paddingBottom: 0,
   },
   navigationScroll: {
     maxHeight: TAB_HEIGHT,
@@ -810,7 +812,7 @@ const styles = StyleSheet.create({
   },
   navigationTab: {
     paddingHorizontal: 16,
-    paddingVertical: 10,
+    paddingBottom: 10,
     alignItems: 'center',
     minWidth: 80,
     position: 'relative',

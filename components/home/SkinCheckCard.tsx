@@ -1,12 +1,5 @@
 import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Linking,
-  Alert,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Alert } from 'react-native';
 import { ChevronRight, MessageSquareText } from 'lucide-react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import { useNavigation } from '@react-navigation/native';
@@ -57,46 +50,41 @@ function renderCommentWithLinks(
   const urlRegex = /(https?:\/\/[^\s<>"']+)/gi;
   const parts = text.split(urlRegex);
 
-  return parts.map((part, index) => {
-    if (urlRegex.test(part)) {
-      urlRegex.lastIndex = 0;
-      return (
-        <Text
-          key={index}
-          style={styles.commentLink}
-          onPress={() => onLinkPress(part)}
-        >
-          {part}
-        </Text>
-      );
-    }
-    return <Text key={index}>{part}</Text>;
-  });
+  return (
+    <Text style={styles.commentText} selectable>
+      {parts.map((part, index) => {
+        if (urlRegex.test(part)) {
+          urlRegex.lastIndex = 0;
+          return (
+            <Text
+              key={index}
+              style={styles.commentLink}
+              onPress={() => onLinkPress(part)}
+            >
+              {part}
+            </Text>
+          );
+        }
+        return <Text key={index}>{part}</Text>;
+      })}
+    </Text>
+  );
 }
 
 async function openInAppBrowser(url: string) {
   try {
-    const isAvailable = await InAppBrowser.isAvailable();
-    if (isAvailable) {
-      await InAppBrowser.open(url, {
-        toolbarColor: '#FFFFFF',
-        secondaryToolbarColor: '#F5F5F5',
-        navigationBarColor: '#FFFFFF',
-        navigationBarDividerColor: '#E5E7EB',
-        enableUrlBarHiding: true,
-        enableDefaultShare: true,
-        showTitle: true,
-      });
-    } else {
-      await Linking.openURL(url);
-    }
+    await InAppBrowser.open(url, {
+      toolbarColor: '#FFFFFF',
+      secondaryToolbarColor: '#F5F5F5',
+      navigationBarColor: '#FFFFFF',
+      navigationBarDividerColor: '#E5E7EB',
+      enableUrlBarHiding: true,
+      enableDefaultShare: true,
+      showTitle: true,
+    });
   } catch (error) {
     console.error('Error opening URL:', error);
-    try {
-      await Linking.openURL(url);
-    } catch (e) {
-      Alert.alert('Error', 'Unable to open this link.');
-    }
+    Alert.alert('Error', 'Unable to open this link.');
   }
 }
 
@@ -291,9 +279,7 @@ const SkinCheckCard: React.FC<SkinCheckCardProps> = ({
                 {formatRepliedTime(comment.created_at)}
               </Text>
             </View>
-            <Text style={styles.commentText} selectable>
-              {renderCommentWithLinks(comment.comment_text, openInAppBrowser)}
-            </Text>
+            {renderCommentWithLinks(comment.comment_text, openInAppBrowser)}
           </View>
         )}
       </View>

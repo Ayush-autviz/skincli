@@ -431,7 +431,7 @@ export const signUp = async userData => {
       // User already exists
       throw new Error(
         error.response.data.message ||
-          'User already exists. Please try to login.',
+        'User already exists. Please try to login.',
       );
     }
 
@@ -478,8 +478,8 @@ export const verifyOtp = async otpData => {
 
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'OTP verification failed',
+      error.message ||
+      'OTP verification failed',
     );
   }
 };
@@ -510,8 +510,8 @@ export const forgotPassword = async email => {
     console.error('🔴 Forgot password error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to send reset OTP',
+      error.message ||
+      'Failed to send reset OTP',
     );
   }
 };
@@ -547,8 +547,8 @@ export const newPassword = async passwordData => {
     console.error('🔴 New password error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to change password',
+      error.message ||
+      'Failed to change password',
     );
   }
 };
@@ -755,8 +755,8 @@ export const createProfile = async profileData => {
     console.error('🔴 Profile creation error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Profile creation failed',
+      error.message ||
+      'Profile creation failed',
     );
   }
 };
@@ -834,8 +834,8 @@ export const getProfile = async () => {
     console.error('🔴 Profile fetch error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch profile',
+      error.message ||
+      'Failed to fetch profile',
     );
   }
 };
@@ -894,8 +894,8 @@ export const processHautImage = async (imageUri, imageType = 'front_image') => {
 
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Image processing failed',
+      error.message ||
+      'Image processing failed',
     );
   }
 };
@@ -974,8 +974,8 @@ export const processHautImages = async ({ front, left, right }) => {
 
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Image processing failed',
+      error.message ||
+      'Image processing failed',
     );
   }
 };
@@ -1009,8 +1009,8 @@ export const getHautAnalysisResults = async hautBatchId => {
 
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch analysis results',
+      error.message ||
+      'Failed to fetch analysis results',
     );
   }
 };
@@ -1043,8 +1043,8 @@ export const getHautMaskResults = async hautBatchId => {
     console.error('🔴 [Haut.ai] getHautMaskResults error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch mask results',
+      error.message ||
+      'Failed to fetch mask results',
     );
   }
 };
@@ -1067,8 +1067,8 @@ export const getHautMaskImages = async hautBatchId => {
     console.error('🔴 [Haut.ai] getHautMaskImages error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch mask images',
+      error.message ||
+      'Failed to fetch mask images',
     );
   }
 };
@@ -1317,8 +1317,8 @@ export const getUserPhotos = async (page = 1, limit = 10) => {
 
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch photos',
+      error.message ||
+      'Failed to fetch photos',
     );
   }
 };
@@ -1349,8 +1349,8 @@ export const deletePhoto = async imageId => {
     console.error('🔴 deletePhoto error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to delete photo',
+      error.message ||
+      'Failed to delete photo',
     );
   }
 };
@@ -1392,8 +1392,8 @@ export const getComparison = async (dateFilter = 'older_than_6_months') => {
     console.error('🔴 getComparison error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch comparison data',
+      error.message ||
+      'Failed to fetch comparison data',
     );
   }
 };
@@ -1425,8 +1425,8 @@ export const toggleTopConcern = async concern => {
     console.error('🔴 toggleTopConcern error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to toggle top concern',
+      error.message ||
+      'Failed to toggle top concern',
     );
   }
 };
@@ -1600,8 +1600,8 @@ export const getSkinTrendScores = async ({
     console.error('🔴 getSkinTrendScores error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch skin trend scores',
+      error.message ||
+      'Failed to fetch skin trend scores',
     );
   }
 };
@@ -1642,8 +1642,8 @@ export const getChatHistory = async ({ type, image_id }) => {
     console.error('🔴 getChatHistory error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch chat history',
+      error.message ||
+      'Failed to fetch chat history',
     );
   }
 };
@@ -1687,8 +1687,8 @@ export const postChatMessage = async body => {
     console.error('🔴 postChatMessage error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to post chat message',
+      error.message ||
+      'Failed to post chat message',
     );
   }
 };
@@ -1729,8 +1729,8 @@ export const generateExpertReportLink = async (email, comment = '') => {
     console.error('🔴 generateExpertReportLink error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to generate report link',
+      error.message ||
+      'Failed to generate report link',
     );
   }
 };
@@ -1904,8 +1904,8 @@ export const confirmThreadItem = async (threadId, item, bool) => {
     console.error('🔴 confirmThreadItem error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to confirm thread item',
+      error.message ||
+      'Failed to confirm thread item',
     );
   }
 };
@@ -1940,8 +1940,8 @@ export const getChatHistoryByImageId = async imageId => {
     console.error('🔴 getChatHistoryByImageId error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch chat history',
+      error.message ||
+      'Failed to fetch chat history',
     );
   }
 };
@@ -1987,8 +1987,8 @@ export const sendSnapshotFirstChat = async chatData => {
     console.error('🔴 sendSnapshotFirstChat error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to send snapshot first chat',
+      error.message ||
+      'Failed to send snapshot first chat',
     );
   }
 };
@@ -2030,8 +2030,8 @@ export const getRoutineItems = async () => {
 
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch routine items',
+      error.message ||
+      'Failed to fetch routine items',
     );
   }
 };
@@ -2125,8 +2125,8 @@ export const createRoutineItem = async itemData => {
     console.error('🔴 createRoutineItem error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to create routine item',
+      error.message ||
+      'Failed to create routine item',
     );
   }
 };
@@ -2211,8 +2211,8 @@ export const updateRoutineItem = async (itemId, itemData) => {
     console.error('🔴 updateRoutineItem error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to update routine item',
+      error.message ||
+      'Failed to update routine item',
     );
   }
 };
@@ -2256,8 +2256,8 @@ export const rateEffectiveness = async (routineItemId, ratings) => {
     console.error('🔴 rateEffectiveness error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to rate effectiveness',
+      error.message ||
+      'Failed to rate effectiveness',
     );
   }
 };
@@ -2301,8 +2301,8 @@ export const toggleTracking = async (routineItemId, action) => {
     console.error('🔴 toggleTracking error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to toggle tracking',
+      error.message ||
+      'Failed to toggle tracking',
     );
   }
 };
@@ -2331,8 +2331,8 @@ export const deleteRoutineItem = async itemId => {
     console.error('🔴 deleteRoutineItem error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to delete routine item',
+      error.message ||
+      'Failed to delete routine item',
     );
   }
 };
@@ -2397,8 +2397,8 @@ export const getComparisonSummaries = async () => {
     console.error('🔴 getComparisonSummaries error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch comparison summaries',
+      error.message ||
+      'Failed to fetch comparison summaries',
     );
   }
 };
@@ -2446,8 +2446,8 @@ export const generateConcernMessage = async concernName => {
     console.error('🔴 generateConcernMessage error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to generate concern message',
+      error.message ||
+      'Failed to generate concern message',
     );
   }
 };
@@ -2482,8 +2482,8 @@ export const registerFCMToken = async fcmToken => {
     console.error('🔴 FCM token registration error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to register FCM token',
+      error.message ||
+      'Failed to register FCM token',
     );
   }
 };
@@ -2521,8 +2521,8 @@ export const searchProducts = async (query, limit = 20) => {
     console.error('🔴 searchProducts error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to search products',
+      error.message ||
+      'Failed to search products',
     );
   }
 };
@@ -2553,8 +2553,8 @@ export const searchProductByUPC = async upc => {
     console.error('🔴 searchProductByUPC error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to search product',
+      error.message ||
+      'Failed to search product',
     );
   }
 };
@@ -2676,8 +2676,8 @@ export const getReportHistory = async () => {
     console.error('🔴 Report history fetch error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch report history',
+      error.message ||
+      'Failed to fetch report history',
     );
   }
 };
@@ -2711,8 +2711,8 @@ export const updateTimezone = async timezone => {
     console.error('🔴 updateTimezone error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to update timezone',
+      error.message ||
+      'Failed to update timezone',
     );
   }
 };
@@ -2738,8 +2738,8 @@ export const getUserRoutineScanMetrics = async () => {
     console.error('🔴 Metrics fetch error:', error);
     throw new Error(
       error.response?.data?.message ||
-        error.message ||
-        'Failed to fetch metrics',
+      error.message ||
+      'Failed to fetch metrics',
     );
   }
 };

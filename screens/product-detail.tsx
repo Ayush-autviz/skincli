@@ -362,7 +362,21 @@ const ProductDetailScreen = (): React.JSX.Element => {
     }
     return routineData.concern_tracking
       .filter((tracking: any) => tracking.is_completed === true)
-      .map((tracking: any) => tracking.concern_name);
+      .map((tracking: any) => ({
+        name: tracking.concern_name,
+        metric: tracking.backend_metric
+          ? tracking.backend_metric
+              .split('_')
+              .map(
+                (word: string) =>
+                  word.charAt(0).toUpperCase() + word.slice(1).toLowerCase(),
+              )
+              .join(' ')
+          : '',
+        mappedMetrics: Array.isArray(tracking.mapped_metric)
+          ? tracking.mapped_metric
+          : [],
+      }));
   };
 
   // Handle edit button press
@@ -761,24 +775,43 @@ const ProductDetailScreen = (): React.JSX.Element => {
             </View>
 
             {/* Concerns Reviewed Section */}
-            {getCompletedConcerns().length > 0 && (
-              <>
-                <Text style={styles.modalSectionHeading}>
-                  Concerns Reviewed
-                </Text>
-                <View style={styles.modalChipContainer}>
-                  {getCompletedConcerns().map(
-                    (concern: string, index: number) => (
-                      <View key={index} style={styles.modalChip}>
-                        <Text style={styles.modalChipText}>
-                          {formatConcernName(concern)}
-                        </Text>
-                      </View>
-                    ),
-                  )}
-                </View>
-              </>
-            )}
+            {getCompletedConcerns().length > 0 &&
+              (() => {
+                const allMetrics: string[] = [];
+                getCompletedConcerns().forEach(
+                  (concern: {
+                    name: string;
+                    metric: string;
+                    mappedMetrics: string[];
+                  }) => {
+                    if (concern.mappedMetrics.length > 0) {
+                      concern.mappedMetrics.forEach((m: string) => {
+                        if (!allMetrics.includes(m)) allMetrics.push(m);
+                      });
+                    } else if (concern.metric) {
+                      if (!allMetrics.includes(concern.metric))
+                        allMetrics.push(concern.metric);
+                    } else {
+                      if (!allMetrics.includes(concern.name))
+                        allMetrics.push(concern.name);
+                    }
+                  },
+                );
+                return allMetrics.length > 0 ? (
+                  <>
+                    <Text style={styles.modalSectionHeading}>
+                      Concerns Reviewed
+                    </Text>
+                    <View style={styles.modalChipContainer}>
+                      {allMetrics.map((metric: string, index: number) => (
+                        <View key={index} style={styles.modalChip}>
+                          <Text style={styles.modalChipText}>{metric}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  </>
+                ) : null;
+              })()}
 
             {/* Question */}
             <Text style={styles.modalQuestion}>
@@ -1032,11 +1065,23 @@ const ProductDetailScreen = (): React.JSX.Element => {
                             {/* Divider at the top of each row */}
                             <View style={styles.effectivenessDivider} />
                             <View style={styles.effectivenessRow}>
-                              <Text style={styles.effectivenessName}>
-                                {formatConcernName(
-                                  tracking.concern_name || 'Unknown Concern',
-                                )}
-                              </Text>
+                              <View style={styles.effectivenessNameContainer}>
+                                <Text style={styles.effectivenessName}>
+                                  {tracking.backend_metric
+                                    ? tracking.backend_metric
+                                        .split('_')
+                                        .map(
+                                          (word: string) =>
+                                            word.charAt(0).toUpperCase() +
+                                            word.slice(1).toLowerCase(),
+                                        )
+                                        .join(' ')
+                                    : formatConcernName(
+                                        tracking.concern_name ||
+                                          'Unknown Concern',
+                                      )}
+                                </Text>
+                              </View>
                               <View style={styles.effectivenessStatusContainer}>
                                 {/* Ready to Review - Clickable Link */}
                                 {canReview ? (
@@ -1826,6 +1871,23 @@ const styles = StyleSheet.create({
     color: '#57534E',
     fontFamily: fontFamily.medium,
   },
+  mappedMetricsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginTop: 4,
+    gap: 4,
+  },
+  mappedMetricChip: {
+    backgroundColor: '#F5F5F4',
+    borderRadius: 6,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+  },
+  mappedMetricChipText: {
+    fontSize: 11,
+    color: '#78716C',
+    fontFamily: fontFamily.regular,
+  },
   modalUsageInfo: {
     fontSize: fontSize.sm,
     color: colors.textSecondary,
@@ -2086,7 +2148,16 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#1C1917',
+  },
+  effectivenessNameContainer: {
     flex: 1,
+    gap: 2,
+  },
+  effectivenessMetric: {
+    fontSize: 12,
+    color: '#78716C',
+    fontWeight: '400',
+    fontFamily: fontFamily.regular,
   },
   effectivenessStatusContainer: {
     alignItems: 'flex-end',

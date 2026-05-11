@@ -662,10 +662,10 @@ export default function HomeScreen(): React.JSX.Element {
                 prev.map(c =>
                   c.metricKey === concern.metricKey
                     ? {
-                        ...c,
-                        foundIngredients: response.data.found_ingredients || [],
-                        ingredientsLoading: false,
-                      }
+                      ...c,
+                      foundIngredients: response.data.found_ingredients || [],
+                      ingredientsLoading: false,
+                    }
                     : c,
                 ),
               );
@@ -960,7 +960,7 @@ export default function HomeScreen(): React.JSX.Element {
               style={[
                 styles.arrowButton,
                 currentDateIndex >= dateGroups.length - 1 &&
-                  styles.arrowButtonDisabled,
+                styles.arrowButtonDisabled,
               ]}
               onPress={goToPrevDate}
               disabled={currentDateIndex >= dateGroups.length - 1}
@@ -1036,8 +1036,8 @@ export default function HomeScreen(): React.JSX.Element {
                   Math.min(
                     (currentDateGroup?.photos?.length || 0) - 1,
                     (currentDateGroup?.photos?.length || 0) -
-                      1 -
-                      currentPhotoInDate,
+                    1 -
+                    currentPhotoInDate,
                   ),
                 )}
                 // defaultIndex={currentPhotoInDate}
@@ -1154,18 +1154,18 @@ export default function HomeScreen(): React.JSX.Element {
                               : undefined,
                             precomputedChange:
                               concern.change !== undefined &&
-                              concern.changeDirection &&
-                              concern.changeDirection !== 'none'
+                                concern.changeDirection &&
+                                concern.changeDirection !== 'none'
                                 ? {
-                                    arrow:
-                                      concern.changeDirection === 'up'
-                                        ? '↑'
-                                        : '↓',
-                                    value: Math.abs(concern.change || 0),
-                                  }
+                                  arrow:
+                                    concern.changeDirection === 'up'
+                                      ? '↑'
+                                      : '↓',
+                                  value: Math.abs(concern.change || 0),
+                                }
                                 : concern.change !== undefined
-                                ? { arrow: '→', value: 0 }
-                                : undefined,
+                                  ? { arrow: '→', value: 0 }
+                                  : undefined,
                           });
                         }}
                       >
@@ -1313,10 +1313,10 @@ export default function HomeScreen(): React.JSX.Element {
                                     </Text>
                                   </View>
                                   {isFound &&
-                                  foundEntry &&
-                                  typeof foundEntry !== 'string' &&
-                                  Array.isArray(foundEntry.products) &&
-                                  foundEntry.products.length > 0 ? (
+                                    foundEntry &&
+                                    typeof foundEntry !== 'string' &&
+                                    Array.isArray(foundEntry.products) &&
+                                    foundEntry.products.length > 0 ? (
                                     <View>
                                       {foundEntry.products.map(
                                         (product: string, pIdx: number) => (
@@ -1365,11 +1365,10 @@ export default function HomeScreen(): React.JSX.Element {
         {!isLoadingReview && (
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Review Effectiveness</Text>
+              <Text style={styles.sectionTitle}>
+                Review Products & Treatments Effectiveness
+              </Text>
             </View>
-            <Text style={styles.reviewSubtitle}>
-              These products are ready for you to review their effectiveness
-            </Text>
             {reviewItems.length > 0 ? (
               <>
                 {(isReviewExpanded ? reviewItems : reviewItems.slice(0, 3)).map(
@@ -1434,7 +1433,7 @@ export default function HomeScreen(): React.JSX.Element {
             ) : (
               <View style={styles.reviewEmptyContainer}>
                 <Text style={styles.reviewEmptyText}>
-                  No product requires an effectiveness review.
+                  Nothing to review at present!
                 </Text>
                 <TouchableOpacity
                   onPress={() => {
@@ -1637,25 +1636,26 @@ const styles = StyleSheet.create({
   // Section Card
   sectionCard: {
     backgroundColor: '#FFFFFF',
-    borderRadius: 16,
-    padding: spacing.md,
-    marginBottom: spacing.md,
+    borderRadius: 12,
+    padding: 20,
+    marginBottom: 12,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 3,
   },
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: spacing.sm,
+    marginBottom: 12,
     gap: 8,
   },
   sectionTitle: {
-    fontSize: 17,
+    fontSize: 18,
     fontWeight: '600',
-    color: colors.textPrimary,
+    color: '#1C1917',
+    fontFamily: fontFamily.bold,
   },
 
   // Concerns
@@ -1938,12 +1938,6 @@ const styles = StyleSheet.create({
   },
 
   // Review Effectiveness Section
-  reviewSubtitle: {
-    fontSize: 14,
-    color: '#79716B',
-    lineHeight: 20,
-    marginBottom: 12,
-  },
   reviewItemCard: {
     flexDirection: 'row',
     alignItems: 'center',

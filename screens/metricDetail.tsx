@@ -145,6 +145,7 @@ import {
   ActivityIndicator,
   Dimensions,
   DeviceEventEmitter,
+  Platform,
 } from 'react-native';
 import SkeletonPlaceholder from 'react-native-skeleton-placeholder';
 import {
@@ -3230,7 +3231,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    height: 105,
+    height: Platform.OS === 'ios' ? 105 : 90,
     backgroundColor: colors.background,
     borderBottomWidth: 0.4,
     justifyContent: 'flex-end',
@@ -3293,6 +3294,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flex: 1,
+    paddingVertical: Platform.OS === 'ios' ? 0 : 50,
   },
   metricCard: {
     marginVertical: 16,

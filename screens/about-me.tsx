@@ -476,7 +476,7 @@ export default function AboutMeScreen({
                 activeTab === 'rated' && styles.activeTabText,
               ]}
             >
-              Rated Products/Services
+              Ratings
             </Text>
           </TouchableOpacity>
         </ScrollView>
@@ -581,7 +581,6 @@ export default function AboutMeScreen({
             </View>
           ) : (
             <View style={styles.emptyContainer}>
-              <Text style={styles.emptyText}>No rated items</Text>
               <Text style={styles.emptySubtext}>
                 You haven't reviewed any products yet.
               </Text>

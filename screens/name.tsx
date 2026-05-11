@@ -24,7 +24,9 @@ import useAuthStore from '../stores/authStore';
 
 export default function NameScreen(): React.JSX.Element {
   const navigation = useNavigation();
-  const [profileImage, setProfileImage] = useState<ImagePicker.Asset | null>(null);
+  const [profileImage, setProfileImage] = useState<ImagePicker.Asset | null>(
+    null,
+  );
   const [birthDate, setBirthDate] = useState<Date | null>(null);
   const [error, setError] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
@@ -74,10 +76,13 @@ export default function NameScreen(): React.JSX.Element {
       setLoading(true);
       setError('');
 
-      const formattedDate = birthDate.toISOString().split('T')[0];
+      const d = birthDate;
+      const formattedDate = `${d.getFullYear()}-${String(
+        d.getMonth() + 1,
+      ).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 
       const profileData: any = {
-        birth_date: formattedDate
+        birth_date: formattedDate,
       };
 
       if (profileImage) {
@@ -123,11 +128,15 @@ export default function NameScreen(): React.JSX.Element {
 <line x1="40.5586" y1="74.2447" x2="40.5586" y2="80.1182" stroke="#0498B3" stroke-width="7.98147" stroke-linecap="round"/>
 </g>
 </svg>
-`
+`;
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
+      <StatusBar
+        barStyle="dark-content"
+        backgroundColor="#FFFFFF"
+        translucent={false}
+      />
 
       <KeyboardAwareScrollView
         style={styles.scrollView}
@@ -175,7 +184,9 @@ export default function NameScreen(): React.JSX.Element {
                   <Text style={styles.addIconText}>+</Text>
                 </View>
               </TouchableOpacity>
-              <Text style={styles.imagePickerLabel}>Profile Image (Optional)</Text>
+              <Text style={styles.imagePickerLabel}>
+                Profile Image (Optional)
+              </Text>
             </View>
 
             {/* Birth Date */}
@@ -186,11 +197,17 @@ export default function NameScreen(): React.JSX.Element {
                 onPress={() => setShowDatePicker(!showDatePicker)}
               >
                 <Calendar size={20} color="#9CA3AF" style={styles.inputIcon} />
-                <Text style={[styles.dateText, !birthDate && { color: '#9CA3AF' }]}>
-                  {birthDate ? birthDate.toDateString() : 'Select your birth date'}
+                <Text
+                  style={[styles.dateText, !birthDate && { color: '#9CA3AF' }]}
+                >
+                  {birthDate
+                    ? birthDate.toDateString()
+                    : 'Select your birth date'}
                 </Text>
               </TouchableOpacity>
-              <Text style={styles.labelSubtext}>Enter your real age for the most accurate results.</Text>
+              <Text style={styles.labelSubtext}>
+                Enter your real age for the most accurate results.
+              </Text>
             </View>
 
             {showDatePicker && (
@@ -208,7 +225,10 @@ export default function NameScreen(): React.JSX.Element {
             )}
 
             <TouchableOpacity
-              style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
+              style={[
+                styles.primaryButton,
+                loading && styles.primaryButtonDisabled,
+              ]}
               onPress={handleNext}
               disabled={loading}
             >

@@ -333,7 +333,7 @@ export default function HomeScreen(): React.JSX.Element {
       loadUserMetrics();
       loadReviewItems();
       sendTimezone();
-    }, [refreshPhotos]),
+    }, []),
   );
 
   const sendTimezone = async () => {
@@ -662,10 +662,10 @@ export default function HomeScreen(): React.JSX.Element {
                 prev.map(c =>
                   c.metricKey === concern.metricKey
                     ? {
-                        ...c,
-                        foundIngredients: response.data.found_ingredients || [],
-                        ingredientsLoading: false,
-                      }
+                      ...c,
+                      foundIngredients: response.data.found_ingredients || [],
+                      ingredientsLoading: false,
+                    }
                     : c,
                 ),
               );
@@ -960,7 +960,7 @@ export default function HomeScreen(): React.JSX.Element {
               style={[
                 styles.arrowButton,
                 currentDateIndex >= dateGroups.length - 1 &&
-                  styles.arrowButtonDisabled,
+                styles.arrowButtonDisabled,
               ]}
               onPress={goToPrevDate}
               disabled={currentDateIndex >= dateGroups.length - 1}
@@ -1036,8 +1036,8 @@ export default function HomeScreen(): React.JSX.Element {
                   Math.min(
                     (currentDateGroup?.photos?.length || 0) - 1,
                     (currentDateGroup?.photos?.length || 0) -
-                      1 -
-                      currentPhotoInDate,
+                    1 -
+                    currentPhotoInDate,
                   ),
                 )}
                 // defaultIndex={currentPhotoInDate}
@@ -1154,18 +1154,18 @@ export default function HomeScreen(): React.JSX.Element {
                               : undefined,
                             precomputedChange:
                               concern.change !== undefined &&
-                              concern.changeDirection &&
-                              concern.changeDirection !== 'none'
+                                concern.changeDirection &&
+                                concern.changeDirection !== 'none'
                                 ? {
-                                    arrow:
-                                      concern.changeDirection === 'up'
-                                        ? '↑'
-                                        : '↓',
-                                    value: Math.abs(concern.change || 0),
-                                  }
+                                  arrow:
+                                    concern.changeDirection === 'up'
+                                      ? '↑'
+                                      : '↓',
+                                  value: Math.abs(concern.change || 0),
+                                }
                                 : concern.change !== undefined
-                                ? { arrow: '→', value: 0 }
-                                : undefined,
+                                  ? { arrow: '→', value: 0 }
+                                  : undefined,
                           });
                         }}
                       >
@@ -1313,10 +1313,10 @@ export default function HomeScreen(): React.JSX.Element {
                                     </Text>
                                   </View>
                                   {isFound &&
-                                  foundEntry &&
-                                  typeof foundEntry !== 'string' &&
-                                  Array.isArray(foundEntry.products) &&
-                                  foundEntry.products.length > 0 ? (
+                                    foundEntry &&
+                                    typeof foundEntry !== 'string' &&
+                                    Array.isArray(foundEntry.products) &&
+                                    foundEntry.products.length > 0 ? (
                                     <View>
                                       {foundEntry.products.map(
                                         (product: string, pIdx: number) => (
@@ -1773,7 +1773,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     fontFamily: fontFamily.semiBold,
-    color: '#00839B',
+    color: '#1C1917',
     flex: 1,
   },
   routineChip: {

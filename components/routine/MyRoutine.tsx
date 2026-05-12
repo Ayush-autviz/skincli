@@ -142,7 +142,7 @@ interface ApiResponse {
   data: any[];
 }
 
-interface MyRoutineProps {}
+interface MyRoutineProps { }
 
 interface MyRoutineRef {
   refetchRoutines: () => void;
@@ -858,8 +858,8 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>(
           return value === 'AM + PM'
             ? 'both'
             : value === 'As needed'
-            ? 'as_needed'
-            : value.toLowerCase();
+              ? 'as_needed'
+              : value.toLowerCase();
         }
         // Handle type
         if (value === 'Product') {
@@ -1106,15 +1106,13 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>(
           const requiredDays = inProgress.required_days || 0;
 
           if (totalWeeks === 0 && requiredDays > 0) {
-            return `Review in ${requiredDays} day${
-              requiredDays !== 1 ? 's' : ''
-            }`;
+            return `Review in ${requiredDays} day${requiredDays !== 1 ? 's' : ''
+              }`;
           }
 
           const weeksRemaining = Math.max(0, totalWeeks - weeksCompleted);
-          return `Review in ${weeksRemaining} week${
-            weeksRemaining !== 1 ? 's' : ''
-          }`;
+          return `Review in ${weeksRemaining} week${weeksRemaining !== 1 ? 's' : ''
+            }`;
         }
 
         const anyEffective = item.concern_tracking?.some(
@@ -1146,10 +1144,10 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>(
               <Text style={styles.usageBoldText}>
                 {item.dateStarted
                   ? new Date(item.dateStarted).toLocaleDateString(undefined, {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric',
-                    })
+                    month: 'short',
+                    day: 'numeric',
+                    year: 'numeric',
+                  })
                   : 'Jan 1, 2024'}
               </Text>
             </Text>
@@ -1226,7 +1224,7 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>(
 
       // Filter out stopped items for active routines
       const activeItems = routineItems.filter(
-        item => !item.dateStopped || new Date(item.dateStopped) > new Date(),
+        item => !item.dateStopped,
       );
 
       // Define desired order
@@ -1360,12 +1358,12 @@ const MyRoutine = forwardRef<MyRoutineRef, MyRoutineProps>(
         upc: item.upc || null, // Include UPC if available
         productData: item.upc
           ? {
-              product_name: item.name,
-              brand: item.extra?.brand || 'Unknown',
-              upc: item.upc,
-              ingredients: item.extra?.ingredients || [],
-              good_for: item.extra?.good_for || [],
-            }
+            product_name: item.name,
+            brand: item.extra?.brand || 'Unknown',
+            upc: item.upc,
+            ingredients: item.extra?.ingredients || [],
+            good_for: item.extra?.good_for || [],
+          }
           : null,
       };
 

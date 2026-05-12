@@ -47,7 +47,7 @@ const SkinCheckScreen = () => {
             if (response.status === 200 || response.status === 201) {
                 const linkPath = response.data?.link_path || response.result?.link_path;
                 if (linkPath) {
-                    const fullLink = `https://experts.projectmagicmirror.com/${linkPath}`;
+                    const fullLink = `https://dev-experts.projectmagicmirror.com/${linkPath}`;
                     setGeneratedLink(fullLink);
                     setEmail("");
                     setStep(2);
@@ -289,7 +289,7 @@ const styles = StyleSheet.create({
     },
     scrollContent: {
         paddingHorizontal: spacing.lg,
-        paddingTop: 40,
+        paddingTop: Platform.OS === 'ios' ? 40 : 100,
         alignItems: 'center',
         paddingBottom: 20,
     },

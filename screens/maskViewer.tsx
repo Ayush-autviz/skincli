@@ -554,7 +554,7 @@ const MaskViewerScreen = (): React.JSX.Element => {
           {/* Hydration Scale for hydration tab */}
           {maskOptions[activeIndex]?.skin_condition_name === 'hydration' &&
             parsedPhotoData?.metrics?.hydrationScore && (
-              <View style={{ marginTop: 16, width: '100%' }}>
+              <View style={{ marginTop: 16, width: SCREEN_WIDTH - 50 }}>
                 <HydrationScale
                   score={Number(parsedPhotoData.metrics.hydrationScore)}
                   showScore={true}

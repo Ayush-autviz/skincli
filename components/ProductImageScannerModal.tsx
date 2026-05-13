@@ -16,7 +16,7 @@ import {
   Linking,
   Platform,
 } from 'react-native';
-import { Camera, useCameraDevices, useCameraPermission, PhotoFile } from 'react-native-vision-camera';
+import { Camera, useCameraDevice, useCameraPermission, PhotoFile } from 'react-native-vision-camera';
 import { X, Camera as CameraIcon, RotateCcw, Check, Sparkles, ArrowRight, RotateCw } from 'lucide-react-native';
 import { colors, spacing, typography, borderRadius } from '../styles';
 import { extractProductFromImage, searchProductByUPC } from '../utils/newApiService';
@@ -43,12 +43,11 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
   const cameraRef = useRef<Camera>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
 
-  const devices = useCameraDevices();
-  const device = devices.find(d => d.position === 'back');
+  const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
 
   useEffect(() => {
-    if (visible && hasPermission === null) {
+    if (visible && !hasPermission) {
       requestPermission();
     }
   }, [visible, hasPermission, requestPermission]);
@@ -166,8 +165,8 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
     }
   };
 
-  // Permission loading
-  if (hasPermission === null) {
+  // No camera device
+  if (!device) {
     return (
       <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
         <StatusBar barStyle="light-content" backgroundColor="black" />
@@ -175,8 +174,11 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
           <View style={styles.permissionContainer}>
             <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.permissionText}>
-              Requesting camera permission...
+              Initializing camera...
             </Text>
+            <TouchableOpacity onPress={onClose} style={styles.closeButtonLarge}>
+              <Text style={styles.closeButtonText}>Cancel</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -184,7 +186,7 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
   }
 
   // Permission denied
-  if (hasPermission === false) {
+  if (!hasPermission) {
     return (
       <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
         <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" translucent={false} />
@@ -216,24 +218,6 @@ const ProductImageScannerModal: React.FC<ProductImageScannerModalProps> = ({
     );
   }
 
-  // No camera device
-  if (!device) {
-    return (
-      <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
-        <StatusBar barStyle="light-content" backgroundColor="black" />
-        <View style={styles.container}>
-          <View style={styles.permissionContainer}>
-            <Text style={styles.permissionText}>
-              Camera not available on this device.
-            </Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButtonLarge}>
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-    );
-  }
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">

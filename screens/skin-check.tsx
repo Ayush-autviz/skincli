@@ -144,7 +144,7 @@ const SkinCheckScreen = () => {
                                 </View>
 
                                 <Text style={styles.footerText}>
-                                    Skinchecks are performed by professionals that you know and trust. If you are sending this SkinCheck request to a professional who has not joined the SkinCheck platform, they will have to create an account to have secure access to the report you are sending them. Each professional sets their own terms for performing a SkinCheck.
+                                    Skinchecks are performed by professionals that you know and trust. If you are sending this SkinCheck request to a professional who has not joined the SkinCheck professional network, they will have to create an account to have secure access to the report you are sending them. Each professional sets their own terms for performing a SkinCheck.
                                 </Text>
 
                                 <View style={styles.developmentBanner}>

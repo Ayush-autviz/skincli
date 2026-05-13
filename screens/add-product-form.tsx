@@ -226,7 +226,7 @@ const AddProductFormScreen = (): React.JSX.Element => {
                 <View style={styles.shadowContainer} />
             </View>
 
-            <ScrollView style={styles.content} contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 40 : 50 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.content} contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 40 : 70 }} showsVerticalScrollIndicator={false}>
                 <Text style={styles.sectionTitle}>Tell us why you are using this product</Text>
 
                 <View style={styles.chipsContainer}>

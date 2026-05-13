@@ -79,6 +79,7 @@ export default function AboutMeScreen({
   const hasLoadedPhotosRef = React.useRef(false);
   useFocusEffect(
     useCallback(() => {
+      fetchProfile(); // Refresh profile data when screen is focused
       if (!hasLoadedPhotosRef.current) {
         hasLoadedPhotosRef.current = true;
         refreshPhotos();

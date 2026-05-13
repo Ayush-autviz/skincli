@@ -219,7 +219,7 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
             <ScrollView
                 ref={scrollRef}
                 style={styles.content}
-                contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 40 : 50, paddingBottom: 60 }}
+                contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 40 : 70, paddingBottom: 60 }}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Step 1: Category */}

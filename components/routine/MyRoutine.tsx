@@ -2184,6 +2184,7 @@ const styles = StyleSheet.create({
     height: '100%',
     position: 'absolute',
     top: 0,
+
     left: 0,
     zIndex: 9999,
     elevation: 9999,

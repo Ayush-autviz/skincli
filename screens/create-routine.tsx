@@ -189,7 +189,7 @@ const CreateRoutineScreen = (): React.JSX.Element => {
     Alert.alert(
       'Product Not Found',
       message ||
-        'Could not identify the product. Please try again or add it manually.',
+      'Could not identify the product. Please try again or add it manually.',
       [
         {
           text: 'OK',
@@ -478,6 +478,9 @@ const CreateRoutineScreen = (): React.JSX.Element => {
 
   // Date picker handlers
   const handleStartDateChange = (event: any, selectedDate?: Date): void => {
+    if (Platform.OS === 'android') {
+      setShowStartDatePicker(false);
+    }
     if (event.type === 'dismissed') return;
     if (selectedDate) {
       setStartDate(selectedDate);
@@ -485,6 +488,9 @@ const CreateRoutineScreen = (): React.JSX.Element => {
   };
 
   const handleEndDateChange = (event: any, selectedDate?: Date): void => {
+    if (Platform.OS === 'android') {
+      setShowEndDatePicker(false);
+    }
     if (event.type === 'dismissed') return;
     if (selectedDate) {
       setEndDate(selectedDate);
@@ -492,6 +498,9 @@ const CreateRoutineScreen = (): React.JSX.Element => {
   };
 
   const handleTreatmentDateChange = (event: any, selectedDate?: Date): void => {
+    if (Platform.OS === 'android') {
+      setShowTreatmentDatePicker(false);
+    }
     if (event.type === 'dismissed') return;
     if (selectedDate) {
       setTreatmentDate(selectedDate);
@@ -502,10 +511,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
   const isTreatmentType = (): boolean => {
     return Boolean(
       itemType &&
-        typeof itemType === 'string' &&
-        (itemType === 'Treatment / Facial' ||
-          itemType === 'Treatment / Injection' ||
-          itemType === 'Treatment / Other'),
+      typeof itemType === 'string' &&
+      (itemType === 'Treatment / Facial' ||
+        itemType === 'Treatment / Injection' ||
+        itemType === 'Treatment / Other'),
     );
   };
 
@@ -527,8 +536,8 @@ const CreateRoutineScreen = (): React.JSX.Element => {
       return value === 'AM + PM'
         ? 'both'
         : value === 'As needed'
-        ? 'as_needed'
-        : value.toLowerCase();
+          ? 'as_needed'
+          : value.toLowerCase();
     }
     // Handle type
     if (value === 'Product' || value === 'Activity' || value === 'Nutrition') {
@@ -1031,7 +1040,7 @@ const CreateRoutineScreen = (): React.JSX.Element => {
                 const isActive =
                   concern === 'Other'
                     ? itemConcerns.includes('Other') ||
-                      itemConcerns.some(c => c.startsWith('Other: '))
+                    itemConcerns.some(c => c.startsWith('Other: '))
                     : itemConcerns.includes(concern);
 
                 return (
@@ -1058,19 +1067,19 @@ const CreateRoutineScreen = (): React.JSX.Element => {
             {/* Custom Concern Input - Show when "Other" is selected */}
             {(itemConcerns.includes('Other') ||
               itemConcerns.some(c => c.startsWith('Other: '))) && (
-              <View style={styles.customConcernContainer}>
-                <Text style={styles.customConcernLabel}>
-                  Please specify your concern:
-                </Text>
-                <TextInput
-                  style={styles.customConcernInput}
-                  placeholder="Type your concern here..."
-                  value={customConcern}
-                  onChangeText={handleCustomConcernChange}
-                  multiline={false}
-                />
-              </View>
-            )}
+                <View style={styles.customConcernContainer}>
+                  <Text style={styles.customConcernLabel}>
+                    Please specify your concern:
+                  </Text>
+                  <TextInput
+                    style={styles.customConcernInput}
+                    placeholder="Type your concern here..."
+                    value={customConcern}
+                    onChangeText={handleCustomConcernChange}
+                    multiline={false}
+                  />
+                </View>
+              )}
           </View>
 
           {/* Frequency Selection - Only show for non-treatment types */}
@@ -1202,10 +1211,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
                   style={
                     Platform.OS === 'ios'
                       ? {
-                          backgroundColor: '#F5F5F4',
-                          borderRadius: 12,
-                          marginTop: 10,
-                        }
+                        backgroundColor: '#F5F5F4',
+                        borderRadius: 12,
+                        marginTop: 10,
+                      }
                       : undefined
                   }
                   themeVariant="light"
@@ -1251,10 +1260,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
                   style={
                     Platform.OS === 'ios'
                       ? {
-                          backgroundColor: '#F5F5F4',
-                          borderRadius: 12,
-                          marginTop: 10,
-                        }
+                        backgroundColor: '#F5F5F4',
+                        borderRadius: 12,
+                        marginTop: 10,
+                      }
                       : undefined
                   }
                   themeVariant="light"
@@ -1319,10 +1328,10 @@ const CreateRoutineScreen = (): React.JSX.Element => {
                   style={
                     Platform.OS === 'ios'
                       ? {
-                          backgroundColor: '#F5F5F4',
-                          borderRadius: 12,
-                          marginTop: 10,
-                        }
+                        backgroundColor: '#F5F5F4',
+                        borderRadius: 12,
+                        marginTop: 10,
+                      }
                       : undefined
                   }
                   themeVariant="light"

@@ -7,25 +7,6 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:833806608380:android:c1e21367ee98b37af1f479",
-        "android_client_info": {
-          "package_name": "com.magic"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyDoNEJwyB5Oi7o8cNp2n7VEazQnbETDQYw"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
-    },
-    {
-      "client_info": {
         "mobilesdk_app_id": "1:833806608380:android:5d9b9c1ee3de051bf1f479",
         "android_client_info": {
           "package_name": "com.projectmagicmirror"

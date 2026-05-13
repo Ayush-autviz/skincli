@@ -1,0 +1,18 @@
+{
+  "installationFolder": "/Users/autvizsolution/Desktop/Magic/skincli/android/build_new/react-native-worklets/intermediates/prefab_package/release/prefab",
+  "gradlePath": ":react-native-worklets",
+  "packageInfo": {
+    "packageName": "react-native-worklets",
+    "packageVersion": "0.6.1",
+    "packageSchemaVersion": 2,
+    "packageDependencies": [],
+    "modules": [
+      {
+        "moduleName": "worklets",
+        "moduleHeaders": "/Users/autvizsolution/Desktop/Magic/skincli/android/build_new/react-native-worklets/prefab-headers/worklets",
+        "moduleExportLibraries": [],
+        "abis": []
+      }
+    ]
+  }
+}

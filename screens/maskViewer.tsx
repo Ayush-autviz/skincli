@@ -11,6 +11,7 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
+  Platform,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { X, RotateCcw, ZoomIn, ZoomOut } from 'lucide-react-native';
@@ -475,19 +476,19 @@ const MaskViewerScreen = (): React.JSX.Element => {
       />
 
       {/* Header */}
-      <SafeAreaView style={styles.headerContainer}>
-        <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <Text style={styles.headerTitle}>Face Mask</Text>
-            <TouchableOpacity
-              style={styles.closeButton}
-              onPress={() => (navigation as any).goBack()}
-            >
-              <X size={24} color="white" />
-            </TouchableOpacity>
-          </View>
+
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Face Mask</Text>
+          <TouchableOpacity
+            style={styles.closeButton}
+            onPress={() => (navigation as any).goBack()}
+          >
+            <X size={24} color="white" />
+          </TouchableOpacity>
         </View>
-      </SafeAreaView>
+      </View>
+
 
       {/* Main content */}
       <View style={styles.mainContent}>
@@ -623,15 +624,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#000',
   },
   headerContainer: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 100,
+    // position: 'absolute',
+    // top: 0,
+    // left: 0,
+    // right: 0,
+    // zIndex: 100,
   },
   header: {
     paddingTop: 10,
-    paddingBottom: 15,
+    paddingBottom: Platform.OS === 'ios' ? 0 : 20,
     // backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
   headerContent: {
@@ -656,6 +657,7 @@ const styles = StyleSheet.create({
   mainContent: {
     flex: 1,
     justifyContent: 'center',
+    alignItems: 'center',
   },
   scrollView: {
     //flex: 1,
@@ -671,8 +673,8 @@ const styles = StyleSheet.create({
   maskImageContainer: {
     width: IMAGE_WIDTH,
     height: IMAGE_HEIGHT,
-    marginTop: 80,
-    borderRadius: 28,
+    // marginTop: 80,
+    //borderRadius: 28,
     overflow: 'hidden',
     backgroundColor: '#111',
     shadowColor: '#000',

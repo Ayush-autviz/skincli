@@ -101,12 +101,16 @@ const AddProductFormScreen = (): React.JSX.Element => {
     };
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
+
+        if (event.type === 'dismissed') {
+            return;
+        }
+
         if (selectedDate) {
             setStartDate(selectedDate);
-        }
-        // For Android, we still want it to close on selection normally
-        if (Platform.OS === 'android' && event.type === 'set') {
-            setShowDatePicker(false);
         }
     };
 
@@ -222,7 +226,7 @@ const AddProductFormScreen = (): React.JSX.Element => {
                 <View style={styles.shadowContainer} />
             </View>
 
-            <ScrollView style={styles.content} contentContainerStyle={{ paddingTop: 40 }} showsVerticalScrollIndicator={false}>
+            <ScrollView style={styles.content} contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 40 : 50 }} showsVerticalScrollIndicator={false}>
                 <Text style={styles.sectionTitle}>Tell us why you are using this product</Text>
 
                 <View style={styles.chipsContainer}>
@@ -335,7 +339,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         zIndex: 1000,
-        height: 105,
+        height: Platform.OS === 'ios' ? 105 : 85,
         backgroundColor: colors.background,
         borderBottomWidth: 0.4,
         justifyContent: 'flex-end',

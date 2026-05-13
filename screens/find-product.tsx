@@ -250,7 +250,7 @@ const FindProductScreen = (): React.JSX.Element => {
       </View>
 
       {/* Search Input - below fixed header */}
-      <View style={[styles.searchSection, { marginTop: 40 }]}>
+      <View style={[styles.searchSection, { marginTop: Platform.OS === 'ios' ? 40 : 90 }]}>
         <View style={styles.searchContainer}>
           <View style={styles.searchIconContainer}>
             {isSearching ? (
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    height: 105,
+    height: Platform.OS === 'ios' ? 105 : 85,
     backgroundColor: colors.white,
     borderBottomWidth: 0.4,
     justifyContent: 'flex-end',

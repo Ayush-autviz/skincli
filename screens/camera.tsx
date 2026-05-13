@@ -1,5 +1,6 @@
 // camera.tsx
 // Camera screen with Haut.ai LIQA (single face capture) integration
+// Optimized with preloading: uses global LIQA WebView from LiqaContext
 
 import React, { useState, useEffect } from 'react';
 import {
@@ -8,23 +9,44 @@ import {
   StyleSheet,
   TouchableOpacity,
   Alert,
-  Dimensions,
+  ActivityIndicator,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import useAuthStore from '../stores/authStore';
 import { colors, spacing, typography, borderRadius, shadows } from '../styles';
 import { ArrowLeft, AlertCircle } from 'lucide-react-native';
-import { LiqaWebView } from '../components/LiqaWebView';
+import { useLiqa } from '../contexts/LiqaContext';
 
 const CameraScreen = (): React.JSX.Element => {
   const { user } = useAuthStore();
   const navigation = useNavigation();
   const route = useRoute();
   const fromScanTab = (route.params as any)?.fromScanTab;
-  const [showLiqa, setShowLiqa] = useState<boolean>(true);
+  const { showLiqa, hideLiqa, setOnLiqaEvent } = useLiqa();
+  const [isInitializing, setIsInitializing] = useState(true);
+
+  useEffect(() => {
+    // Show the global preloaded LIQA WebView (it's behind the stack)
+    showLiqa();
+
+    // Small delay to ensure the overlay is ready
+    const timer = setTimeout(() => setIsInitializing(false), 500);
+
+    // Set the event handler for this specific screen
+    setOnLiqaEvent((name, payload) => {
+      handleLiqaEvent(name, payload);
+    });
+
+    return () => {
+      // Hide the LIQA WebView and clear the event handler when leaving
+      hideLiqa();
+      setOnLiqaEvent(null);
+      clearTimeout(timer);
+    };
+  }, []);
 
   const handleLiqaEvent = (name: string, payload?: any) => {
-    console.log(`📡 LIQA Event: ${name}`);
+    console.log(`📡 CameraScreen: LIQA Event: ${name}`);
 
     if (name === 'captures' && payload?.captures) {
       const captures = payload.captures;
@@ -42,7 +64,8 @@ const CameraScreen = (): React.JSX.Element => {
         return;
       }
 
-      setShowLiqa(false);
+      // Important: Hide the global WebView before navigating
+      hideLiqa();
 
       (navigation as any).replace('Snapshot', {
         photoId: `${Date.now()}`,
@@ -66,7 +89,7 @@ const CameraScreen = (): React.JSX.Element => {
   // Check if user is authenticated
   if (!user?.user_id) {
     return (
-      <View style={styles.container}>
+      <View style={[styles.container, { backgroundColor: colors.background }]}>
         <View style={styles.errorContainer}>
           <View style={styles.errorContent}>
             <View style={styles.errorIconContainer}>
@@ -100,20 +123,24 @@ const CameraScreen = (): React.JSX.Element => {
 
   return (
     <View style={styles.container}>
-      {showLiqa ? (
-        <View style={styles.container}>
-          <LiqaWebView onLiqaEvent={handleLiqaEvent} />
-          <TouchableOpacity
-            style={styles.closeLiqaButton}
-            onPress={() => (navigation as any).goBack()}
-          >
-            <ArrowLeft size={24} color="white" />
-            <Text style={styles.buttonText}>Back</Text>
-          </TouchableOpacity>
+      {/* 
+          The LIQA WebView is rendered at the global level in AuthenticatedNavigator.
+          We use a transparent container here so it shows through from behind.
+      */}
+      {isInitializing && (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={colors.primary} />
+          <Text style={styles.loadingText}>Starting Scan...</Text>
         </View>
-      ) : (
-        <View style={[styles.container, { backgroundColor: 'black' }]} />
       )}
+      
+      <TouchableOpacity
+        style={styles.closeLiqaButton}
+        onPress={() => navigation.goBack()}
+      >
+        <ArrowLeft size={24} color="white" />
+        <Text style={styles.buttonText}>Back</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -121,7 +148,19 @@ const CameraScreen = (): React.JSX.Element => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: 'transparent', // Crucial: allow global LIQA to show through
+  },
+  loadingContainer: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'black',
+    zIndex: 5,
+  },
+  loadingText: {
+    color: 'white',
+    marginTop: 10,
+    fontSize: 16,
   },
   buttonText: {
     color: 'white',
@@ -137,7 +176,7 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(0,0,0,0.5)',
     padding: 10,
     borderRadius: 8,
-    zIndex: 10,
+    zIndex: 100, // On top of the transparent container
   },
   // Error States
   errorContainer: {

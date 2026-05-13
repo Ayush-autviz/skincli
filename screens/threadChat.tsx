@@ -131,7 +131,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
   const [showManualInput, setShowManualInput] = useState<boolean>(false);
   const [manualProductName, setManualProductName] = useState<string>('');
   const [hiddenMessageIds, setHiddenMessageIds] = useState<Set<string>>(new Set());
- 
+
   const flatListRef = useRef<FlatList>(null);
   const inputRef = useRef<TextInput>(null);
   const fadeAnim = useRef(new Animated.Value(1)).current;
@@ -221,13 +221,13 @@ const ThreadChatScreen = (): React.JSX.Element => {
         }));
 
         setMessages(formattedMessages);
-        
+
         // If we should hide initial and have messages, mark the first two (usually analysis) as hidden
         if (hideInitial && formattedMessages.length >= 2) {
           const firstTwoIds = new Set([formattedMessages[0].id, formattedMessages[1].id]);
           setHiddenMessageIds(firstTwoIds);
         }
-        
+
         console.log('✅ Loaded existing chat history:', formattedMessages.length, 'messages');
       } else {
         // If no existing chat history, create a new thread
@@ -270,7 +270,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
 
         if (formattedMessages.length > 0) {
           setMessages(formattedMessages);
-          
+
           // If this was an automated initial message, mark these IDs as hidden
           if (!content && hideInitial) {
             const ids = new Set(formattedMessages.map(m => m.id));
@@ -296,7 +296,7 @@ const ThreadChatScreen = (): React.JSX.Element => {
 
   const sendMessage = async (): Promise<void> => {
     if (!inputText.trim()) return;
-    
+
     // Create thread if it doesn't exist
     if (!threadId) {
       const content = inputText.trim();
@@ -1101,7 +1101,7 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     zIndex: 1000,
-    height: 105,
+    height: Platform.OS === 'ios' ? 105 : 80,
     backgroundColor: colors.background,
     borderBottomWidth: 0.4,
     justifyContent: 'flex-end',
@@ -1167,7 +1167,7 @@ const styles = StyleSheet.create({
   },
   messagesContainer: {
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
+    paddingVertical: Platform.OS === 'ios' ? spacing.md : 50,
   },
   messageContainer: {
     marginBottom: spacing.md,

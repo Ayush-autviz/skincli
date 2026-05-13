@@ -42,18 +42,18 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
     React.useEffect(() => {
         if (isEditMode && params.routineData) {
             const data = params.routineData;
-            
+
             // Step 1: Find and set category
-            const category = treatmentCategories.find(c => 
-                c.name.toLowerCase() === data.type?.toLowerCase() || 
+            const category = treatmentCategories.find(c =>
+                c.name.toLowerCase() === data.type?.toLowerCase() ||
                 c.apiType.toLowerCase() === data.type?.toLowerCase()
             );
-            
+
             if (category) {
                 setSelectedCategory(category);
-                
+
                 // Step 2: Find and set subcategory
-                const subcategory = category.subcategories.find(s => 
+                const subcategory = category.subcategories.find(s =>
                     s.name.toLowerCase() === data.name?.toLowerCase()
                 );
                 if (subcategory) {
@@ -103,7 +103,14 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
 
 
     const handleDateChange = (event: any, selectedDate?: Date) => {
-        setShowDatePicker(false);
+        if (Platform.OS === 'android') {
+            setShowDatePicker(false);
+        }
+
+        if (event.type === 'dismissed') {
+            return;
+        }
+
         if (selectedDate) {
             setTreatmentDate(selectedDate);
         }
@@ -152,8 +159,8 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                 frequency: formatFrequencyForApi(frequency),
                 treatment_date: treatmentDate.toISOString().split('T')[0],
                 extra: {
-                    dateCreated: isEditMode && params.routineData?.extra?.dateCreated 
-                        ? params.routineData.extra.dateCreated 
+                    dateCreated: isEditMode && params.routineData?.extra?.dateCreated
+                        ? params.routineData.extra.dateCreated
                         : new Date().toISOString(),
                     treatmentDate: treatmentDate.toISOString(),
                     category: selectedCategory.name,
@@ -212,7 +219,7 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
             <ScrollView
                 ref={scrollRef}
                 style={styles.content}
-                contentContainerStyle={{ paddingTop: 40, paddingBottom: 60 }}
+                contentContainerStyle={{ paddingTop: Platform.OS === 'ios' ? 40 : 50, paddingBottom: 60 }}
                 showsVerticalScrollIndicator={false}
             >
                 {/* Step 1: Category */}
@@ -273,20 +280,20 @@ const AddTreatmentFormScreen = (): React.JSX.Element => {
                     <>
                         {/* Info card */}
                         <TouchableOpacity
-                                style={styles.infoCard}
-                                onPress={() => setExpandedInfo(!expandedInfo)}
-                                activeOpacity={0.8}
-                            >
-                                <View style={styles.infoCardHeader}>
-                                    <Text style={styles.infoCardTitle}>
-                                        About {selectedSubcategory.name}
-                                    </Text>
-                                </View>
-
-                                <Text style={styles.infoCardDescription}>
-                                    {selectedSubcategory.description}
+                            style={styles.infoCard}
+                            onPress={() => setExpandedInfo(!expandedInfo)}
+                            activeOpacity={0.8}
+                        >
+                            <View style={styles.infoCardHeader}>
+                                <Text style={styles.infoCardTitle}>
+                                    About {selectedSubcategory.name}
                                 </Text>
-                            </TouchableOpacity>
+                            </View>
+
+                            <Text style={styles.infoCardDescription}>
+                                {selectedSubcategory.description}
+                            </Text>
+                        </TouchableOpacity>
 
                         {/* Concerns */}
                         {selectedSubcategory.concerns && selectedSubcategory.concerns.length > 0 && (
@@ -398,7 +405,7 @@ const styles = StyleSheet.create({
         left: 0,
         right: 0,
         zIndex: 1000,
-        height: 105,
+        height: Platform.OS === 'ios' ? 105 : 85,
         backgroundColor: colors.background,
         borderBottomWidth: 0.4,
         justifyContent: 'flex-end',

@@ -616,6 +616,9 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
 
   // Date picker handlers
   const handleStartDateChange = (event: any, selectedDate?: Date): void => {
+    if (Platform.OS === 'android') {
+      setShowStartDatePicker(false);
+    }
     if (event.type === 'dismissed') return;
     if (selectedDate) {
       setStartDate(selectedDate);
@@ -623,6 +626,9 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   };
 
   const handleEndDateChange = (event: any, selectedDate?: Date): void => {
+    if (Platform.OS === 'android') {
+      setShowEndDatePicker(false);
+    }
     if (event.type === 'dismissed') return;
     if (selectedDate) {
       setEndDate(selectedDate);
@@ -630,6 +636,9 @@ const UpdateRoutineScreen = (): React.JSX.Element => {
   };
 
   const handleTreatmentDateChange = (event: any, selectedDate?: Date): void => {
+    if (Platform.OS === 'android') {
+      setShowTreatmentDatePicker(false);
+    }
     if (event.type === 'dismissed') return;
     if (selectedDate) {
       setTreatmentDate(selectedDate);

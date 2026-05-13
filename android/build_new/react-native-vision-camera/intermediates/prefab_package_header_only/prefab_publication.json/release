@@ -1,0 +1,17 @@
+{
+  "installationFolder": "/Users/autvizsolution/Desktop/Magic/skincli/android/build_new/react-native-vision-camera/intermediates/prefab_package/release/prefab",
+  "gradlePath": ":react-native-vision-camera",
+  "packageInfo": {
+    "packageName": "react-native-vision-camera",
+    "packageSchemaVersion": 2,
+    "packageDependencies": [],
+    "modules": [
+      {
+        "moduleName": "VisionCamera",
+        "moduleHeaders": "/Users/autvizsolution/Desktop/Magic/skincli/android/build_new/react-native-vision-camera/headers/visioncamera",
+        "moduleExportLibraries": [],
+        "abis": []
+      }
+    ]
+  }
+}

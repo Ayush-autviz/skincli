@@ -35,8 +35,17 @@ export default function NameScreen(): React.JSX.Element {
   const { setProfile, setProfileStatus, user } = useAuthStore();
 
   const handleDateChange = (event: any, selectedDate?: Date): void => {
-    if (event.type === 'dismissed') return;
-    if (selectedDate) setBirthDate(selectedDate);
+    if (Platform.OS === 'android') {
+      setShowDatePicker(false);
+    }
+
+    if (event.type === 'dismissed') {
+      return;
+    }
+
+    if (selectedDate) {
+      setBirthDate(selectedDate);
+    }
   };
 
   const handleImagePicker = async (): Promise<void> => {

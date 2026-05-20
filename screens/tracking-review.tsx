@@ -24,6 +24,8 @@ interface TrackingReviewParams {
   productData: any;
   concernTracking: any[];
   usageResponse?: 'yes' | 'no' | null;
+  selectedConcernName?: string | null;
+  selectedBackendMetric?: string | null;
 }
 
 const TrackingReviewScreen = (): React.JSX.Element => {
@@ -35,6 +37,31 @@ const TrackingReviewScreen = (): React.JSX.Element => {
   const concernTracking = params.concernTracking || [];
   const usageResponse = params.usageResponse || null;
   const itemId = params.itemId;
+
+  console.log('DEBUG [tracking-review]: Received selectedConcernName:', params.selectedConcernName);
+  console.log('DEBUG [tracking-review]: Received selectedBackendMetric:', params.selectedBackendMetric);
+  console.log('DEBUG [tracking-review]: All concernTracking:', concernTracking.map((t: any) => t.concern_name));
+
+  // Filter concern tracking - only show completed concerns.
+  // If selectedBackendMetric is provided, show only that matching card by backend_metric.
+  // Otherwise, fallback to selectedConcernName, or show all completed.
+  const filteredTracking = concernTracking.filter((tracking: any) => {
+    const isCompleted = tracking.is_completed === true;
+    if (params.selectedBackendMetric) {
+      return (
+        isCompleted &&
+        tracking.backend_metric?.toLowerCase().trim() ===
+          params.selectedBackendMetric?.toLowerCase().trim()
+      );
+    } else if (params.selectedConcernName) {
+      return (
+        isCompleted &&
+        tracking.concern_name?.toLowerCase().trim() ===
+          params.selectedConcernName?.toLowerCase().trim()
+      );
+    }
+    return isCompleted;
+  });
 
   // Track effectiveness ratings - initialize from API data
   const [effectivenessRatings, setEffectivenessRatings] = useState<Map<string, boolean | null>>(() => {
@@ -226,10 +253,8 @@ const TrackingReviewScreen = (): React.JSX.Element => {
           )}
 
           {/* Concern Tracking Cards - Only show completed concerns */}
-          {concernTracking.filter((tracking: any) => tracking.is_completed === true).length > 0 ? (
-            concernTracking
-              .filter((tracking: any) => tracking.is_completed === true)
-              .map((tracking: any, index: number) => {
+          {filteredTracking.length > 0 ? (
+            filteredTracking.map((tracking: any, index: number) => {
                 const weeksCompleted = tracking.weeks_completed || 0;
                 const totalWeeks = tracking.total_weeks || 0;
                 const isCompleted = tracking.is_completed || false;
@@ -349,7 +374,16 @@ const TrackingReviewScreen = (): React.JSX.Element => {
                     {/* Header Row: Concern Name + Score Badge */}
                     <View style={styles.concernHeaderRow}>
                       <Text style={styles.concernName}>
-                        {formatConcernName(tracking.concern_name)}
+                        {tracking.backend_metric
+                          ? tracking.backend_metric
+                              .split('_')
+                              .map(
+                                (word: string) =>
+                                  word.charAt(0).toUpperCase() +
+                                  word.slice(1).toLowerCase(),
+                              )
+                              .join(' ')
+                          : formatConcernName(tracking.concern_name)}
                       </Text>
 
                       {currentScore !== null && (

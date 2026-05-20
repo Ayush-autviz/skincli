@@ -1,7 +1,7 @@
 // product-detail.tsx
 // Product detail screen for scanned products - Redesigned to match mockup
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -182,7 +182,10 @@ const ProductDetailScreen = (): React.JSX.Element => {
   const [isFetchingRoutine, setIsFetchingRoutine] = useState<boolean>(false);
   const [showUsageModal, setShowUsageModal] = useState<boolean>(false);
   const [usageResponse, setUsageResponse] = useState<string | null>(null);
+  const [selectedTracking, setSelectedTracking] = useState<any>(null);
   const [showAllIngredients, setShowAllIngredients] = useState<boolean>(false);
+  const clickedConcernNameRef = useRef<string | null>(null);
+  const clickedBackendMetricRef = useRef<string | null>(null);
   const INITIAL_INGREDIENTS_COUNT = 5;
 
   // Fetch fresh routine data from API
@@ -483,6 +486,8 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle usage response and navigate to tracking review
   const handleUsageResponse = (response: 'yes' | 'no') => {
+    console.log('DEBUG [product-detail]: selectedTracking concern_name is:', clickedConcernNameRef.current);
+    console.log('DEBUG [product-detail]: selectedTracking backend_metric is:', clickedBackendMetricRef.current);
     setUsageResponse(response);
     setShowUsageModal(false);
     // Navigate to tracking review screen after response
@@ -492,11 +497,16 @@ const ProductDetailScreen = (): React.JSX.Element => {
       productData: productData,
       concernTracking: routineData.concern_tracking || [],
       usageResponse: response,
+      selectedConcernName: clickedConcernNameRef.current || null,
+      selectedBackendMetric: clickedBackendMetricRef.current || null,
     });
   };
 
   // Handle review tracking button press
   const handleReviewTracking = () => {
+    clickedConcernNameRef.current = null;
+    clickedBackendMetricRef.current = null;
+    setSelectedTracking(null);
     if (isTreatment) {
       handleUsageResponse('yes'); // Skip modal and navigate
       return;
@@ -538,11 +548,15 @@ const ProductDetailScreen = (): React.JSX.Element => {
 
   // Handle concern tracking item click - opens the usage modal only if allowed
   const handleConcernClick = (tracking: any) => {
+    clickedConcernNameRef.current = tracking.concern_name;
+    clickedBackendMetricRef.current = tracking.backend_metric;
     if (isTreatment) {
+      setSelectedTracking(tracking);
       handleUsageResponse('yes'); // Skip modal and navigate
       return;
     }
     if (canOpenModal(tracking)) {
+      setSelectedTracking(tracking);
       setShowUsageModal(true);
     }
   };
@@ -743,67 +757,59 @@ const ProductDetailScreen = (): React.JSX.Element => {
               <Text style={styles.modalTitle}>Review Effectiveness</Text>
             </View>
 
-            {/* Brand Name */}
-            {!isManuallyAdded && productData.brand && (
-              <Text style={styles.modalBrandName}>
-                {productData.brand.toUpperCase()}
-              </Text>
-            )}
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              style={styles.modalScrollView}
+              contentContainerStyle={styles.modalScrollContent}
+            >
+              {/* Brand Name */}
+              {!isManuallyAdded && productData.brand && (
+                <Text style={styles.modalBrandName}>
+                  {productData.brand.toUpperCase()}
+                </Text>
+              )}
 
-            {/* Product Name */}
-            {productData.product_name && (
-              <Text style={styles.modalProductName}>
-                {productData.product_name}
-              </Text>
-            )}
+              {/* Product Name */}
+              {productData.product_name && (
+                <Text style={styles.modalProductName}>
+                  {productData.product_name}
+                </Text>
+              )}
 
-            {/* Using Section */}
-            <Text style={styles.modalSectionHeading}>Using</Text>
-            <View style={styles.modalChipContainer}>
-              {/* AM/PM Pills */}
-              {getUsagePills().map((pill: string, index: number) => (
-                <View key={`usage-${index}`} style={styles.modalChip}>
-                  <Text style={styles.modalChipText}>{pill}</Text>
-                </View>
-              ))}
-              {/* Frequency Pills */}
-              {getFrequencyPills().map((pill: string, index: number) => (
-                <View key={`frequency-${index}`} style={styles.modalChip}>
-                  <Text style={styles.modalChipText}>{pill}</Text>
-                </View>
-              ))}
-            </View>
+              {/* Using Section */}
+              <Text style={styles.modalSectionHeading}>Using</Text>
+              <View style={styles.modalChipContainer}>
+                {/* AM/PM Pills */}
+                {getUsagePills().map((pill: string, index: number) => (
+                  <View key={`usage-${index}`} style={styles.modalChip}>
+                    <Text style={styles.modalChipText}>{pill}</Text>
+                  </View>
+                ))}
+                {/* Frequency Pills */}
+                {getFrequencyPills().map((pill: string, index: number) => (
+                  <View key={`frequency-${index}`} style={styles.modalChip}>
+                    <Text style={styles.modalChipText}>{pill}</Text>
+                  </View>
+                ))}
+              </View>
 
-            {/* Concerns Reviewed Section */}
-            {getCompletedConcerns().length > 0 &&
-              (() => {
-                const allMetrics: string[] = [];
-                getCompletedConcerns().forEach(
-                  (concern: {
-                    name: string;
-                    metric: string;
-                    mappedMetrics: string[];
-                  }) => {
-                    if (concern.mappedMetrics.length > 0) {
-                      concern.mappedMetrics.forEach((m: string) => {
-                        if (!allMetrics.includes(m)) allMetrics.push(m);
-                      });
-                    } else if (concern.metric) {
-                      if (!allMetrics.includes(concern.metric))
-                        allMetrics.push(concern.metric);
-                    } else {
-                      if (!allMetrics.includes(concern.name))
-                        allMetrics.push(concern.name);
-                    }
-                  },
-                );
-                return allMetrics.length > 0 ? (
+              {/* Concerns Reviewed Section */}
+              {(() => {
+                const mappedMetrics: string[] = selectedTracking
+                  ? Array.isArray(selectedTracking.mapped_metric)
+                    ? selectedTracking.mapped_metric
+                    : selectedTracking.backend_metric
+                    ? [selectedTracking.backend_metric.split('_').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(' ')]
+                    : []
+                  : [];
+
+                return mappedMetrics.length > 0 ? (
                   <>
                     <Text style={styles.modalSectionHeading}>
                       Concerns Reviewed
                     </Text>
                     <View style={styles.modalChipContainer}>
-                      {allMetrics.map((metric: string, index: number) => (
+                      {mappedMetrics.map((metric: string, index: number) => (
                         <View key={index} style={styles.modalChip}>
                           <Text style={styles.modalChipText}>{metric}</Text>
                         </View>
@@ -813,91 +819,92 @@ const ProductDetailScreen = (): React.JSX.Element => {
                 ) : null;
               })()}
 
-            {/* Question */}
-            <Text style={styles.modalQuestion}>
-              Have you been using this product as needed?
-            </Text>
+              {/* Question */}
+              <Text style={styles.modalQuestion}>
+                Have you been using this product as needed?
+              </Text>
 
-            {/* Response Options */}
-            <View style={styles.modalOptionsContainer}>
-              {/* Yes Option */}
-              <TouchableOpacity
-                style={[
-                  styles.modalOption,
-                  usageResponse === 'yes' && styles.modalOptionSelected,
-                ]}
-                onPress={() => handleUsageResponse('yes')}
-                activeOpacity={0.7}
-              >
-                <View
+              {/* Response Options */}
+              <View style={styles.modalOptionsContainer}>
+                {/* Yes Option */}
+                <TouchableOpacity
                   style={[
-                    styles.modalOptionIcon,
-                    usageResponse === 'yes' && styles.modalOptionIconSelected,
+                    styles.modalOption,
+                    usageResponse === 'yes' && styles.modalOptionSelected,
                   ]}
+                  onPress={() => handleUsageResponse('yes')}
+                  activeOpacity={0.7}
                 >
-                  <Check
-                    size={16}
-                    color={
-                      usageResponse === 'yes'
-                        ? colors.white
-                        : colors.textSecondary
-                    }
-                  />
-                </View>
-                <View style={styles.modalOptionTextContainer}>
-                  <Text
+                  <View
                     style={[
-                      styles.modalOptionText,
-                      usageResponse === 'yes' && styles.modalOptionTextSelected,
+                      styles.modalOptionIcon,
+                      usageResponse === 'yes' && styles.modalOptionIconSelected,
                     ]}
                   >
-                    Yes, I've been using it consistently
-                  </Text>
-                  <Text style={styles.modalOptionSubtext}>
-                    Missing once or twice is okay
-                  </Text>
-                </View>
-              </TouchableOpacity>
+                    <Check
+                      size={16}
+                      color={
+                        usageResponse === 'yes'
+                          ? colors.white
+                          : colors.textSecondary
+                      }
+                    />
+                  </View>
+                  <View style={styles.modalOptionTextContainer}>
+                    <Text
+                      style={[
+                        styles.modalOptionText,
+                        usageResponse === 'yes' && styles.modalOptionTextSelected,
+                      ]}
+                    >
+                      Yes, I've been using it consistently
+                    </Text>
+                    <Text style={styles.modalOptionSubtext}>
+                      Missing once or twice is okay
+                    </Text>
+                  </View>
+                </TouchableOpacity>
 
-              {/* No Option */}
-              <TouchableOpacity
-                style={[
-                  styles.modalOption,
-                  usageResponse === 'no' && styles.modalOptionSelected,
-                ]}
-                onPress={() => handleUsageResponse('no')}
-                activeOpacity={0.7}
-              >
-                <View
+                {/* No Option */}
+                <TouchableOpacity
                   style={[
-                    styles.modalOptionIcon,
-                    usageResponse === 'no' && styles.modalOptionIconSelected,
+                    styles.modalOption,
+                    usageResponse === 'no' && styles.modalOptionSelected,
                   ]}
+                  onPress={() => handleUsageResponse('no')}
+                  activeOpacity={0.7}
                 >
-                  <X
-                    size={16}
-                    color={
-                      usageResponse === 'no'
-                        ? colors.white
-                        : colors.textSecondary
-                    }
-                  />
-                </View>
-                <View style={styles.modalOptionTextContainer}>
-                  <Text
+                  <View
                     style={[
-                      styles.modalOptionText,
-                      usageResponse === 'no' && styles.modalOptionTextSelected,
+                      styles.modalOptionIcon,
+                      usageResponse === 'no' && styles.modalOptionIconSelected,
                     ]}
                   >
-                    No, I haven't been using it consistently
-                  </Text>
-                  <Text style={styles.modalOptionSubtext}>
-                    I've missed multiple times per week
-                  </Text>
-                </View>
-              </TouchableOpacity>
-            </View>
+                    <X
+                      size={16}
+                      color={
+                        usageResponse === 'no'
+                          ? colors.white
+                          : colors.textSecondary
+                      }
+                    />
+                  </View>
+                  <View style={styles.modalOptionTextContainer}>
+                    <Text
+                      style={[
+                        styles.modalOptionText,
+                        usageResponse === 'no' && styles.modalOptionTextSelected,
+                      ]}
+                    >
+                      No, I haven't been using it consistently
+                    </Text>
+                    <Text style={styles.modalOptionSubtext}>
+                      I've missed multiple times per week
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              </View>
+            </ScrollView>
           </View>
         </View>
       </Modal>
@@ -1785,10 +1792,12 @@ const styles = StyleSheet.create({
   modalContent: {
     backgroundColor: colors.white,
     borderRadius: borderRadius.lg,
-    paddingTop: 55,
-    padding: 25,
+    paddingTop: 50,
+    paddingHorizontal: 25,
+    paddingBottom: 20,
     width: '100%',
     maxWidth: 400,
+    maxHeight: '85%',
     ...shadows.lg,
   },
   modalCloseButton: {
@@ -1978,6 +1987,12 @@ const styles = StyleSheet.create({
     fontSize: fontSize.md,
     color: colors.textSecondary,
     lineHeight: 20,
+  },
+  modalScrollView: {
+    width: '100%',
+  },
+  modalScrollContent: {
+    paddingBottom: spacing.sm,
   },
   concernTrackingContainer: {
     gap: spacing.md,

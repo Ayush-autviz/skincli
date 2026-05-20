@@ -33,13 +33,9 @@ const allConcerns = [
     'Breakouts',
     'Cleanser',
     'Crepey Skin',
-    'Dewiness',
     'Dry Skin',
     'Enlarged Pores',
-    'Evenness',
-    'Eye Area',
     'Jowls',
-    'Lines',
     'Looking Tired',
     'Other',
     'Pigmentation',
@@ -48,8 +44,6 @@ const allConcerns = [
     'Sensitive Skin',
     'Sun Damage',
     'Sun Protection',
-    'Under Eye Circles',
-    'Visible Pores',
     'Wrinkles',
     'I don\'t know'
 ];

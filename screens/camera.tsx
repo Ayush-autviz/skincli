@@ -22,7 +22,7 @@ const CameraScreen = (): React.JSX.Element => {
   const navigation = useNavigation();
   const route = useRoute();
   const fromScanTab = (route.params as any)?.fromScanTab;
-  const { showLiqa, hideLiqa, setOnLiqaEvent } = useLiqa();
+  const { showLiqa, hideLiqa, setOnLiqaEvent, setOnCloseLiqa, resetLiqa } = useLiqa();
   const [isInitializing, setIsInitializing] = useState(true);
 
   useEffect(() => {
@@ -33,14 +33,19 @@ const CameraScreen = (): React.JSX.Element => {
     const timer = setTimeout(() => setIsInitializing(false), 500);
 
     // Set the event handler for this specific screen
-    setOnLiqaEvent((name, payload) => {
+    setOnLiqaEvent(() => (name: string, payload?: any) => {
       handleLiqaEvent(name, payload);
     });
+
+    // Set the close handler for the global back button
+    setOnCloseLiqa(() => () => navigation.goBack());
 
     return () => {
       // Hide the LIQA WebView and clear the event handler when leaving
       hideLiqa();
       setOnLiqaEvent(null);
+      setOnCloseLiqa(null);
+      resetLiqa(); // Remount in background
       clearTimeout(timer);
     };
   }, []);
@@ -122,7 +127,7 @@ const CameraScreen = (): React.JSX.Element => {
   }
 
   return (
-    <View style={styles.container}>
+    <View style={styles.container} pointerEvents="box-none">
       {/* 
           The LIQA WebView is rendered at the global level in AuthenticatedNavigator.
           We use a transparent container here so it shows through from behind.
@@ -133,14 +138,6 @@ const CameraScreen = (): React.JSX.Element => {
           <Text style={styles.loadingText}>Starting Scan...</Text>
         </View>
       )}
-      
-      <TouchableOpacity
-        style={styles.closeLiqaButton}
-        onPress={() => navigation.goBack()}
-      >
-        <ArrowLeft size={24} color="white" />
-        <Text style={styles.buttonText}>Back</Text>
-      </TouchableOpacity>
     </View>
   );
 };
@@ -162,21 +159,10 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 16,
   },
-  buttonText: {
+  loadingText: {
     color: 'white',
+    marginTop: 10,
     fontSize: 16,
-    marginLeft: 8,
-  },
-  closeLiqaButton: {
-    position: 'absolute',
-    top: 50,
-    left: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    padding: 10,
-    borderRadius: 8,
-    zIndex: 100, // On top of the transparent container
   },
   // Error States
   errorContainer: {

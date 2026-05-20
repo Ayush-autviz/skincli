@@ -746,7 +746,10 @@ const RecommendationsList = ({
                         { backgroundColor: getScoreColor(score) },
                       ]}
                     />
-                    <Text style={styles.scoreValue}>{Math.round(score)}</Text>
+                    <Text style={styles.scoreValue}>
+                      {Math.round(score)}
+                      <Text style={styles.scoreOutOf}> /100</Text>
+                    </Text>
                   </View>
                 )}
               </View>
@@ -859,6 +862,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     fontFamily: fontFamily.semiBold,
     color: '#44403C',
+  },
+  scoreOutOf: {
+    color: '#A9A29D',
   },
 
   // Ingredient List Wrapper

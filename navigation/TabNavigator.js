@@ -8,6 +8,7 @@ import {
   Platform,
 } from 'react-native';
 import { SvgXml } from 'react-native-svg';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, spacing } from '../styles';
 
 // Import tab screens
@@ -75,9 +76,16 @@ const TabIcon = ({ svgGetter, focused }) => {
 
 // Custom Tab Bar Component
 function CustomTabBar({ state, descriptors, navigation }) {
+  const insets = useSafeAreaInsets();
+  
+  // Calculate bottom padding considering safe area
+  const bottomPadding = Platform.OS === 'ios' 
+    ? Math.max(28, insets.bottom) 
+    : Math.max(16, insets.bottom + 8);
+
   return (
     <View style={styles.tabBarContainer}>
-      <View style={styles.tabBar}>
+      <View style={[styles.tabBar, { paddingBottom: bottomPadding }]}>
         {state.routes.map((route, index) => {
           const { options } = descriptors[route.key];
           const label =
@@ -220,7 +228,7 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: '#E5E5E5',
     paddingTop: 8,
-    paddingBottom: Platform.OS === 'ios' ? 28 : 12,
+    // paddingBottom is now set dynamically in the component
     paddingHorizontal: 8,
     shadowColor: '#000',
     shadowOffset: {

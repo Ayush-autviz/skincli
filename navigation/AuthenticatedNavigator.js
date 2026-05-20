@@ -1,7 +1,8 @@
 import React, { useEffect } from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { useNavigation } from '@react-navigation/native';
-import { View, StyleSheet } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text } from 'react-native';
+import { ArrowLeft } from 'lucide-react-native';
 
 // Import authenticated screens
 import TabNavigator from './TabNavigator';
@@ -32,6 +33,8 @@ import FindProductScreen from '../screens/find-product';
 import AddProductFormScreen from '../screens/add-product-form';
 import AddTreatmentFormScreen from '../screens/add-treatment-form';
 import SkinCheckScreen from '../screens/skin-check';
+import TopConcernsDetailScreen from '../screens/topConcernsDetail';
+
 
 const Stack = createNativeStackNavigator();
 
@@ -40,7 +43,7 @@ const Stack = createNativeStackNavigator();
  * Rendered behind the stack screens.
  */
 const GlobalLiqa = () => {
-  const { isLiqaVisible, onLiqaEvent } = useLiqa();
+  const { isLiqaVisible, onLiqaEvent, hideLiqa, onCloseLiqa, liqaKey } = useLiqa();
   const { isAuthenticated } = useAuthStore();
 
   if (!isAuthenticated) return null;
@@ -50,16 +53,32 @@ const GlobalLiqa = () => {
       pointerEvents={isLiqaVisible ? 'auto' : 'none'}
       style={[
         styles.liqaContainer,
+        { zIndex: isLiqaVisible ? 9999 : -1 },
         isLiqaVisible ? styles.liqaVisible : styles.liqaHidden,
       ]}
     >
       <LiqaWebView
+        key={liqaKey}
         onLiqaEvent={(name, payload) => {
           if (onLiqaEvent) {
             onLiqaEvent(name, payload);
           }
         }}
       />
+      {isLiqaVisible && (
+        <TouchableOpacity
+          style={styles.closeLiqaButton}
+          onPress={() => {
+            hideLiqa();
+            if (onCloseLiqa) {
+              onCloseLiqa();
+            }
+          }}
+        >
+          <ArrowLeft size={24} color="white" />
+          <Text style={styles.buttonText}>Back</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 };
@@ -85,9 +104,6 @@ function AuthenticatedNavigator() {
     <LiqaProvider>
       <PhotoProvider>
         <View style={{ flex: 1, backgroundColor: 'white' }}>
-          {/* Always mount the preloader behind the stack */}
-          {!isProfileIncomplete && <GlobalLiqa />}
-
           <Stack.Navigator
             screenOptions={{
               headerShown: false,
@@ -255,9 +271,20 @@ function AuthenticatedNavigator() {
                     headerShown: false,
                   }}
                 />
+
+                <Stack.Screen
+                  name="TopConcernsDetail"
+                  component={TopConcernsDetailScreen}
+                  options={{
+                    animation: 'slide_from_right',
+                    headerShown: false,
+                  }}
+                />
               </>
             )}
           </Stack.Navigator>
+          {/* Mount the preloader ON TOP of the stack to ensure it receives touches */}
+          {!isProfileIncomplete && <GlobalLiqa />}
         </View>
       </PhotoProvider>
     </LiqaProvider>
@@ -281,6 +308,22 @@ const styles = StyleSheet.create({
   liqaHidden: {
     opacity: 0,
     transform: [{ translateX: 10000 }],
+  },
+  closeLiqaButton: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: 10,
+    borderRadius: 8,
+    zIndex: 100,
+  },
+  buttonText: {
+    color: 'white',
+    fontSize: 16,
+    marginLeft: 8,
   },
 });
 

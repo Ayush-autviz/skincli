@@ -260,6 +260,30 @@ export default function HomeScreen(): React.JSX.Element {
   const [reviewItems, setReviewItems] = useState<any[]>([]);
   const [isLoadingReview, setIsLoadingReview] = useState<boolean>(true);
   const [isReviewExpanded, setIsReviewExpanded] = useState<boolean>(false);
+  const [routineItems, setRoutineItems] = useState<any[]>([]);
+
+  // Compute products and ingredients counts
+  const productsCount = useMemo(() => {
+    return routineItems.filter(item => item.type?.toLowerCase() === 'product').length;
+  }, [routineItems]);
+
+  const ingredientsCount = useMemo(() => {
+    const uniqueIngs = new Set<string>();
+    routineItems.forEach(item => {
+      if (item.type?.toLowerCase() === 'product') {
+        const ingredients = item.extra?.ingredients || [];
+        ingredients.forEach((ing: any) => {
+          if (typeof ing === 'string') {
+            uniqueIngs.add(ing.trim().toLowerCase());
+          } else if (ing && typeof ing === 'object' && ing.ingredient) {
+            uniqueIngs.add(ing.ingredient.trim().toLowerCase());
+          }
+        });
+      }
+    });
+    return uniqueIngs.size;
+  }, [routineItems]);
+
 
   // Toggle ingredient visibility for a concern
   const toggleConcernExpanded = (concernName: string) => {
@@ -417,12 +441,15 @@ export default function HomeScreen(): React.JSX.Element {
         });
 
         setReviewItems(readyToReview);
+        setRoutineItems(transformed);
       } else {
         setReviewItems([]);
+        setRoutineItems([]);
       }
     } catch (error) {
       console.error('Error loading review items:', error);
       setReviewItems([]);
+      setRoutineItems([]);
     } finally {
       setIsLoadingReview(false);
     }
@@ -942,7 +969,44 @@ export default function HomeScreen(): React.JSX.Element {
     });
   };
 
+  const renderConcernSubtext = (concern: any) => {
+    if (concern.ingredientsLoading) {
+      return (
+        <Text style={styles.concernSubtext}>
+          Loading routine ingredients...
+        </Text>
+      );
+    }
+
+    const helpfulIngredientsCount = concern.foundIngredients?.length || 0;
+    
+    const uniqueProducts = new Set<string>();
+    concern.foundIngredients?.forEach((found: any) => {
+      if (found && typeof found === 'object' && Array.isArray(found.products)) {
+        found.products.forEach((p: string) => {
+          if (p) uniqueProducts.add(p.trim().toLowerCase());
+        });
+      }
+    });
+    const productsCount = uniqueProducts.size;
+
+    if (productsCount === 0) {
+      return (
+        <Text style={styles.concernSubtext}>
+          <Text style={styles.boldSubtext}>0 products</Text> with helpful ingredients in your routine.
+        </Text>
+      );
+    }
+
+    return (
+      <Text style={styles.concernSubtext}>
+        {productsCount} product{productsCount !== 1 ? 's' : ''} with {helpfulIngredientsCount} helpful ingredient{helpfulIngredientsCount !== 1 ? 's' : ''} in your routine.
+      </Text>
+    );
+  };
+
   return (
+
     <View style={styles.container}>
       <HomeHeader onMenuPress={handleMenuPress} />
 
@@ -1112,250 +1176,76 @@ export default function HomeScreen(): React.JSX.Element {
         {/* Top Concerns Section */}
         {(isLoadingConcerns || topConcerns.length > 0) && (
           <View style={styles.sectionCard}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>
-                Top Concerns and Helpful Ingredients
-              </Text>
-            </View>
+            <TouchableOpacity
+              style={styles.sectionHeaderClickable}
+              onPress={() => {
+                (navigation as any).navigate('TopConcernsDetail', {
+                  photo: currentPhoto,
+                });
+              }}
+            >
+              <Text style={styles.sectionTitle}>Top concerns</Text>
+              <ChevronRight size={24} color="#A9A29D" />
+            </TouchableOpacity>
 
             {isLoadingConcerns ? (
               <ConcernsSkeleton />
             ) : topConcerns.length > 0 ? (
               <>
-                <Text style={styles.concernSubtitle}>
-                  Dermatologists recommend at least one of the following
-                  ingredients for your concerns
-                </Text>
-                {topConcerns.map(concern => {
-                  const isExpanded = expandedConcerns[concern.name] ?? false;
-                  const MAX_VISIBLE = 2;
-                  const hasAtLeastOne =
-                    concern.foundIngredients &&
-                    concern.foundIngredients.length > 0;
-                  const showToggle =
-                    hasAtLeastOne && concern.ingredients.length > MAX_VISIBLE;
-                  const visibleIngredients =
-                    showToggle && !isExpanded
-                      ? concern.ingredients.slice(0, MAX_VISIBLE)
-                      : concern.ingredients;
-                  const hasMore = showToggle;
-
-                  return (
-                    <View key={concern.name} style={styles.concernCard}>
-                      {/* Concern Header Row */}
-                      <TouchableOpacity
-                        style={styles.concernHeaderRow}
-                        onPress={() => {
-                          (navigation as any).navigate('MetricDetail', {
-                            metricKey: concern.metricKey,
-                            metricValue: concern.value,
-                            photoData: currentPhoto
-                              ? JSON.stringify(currentPhoto)
-                              : undefined,
-                            precomputedChange:
-                              concern.change !== undefined &&
-                                concern.changeDirection &&
-                                concern.changeDirection !== 'none'
-                                ? {
-                                  arrow:
-                                    concern.changeDirection === 'up'
-                                      ? '↑'
-                                      : '↓',
-                                  value: Math.abs(concern.change || 0),
-                                }
-                                : concern.change !== undefined
-                                  ? { arrow: '→', value: 0 }
-                                  : undefined,
-                          });
-                        }}
-                      >
+                {topConcerns.map(concern => (
+                  <TouchableOpacity
+                    key={concern.name}
+                    style={styles.concernCard}
+                    onPress={() => {
+                      (navigation as any).navigate('TopConcernsDetail', {
+                        photo: currentPhoto,
+                      });
+                    }}
+                  >
+                    <View style={styles.concernHeaderRow}>
+                      <View style={{ flex: 1, paddingRight: 8 }}>
                         <Text style={styles.concernName}>{concern.name}</Text>
-                        <View style={styles.concernValueContainer}>
-                          <View style={styles.scoreBadge}>
-                            {concern.changeDirection === 'up' && (
-                              <View style={styles.changeIndicator}>
-                                <ArrowUp size={12} color="#44403C" />
-                                <Text style={styles.changeValue}>
-                                  {Math.abs(concern.change || 0)}
-                                </Text>
-                              </View>
-                            )}
-                            {concern.changeDirection === 'down' && (
-                              <View style={styles.changeIndicator}>
-                                <ArrowDown size={12} color="#44403C" />
-                                <Text style={styles.changeValue}>
-                                  {Math.abs(concern.change || 0)}
-                                </Text>
-                              </View>
-                            )}
-                            <View style={styles.scoreIndicatorContainer}>
-                              <View
-                                style={[
-                                  styles.scoreIndicator,
-                                  {
-                                    backgroundColor: getScoreColor(
-                                      concern.value,
-                                    ),
-                                  },
-                                ]}
-                              />
-                              <Text style={styles.concernValue}>
-                                {concern.value}
+                        {renderConcernSubtext(concern)}
+                      </View>
+                      <View style={styles.concernValueContainer}>
+                        <View style={styles.scoreBadge}>
+                          {concern.changeDirection === 'up' && (
+                            <View style={styles.changeIndicator}>
+                              <ArrowUp size={12} color="#44403C" />
+                              <Text style={styles.changeValue}>
+                                {Math.abs(concern.change || 0)}
                               </Text>
                             </View>
-                          </View>
-                          <ChevronRight size={24} color="#A9A29D" />
-                        </View>
-                      </TouchableOpacity>
-
-                      {/* Ingredient Rows */}
-                      {concern.ingredientsLoading ? (
-                        <View style={styles.ingredientLoadingContainer}>
-                          <SkeletonPlaceholder borderRadius={4}>
-                            <SkeletonPlaceholder.Item>
-                              {[1, 2].map(i => (
-                                <SkeletonPlaceholder.Item
-                                  key={i}
-                                  flexDirection="row"
-                                  justifyContent="space-between"
-                                  alignItems="center"
-                                  paddingVertical={10}
-                                  paddingHorizontal={4}
-                                >
-                                  <SkeletonPlaceholder.Item
-                                    width={100}
-                                    height={14}
-                                    borderRadius={4}
-                                  />
-                                  <SkeletonPlaceholder.Item
-                                    width={80}
-                                    height={14}
-                                    borderRadius={4}
-                                  />
-                                </SkeletonPlaceholder.Item>
-                              ))}
-                            </SkeletonPlaceholder.Item>
-                          </SkeletonPlaceholder>
-                        </View>
-                      ) : concern.ingredients.length > 0 ? (
-                        <View style={styles.ingredientListContainer}>
-                          {visibleIngredients.map((ingredient, idx) => {
-                            const colonIndex = ingredient.indexOf(':');
-                            const ingredientName =
-                              colonIndex > 0
-                                ? ingredient.substring(0, colonIndex).trim()
-                                : ingredient.trim();
-                            const ingredientDesc =
-                              colonIndex > 0
-                                ? ingredient.substring(colonIndex + 1).trim()
-                                : '';
-
-                            const foundEntry = concern.foundIngredients?.find(
-                              found => {
-                                if (typeof found === 'string') {
-                                  return (
-                                    found.toLowerCase().trim() ===
-                                    ingredientName.toLowerCase().trim()
-                                  );
-                                }
-                                return (
-                                  (found as any)?.ingredient
-                                    ?.toLowerCase()
-                                    .trim() ===
-                                  ingredientName.toLowerCase().trim()
-                                );
-                              },
-                            );
-                            const isFound = Boolean(foundEntry);
-                            const isLast =
-                              idx === visibleIngredients.length - 1 && !hasMore;
-
-                            return (
-                              <TouchableOpacity
-                                key={idx}
-                                style={[
-                                  styles.ingredientRow,
-                                  !isLast && styles.ingredientRowBorder,
-                                ]}
-                                onPress={() => {
-                                  const message = `Tell me more about ${ingredientName.toLowerCase()} and how it can help my skin.`;
-                                  (navigation as any).navigate('ThreadChat', {
-                                    chatType: 'ingredients_related_chat',
-                                    initialMessage: message,
-                                    draftMessage: message,
-                                    hideInitial: true,
-                                    imageId: currentPhotoId,
-                                  });
-                                }}
-                              >
-                                <View style={{ flex: 1 }}>
-                                  <View style={styles.ingredientNameRow}>
-                                    <Text style={styles.ingredientName}>
-                                      {ingredientName}
-                                    </Text>
-                                    <ChevronRight size={24} color="#A9A29D" />
-                                  </View>
-                                  <View style={styles.routineChip}>
-                                    <View
-                                      style={[
-                                        styles.routineDot,
-                                        {
-                                          backgroundColor: isFound
-                                            ? '#12B76A'
-                                            : '#A9A29D',
-                                        },
-                                      ]}
-                                    />
-                                    <Text style={styles.routineText}>
-                                      {isFound
-                                        ? 'In your Routine'
-                                        : 'Not in Routine'}
-                                    </Text>
-                                  </View>
-                                  {isFound &&
-                                    foundEntry &&
-                                    typeof foundEntry !== 'string' &&
-                                    Array.isArray(foundEntry.products) &&
-                                    foundEntry.products.length > 0 ? (
-                                    <View>
-                                      {foundEntry.products.map(
-                                        (product: string, pIdx: number) => (
-                                          <Text
-                                            key={pIdx}
-                                            style={styles.productHighlight}
-                                          >
-                                            {product}
-                                          </Text>
-                                        ),
-                                      )}
-                                    </View>
-                                  ) : ingredientDesc ? (
-                                    <Text style={styles.ingredientDesc}>
-                                      {ingredientDesc.charAt(0).toUpperCase() +
-                                        ingredientDesc.slice(1)}
-                                    </Text>
-                                  ) : null}
-                                </View>
-                              </TouchableOpacity>
-                            );
-                          })}
-                          {hasMore && (
-                            <TouchableOpacity
-                              style={styles.showMoreButton}
-                              onPress={() =>
-                                toggleConcernExpanded(concern.name)
-                              }
-                            >
-                              <Text style={styles.showMoreText}>
-                                {isExpanded ? 'Show less' : 'Show more'}
-                              </Text>
-                            </TouchableOpacity>
                           )}
+                          {concern.changeDirection === 'down' && (
+                            <View style={styles.changeIndicator}>
+                              <ArrowDown size={12} color="#44403C" />
+                              <Text style={styles.changeValue}>
+                                {Math.abs(concern.change || 0)}
+                              </Text>
+                            </View>
+                          )}
+                          <View style={styles.scoreIndicatorContainer}>
+                            <View
+                              style={[
+                                styles.scoreIndicator,
+                                {
+                                  backgroundColor: getScoreColor(
+                                    concern.value,
+                                  ),
+                                },
+                              ]}
+                            />
+                            <Text style={styles.concernValue}>
+                              {concern.value}
+                              <Text style={styles.scoreOutOf}> /100</Text>
+                            </Text>
+                          </View>
                         </View>
-                      ) : null}
+                      </View>
                     </View>
-                  );
-                })}
+                  </TouchableOpacity>
+                ))}
               </>
             ) : null}
           </View>
@@ -1366,7 +1256,7 @@ export default function HomeScreen(): React.JSX.Element {
           <View style={styles.sectionCard}>
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>
-                Review Products & Treatments Effectiveness
+                Effectiveness Review
               </Text>
             </View>
             {reviewItems.length > 0 ? (
@@ -1444,7 +1334,7 @@ export default function HomeScreen(): React.JSX.Element {
                   }}
                 >
                   <Text style={styles.reviewEmptyLink}>
-                    Previously reviewed products
+                    Previously reviewed items
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1508,6 +1398,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.md,
     paddingTop: spacing.md,
+    paddingBottom: 30,
   },
 
   // Photo Slider
@@ -1732,6 +1623,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: colors.textPrimary,
+  },
+  scoreOutOf: {
+    color: '#A9A29D',
   },
   loadingContainer: {
     padding: spacing.lg,
@@ -2031,5 +1925,42 @@ const styles = StyleSheet.create({
     fontFamily: fontFamily.semiBold,
     fontWeight: '600',
     textDecorationLine: 'underline',
+  },
+  summaryContainer: {
+    backgroundColor: '#F5F5F4',
+    padding: 14,
+    borderRadius: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#E7E5E4',
+  },
+  routineSummaryText: {
+    fontSize: 14,
+    color: '#44403C',
+    lineHeight: 20,
+    fontFamily: fontFamily.medium,
+  },
+  boldText: {
+    fontWeight: 'bold',
+    color: '#1C1917',
+    fontFamily: fontFamily.bold,
+  },
+  sectionHeaderClickable: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 16,
+  },
+  concernSubtext: {
+    fontSize: 13,
+    color: '#78716C',
+    fontFamily: fontFamily.regular,
+    marginTop: 4,
+    lineHeight: 18,
+  },
+  boldSubtext: {
+    fontWeight: 'bold',
+    fontFamily: fontFamily.bold,
+    color: '#44403C',
   },
 });

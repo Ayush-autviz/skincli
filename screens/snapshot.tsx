@@ -1342,7 +1342,10 @@ const SnapshotScreen = (): React.JSX.Element => {
                       <View
                         style={[styles.analysisDot, { backgroundColor: color }]}
                       />
-                      <Text style={styles.analysisScore}>{item.value}</Text>
+                      <Text style={styles.analysisScore}>
+                        {item.value}
+                        <Text style={styles.scoreOutOf}> /100</Text>
+                      </Text>
                     </View>
                     <ChevronRight
                       size={20}
@@ -1647,6 +1650,9 @@ const styles = StyleSheet.create({
     minWidth: 24,
     textAlign: 'right',
     fontFamily: 'Inter-Bold',
+  },
+  scoreOutOf: {
+    color: '#A9A29D',
   },
 
   // SkinCheck Card

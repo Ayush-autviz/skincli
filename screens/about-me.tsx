@@ -41,6 +41,7 @@ const NUM_COLUMNS = 3;
 const PHOTO_SIZE =
   (SCREEN_WIDTH - HORIZONTAL_PADDING * 2 - PHOTO_GAP * (NUM_COLUMNS - 1)) /
   NUM_COLUMNS;
+const PHOTO_HEIGHT = PHOTO_SIZE * 1.33; // 3:4 aspect ratio
 
 type TabType = 'photos' | 'activity' | 'rated';
 
@@ -270,7 +271,8 @@ export default function AboutMeScreen({
       onPress={() => handlePhotoPress(item)}
       resizeMode="cover"
       width={PHOTO_SIZE}
-      height={PHOTO_SIZE}
+      height={PHOTO_HEIGHT}
+      borderRadius={4}
     />
   );
 
@@ -493,7 +495,7 @@ export default function AboutMeScreen({
                   <SkeletonPlaceholder.Item
                     key={i}
                     width={PHOTO_SIZE}
-                    height={PHOTO_SIZE}
+                    height={PHOTO_HEIGHT}
                     marginRight={(i + 1) % NUM_COLUMNS === 0 ? 0 : PHOTO_GAP}
                     marginBottom={PHOTO_GAP}
                   />
@@ -704,9 +706,12 @@ const styles = StyleSheet.create({
   },
   photoItem: {
     width: PHOTO_SIZE,
-    height: PHOTO_SIZE,
+    height: PHOTO_HEIGHT,
     marginRight: PHOTO_GAP,
     marginBottom: PHOTO_GAP,
+    backgroundColor: '#F5F5F5',
+    borderRadius: 4,
+    overflow: 'hidden',
   },
   photoImage: {
     width: '100%',

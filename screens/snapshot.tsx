@@ -1205,7 +1205,7 @@ const SnapshotScreen = (): React.JSX.Element => {
             <Image
               source={{ uri: imageUri }}
               style={styles.photoImage}
-              resizeMode="cover"
+              resizeMode="contain"
             />
             <View style={styles.photoOverlayChip}>
               <Text style={styles.photoOverlayChipText}>+ Zoom / Masks</Text>
@@ -1468,11 +1468,11 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     overflow: 'hidden',
     marginBottom: 22,
-    backgroundColor: '#E5E7EB',
+    backgroundColor: colors.background,
   },
   photoImage: {
-    width: 383,
-    height: 383,
+    width: '100%',
+    height: (SCREEN_WIDTH - 32) * 1.33,
     resizeMode: 'contain',
   },
   photoOverlayChip: {

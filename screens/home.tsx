@@ -195,7 +195,7 @@ const ImageWithSkeleton = ({
             <SkeletonPlaceholder borderRadius={32}>
               <SkeletonPlaceholder.Item
                 width={style.width || 173}
-                height={style.height || 173}
+                height={style.height || 230}
                 borderRadius={32}
               />
             </SkeletonPlaceholder>
@@ -831,7 +831,7 @@ export default function HomeScreen(): React.JSX.Element {
         key="carousel-skeleton"
         loop={false}
         width={SCREEN_WIDTH - 36}
-        height={173}
+        height={230}
         style={{
           width: SCREEN_WIDTH - 64,
           justifyContent: 'center',
@@ -848,7 +848,7 @@ export default function HomeScreen(): React.JSX.Element {
             <SkeletonPlaceholder borderRadius={32}>
               <SkeletonPlaceholder.Item
                 width={173}
-                height={173}
+                height={230}
                 borderRadius={32}
               />
             </SkeletonPlaceholder>
@@ -1073,7 +1073,7 @@ export default function HomeScreen(): React.JSX.Element {
                 ref={carouselRef}
                 loop={false}
                 width={SCREEN_WIDTH - 36}
-                height={173}
+                height={230}
                 style={{
                   width: SCREEN_WIDTH - 64,
                   justifyContent: 'center',
@@ -1408,7 +1408,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.lg,
     padding: spacing.md,
     paddingBottom: spacing.lg,
-    height: 270,
+    height: 330,
     marginTop: 20,
   },
   sliderNavRow: {
@@ -1449,14 +1449,14 @@ const styles = StyleSheet.create({
   },
   photo: {
     width: 173,
-    height: 173,
+    height: 230,
     borderRadius: 32,
   },
   photoPlaceholder: {
     justifyContent: 'center',
     alignItems: 'center',
     width: 173,
-    height: 173,
+    height: 230,
     backgroundColor: 'rgba(255, 255, 255, 0.5)',
     borderRadius: 16,
   },
@@ -1475,7 +1475,7 @@ const styles = StyleSheet.create({
   // Empty Photo State
   emptyPhotoContainer: {
     width: 173,
-    height: 173,
+    height: 230,
     backgroundColor: '#E7E5E4',
     borderRadius: 32,
     justifyContent: 'center',
@@ -1754,7 +1754,7 @@ const styles = StyleSheet.create({
   },
   carouselImage: {
     width: 173,
-    height: 173,
+    height: 230,
     borderRadius: 32,
   },
 
